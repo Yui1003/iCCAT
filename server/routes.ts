@@ -180,13 +180,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Format data for Excel
       const excelData = feedbacks.map((f) => ({
         'Timestamp': new Date(f.timestamp).toLocaleString('en-US', {
-          year: 'numeric',
+          year: '2-digit',
           month: '2-digit',
           day: '2-digit',
           hour: '2-digit',
           minute: '2-digit',
-          second: '2-digit',
-          hour12: false
+          hour12: true
         }),
         'User #': f.userId,
         'Functional Suitability': f.avgFunctionalSuitability.toFixed(2),

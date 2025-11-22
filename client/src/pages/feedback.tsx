@@ -139,7 +139,7 @@ export default function FeedbackPage() {
       setSubmittedUserId(data.userId);
       toast({
         title: "Thank you!",
-        description: `Your feedback has been submitted successfully. Your User # is: ${data.userId}`,
+        description: "Your feedback has been submitted successfully.",
       });
       setTimeout(() => navigate("/"), 3000);
     },
