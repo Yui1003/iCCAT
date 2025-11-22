@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read access to all data (for public kiosk)
+    match /{document=**} {
+      allow read: if true;
+      
+      // Only allow writes from Cloud Functions (server-side)
+      // Users cannot directly write to Firestore from client
+      allow write: if false;
+    }
+  }
+}

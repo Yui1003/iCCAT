@@ -1,0 +1,169 @@
+import { useEffect, useRef } from "react";
+
+interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+interface PolygonDrawingMapProps {
+  centerLat: number;
+  centerLng: number;
+  polygon?: LatLng[] | null;
+  onPolygonChange: (polygon: LatLng[] | null) => void;
+  polygonColor?: string;
+  className?: string;
+}
+
+declare global {
+  interface Window {
+    L: any;
+  }
+}
+
+export default function PolygonDrawingMap({
+  centerLat,
+  centerLng,
+  polygon,
+  onPolygonChange,
+  polygonColor = "#FACC15",
+  className = "h-full w-full"
+}: PolygonDrawingMapProps) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const drawnItemsRef = useRef<any>(null);
+  const drawControlRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    const L = window.L;
+    if (!L) {
+      console.error("Leaflet not loaded");
+      return;
+    }
+
+    const map = L.map(mapRef.current, {
+      center: [centerLat, centerLng],
+      zoom: 18,
+      minZoom: 17,
+      zoomControl: true,
+      attributionControl: true,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+      subdomains: ['a', 'b', 'c'],
+    }).addTo(map);
+
+    const drawnItems = new L.FeatureGroup();
+    drawnItems.addTo(map);
+
+    const drawControl = new L.Control.Draw({
+      position: 'topright',
+      draw: {
+        polygon: {
+          allowIntersection: false,
+          showArea: true,
+          shapeOptions: {
+            color: polygonColor,
+            fillColor: polygonColor,
+            fillOpacity: 0.4,
+            weight: 3
+          },
+          drawError: {
+            color: '#ef4444',
+            message: 'Drawing error!'
+          }
+        },
+        polyline: false,
+        circle: false,
+        circlemarker: false,
+        marker: false,
+        rectangle: {
+          shapeOptions: {
+            color: polygonColor,
+            fillColor: polygonColor,
+            fillOpacity: 0.4,
+            weight: 3
+          }
+        }
+      },
+      edit: {
+        featureGroup: drawnItems,
+        remove: true
+      }
+    });
+
+    map.addControl(drawControl);
+
+    map.on(L.Draw.Event.CREATED, function (e: any) {
+      const layer = e.layer;
+      drawnItems.clearLayers();
+      drawnItems.addLayer(layer);
+      
+      const latlngs = layer.getLatLngs()[0];
+      const polygonCoords = latlngs.map((ll: any) => ({
+        lat: ll.lat,
+        lng: ll.lng
+      }));
+      
+      onPolygonChange(polygonCoords);
+    });
+
+    map.on(L.Draw.Event.EDITED, function (e: any) {
+      const layers = e.layers;
+      layers.eachLayer((layer: any) => {
+        const latlngs = layer.getLatLngs()[0];
+        const polygonCoords = latlngs.map((ll: any) => ({
+          lat: ll.lat,
+          lng: ll.lng
+        }));
+        
+        onPolygonChange(polygonCoords);
+      });
+    });
+
+    map.on(L.Draw.Event.DELETED, function () {
+      onPolygonChange(null);
+    });
+
+    mapInstanceRef.current = map;
+    drawnItemsRef.current = drawnItems;
+    drawControlRef.current = drawControl;
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [polygonColor]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.L) return;
+    
+    mapInstanceRef.current.setView([centerLat, centerLng], 18);
+  }, [centerLat, centerLng]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !drawnItemsRef.current || !window.L) return;
+
+    const L = window.L;
+    drawnItemsRef.current.clearLayers();
+
+    if (polygon && polygon.length > 0) {
+      const latlngs = polygon.map((p: LatLng) => [p.lat, p.lng]);
+      const polygonLayer = L.polygon(latlngs, {
+        color: polygonColor,
+        fillColor: polygonColor,
+        fillOpacity: 0.4,
+        weight: 3
+      });
+      
+      drawnItemsRef.current.addLayer(polygonLayer);
+    }
+  }, [polygon, polygonColor]);
+
+  return <div ref={mapRef} className={className} data-testid="polygon-drawing-map" />;
+}

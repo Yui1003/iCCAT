@@ -1,0 +1,2038 @@
+{
+  "buildings": [
+    {
+      "id": "063c2b5b-d279-4c3f-bdee-c52b12b18a74",
+      "name": "CCAT Hostel",
+      "type": "Building",
+      "description": "",
+      "lat": 14.402478,
+      "lng": 120.86593,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "697c987c-fa7d-404d-b649-0ecb66b0e0b1",
+      "name": "Department of Arts and Science",
+      "type": "Building",
+      "description": "",
+      "lat": 14.40398,
+      "lng": 120.86547,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "505d011b-c6b3-4070-8530-97a6111f48f4",
+      "name": "Department of Industrial Technology",
+      "type": "Building",
+      "description": "",
+      "lat": 14.404036,
+      "lng": 120.866234,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "a64e2293-1a3c-4c69-958a-0b02e8f061fe",
+      "name": "Talyer - CCAT",
+      "type": "Building",
+      "description": "",
+      "lat": 14.402874,
+      "lng": 120.86624,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "f0d11550-4509-414f-8778-63066ff3316b",
+      "name": "CCAT - Power Station",
+      "type": "Building",
+      "description": "",
+      "lat": 14.404409,
+      "lng": 120.86642,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "6e359eba-bb52-44fb-a121-dce9a54560db",
+      "name": "Puno ng Saging ni Bolims",
+      "type": "Building",
+      "description": "",
+      "lat": 14.404262,
+      "lng": 120.86649,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "0bf0a77c-cb1c-4fdc-be94-e02518fba8c7",
+      "name": "HighSchool",
+      "type": "Building",
+      "description": "",
+      "lat": 14.403822,
+      "lng": 120.86651,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "ef15e784-f1aa-4877-b29f-7f4e82322981",
+      "name": "Student Central Building",
+      "type": "Building",
+      "description": "",
+      "lat": 14.401262,
+      "lng": 120.86635,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "70aadcff-a58c-41e6-a48e-0d36da5cd041",
+      "name": "Dirty Kitchen of HM",
+      "type": "Building",
+      "description": "",
+      "lat": 14.402809,
+      "lng": 120.865776,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "1fdd66e3-674c-4e8d-ba2c-ca9f80db3ab4",
+      "name": "Technovation Building",
+      "type": "Building",
+      "description": "",
+      "lat": 14.402021,
+      "lng": 120.86605,
+      "departments": [],
+      "image": "https://cvsu.edu.ph/wp-content/uploads/2022/08/CCAT-Campus-scaled.jpg",
+      "markerIcon": "building"
+    },
+    {
+      "id": "e16636ed-c4ba-49f3-b556-0f18c3dc9dc2",
+      "name": "Pagawaan ng Aircon",
+      "type": "Building",
+      "description": "",
+      "lat": 14.403415,
+      "lng": 120.86666,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "name": "University Canteen",
+      "type": "Canteen",
+      "description": "Hub for student activities, cafeteria, and student services",
+      "lat": 14.403734,
+      "lng": 120.866295,
+      "departments": [
+        "Cafeteria"
+      ],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "7cf27c0c-2366-476a-9211-24c083d192c4",
+      "name": "Gate 1",
+      "type": "Gate",
+      "description": "",
+      "lat": 14.404321,
+      "lng": 120.86576,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "12745f28-fa3e-43be-9eb6-c436a133fafd",
+      "name": "Gate 2",
+      "type": "Gate",
+      "description": "",
+      "lat": 14.400876,
+      "lng": 120.86682,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "8ea4ac6f-3c5e-4333-868e-b1c0cee3a218",
+      "name": "University Clinic",
+      "type": "Health Services / Clinic",
+      "description": "",
+      "lat": 14.403349,
+      "lng": 120.866425,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "55c4b0ca-0c83-42be-85b1-7a5f92f1f190",
+      "name": "Comfort Room",
+      "type": "Comfort Room",
+      "description": "",
+      "lat": 14.403435,
+      "lng": 120.86517,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "d5044c2f-9d74-46ff-8b53-35e33596646a",
+      "name": "University Library",
+      "type": "Library",
+      "description": "",
+      "lat": 14.403947,
+      "lng": 120.86532,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "8125c5af-3576-4524-b76e-c9727532506c",
+      "name": "Comfort Room",
+      "type": "Comfort Room",
+      "description": "",
+      "lat": 14.404251,
+      "lng": 120.86559,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "name": "Administration Building",
+      "type": "Administrative Office",
+      "description": "Primary building housing classrooms, faculty offices, and administrative offices",
+      "lat": 14.403876,
+      "lng": 120.86592,
+      "departments": [
+        "Administration"
+      ],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "220aaeb3-fc7f-4bf5-b175-86844b0c0377",
+      "name": "CCAT Water Station",
+      "type": "Water Fountain",
+      "description": "",
+      "lat": 14.404313,
+      "lng": 120.86606,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "e75df1e2-aece-45c2-95ba-febd7e46bd82",
+      "name": "Covered Court 1",
+      "type": "Gym / Sports Facility",
+      "description": "",
+      "lat": 14.403545,
+      "lng": 120.86598,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "1b38fb3d-f3f6-42b3-85d6-75095260f087",
+      "name": "Five Store",
+      "type": "Canteen",
+      "description": "",
+      "lat": 14.404363,
+      "lng": 120.86618,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "917e6e00-e963-4e82-b06d-71f7813b8392",
+      "name": "External and Business Affair",
+      "type": "Bookstore",
+      "description": "",
+      "lat": 14.4036665,
+      "lng": 120.86629,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "5c13e88f-ed1b-4663-968f-4b332e8446c0",
+      "name": "Motorcycle Parking",
+      "type": "Motorcycle Parking",
+      "description": "",
+      "lat": 14.402211,
+      "lng": 120.86625,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "e395938a-6113-41f8-be52-fcf5140bf53a",
+      "name": "DCS Rooms (7-9)",
+      "type": "Lecture Hall / Classroom",
+      "description": "",
+      "lat": 14.4032345,
+      "lng": 120.866714,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "3a5f30f9-7828-4b50-a60c-f403f17987e0",
+      "name": "Student Pavilion",
+      "type": "Study Area",
+      "description": "",
+      "lat": 14.404197,
+      "lng": 120.86566,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "a7bc3892-c10e-4169-b0ea-2a93bbea6b9c",
+      "name": "Student Pavilion",
+      "type": "Study Area",
+      "description": "",
+      "lat": 14.40339,
+      "lng": 120.8653,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "bd193cf5-5430-4b18-bcee-1c33391625f0",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.403568,
+      "lng": 120.86579,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "99fe288b-da74-41f9-99bc-91989a606beb",
+      "name": "Student Lounge ",
+      "type": "Study Area",
+      "description": "",
+      "lat": 14.402954,
+      "lng": 120.86639,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "602c06a1-764c-4f46-8615-f00993564d16",
+      "name": "Student Pavilion",
+      "type": "Study Area",
+      "description": "",
+      "lat": 14.402817,
+      "lng": 120.866714,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "d9319a4b-4369-4a64-b43a-55aeb9976447",
+      "name": "Student Lounge",
+      "type": "Study Area",
+      "description": "",
+      "lat": 14.403233,
+      "lng": 120.86656,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "f86aa502-2235-453b-b4b2-b42818dced9e",
+      "name": "Covered Court 2",
+      "type": "Gym / Sports Facility",
+      "description": "",
+      "lat": 14.402437,
+      "lng": 120.86558,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "127815a9-5561-451b-aa3d-34c6dbf5a1be",
+      "name": "Covered Court Stage",
+      "type": "Auditorium / Theater",
+      "description": "",
+      "lat": 14.4037,
+      "lng": 120.86595,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "89f830c6-6350-4fd6-9a77-3a3e4c65249c",
+      "name": "PPSS Meow",
+      "type": "Security Office / Campus Police",
+      "description": "",
+      "lat": 14.402598,
+      "lng": 120.86628,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "2d7ee57a-622a-438a-ae66-14d921a92a83",
+      "name": "Student Oven",
+      "type": "Lecture Hall / Classroom",
+      "description": "",
+      "lat": 14.402541,
+      "lng": 120.86621,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "dd98df49-6fab-48b7-8544-7c187ca4f059",
+      "name": "Motorcycle Parking",
+      "type": "Motorcycle Parking",
+      "description": "",
+      "lat": 14.402105,
+      "lng": 120.86573,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "26a38a37-9168-4e6d-b0cd-979f95deebb7",
+      "name": "Motorcycle Parking",
+      "type": "Motorcycle Parking",
+      "description": "",
+      "lat": 14.401991,
+      "lng": 120.86638,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "b8164484-04e5-4755-b594-9a9877a3e63a",
+      "name": "Car Parking",
+      "type": "Car Parking",
+      "description": "",
+      "lat": 14.401653,
+      "lng": 120.86653,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "29425d69-dc8a-43cd-8363-b2d9c389ced0",
+      "name": "Car Parking",
+      "type": "Car Parking",
+      "description": "",
+      "lat": 14.401378,
+      "lng": 120.86669,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "1fd7d553-3ea5-4f65-987c-b3c8ae6a3476",
+      "name": "Water Faucet",
+      "type": "Water Fountain",
+      "description": "Water Faucet in DIT Building",
+      "lat": 14.404058,
+      "lng": 120.86634,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "1e7080ba-5017-446d-8ae4-130ae95def6b",
+      "name": "Water Faucet",
+      "type": "Water Fountain",
+      "description": "Water Faucet near Main Road",
+      "lat": 14.403921,
+      "lng": 120.8661,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "958f67cc-70b9-4c6b-98ed-37dd2264fdf7",
+      "name": "Water Faucet",
+      "type": "Water Fountain",
+      "description": "Water Faucet between Engineering and IT",
+      "lat": 14.402952,
+      "lng": 120.86648,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "3ded7110-b6c0-4024-af32-da4ee6f4efc9",
+      "name": "Laboratories",
+      "type": "Laboratory",
+      "description": "Laboratory Rooms in Department of Arts and Science",
+      "lat": 14.403739,
+      "lng": 120.86536,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "624f3372-7ac2-4f55-acbb-f4824593b1bc",
+      "name": "Bicycle Parking",
+      "type": "Bike Parking",
+      "description": "",
+      "lat": 14.404308,
+      "lng": 120.865875,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "404d4b9f-8247-4ab5-9d80-2ebc942a85b7",
+      "name": "Student Lounge",
+      "type": "Study Area",
+      "description": "",
+      "lat": 14.404342,
+      "lng": 120.865974,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "e63de579-6852-49aa-9667-4d8bfa19d959",
+      "name": "Student Lounge",
+      "type": "Study Area",
+      "description": "Student Lounge near Management Studies",
+      "lat": 14.402796,
+      "lng": 120.86597,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "fade7061-bb59-43a9-9f6a-f3c82311f8a8",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "Bench near Clinic",
+      "lat": 14.403301,
+      "lng": 120.866325,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "adcc024c-7bf6-45a1-a7cb-daa72fc15e4d",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.403452,
+      "lng": 120.86581,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "e54f7e57-1ae5-4b40-a7e1-bbe0fe90f3af",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.403339,
+      "lng": 120.86583,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "f8e808b7-2d9e-4491-822a-fd0862c20911",
+      "name": "New University Library",
+      "type": "Library",
+      "description": "",
+      "lat": 14.404017,
+      "lng": 120.86561,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "25e34b4e-b2ac-4108-97e1-c67364aa0709",
+      "name": "Car Parking",
+      "type": "Car Parking",
+      "description": "",
+      "lat": 14.403168,
+      "lng": 120.86595,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "511e2454-d5dc-4a6d-b4fe-bddd0666d3c2",
+      "name": "Car Parking (Visitors)",
+      "type": "Car Parking",
+      "description": "",
+      "lat": 14.404079,
+      "lng": 120.86598,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "560edc6b-d309-46ac-8144-63dc157ea57b",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.404055,
+      "lng": 120.86569,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "54a25fc4-f83e-4797-9659-1f7b8a38835a",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.403963,
+      "lng": 120.8657,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "a8bdcbc8-0aa5-443f-a22a-44de20dc0bba",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.4038725,
+      "lng": 120.86571,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "7adad7ed-e187-4fa0-9b69-d75e0d355f87",
+      "name": "Student Lounge (Highschool)",
+      "type": "Study Area",
+      "description": "Study Lounge behind the Highschool building",
+      "lat": 14.403825,
+      "lng": 120.86662,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "13eaea44-670a-4bc4-a161-d8e2436571e0",
+      "name": "Comfort Room",
+      "type": "Comfort Room",
+      "description": "",
+      "lat": 14.402741,
+      "lng": 120.866516,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "f7d0af5e-92d9-443e-a64c-8ab848823699",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.402443,
+      "lng": 120.86655,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "a8c1b128-b292-4a89-9ef7-4c7f449c22c4",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.402464,
+      "lng": 120.86664,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "fcbaa9aa-e9e3-4f0a-9b61-93d557d9a875",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.402482,
+      "lng": 120.86671,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "0ce2b92d-9a76-4c91-aabb-ed882cbda3e7",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.40225,
+      "lng": 120.86566,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "408d8233-8c5e-4201-b5c8-b2a00cccf1cd",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.402272,
+      "lng": 120.865776,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "30d1dee5-4c81-4aa0-aa7e-04b4c439af9d",
+      "name": "Green Space",
+      "type": "Green Space / Courtyard",
+      "description": "Area under trees",
+      "lat": 14.402856,
+      "lng": 120.86653,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "e6393789-b3dd-46d8-8881-88d123b590eb",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.4022875,
+      "lng": 120.8659,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "faf59a86-35c0-4cdf-b061-fe16531f2477",
+      "name": "Comfort Room",
+      "type": "Comfort Room",
+      "description": "",
+      "lat": 14.402407,
+      "lng": 120.86583,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "a87a37f3-6ddf-45c3-9236-0592e771bcd4",
+      "name": "University Gym",
+      "type": "Gym / Sports Facility",
+      "description": "",
+      "lat": 14.402403,
+      "lng": 120.86615,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "12ee80d3-d517-47fa-aed3-dca53ffbd9dd",
+      "name": "PET Bottle Bin",
+      "type": "Waste / Recycling Station",
+      "description": "",
+      "lat": 14.404298,
+      "lng": 120.86616,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "7516d7ba-24c8-4fcf-a872-aed111b47e41",
+      "name": "PET Bottle Bin",
+      "type": "Waste / Recycling Station",
+      "description": "",
+      "lat": 14.403807,
+      "lng": 120.86623,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "53a91f53-11df-40e4-9450-f580a705f611",
+      "name": "Comfort Room",
+      "type": "Comfort Room",
+      "description": "",
+      "lat": 14.403376,
+      "lng": 120.86687,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "53bf74dd-03a2-4211-83a3-46813b1599f4",
+      "name": "Printing Services and Merchandise",
+      "type": "Print/Copy Center",
+      "description": "",
+      "lat": 14.403575,
+      "lng": 120.866135,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "6e3eef51-56b5-4045-9295-24451f88f9fb",
+      "name": "ROTC Office",
+      "type": "Security Office / Campus Police",
+      "description": "",
+      "lat": 14.403471,
+      "lng": 120.86616,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "42777cb0-6e8c-4b8c-ab51-4b75d719fa64",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.404181,
+      "lng": 120.865944,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "0749fb80-d3f2-4374-9fd1-79493fafdddc",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.404152,
+      "lng": 120.86601,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "b662693b-d1ec-4e07-90ee-3fa03c071c71",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.404084,
+      "lng": 120.86605,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "8639810e-06e4-46b9-becb-66db9cd83e2b",
+      "name": "Bench",
+      "type": "Student Lounge",
+      "description": "",
+      "lat": 14.403965,
+      "lng": 120.86609,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "8392497c-f31c-4fd2-8ead-74643f9caff1",
+      "name": "Car Parking",
+      "type": "Car Parking",
+      "description": "",
+      "lat": 14.403029,
+      "lng": 120.86615,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "fda31ec9-856a-4ae0-aefd-ac8b23b1d4ab",
+      "name": "CvSU CCAT Toda",
+      "type": "Bus Stop / Shuttle Stop",
+      "description": "",
+      "lat": 14.402347,
+      "lng": 120.866035,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "45eb2544-a063-483c-a9b1-0331bc7a8a0d",
+      "name": "Food Stalls ",
+      "type": "Food Stall",
+      "description": "",
+      "lat": 14.402273,
+      "lng": 120.866005,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "77109394-6eb5-4d6d-aebb-78dda43b2259",
+      "name": "Techno Lounge",
+      "type": "Green Space / Courtyard",
+      "description": "",
+      "lat": 14.401907,
+      "lng": 120.86594,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "528790b8-c374-44ba-971f-fa132e449f4e",
+      "name": "Propose Oval",
+      "type": "Other",
+      "description": "",
+      "lat": 14.401922,
+      "lng": 120.86686,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "bf1e8c04-b900-461f-9d78-6978eec9ce31",
+      "name": "PET Bottle Bin",
+      "type": "Waste / Recycling Station",
+      "description": "",
+      "lat": 14.402985,
+      "lng": 120.86635,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "615bae31-c0a7-413f-9060-64bd664ba008",
+      "name": "Teacher's Education Building",
+      "type": "Building",
+      "description": "The Teacher’s Education Building houses programs focused on developing future educators and instructional leaders. It includes lecture rooms, micro-teaching laboratories, curriculum resource centers, and faculty offices. The building supports training in teaching methodologies, classroom management, educational technology, and field demonstration activities. It is a hub for aspiring teachers preparing for Licensure Examination for Teachers (LET) competency.",
+      "lat": 14.40344,
+      "lng": 120.8657,
+      "departments": [],
+      "image": "",
+      "markerIcon": "building"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "name": "Engineering Building",
+      "type": "Building",
+      "description": "The Engineering Building is dedicated to programs in computer, electronics, electrical, and other applied engineering fields. It features specialized laboratories such as circuits labs, computer labs, workshop areas, and innovation spaces. Students conduct hands-on experiments, prototype development, and technical research here. The building also hosts most engineering lectures, faculty offices, and project-based learning sessions.",
+      "lat": 14.403058,
+      "lng": 120.86655,
+      "departments": [
+        "Engineering",
+        "Electrical Engineering",
+        "Computer Engineering"
+      ],
+      "image": "",
+      "markerIcon": "building"
+    }
+  ],
+  "floors": [
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440001",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440001",
+      "floorNumber": 1,
+      "floorName": "Ground Floor",
+      "floorPlanImage": null
+    },
+    {
+      "id": "f3d2d04a-b7d2-4588-9a21-e7f0feca606c",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440002",
+      "floorNumber": 1,
+      "floorName": "Ground Floor",
+      "floorPlanImage": "https://wpmedia.roomsketcher.com/content/uploads/2025/05/14133303/floor-plan-letterhead-measurements-1.jpg"
+    }
+  ],
+  "rooms": [
+    {
+      "id": "770e8400-e29b-41d4-a716-446655440001",
+      "floorId": "660e8400-e29b-41d4-a716-446655440001",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440001",
+      "name": "Room 101",
+      "type": "classroom",
+      "description": "Computer Science",
+      "x": 0.3,
+      "y": 0.3
+    },
+    {
+      "id": "770e8400-e29b-41d4-a716-446655440002",
+      "floorId": "660e8400-e29b-41d4-a716-446655440001",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440001",
+      "name": "Room 102",
+      "type": "office",
+      "description": "Administration",
+      "x": 0.5,
+      "y": 0.3
+    },
+    {
+      "id": "770e8400-e29b-41d4-a716-446655440003",
+      "floorId": "660e8400-e29b-41d4-a716-446655440001",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440001",
+      "name": "Lab 103",
+      "type": "lab",
+      "description": "Information Technology",
+      "x": 0.7,
+      "y": 0.3
+    },
+    {
+      "id": "478158e7-8642-4c38-bd72-cfbd02bb2193",
+      "floorId": "f3d2d04a-b7d2-4588-9a21-e7f0feca606c",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440002",
+      "name": "Kitchen",
+      "type": "lab",
+      "description": "Lutuan ng Saging ni Maurice",
+      "x": 0.2985244,
+      "y": 0.3164964
+    }
+  ],
+  "staff": [
+    {
+      "id": "880e8400-e29b-41d4-a716-446655440002",
+      "name": "Prof. Juan Dela Cruz",
+      "position": "Professor",
+      "department": "Information Technology",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440001",
+      "floorId": null,
+      "roomId": null,
+      "email": "juan.delacruz@cvsu.edu.ph",
+      "phone": "+63 912 345 6790",
+      "photo": null
+    },
+    {
+      "id": "880e8400-e29b-41d4-a716-446655440003",
+      "name": "Dr. Ana Reyes",
+      "position": "Department Chair",
+      "department": "Engineering",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440002",
+      "floorId": null,
+      "roomId": null,
+      "email": "ana.reyes@cvsu.edu.ph",
+      "phone": "+63 912 345 6791",
+      "photo": null
+    },
+    {
+      "id": "880e8400-e29b-41d4-a716-446655440004",
+      "name": "Mr. Pedro Garcia",
+      "position": "Lab Coordinator",
+      "department": "Science",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440002",
+      "floorId": null,
+      "roomId": null,
+      "email": "pedro.garcia@cvsu.edu.ph",
+      "phone": "+63 912 345 6792",
+      "photo": null
+    },
+    {
+      "id": "880e8400-e29b-41d4-a716-446655440005",
+      "name": "Ms. Lisa Fernandez",
+      "position": "Student Affairs Officer",
+      "department": "Student Affairs",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440003",
+      "floorId": null,
+      "roomId": null,
+      "email": "lisa.fernandez@cvsu.edu.ph",
+      "phone": "+63 912 345 6793",
+      "photo": null
+    },
+    {
+      "id": "880e8400-e29b-41d4-a716-446655440001",
+      "name": "Engr. Maurice Montano",
+      "position": "Instructor - CPE",
+      "department": "Computer Engineering",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440002",
+      "floorId": null,
+      "roomId": null,
+      "email": "rc.maurice.montano@cvsu.edu.ph",
+      "phone": "+63 912 345 6789",
+      "photo": "https://scontent.fmnl45-2.fna.fbcdn.net/v/t1.15752-9/541167178_1302039968391678_1457621846679647886_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeFhBOls_h2oSUFoOiionFs8i4Hr8V6RP9uLgevxXpE_2_YYJHf8VNYXEJm3k3hNEp2NLAWFNWBD_ZOSD8hnL47H&_nc_ohc=Eh-Z9skewf8Q7kNvwHBE7SK&_nc_oc=AdkAGHvZQI7LG44wGThwnqceZijinDGGZQM8bJSX5SBLpGcsc8XGS0zjmJtmcdO4hAQARQXF6QfCOPlJWbVeMRSr&_nc_zt=23&_nc_ht=scontent.fmnl45-2.fna&oh=03_Q7cD3wHzgjH3dg6IzspFwTvAHgVZK_Xuy91PVDvuDYGOrhMTVw&oe=694680F0"
+    }
+  ],
+  "events": [
+    {
+      "id": "990e8400-e29b-41d4-a716-446655440002",
+      "title": "Science Fair 2024",
+      "description": "Annual science and technology exhibition showcasing student research projects and innovations",
+      "date": "2024-02-20",
+      "time": "10:00 AM",
+      "location": "Science and Technology Building",
+      "buildingId": null,
+      "image": null,
+      "classification": "Event"
+    },
+    {
+      "id": "990e8400-e29b-41d4-a716-446655440001",
+      "title": "Academic Orientation",
+      "description": "Welcome orientation for new students covering academic policies, campus facilities, and student services",
+      "date": "2024-01-15",
+      "time": "09:00 AM",
+      "location": "Main Academic Building Auditorium",
+      "buildingId": "615bae31-c0a7-413f-9060-64bd664ba008",
+      "image": "",
+      "classification": "Event"
+    },
+    {
+      "id": "c926d098-92af-4966-a5c5-8f7aa683be98",
+      "title": "Sampalan sa DE",
+      "description": "Sampalan na gaganapin sa DE",
+      "date": "2025-11-30",
+      "time": "11:00",
+      "location": "",
+      "buildingId": "063c2b5b-d279-4c3f-bdee-c52b12b18a74",
+      "image": "https://scontent.fmnl45-2.fna.fbcdn.net/v/t1.15752-9/574621210_806305078679885_5065534998734207607_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeG37y-lLoWDmGj0x-5iDDotAItej_nQjSEAi16P-dCNIeMI8QM2TfTqAY1xIkqw-Gn3WqKq5iCj7l_UhN3THG_Y&_nc_ohc=5MRo8KzOX3kQ7kNvwHoT3QU&_nc_oc=AdnYqKQVE7DH_R6ZiDDfEeAuCWHJEOV2oHXQBETjOinHWnZD7isVkr9zysOg43hNshEyotaYkTnlTV1Ie7T_7Bur&_nc_zt=23&_nc_ht=scontent.fmnl45-2.fna&oh=03_Q7cD3wGzSOS1TSgH0tYPouBZ1Vi8FKvhGAc3cjPo17YML_aKNA&oe=6946A385",
+      "classification": "Event"
+    },
+    {
+      "id": "b4454396-710c-4acc-b3be-34324860feab",
+      "title": "Pasado sa Accreditation",
+      "description": "",
+      "date": "2025-11-20",
+      "time": "",
+      "location": "",
+      "buildingId": null,
+      "image": "https://graphicsfamily.com/wp-content/uploads/edd/2021/01/Beautiful-certificate-of-achievement-template-scaled.jpg",
+      "classification": "Achievement"
+    },
+    {
+      "id": "c565baf7-9bde-4710-9706-07c946e3daec",
+      "title": "Design Project 1 - Title Defense",
+      "description": "Title Defense for Engineering Students taking DP1",
+      "date": "2025-12-08",
+      "time": "07:00",
+      "location": "Faculty Room",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440002",
+      "image": "https://slidemodel.com/wp-content/uploads/00_thesis-defense-presentation-cover.png",
+      "classification": "Event"
+    },
+    {
+      "id": "f7832462-038c-4ae4-8930-a605d7169e37",
+      "title": "Bagsakan",
+      "description": "Magbabagsakan dito sa DE",
+      "date": "2025-12-10",
+      "time": "01:50",
+      "location": "Faculty Room",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440002",
+      "image": "https://media.istockphoto.com/id/1279897409/photo/stressed-male-student-sitting-with-book-at-desk.jpg?s=612x612&w=0&k=20&c=NK1O5HDa8EQoxpHL2e0wIAmtFhn56rCDwYFHJoUO2fU=",
+      "classification": "Event"
+    },
+    {
+      "id": "21d14823-b4cb-47cd-994f-71534d76f7c7",
+      "title": "Intramurals",
+      "description": "CvSU - CCAT Yearly Intramurals",
+      "date": "2025-12-01",
+      "time": "07:00",
+      "location": "",
+      "buildingId": null,
+      "image": "https://iimtu.edu.in/blog/wp-content/uploads/2023/08/Untitled-1.jpg",
+      "classification": "Event"
+    },
+    {
+      "id": "5ee072ca-0f6c-4376-9a2d-afca5d0fad83",
+      "title": "Achievement 2",
+      "description": "12321321321",
+      "date": "2025-11-20",
+      "time": "",
+      "location": "",
+      "buildingId": "550e8400-e29b-41d4-a716-446655440002",
+      "image": "https://www.shutterstock.com/image-photo/success-teamwork-joint-achievement-goal-600nw-2505270505.jpg",
+      "classification": "Achievement"
+    }
+  ],
+  "walkpaths": [
+    {
+      "id": "14d93cac-b158-4e2c-a765-ba8d9ecc5962",
+      "name": "Main WalkPath ",
+      "nodes": [
+        {
+          "lat": 14.404315521071911,
+          "lng": 120.8657804131508
+        },
+        {
+          "lat": 14.404260965328238,
+          "lng": 120.86579382419588
+        },
+        {
+          "lat": 14.404245377970451,
+          "lng": 120.86575627326967
+        },
+        {
+          "lat": 14.404185626422207,
+          "lng": 120.86574286222461
+        },
+        {
+          "lat": 14.404118081174467,
+          "lng": 120.86574286222461
+        },
+        {
+          "lat": 14.404040144324744,
+          "lng": 120.86574554443361
+        },
+        {
+          "lat": 14.403985588513734,
+          "lng": 120.86574822664262
+        },
+        {
+          "lat": 14.403920641102282,
+          "lng": 120.86574822664262
+        },
+        {
+          "lat": 14.403845302081304,
+          "lng": 120.86574822664262
+        },
+        {
+          "lat": 14.40377775673054,
+          "lng": 120.86575090885164
+        },
+        {
+          "lat": 14.403712809258593,
+          "lng": 120.86575090885164
+        },
+        {
+          "lat": 14.403647861767716,
+          "lng": 120.86576700210573
+        },
+        {
+          "lat": 14.403569924753727,
+          "lng": 120.86578845977783
+        },
+        {
+          "lat": 14.403499781417848,
+          "lng": 120.86580455303194
+        },
+        {
+          "lat": 14.40344002966989,
+          "lng": 120.865815281868
+        },
+        {
+          "lat": 14.403377680002784,
+          "lng": 120.86582601070405
+        },
+        {
+          "lat": 14.40331792822213,
+          "lng": 120.86582869291308
+        },
+        {
+          "lat": 14.403263372234509,
+          "lng": 120.8658501505852
+        },
+        {
+          "lat": 14.40319582670754,
+          "lng": 120.86586087942126
+        },
+        {
+          "lat": 14.403146466501832,
+          "lng": 120.86587160825731
+        },
+        {
+          "lat": 14.403089312565788,
+          "lng": 120.86588501930238
+        },
+        {
+          "lat": 14.403021766986111,
+          "lng": 120.86589574813844
+        },
+        {
+          "lat": 14.402959417202126,
+          "lng": 120.86591184139253
+        },
+        {
+          "lat": 14.402897067400712,
+          "lng": 120.8659252524376
+        },
+        {
+          "lat": 14.402837315491334,
+          "lng": 120.86595207452777
+        },
+        {
+          "lat": 14.402777563565953,
+          "lng": 120.86595743894578
+        },
+        {
+          "lat": 14.402691832514627,
+          "lng": 120.86597621440889
+        },
+        {
+          "lat": 14.40263208055029,
+          "lng": 120.86598962545396
+        },
+        {
+          "lat": 14.402561936919561,
+          "lng": 120.86600035429002
+        },
+        {
+          "lat": 14.402504782833764,
+          "lng": 120.86600571870807
+        },
+        {
+          "lat": 14.402450226647307,
+          "lng": 120.86600840091707
+        },
+        {
+          "lat": 14.40236969130006,
+          "lng": 120.86602449417116
+        },
+        {
+          "lat": 14.402294351755348,
+          "lng": 120.86605936288835
+        },
+        {
+          "lat": 14.40223979551743,
+          "lng": 120.86608886718751
+        },
+        {
+          "lat": 14.402174847597763,
+          "lng": 120.8661210536957
+        },
+        {
+          "lat": 14.402112497577093,
+          "lng": 120.86614787578584
+        },
+        {
+          "lat": 14.402063137131698,
+          "lng": 120.86617469787599
+        },
+        {
+          "lat": 14.402011178756341,
+          "lng": 120.86619883775712
+        },
+        {
+          "lat": 14.401951426609708,
+          "lng": 120.86622565984727
+        },
+        {
+          "lat": 14.40188907652661,
+          "lng": 120.86625516414644
+        },
+        {
+          "lat": 14.401824128504847,
+          "lng": 120.86628735065462
+        },
+        {
+          "lat": 14.401753984620093,
+          "lng": 120.86631953716278
+        },
+        {
+          "lat": 14.401686438636194,
+          "lng": 120.86635172367097
+        },
+        {
+          "lat": 14.401616294708159,
+          "lng": 120.86638391017915
+        },
+        {
+          "lat": 14.401548748682556,
+          "lng": 120.86642682552339
+        },
+        {
+          "lat": 14.401483800561726,
+          "lng": 120.86645901203157
+        },
+        {
+          "lat": 14.401413656570003,
+          "lng": 120.86649656295776
+        },
+        {
+          "lat": 14.40134351255622,
+          "lng": 120.86653411388399
+        },
+        {
+          "lat": 14.401286358158321,
+          "lng": 120.86656093597414
+        },
+        {
+          "lat": 14.40123180167395,
+          "lng": 120.86659312248231
+        },
+        {
+          "lat": 14.401166853460857,
+          "lng": 120.86662799119952
+        },
+        {
+          "lat": 14.401101905228874,
+          "lng": 120.86665213108063
+        },
+        {
+          "lat": 14.401036956977984,
+          "lng": 120.86669504642488
+        },
+        {
+          "lat": 14.400974606639336,
+          "lng": 120.86672186851503
+        },
+        {
+          "lat": 14.400917452146949,
+          "lng": 120.86675137281419
+        },
+        {
+          "lat": 14.400865493504806,
+          "lng": 120.86678087711336
+        }
+      ]
+    },
+    {
+      "id": "0ad2f8d8-6e33-4d87-9382-ebf5cfed3807",
+      "name": "Sub WalkPath",
+      "nodes": [
+        {
+          "lat": 14.404312923179656,
+          "lng": 120.86577773094177
+        },
+        {
+          "lat": 14.40425836743536,
+          "lng": 120.86579382419588
+        },
+        {
+          "lat": 14.40421420325162,
+          "lng": 120.86580455303194
+        },
+        {
+          "lat": 14.404206409571232,
+          "lng": 120.86585819721223
+        },
+        {
+          "lat": 14.404201213784166,
+          "lng": 120.86591184139253
+        },
+        {
+          "lat": 14.404196017996961,
+          "lng": 120.86596280336383
+        },
+        {
+          "lat": 14.404180430634645,
+          "lng": 120.86600840091707
+        },
+        {
+          "lat": 14.404125874857945,
+          "lng": 120.86604863405229
+        },
+        {
+          "lat": 14.404071319067901,
+          "lng": 120.86607545614244
+        },
+        {
+          "lat": 14.404011567473017,
+          "lng": 120.86609154939653
+        },
+        {
+          "lat": 14.403951815862142,
+          "lng": 120.86610764265063
+        },
+        {
+          "lat": 14.403907651617729,
+          "lng": 120.86612373590471
+        },
+        {
+          "lat": 14.40386608526206,
+          "lng": 120.86613714694978
+        },
+        {
+          "lat": 14.403819323102672,
+          "lng": 120.86615324020387
+        },
+        {
+          "lat": 14.40381672520463,
+          "lng": 120.86620956659318
+        },
+        {
+          "lat": 14.403759571440297,
+          "lng": 120.86622297763826
+        },
+        {
+          "lat": 14.403699819761917,
+          "lng": 120.86623907089235
+        },
+        {
+          "lat": 14.403642665967624,
+          "lng": 120.86625248193742
+        },
+        {
+          "lat": 14.403569924753727,
+          "lng": 120.86626857519151
+        },
+        {
+          "lat": 14.403499781417848,
+          "lng": 120.86628466844562
+        },
+        {
+          "lat": 14.403450421279375,
+          "lng": 120.8663034439087
+        },
+        {
+          "lat": 14.403380277905928,
+          "lng": 120.86632221937181
+        },
+        {
+          "lat": 14.40332572193356,
+          "lng": 120.86634099483491
+        },
+        {
+          "lat": 14.403245186902346,
+          "lng": 120.86633831262591
+        },
+        {
+          "lat": 14.403182837180788,
+          "lng": 120.8663168549538
+        },
+        {
+          "lat": 14.403128281160127,
+          "lng": 120.86629271507265
+        },
+        {
+          "lat": 14.403089312565788,
+          "lng": 120.86623907089235
+        },
+        {
+          "lat": 14.403050343964617,
+          "lng": 120.86619615554811
+        },
+        {
+          "lat": 14.40300877744922,
+          "lng": 120.86615324020387
+        },
+        {
+          "lat": 14.402969808834003,
+          "lng": 120.86611032485963
+        },
+        {
+          "lat": 14.402930840211967,
+          "lng": 120.8660513162613
+        },
+        {
+          "lat": 14.402920448578284,
+          "lng": 120.86598694324495
+        },
+        {
+          "lat": 14.402902263218145,
+          "lng": 120.86593061685565
+        }
+      ]
+    },
+    {
+      "id": "0631d052-8647-4657-bfc8-5eef5263a9fa",
+      "name": "Admin Walk",
+      "nodes": [
+        {
+          "lat": 14.40382451889863,
+          "lng": 120.86572408676149
+        },
+        {
+          "lat": 14.40384010628583,
+          "lng": 120.86579382419588
+        },
+        {
+          "lat": 14.403845302081304,
+          "lng": 120.86586087942126
+        },
+        {
+          "lat": 14.403855693671924,
+          "lng": 120.86591988801959
+        },
+        {
+          "lat": 14.403868683159505,
+          "lng": 120.86598962545396
+        },
+        {
+          "lat": 14.40387387895433,
+          "lng": 120.86605668067934
+        },
+        {
+          "lat": 14.4038764768517,
+          "lng": 120.86611568927766
+        }
+      ]
+    },
+    {
+      "id": "bb8be9c9-b238-43bf-8825-8bd51e21a392",
+      "name": "Court Walk",
+      "nodes": [
+        {
+          "lat": 14.403764767237654,
+          "lng": 120.86615055799487
+        },
+        {
+          "lat": 14.403728396653568,
+          "lng": 120.86613714694978
+        },
+        {
+          "lat": 14.40371540715782,
+          "lng": 120.86607813835145
+        },
+        {
+          "lat": 14.403694623963045,
+          "lng": 120.86602449417116
+        },
+        {
+          "lat": 14.403673840766338,
+          "lng": 120.8659788966179
+        },
+        {
+          "lat": 14.403666047067057,
+          "lng": 120.8659252524376
+        },
+        {
+          "lat": 14.403653057567682,
+          "lng": 120.86587965488435
+        },
+        {
+          "lat": 14.403642665967624,
+          "lng": 120.8658340573311
+        },
+        {
+          "lat": 14.403627078566645,
+          "lng": 120.86577773094177
+        }
+      ]
+    },
+    {
+      "id": "5b76cbe9-69fc-4983-8518-b963a2cc22a0",
+      "name": "Main to Techno",
+      "nodes": [
+        {
+          "lat": 14.40220602260156,
+          "lng": 120.8661049604416
+        },
+        {
+          "lat": 14.402195630934111,
+          "lng": 120.86606472730638
+        },
+        {
+          "lat": 14.402172249680586,
+          "lng": 120.86604058742525
+        },
+        {
+          "lat": 14.402117693412809,
+          "lng": 120.86607277393342
+        },
+        {
+          "lat": 14.402068332968572,
+          "lng": 120.86609154939653
+        },
+        {
+          "lat": 14.402034560026747,
+          "lng": 120.86607545614244
+        },
+        {
+          "lat": 14.402013776675387,
+          "lng": 120.86604595184328
+        }
+      ]
+    },
+    {
+      "id": "39a727f1-d275-4f40-8382-5dec17253c72",
+      "name": "Main to Libra",
+      "nodes": [
+        {
+          "lat": 14.403954413758594,
+          "lng": 120.86573749780656
+        },
+        {
+          "lat": 14.403951815862142,
+          "lng": 120.86568653583528
+        },
+        {
+          "lat": 14.403931032689389,
+          "lng": 120.86564630270006
+        },
+        {
+          "lat": 14.40390505372073,
+          "lng": 120.86560875177386
+        },
+        {
+          "lat": 14.403884270543614,
+          "lng": 120.86556851863863
+        },
+        {
+          "lat": 14.4038764768517,
+          "lng": 120.86552292108537
+        },
+        {
+          "lat": 14.403884270543614,
+          "lng": 120.86547464132312
+        },
+        {
+          "lat": 14.403970001136711,
+          "lng": 120.86546927690507
+        },
+        {
+          "lat": 14.403951815862142,
+          "lng": 120.86542367935182
+        },
+        {
+          "lat": 14.403938826379395,
+          "lng": 120.86536198854448
+        }
+      ]
+    },
+    {
+      "id": "4d51a3e0-5336-4881-b985-47a934a121da",
+      "name": "Side CC1",
+      "nodes": [
+        {
+          "lat": 14.40377775673054,
+          "lng": 120.86613178253174
+        },
+        {
+          "lat": 14.403730994552628,
+          "lng": 120.86613178253174
+        },
+        {
+          "lat": 14.40365565546762,
+          "lng": 120.86613982915881
+        },
+        {
+          "lat": 14.403595903761405,
+          "lng": 120.86615592241289
+        },
+        {
+          "lat": 14.403520564630776,
+          "lng": 120.86616665124895
+        },
+        {
+          "lat": 14.403458214986188,
+          "lng": 120.86618274450305
+        },
+        {
+          "lat": 14.40338547371214,
+          "lng": 120.86619615554811
+        },
+        {
+          "lat": 14.403328319837316,
+          "lng": 120.86620151996614
+        },
+        {
+          "lat": 14.403291949182073,
+          "lng": 120.86616396903993
+        },
+        {
+          "lat": 14.403278959660907,
+          "lng": 120.86608886718751
+        },
+        {
+          "lat": 14.403265970138989,
+          "lng": 120.86601912975313
+        },
+        {
+          "lat": 14.403260774330002,
+          "lng": 120.86595207452777
+        },
+        {
+          "lat": 14.403239991092876,
+          "lng": 120.8659064769745
+        },
+        {
+          "lat": 14.403229599473594,
+          "lng": 120.8658689260483
+        }
+      ]
+    },
+    {
+      "id": "bf0dce05-766c-4c9f-8e63-775eb291cf55",
+      "name": "Back CC1",
+      "nodes": [
+        {
+          "lat": 14.40347380239896,
+          "lng": 120.86600303649904
+        },
+        {
+          "lat": 14.403424442254751,
+          "lng": 120.86601108312608
+        },
+        {
+          "lat": 14.403367288389914,
+          "lng": 120.86602717638019
+        },
+        {
+          "lat": 14.403312732414365,
+          "lng": 120.86603522300722
+        }
+      ]
+    },
+    {
+      "id": "3d973646-9ba8-42f0-8abc-c9f8312e37e0",
+      "name": "Main to DTE Lounge Right",
+      "nodes": [
+        {
+          "lat": 14.403610192214348,
+          "lng": 120.86575359106067
+        },
+        {
+          "lat": 14.403610192214348,
+          "lng": 120.86566776037218
+        },
+        {
+          "lat": 14.403592006910454,
+          "lng": 120.86559265851976
+        },
+        {
+          "lat": 14.40356862580325,
+          "lng": 120.86551487445833
+        },
+        {
+          "lat": 14.40355044049597,
+          "lng": 120.86543440818787
+        },
+        {
+          "lat": 14.403529657285828,
+          "lng": 120.86535394191743
+        },
+        {
+          "lat": 14.403511471975357,
+          "lng": 120.86528956890108
+        },
+        {
+          "lat": 14.403430937011187,
+          "lng": 120.86532175540925
+        },
+        {
+          "lat": 14.403386772663662,
+          "lng": 120.86532175540925
+        },
+        {
+          "lat": 14.403365989438266,
+          "lng": 120.86526542901996
+        },
+        {
+          "lat": 14.403355597824849,
+          "lng": 120.86522519588472
+        }
+      ]
+    },
+    {
+      "id": "ef484603-bdd7-4533-b608-0db8ad176e92",
+      "name": "Main to DTE Lounge Left",
+      "nodes": [
+        {
+          "lat": 14.40329584603828,
+          "lng": 120.86583942174914
+        },
+        {
+          "lat": 14.403280258613052,
+          "lng": 120.86575627326967
+        },
+        {
+          "lat": 14.403254279568618,
+          "lng": 120.86567848920824
+        },
+        {
+          "lat": 14.403249083759352,
+          "lng": 120.86559534072877
+        },
+        {
+          "lat": 14.403215310996275,
+          "lng": 120.86553364992143
+        },
+        {
+          "lat": 14.403202321470642,
+          "lng": 120.86545854806901
+        },
+        {
+          "lat": 14.40318673403889,
+          "lng": 120.86539417505266
+        },
+        {
+          "lat": 14.403280258613052,
+          "lng": 120.86538076400758
+        },
+        {
+          "lat": 14.40336858734155,
+          "lng": 120.86535394191743
+        },
+        {
+          "lat": 14.403373783148016,
+          "lng": 120.86528420448305
+        },
+        {
+          "lat": 14.403332216692872,
+          "lng": 120.86524128913881
+        }
+      ]
+    }
+  ],
+  "drivepaths": [
+    {
+      "id": "c58c6fdd-3fa0-4c15-8edc-9c92052234ef",
+      "name": "Campus Main Road",
+      "nodes": [
+        {
+          "lat": 14.404298634771724,
+          "lng": 120.8657616376877
+        },
+        {
+          "lat": 14.40422069798508,
+          "lng": 120.86577504873279
+        },
+        {
+          "lat": 14.4042258937717,
+          "lng": 120.8658689260483
+        },
+        {
+          "lat": 14.404215502198333,
+          "lng": 120.86598962545396
+        },
+        {
+          "lat": 14.404129771699571,
+          "lng": 120.86607277393342
+        },
+        {
+          "lat": 14.404036247481542,
+          "lng": 120.8661049604416
+        },
+        {
+          "lat": 14.403929733741023,
+          "lng": 120.86613446474077
+        },
+        {
+          "lat": 14.40383880733693,
+          "lng": 120.86616933345796
+        },
+        {
+          "lat": 14.403708912409666,
+          "lng": 120.86618810892107
+        },
+        {
+          "lat": 14.403602398512867,
+          "lng": 120.86620151996614
+        },
+        {
+          "lat": 14.403459513937289,
+          "lng": 120.86623638868333
+        },
+        {
+          "lat": 14.403342608307383,
+          "lng": 120.86626052856447
+        },
+        {
+          "lat": 14.40323869214049,
+          "lng": 120.8662632107735
+        },
+        {
+          "lat": 14.4031945277549,
+          "lng": 120.86620956659318
+        },
+        {
+          "lat": 14.403080219892786,
+          "lng": 120.86609423160554
+        },
+        {
+          "lat": 14.403010076402943,
+          "lng": 120.8660513162613
+        },
+        {
+          "lat": 14.402900964263798,
+          "lng": 120.86608886718751
+        },
+        {
+          "lat": 14.402807439530635,
+          "lng": 120.86616128683093
+        },
+        {
+          "lat": 14.402737295955044,
+          "lng": 120.86620956659318
+        },
+        {
+          "lat": 14.402599606649908,
+          "lng": 120.86609959602357
+        },
+        {
+          "lat": 14.402485298482995,
+          "lng": 120.86604326963426
+        },
+        {
+          "lat": 14.402404763148406,
+          "lng": 120.86602717638019
+        },
+        {
+          "lat": 14.402243692392018,
+          "lng": 120.86611568927766
+        },
+        {
+          "lat": 14.400883679030919,
+          "lng": 120.8668050169945
+        }
+      ]
+    },
+    {
+      "id": "dfc9c71a-04fe-4901-87ae-1ff6d6ce0259",
+      "name": "T-Section to End",
+      "nodes": [
+        {
+          "lat": 14.40273599699973,
+          "lng": 120.86621493101121
+        },
+        {
+          "lat": 14.402528164052454,
+          "lng": 120.86638122797015
+        },
+        {
+          "lat": 14.402489195353283,
+          "lng": 120.86645364761354
+        },
+        {
+          "lat": 14.402496989093658,
+          "lng": 120.86655020713808
+        },
+        {
+          "lat": 14.402613895166652,
+          "lng": 120.86702764034273
+        }
+      ]
+    },
+    {
+      "id": "3822eaf6-6db5-4b69-b86a-c8f044662c9e",
+      "name": "Techno to DCS",
+      "nodes": [
+        {
+          "lat": 14.40224758926653,
+          "lng": 120.86611300706865
+        },
+        {
+          "lat": 14.402159260094217,
+          "lng": 120.86569994688035
+        }
+      ]
+    },
+    {
+      "id": "b3435a4e-9501-479b-ab3f-c775535ac00e",
+      "name": "CvSU Circle",
+      "nodes": [
+        {
+          "lat": 14.404216801145033,
+          "lng": 120.86577504873279
+        },
+        {
+          "lat": 14.404123276963478,
+          "lng": 120.86577773094177
+        },
+        {
+          "lat": 14.404027154847139,
+          "lng": 120.86577504873279
+        },
+        {
+          "lat": 14.403959609551423,
+          "lng": 120.86580187082292
+        },
+        {
+          "lat": 14.403931032689389,
+          "lng": 120.8658689260483
+        },
+        {
+          "lat": 14.403938826379395,
+          "lng": 120.86594402790071
+        },
+        {
+          "lat": 14.404032350638275,
+          "lng": 120.86594671010972
+        },
+        {
+          "lat": 14.404125874857945,
+          "lng": 120.86590379476549
+        },
+        {
+          "lat": 14.404232388504804,
+          "lng": 120.86586356163026
+        }
+      ]
+    }
+  ],
+  "admins": [
+    {
+      "id": "cc0e8400-e29b-41d4-a716-446655440001",
+      "username": "admin",
+      "password": "admin123"
+    }
+  ]
+}
