@@ -178,27 +178,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const feedbacks = await storage.getFeedbacks();
       
       // Format data for Excel
-      const excelData = feedbacks.map((f) => ({
-        'Timestamp': new Date(f.timestamp).toLocaleString('en-US', {
-          year: '2-digit',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }),
-        'User #': f.userId,
-        'Functional Suitability': f.avgFunctionalSuitability.toFixed(2),
-        'Performance Efficiency': f.avgPerformanceEfficiency.toFixed(2),
-        'Compatibility': f.avgCompatibility.toFixed(2),
-        'Usability': f.avgUsability.toFixed(2),
-        'Reliability': f.avgReliability.toFixed(2),
-        'Security': f.avgSecurity.toFixed(2),
-        'Maintainability': f.avgMaintainability.toFixed(2),
-        'Portability': f.avgPortability.toFixed(2),
-        'UX Items': f.avgUxItems.toFixed(2),
-        'Comments': f.comments || ''
-      }));
+      const excelData = feedbacks.map((f) => {
+        // Parse timestamp - handle both Date objects and strings
+        let timestampDate: Date;
+        if (f.timestamp instanceof Date) {
+          timestampDate = f.timestamp;
+        } else if (typeof f.timestamp === 'string') {
+          timestampDate = new Date(f.timestamp);
+        } else {
+          timestampDate = new Date();
+        }
+        
+        // Ensure we have a valid date
+        if (isNaN(timestampDate.getTime())) {
+          timestampDate = new Date();
+        }
+        
+        return {
+          'Timestamp': timestampDate.toLocaleString('en-US', {
+            year: '2-digit',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          }),
+          'User #': f.userId,
+          'Functional Suitability': f.avgFunctionalSuitability.toFixed(2),
+          'Performance Efficiency': f.avgPerformanceEfficiency.toFixed(2),
+          'Compatibility': f.avgCompatibility.toFixed(2),
+          'Usability': f.avgUsability.toFixed(2),
+          'Reliability': f.avgReliability.toFixed(2),
+          'Security': f.avgSecurity.toFixed(2),
+          'Maintainability': f.avgMaintainability.toFixed(2),
+          'Portability': f.avgPortability.toFixed(2),
+          'UX Items': f.avgUxItems.toFixed(2),
+          'Comments': f.comments || ''
+        };
+      });
 
       // Create workbook and worksheet
       const worksheet = XLSX.utils.json_to_sheet(excelData);
