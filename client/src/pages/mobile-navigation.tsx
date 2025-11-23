@@ -91,6 +91,16 @@ export default function MobileNavigation() {
       }
 
       try {
+        // Ensure map container has computed dimensions
+        const rect = mapRef.current.getBoundingClientRect();
+        console.log("Map container dimensions:", { width: rect.width, height: rect.height });
+
+        if (rect.width === 0 || rect.height === 0) {
+          console.warn("Map container has zero dimensions, retrying in 100ms...");
+          setTimeout(initMap, 100);
+          return;
+        }
+
         console.log("Initializing Leaflet map with container:", mapRef.current);
         const map = L.map(mapRef.current, {
           center: [14.4035451, 120.8659794],
@@ -107,12 +117,20 @@ export default function MobileNavigation() {
 
         mapInstanceRef.current = map;
         console.log("Map initialized successfully with instance:", map);
+
+        // Invalidate map size after a short delay to ensure proper rendering
+        setTimeout(() => {
+          map.invalidateSize();
+          console.log("Map size invalidated");
+        }, 100);
       } catch (error) {
         console.error("Error initializing map:", error);
       }
     };
 
-    initMap();
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(initMap, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   // Draw route on map when it updates
@@ -212,11 +230,12 @@ export default function MobileNavigation() {
           <p className="text-muted-foreground mb-4">
             This route may have expired or doesn't exist.
           </p>
-          <Link href="/">
-            <Button className="w-full">
-              Return to Kiosk
-            </Button>
-          </Link>
+          <Button 
+            className="w-full"
+            onClick={() => navigate('/')}
+          >
+            Return to Kiosk
+          </Button>
         </Card>
       </div>
     );
@@ -254,19 +273,24 @@ export default function MobileNavigation() {
       </header>
 
       {/* Main Layout: Map + Navigation Panel */}
-      <main className="flex-1 flex overflow-hidden w-full h-full">
+      <main className="flex-1 flex w-full h-full">
         {/* Map Area - Leaflet Interactive Map */}
         <div
           ref={mapRef}
-          className="flex-1 bg-muted z-0 h-full"
-          style={{ minHeight: '100%', minWidth: '100%' }}
+          id="map"
+          className="flex-1 z-0 relative"
           data-testid="map-container"
+          style={{
+            width: '100%',
+            height: '100%',
+            position: 'relative',
+          }}
         />
 
         {/* Navigation Panel - Slides in/out */}
         <div
-          className={`flex flex-col border-l border-card-border bg-card transition-all duration-300 flex-shrink-0 z-10 ${
-            showNavPanel ? 'w-80' : 'w-0 overflow-hidden'
+          className={`flex flex-col border-l border-card-border bg-card transition-all duration-300 flex-shrink-0 z-10 overflow-hidden ${
+            showNavPanel ? 'w-80' : 'w-0'
           }`}
         >
           {/* Progress Indicator */}
