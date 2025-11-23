@@ -72,19 +72,26 @@ export default function MobileNavigation() {
 
   // Initialize Leaflet map
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current) {
+      console.warn("Map ref not ready");
+      return;
+    }
 
     const initMap = () => {
       const L = window.L;
       if (!L) {
-        console.warn("Leaflet not loaded, retrying...");
-        setTimeout(initMap, 100);
+        console.warn("Leaflet not loaded, retrying in 200ms...");
+        setTimeout(initMap, 200);
         return;
       }
 
-      if (mapInstanceRef.current) return;
+      if (mapInstanceRef.current) {
+        console.log("Map already initialized");
+        return;
+      }
 
       try {
+        console.log("Initializing Leaflet map with container:", mapRef.current);
         const map = L.map(mapRef.current, {
           center: [14.4035451, 120.8659794],
           zoom: 17,
@@ -99,7 +106,7 @@ export default function MobileNavigation() {
         }).addTo(map);
 
         mapInstanceRef.current = map;
-        console.log("Map initialized successfully");
+        console.log("Map initialized successfully with instance:", map);
       } catch (error) {
         console.error("Error initializing map:", error);
       }
@@ -247,11 +254,12 @@ export default function MobileNavigation() {
       </header>
 
       {/* Main Layout: Map + Navigation Panel */}
-      <main className="flex-1 flex overflow-hidden w-full">
+      <main className="flex-1 flex overflow-hidden w-full h-full">
         {/* Map Area - Leaflet Interactive Map */}
         <div
           ref={mapRef}
-          className="flex-1 bg-muted z-0"
+          className="flex-1 bg-muted z-0 h-full"
+          style={{ minHeight: '100%', minWidth: '100%' }}
           data-testid="map-container"
         />
 
