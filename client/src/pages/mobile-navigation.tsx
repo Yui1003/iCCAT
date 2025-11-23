@@ -71,40 +71,7 @@ export default function MobileNavigation() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading route...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !route) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background p-4">
-        <Card className="p-6 max-w-md w-full text-center">
-          <MapPin className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-xl font-semibold text-foreground mb-2">Route Not Found</h2>
-          <p className="text-muted-foreground mb-4">
-            This route may have expired or doesn't exist.
-          </p>
-          <Link href="/">
-            <Button className="w-full">
-              Return to Kiosk
-            </Button>
-          </Link>
-        </Card>
-      </div>
-    );
-  }
-
-  const currentPhase = route.phases[currentPhaseIndex];
-  const phaseColor = PHASE_COLORS[currentPhaseIndex % PHASE_COLORS.length];
-
-  // Initialize map
+  // Initialize map - keep this unconditional
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
@@ -175,6 +142,41 @@ export default function MobileNavigation() {
       }
     });
   }, [route, currentPhaseIndex, completedPhases]);
+
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading route...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle error state
+  if (error || !route) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background p-4">
+        <Card className="p-6 max-w-md w-full text-center">
+          <MapPin className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">Route Not Found</h2>
+          <p className="text-muted-foreground mb-4">
+            This route may have expired or doesn't exist.
+          </p>
+          <Link href="/">
+            <Button className="w-full">
+              Return to Kiosk
+            </Button>
+          </Link>
+        </Card>
+      </div>
+    );
+  }
+
+  const currentPhase = route.phases[currentPhaseIndex];
+  const phaseColor = PHASE_COLORS[currentPhaseIndex % PHASE_COLORS.length];
 
   return (
     <div className="h-screen flex flex-col bg-background">
