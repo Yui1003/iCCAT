@@ -72,12 +72,14 @@ export default function MobileNavigation() {
 
   // Initialize Leaflet map on mount (not dependent on route)
   useEffect(() => {
-    if (!mapRef.current) {
-      console.warn("Map ref not ready on mount");
-      return;
-    }
-
     const initMap = () => {
+      // Check if ref is ready
+      if (!mapRef.current) {
+        console.warn("Map ref not ready, retrying in 100ms...");
+        setTimeout(initMap, 100);
+        return;
+      }
+
       const L = window.L;
       if (!L) {
         console.warn("Leaflet not loaded, retrying in 200ms...");
@@ -92,7 +94,7 @@ export default function MobileNavigation() {
 
       try {
         // Ensure map container has computed dimensions
-        const rect = mapRef.current!.getBoundingClientRect();
+        const rect = mapRef.current.getBoundingClientRect();
         console.log("Map container dimensions:", { width: rect.width, height: rect.height });
 
         if (rect.width === 0 || rect.height === 0) {
@@ -128,7 +130,7 @@ export default function MobileNavigation() {
       }
     };
 
-    // Small delay to ensure DOM is ready
+    // Start initialization with a small delay to ensure DOM is ready
     const timer = setTimeout(initMap, 100);
     return () => clearTimeout(timer);
   }, []);
