@@ -189,8 +189,8 @@ export default function MobileNavigation() {
 
       {/* Main Layout: Map + Navigation Panel */}
       <main className="flex-1 flex overflow-hidden w-full">
-        {/* Map Area - Static Image */}
-        <div className="flex-1 bg-muted z-0 flex items-center justify-center overflow-hidden">
+        {/* Map Area - Show Route Summary as Fallback */}
+        <div className="flex-1 bg-muted z-0 flex items-center justify-center overflow-auto p-4">
           {mapImageUrl ? (
             <img
               src={mapImageUrl}
@@ -203,9 +203,45 @@ export default function MobileNavigation() {
               }}
             />
           ) : (
-            <div className="flex flex-col items-center justify-center text-muted-foreground p-4">
-              <MapPin className="w-12 h-12 mb-2 opacity-50" />
-              <p className="text-sm">Loading route map...</p>
+            <div className="w-full max-w-sm space-y-4">
+              <div className="text-center">
+                <h2 className="text-lg font-bold mb-2">Route Summary</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Tap the menu icon to view detailed directions
+                </p>
+              </div>
+              
+              {route && route.phases.map((phase, idx) => (
+                <Card key={idx} className="p-3">
+                  <div className="flex items-start gap-3">
+                    <div 
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                      style={{ backgroundColor: PHASE_COLORS[idx % PHASE_COLORS.length] }}
+                    >
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{phase.startName || 'Start'}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Distance: {phase.distance}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Mode: {phase.mode}
+                      </p>
+                      {phase.steps && phase.steps.length > 0 && (
+                        <div className="mt-2 text-xs space-y-1 bg-muted p-2 rounded">
+                          {phase.steps.slice(0, 2).map((step, stepIdx) => (
+                            <p key={stepIdx} className="line-clamp-2">{step.instruction}</p>
+                          ))}
+                          {phase.steps.length > 2 && (
+                            <p className="text-muted-foreground">+{phase.steps.length - 2} more steps</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
             </div>
           )}
         </div>
