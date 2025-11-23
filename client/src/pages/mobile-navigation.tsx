@@ -135,7 +135,12 @@ export default function MobileNavigation() {
 
   // Draw route on map when it updates
   useEffect(() => {
-    if (!mapInstanceRef.current || !route || !window.L) return;
+    console.log("Route drawing effect triggered", { mapReady: !!mapInstanceRef.current, routeExists: !!route, leafletExists: !!window.L });
+    
+    if (!mapInstanceRef.current || !route || !window.L) {
+      console.warn("Skipping route drawing: map not ready or route missing");
+      return;
+    }
 
     const L = window.L;
     const map = mapInstanceRef.current;
@@ -148,9 +153,11 @@ export default function MobileNavigation() {
     });
 
     console.log("Drawing route with", route.phases.length, "phases");
+    console.log("Full route data:", JSON.stringify(route, null, 2).substring(0, 500));
 
     // Collect all coordinates to calculate bounds
     let allCoordinates: Array<{ lat: number; lng: number }> = [];
+    let phasesWithPolylines = 0;
 
     // Draw each phase
     route.phases.forEach((phase: RoutePhase, index: number) => {
@@ -158,7 +165,10 @@ export default function MobileNavigation() {
       const isCompleted = completedPhases.includes(index);
       const isCurrent = index === currentPhaseIndex;
 
+      console.log(`Phase ${index} check:`, { hasPolyline: !!phase.polyline, isArray: Array.isArray(phase.polyline), length: phase.polyline?.length || 0 });
+
       if (phase.polyline && Array.isArray(phase.polyline) && phase.polyline.length > 0) {
+        phasesWithPolylines++;
         allCoordinates.push(...phase.polyline);
 
         // Draw polyline for this phase
@@ -175,8 +185,12 @@ export default function MobileNavigation() {
         ).addTo(map);
 
         console.log(`Phase ${index}: ${phase.polyline.length} coordinates, color: ${color}, current: ${isCurrent}`);
+      } else {
+        console.warn(`Phase ${index} has no polyline data!`);
       }
     });
+
+    console.log(`Total phases with polylines: ${phasesWithPolylines}/${route.phases.length}`);
 
     // Add markers for start and end
     if (allCoordinates.length > 0) {
@@ -205,6 +219,8 @@ export default function MobileNavigation() {
       const bounds = L.latLngBounds(allCoordinates.map(c => [c.lat, c.lng]));
       map.fitBounds(bounds, { padding: [50, 50], animate: true });
       console.log("Map fitted to route bounds");
+    } else {
+      console.error("No coordinates found in any phase!");
     }
   }, [route, currentPhaseIndex, completedPhases]);
 
