@@ -72,36 +72,55 @@ export default function MobileNavigation() {
 
   // Initialize Leaflet map
   useEffect(() => {
+    console.log("useEffect running: mapRef.current exists?", !!mapRef.current);
+    console.log("window.L exists?", !!window.L);
+    
     if (!mapRef.current) {
-      console.warn("Map ref not ready");
+      console.warn("❌ Map ref not ready, DOM not rendered yet");
       return;
     }
 
+    console.log("✅ Map ref is ready, starting init sequence");
+
     const initMap = () => {
+      console.log("[initMap called]");
+      
       const L = window.L;
+      console.log("Leaflet loaded?", !!L);
+      
       if (!L) {
-        console.warn("Leaflet not loaded, retrying in 200ms...");
-        setTimeout(initMap, 200);
+        console.warn("❌ Leaflet not loaded, retrying in 500ms...");
+        setTimeout(initMap, 500);
         return;
       }
 
       if (mapInstanceRef.current) {
-        console.log("Map already initialized");
+        console.log("✅ Map already initialized, skipping");
         return;
       }
 
       try {
-        // Ensure map container has computed dimensions
+        console.log("📍 Map container DOM element:", mapRef.current);
+        console.log("📍 Map container innerHTML:", mapRef.current?.innerHTML);
+        console.log("📍 Map container className:", mapRef.current?.className);
+        console.log("📍 Map container style:", mapRef.current?.style.cssText);
+        
         const rect = mapRef.current.getBoundingClientRect();
-        console.log("Map container dimensions:", { width: rect.width, height: rect.height });
+        console.log("📐 Map container dimensions:", { 
+          width: rect.width, 
+          height: rect.height,
+          top: rect.top,
+          left: rect.left,
+        });
 
         if (rect.width === 0 || rect.height === 0) {
-          console.warn("Map container has zero dimensions, retrying in 100ms...");
-          setTimeout(initMap, 100);
+          console.warn("❌ Map container has ZERO dimensions! Width:", rect.width, "Height:", rect.height);
+          console.warn("Retrying in 200ms...");
+          setTimeout(initMap, 200);
           return;
         }
 
-        console.log("Initializing Leaflet map with container:", mapRef.current);
+        console.log("✅ Container has proper dimensions, creating Leaflet map...");
         const map = L.map(mapRef.current, {
           center: [14.4035451, 120.8659794],
           zoom: 17,
@@ -109,28 +128,36 @@ export default function MobileNavigation() {
           touchZoom: true,
           dragging: true,
         });
+        console.log("✅ Leaflet map created:", map);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',
           maxZoom: 19,
         }).addTo(map);
+        console.log("✅ Tile layer added");
 
         mapInstanceRef.current = map;
-        console.log("Map initialized successfully with instance:", map);
+        console.log("✅✅✅ MAP INITIALIZED SUCCESSFULLY ✅✅✅");
 
-        // Invalidate map size after a short delay to ensure proper rendering
         setTimeout(() => {
-          map.invalidateSize();
-          console.log("Map size invalidated");
-        }, 100);
+          if (map) {
+            map.invalidateSize();
+            console.log("✅ Map size invalidated, map should be visible now");
+          }
+        }, 200);
       } catch (error) {
-        console.error("Error initializing map:", error);
+        console.error("❌❌❌ ERROR INITIALIZING MAP:", error);
+        console.error("Error stack:", error instanceof Error ? error.stack : "no stack");
       }
     };
 
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(initMap, 100);
-    return () => clearTimeout(timer);
+    // Try immediately, then with delays
+    console.log("Starting map initialization in 50ms");
+    const timer = setTimeout(initMap, 50);
+    return () => {
+      console.log("Cleanup: clearing initMap timeout");
+      clearTimeout(timer);
+    };
   }, []);
 
   // Draw route on map when it updates
