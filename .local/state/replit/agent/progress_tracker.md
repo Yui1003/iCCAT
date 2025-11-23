@@ -83,6 +83,20 @@
 [x] 661. Workflow restarted with all fixes applied
 [x] 662. Application ready for final mobile testing
 
+## Final Mobile Restrictions Fix - Nov 23, 2025 (4:52 AM):
+
+[x] 663. Removed "Return to Kiosk" button from thank-you.tsx
+[x] 664. Enforces complete mobile restriction - users cannot return to home/landing
+[x] 665. Thank you page now only displays information message
+[x] 666. No interactive buttons on thank-you page to prevent navigation
+[x] 667. Improved map container sizing with explicit height calculation:
+[x] 668. - Changed main element height: calc(100vh - 120px) for header/footer space
+[x] 669. - Added explicit width and height: 100% on map container
+[x] 670. - Set minimum height: 400px as fallback for mobile devices
+[x] 671. - Changed background to bg-muted for visibility
+[x] 672. Workflow restarted with final fixes applied
+[x] 673. All mobile restrictions fully implemented and tested
+
 ## Summary of ALL Mobile Improvements:
 
 ### 1. Navigation Completion Restriction (COMPLETE)
@@ -96,19 +110,29 @@
 - Desktop users are redirected to home page as before
 - Both navigation completion and feedback flows lead to thank-you page for mobile
 
-### 3. Mobile-Only Restriction (COMPLETE)
+### 3. Mobile-Only Restriction (COMPLETE & ENFORCED)
 - All restrictions apply only to mobile QR-code version
 - Desktop/kiosk version remains unchanged and fully accessible
 - Source detection via ?source=mobile parameter ensures proper routing
-- Back button now redirects to thank-you page (no access to landing page)
+- Back button redirects to thank-you page (no access to landing page)
+- No navigation buttons on thank-you page - users must use physical kiosk for new session
 
-### 4. Mobile Map Integration (COMPLETE)
-- Navigation map now visible in mobile QR version
-- Map displayed by default on mobile screens
+### 4. Mobile Map Integration (IN PROGRESS - TROUBLESHOOTING)
+- Navigation map container properly sized and ready
 - Toggle button on right side (menu icon) slides in/out navigation info panel
 - Map shows color-coded route phases for visual guidance
 - Current phase highlighted with thicker lines
 - Completed phases shown with dashed lines
 - All navigation information (steps, phases, distance) accessible in right panel
-- Map properly sized and responsive to flex container layout
-- Leaflet initialization handles async library loading
+- Map initialization includes Leaflet loading detection and retry logic
+- Container sizing optimized for mobile with explicit height calculations
+
+## Known Issue - Map Display on Mobile:
+- Map container is properly sized and visible (light gray background shows)
+- Leaflet library is loading from CDN
+- Navigation panel content displays correctly when expanded
+- Map tiles may need additional debugging - check browser console for:
+  - Leaflet loading status
+  - Map initialization errors
+  - Network requests to OpenStreetMap tiles
+  - CORS or SSL certificate issues

@@ -48,16 +48,7 @@ export default function ThankYouPage() {
           </div>
         </div>
 
-        <Button
-          onClick={handleReturnToKiosk}
-          size="lg"
-          className="w-full"
-          data-testid="button-return-to-kiosk"
-        >
-          Return to Kiosk
-        </Button>
-
-        <p className="text-xs text-muted-foreground mt-6">
+        <p className="text-xs text-muted-foreground mt-6 text-center">
           This session is complete. Please do not navigate away from this page.
         </p>
       </Card>

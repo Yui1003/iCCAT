@@ -220,12 +220,16 @@ export default function MobileNavigation() {
       </header>
 
       {/* Main Layout: Map + Navigation Panel */}
-      <main className="flex-1 flex overflow-hidden w-full min-h-0">
+      <main className="flex-1 flex overflow-hidden w-full" style={{ height: 'calc(100vh - 120px)' }}>
         {/* Map Area */}
         <div
           ref={mapRef}
-          className="flex-1 h-full min-h-0 w-full bg-muted-foreground/10 z-0"
-          style={{ minHeight: 0 }}
+          className="flex-1 bg-muted z-0"
+          style={{ 
+            height: '100%',
+            width: '100%',
+            minHeight: '400px'
+          }}
           data-testid="map-container"
         />
 
