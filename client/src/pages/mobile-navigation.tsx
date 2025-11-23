@@ -72,17 +72,36 @@ export default function MobileNavigation() {
 
   // Initialize Leaflet map
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!mapRef.current) {
+      console.warn("Map ref not ready");
+      return;
+    }
 
     const initMap = () => {
       const L = window.L;
       if (!L) {
-        console.warn("Leaflet not loaded yet, retrying...");
-        setTimeout(initMap, 100);
+        console.warn("Leaflet not loaded, retrying in 200ms...");
+        setTimeout(initMap, 200);
+        return;
+      }
+
+      if (mapInstanceRef.current) {
+        console.log("Map already initialized");
         return;
       }
 
       try {
+        // Ensure map container has computed dimensions
+        const rect = mapRef.current.getBoundingClientRect();
+        console.log("Map container dimensions:", { width: rect.width, height: rect.height });
+
+        if (rect.width === 0 || rect.height === 0) {
+          console.warn("Map container has zero dimensions, retrying in 100ms...");
+          setTimeout(initMap, 100);
+          return;
+        }
+
+        console.log("Initializing Leaflet map with container:", mapRef.current);
         const map = L.map(mapRef.current, {
           center: [14.4035451, 120.8659794],
           zoom: 17,
@@ -97,17 +116,19 @@ export default function MobileNavigation() {
         }).addTo(map);
 
         mapInstanceRef.current = map;
-        console.log("✅ Map initialized successfully");
+        console.log("Map initialized successfully with instance:", map);
 
-        // Ensure map is properly sized
+        // Invalidate map size after a short delay to ensure proper rendering
         setTimeout(() => {
           map.invalidateSize();
+          console.log("Map size invalidated");
         }, 100);
       } catch (error) {
         console.error("Error initializing map:", error);
       }
     };
 
+    // Small delay to ensure DOM is ready
     const timer = setTimeout(initMap, 100);
     return () => clearTimeout(timer);
   }, []);
@@ -224,8 +245,8 @@ export default function MobileNavigation() {
   const phaseColor = PHASE_COLORS[currentPhaseIndex % PHASE_COLORS.length];
 
   return (
-    <div className="h-screen flex flex-col bg-background" data-testid="mobile-navigation-page">
-      {/* Header */}
+    <div className="h-screen flex flex-col bg-background">
+      {/* Header with Map Toggle */}
       <header className="bg-card border-b border-card-border p-4 flex-shrink-0 flex items-center gap-4">
         <Button 
           variant="ghost" 
@@ -252,13 +273,18 @@ export default function MobileNavigation() {
       </header>
 
       {/* Main Layout: Map + Navigation Panel */}
-      <main className="flex-1 flex overflow-hidden w-full">
+      <main className="flex-1 flex w-full h-full">
         {/* Map Area - Leaflet Interactive Map */}
         <div
           ref={mapRef}
           id="map"
-          className="flex-1 z-0"
+          className="flex-1 z-0 relative"
           data-testid="map-container"
+          style={{
+            width: '100%',
+            height: '100%',
+            position: 'relative',
+          }}
         />
 
         {/* Navigation Panel - Slides in/out */}
