@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Check, MapPin, Navigation as NavigationIcon, Menu, X } from "lucide-react";
@@ -10,12 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import type { SavedRoute, Building, RoutePhase, RouteStep } from "@shared/schema";
 import { PHASE_COLORS } from "@shared/phase-colors";
 
-declare global {
-  interface Window {
-    L: any;
-  }
-}
-
 export default function MobileNavigation() {
   const [, params] = useRoute("/navigate/:routeId");
   const [, navigate] = useLocation();
@@ -24,8 +18,7 @@ export default function MobileNavigation() {
   const [completedPhases, setCompletedPhases] = useState<number[]>([]);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showNavPanel, setShowNavPanel] = useState(true);
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
+  const [mapImageUrl, setMapImageUrl] = useState<string | null>(null);
 
   const { data: route, isLoading, error } = useQuery<SavedRoute>({
     queryKey: ['/api/routes', params?.routeId],
@@ -70,117 +63,66 @@ export default function MobileNavigation() {
     }
   };
 
-  // Initialize Leaflet map
+  // Generate static map image URL from route
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!route || route.phases.length === 0) return;
 
-    const initMap = () => {
-      const L = window.L;
-      if (!L) {
-        console.warn("Leaflet not loaded, retrying...");
-        setTimeout(initMap, 100);
+    try {
+      // Collect all polyline coordinates from all phases
+      const allCoordinates: Array<{ lat: number; lng: number }> = [];
+      route.phases.forEach((phase: RoutePhase) => {
+        if (phase.polyline && Array.isArray(phase.polyline)) {
+          allCoordinates.push(...phase.polyline);
+        }
+      });
+
+      if (allCoordinates.length === 0) {
+        console.warn("No polyline coordinates found in route phases");
         return;
       }
 
-      if (mapInstanceRef.current) return;
+      console.log("Found", allCoordinates.length, "coordinates in route");
 
-      try {
-        const map = L.map(mapRef.current, {
-          center: [14.4035451, 120.8659794],
-          zoom: 17,
-          zoomControl: true,
-          touchZoom: true,
-          dragging: true,
-        });
+      // Calculate bounds
+      const lats = allCoordinates.map(c => c.lat);
+      const lngs = allCoordinates.map(c => c.lng);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors',
-          maxZoom: 19,
-        }).addTo(map);
+      // Center coordinates
+      const centerLat = (minLat + maxLat) / 2;
+      const centerLng = (minLng + maxLng) / 2;
 
-        mapInstanceRef.current = map;
-        console.log("Map initialized successfully");
-      } catch (error) {
-        console.error("Error initializing map:", error);
-      }
-    };
+      console.log("Map bounds:", { minLat, maxLat, minLng, maxLng, centerLat, centerLng });
 
-    initMap();
-  }, []);
+      // Build marker points (start and end)
+      const markers = [
+        { lat: allCoordinates[0].lat, lng: allCoordinates[0].lng, label: "A" },
+        { lat: allCoordinates[allCoordinates.length - 1].lat, lng: allCoordinates[allCoordinates.length - 1].lng, label: "B" },
+      ];
 
-  // Draw route on map when it updates
-  useEffect(() => {
-    if (!mapInstanceRef.current || !route || !window.L) return;
+      // Build static map URL using OpenStreetMap service
+      const mapWidth = 512;
+      const mapHeight = 384;
+      const zoom = 17;
 
-    const L = window.L;
-    const map = mapInstanceRef.current;
+      // Create markers parameter
+      const markerStrings = markers.map(
+        (m, idx) => `${m.lat},${m.lng},${idx === 0 ? "lightgreen" : "lightred"}`
+      ).join("|");
 
-    // Clear existing polylines and markers
-    map.eachLayer((layer: any) => {
-      if (layer instanceof L.Polyline || layer instanceof L.Marker) {
-        map.removeLayer(layer);
-      }
-    });
+      // Use staticmap.openstreetmap.de service
+      const url = `https://staticmap.openstreetmap.de/staticmap.php?center=${centerLat},${centerLng}&zoom=${zoom}&size=${mapWidth}x${mapHeight}&markers=${markerStrings}`;
 
-    console.log("Drawing route with", route.phases.length, "phases");
-
-    // Collect all coordinates to calculate bounds
-    let allCoordinates: Array<{ lat: number; lng: number }> = [];
-
-    // Draw each phase
-    route.phases.forEach((phase: RoutePhase, index: number) => {
-      const color = PHASE_COLORS[index % PHASE_COLORS.length];
-      const isCompleted = completedPhases.includes(index);
-      const isCurrent = index === currentPhaseIndex;
-
-      if (phase.polyline && Array.isArray(phase.polyline)) {
-        allCoordinates.push(...phase.polyline);
-
-        // Draw polyline for this phase
-        const polyline = L.polyline(
-          phase.polyline.map((coord: any) => [coord.lat, coord.lng]),
-          {
-            color: color,
-            weight: isCurrent ? 5 : 3,
-            opacity: isCompleted ? 0.5 : 1,
-            dashArray: isCompleted ? '5, 5' : 'none',
-            lineCap: 'round',
-            lineJoin: 'round',
-          }
-        ).addTo(map);
-
-        console.log(`Phase ${index}: ${phase.polyline.length} coordinates, color: ${color}`);
-      }
-    });
-
-    // Add markers for start and end
-    if (allCoordinates.length > 0) {
-      L.circleMarker([allCoordinates[0].lat, allCoordinates[0].lng], {
-        radius: 8,
-        fillColor: '#22c55e',
-        color: '#ffffff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.8,
-      }).addTo(map).bindPopup('Start');
-
-      L.circleMarker(
-        [allCoordinates[allCoordinates.length - 1].lat, allCoordinates[allCoordinates.length - 1].lng],
-        {
-          radius: 8,
-          fillColor: '#ef4444',
-          color: '#ffffff',
-          weight: 2,
-          opacity: 1,
-          fillOpacity: 0.8,
-        }
-      ).addTo(map).bindPopup('End');
-
-      // Fit map to all coordinates
-      const bounds = L.latLngBounds(allCoordinates.map(c => [c.lat, c.lng]));
-      map.fitBounds(bounds, { padding: [50, 50] });
+      console.log("Generated map URL:", url);
+      setMapImageUrl(url);
+    } catch (error) {
+      console.error("Error generating static map:", error);
+      setMapImageUrl(null);
     }
-  }, [route, currentPhaseIndex, completedPhases]);
+  }, [route]);
 
   // Handle loading state
   if (isLoading) {
@@ -246,18 +188,27 @@ export default function MobileNavigation() {
       </header>
 
       {/* Main Layout: Map + Navigation Panel */}
-      <main className="flex-1 flex overflow-hidden w-full" style={{ height: 'calc(100vh - 120px)' }}>
-        {/* Map Area - Leaflet Interactive Map */}
-        <div
-          ref={mapRef}
-          className="flex-1 bg-muted z-0"
-          style={{ 
-            height: '100%',
-            width: '100%',
-            minHeight: '400px'
-          }}
-          data-testid="map-container"
-        />
+      <main className="flex-1 flex overflow-hidden w-full">
+        {/* Map Area - Static Image */}
+        <div className="flex-1 bg-muted z-0 flex items-center justify-center overflow-hidden">
+          {mapImageUrl ? (
+            <img
+              src={mapImageUrl}
+              alt="Route Map"
+              className="w-full h-full object-cover"
+              data-testid="map-image"
+              onError={() => {
+                console.error("Failed to load map image");
+                setMapImageUrl(null);
+              }}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center text-muted-foreground p-4">
+              <MapPin className="w-12 h-12 mb-2 opacity-50" />
+              <p className="text-sm">Loading route map...</p>
+            </div>
+          )}
+        </div>
 
         {/* Navigation Panel - Slides in/out */}
         <div
