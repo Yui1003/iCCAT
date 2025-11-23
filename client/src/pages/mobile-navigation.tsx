@@ -137,93 +137,100 @@ export default function MobileNavigation() {
 
   // Draw route on map when it updates
   useEffect(() => {
-    console.log("Route drawing effect triggered", { mapReady: !!mapInstanceRef.current, routeExists: !!route, leafletExists: !!window.L });
-    
-    if (!mapInstanceRef.current || !route || !window.L) {
-      console.warn("Skipping route drawing: map not ready or route missing");
-      return;
-    }
-
-    const L = window.L;
-    const map = mapInstanceRef.current;
-
-    // Clear existing polylines and markers (keep tile layer)
-    map.eachLayer((layer: any) => {
-      if (layer instanceof L.Polyline || layer instanceof L.Marker || layer instanceof L.CircleMarker) {
-        map.removeLayer(layer);
+    const drawRoute = () => {
+      console.log("Route drawing effect triggered", { mapReady: !!mapInstanceRef.current, routeExists: !!route, leafletExists: !!window.L });
+      
+      if (!mapInstanceRef.current || !route || !window.L) {
+        console.warn("Map not ready yet, retrying in 100ms...");
+        setTimeout(drawRoute, 100);
+        return;
       }
-    });
 
-    console.log("Drawing route with", route.phases.length, "phases");
-    console.log("Full route data:", JSON.stringify(route, null, 2).substring(0, 500));
+      const L = window.L;
+      const map = mapInstanceRef.current;
 
-    // Collect all coordinates to calculate bounds
-    let allCoordinates: Array<{ lat: number; lng: number }> = [];
-    let phasesWithPolylines = 0;
+      // Clear existing polylines and markers (keep tile layer)
+      map.eachLayer((layer: any) => {
+        if (layer instanceof L.Polyline || layer instanceof L.Marker || layer instanceof L.CircleMarker) {
+          map.removeLayer(layer);
+        }
+      });
 
-    // Draw each phase
-    route.phases.forEach((phase: RoutePhase, index: number) => {
-      const color = PHASE_COLORS[index % PHASE_COLORS.length];
-      const isCompleted = completedPhases.includes(index);
-      const isCurrent = index === currentPhaseIndex;
+      console.log("Drawing route with", route.phases.length, "phases");
+      console.log("Full route data:", JSON.stringify(route, null, 2).substring(0, 500));
 
-      console.log(`Phase ${index} check:`, { hasPolyline: !!phase.polyline, isArray: Array.isArray(phase.polyline), length: phase.polyline?.length || 0 });
+      // Collect all coordinates to calculate bounds
+      let allCoordinates: Array<{ lat: number; lng: number }> = [];
+      let phasesWithPolylines = 0;
 
-      if (phase.polyline && Array.isArray(phase.polyline) && phase.polyline.length > 0) {
-        phasesWithPolylines++;
-        allCoordinates.push(...phase.polyline);
+      // Draw each phase
+      route.phases.forEach((phase: RoutePhase, index: number) => {
+        const color = PHASE_COLORS[index % PHASE_COLORS.length];
+        const isCompleted = completedPhases.includes(index);
+        const isCurrent = index === currentPhaseIndex;
 
-        // Draw polyline for this phase
-        const polyline = L.polyline(
-          phase.polyline.map((coord: any) => [coord.lat, coord.lng]),
-          {
-            color: color,
-            weight: isCurrent ? 5 : 3,
-            opacity: isCompleted ? 0.5 : 1,
-            dashArray: isCompleted ? '5, 5' : 'none',
-            lineCap: 'round',
-            lineJoin: 'round',
-          }
-        ).addTo(map);
+        console.log(`Phase ${index} check:`, { hasPolyline: !!phase.polyline, isArray: Array.isArray(phase.polyline), length: phase.polyline?.length || 0 });
 
-        console.log(`Phase ${index}: ${phase.polyline.length} coordinates, color: ${color}, current: ${isCurrent}`);
-      } else {
-        console.warn(`Phase ${index} has no polyline data!`);
-      }
-    });
+        if (phase.polyline && Array.isArray(phase.polyline) && phase.polyline.length > 0) {
+          phasesWithPolylines++;
+          allCoordinates.push(...phase.polyline);
 
-    console.log(`Total phases with polylines: ${phasesWithPolylines}/${route.phases.length}`);
+          // Draw polyline for this phase
+          const polyline = L.polyline(
+            phase.polyline.map((coord: any) => [coord.lat, coord.lng]),
+            {
+              color: color,
+              weight: isCurrent ? 5 : 3,
+              opacity: isCompleted ? 0.5 : 1,
+              dashArray: isCompleted ? '5, 5' : 'none',
+              lineCap: 'round',
+              lineJoin: 'round',
+            }
+          ).addTo(map);
 
-    // Add markers for start and end
-    if (allCoordinates.length > 0) {
-      L.circleMarker([allCoordinates[0].lat, allCoordinates[0].lng], {
-        radius: 10,
-        fillColor: '#22c55e',
-        color: '#ffffff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.9,
-      }).addTo(map).bindPopup('Start');
+          console.log(`Phase ${index}: ${phase.polyline.length} coordinates, color: ${color}, current: ${isCurrent}`);
+        } else {
+          console.warn(`Phase ${index} has no polyline data!`);
+        }
+      });
 
-      L.circleMarker(
-        [allCoordinates[allCoordinates.length - 1].lat, allCoordinates[allCoordinates.length - 1].lng],
-        {
+      console.log(`Total phases with polylines: ${phasesWithPolylines}/${route.phases.length}`);
+
+      // Add markers for start and end
+      if (allCoordinates.length > 0) {
+        L.circleMarker([allCoordinates[0].lat, allCoordinates[0].lng], {
           radius: 10,
-          fillColor: '#ef4444',
+          fillColor: '#22c55e',
           color: '#ffffff',
           weight: 2,
           opacity: 1,
           fillOpacity: 0.9,
-        }
-      ).addTo(map).bindPopup('End');
+        }).addTo(map).bindPopup('Start');
 
-      // Fit map to all coordinates with padding
-      const bounds = L.latLngBounds(allCoordinates.map(c => [c.lat, c.lng]));
-      map.fitBounds(bounds, { padding: [50, 50], animate: true });
-      console.log("Map fitted to route bounds");
-    } else {
-      console.error("No coordinates found in any phase!");
-    }
+        L.circleMarker(
+          [allCoordinates[allCoordinates.length - 1].lat, allCoordinates[allCoordinates.length - 1].lng],
+          {
+            radius: 10,
+            fillColor: '#ef4444',
+            color: '#ffffff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9,
+          }
+        ).addTo(map).bindPopup('End');
+
+        // Fit map to all coordinates with padding
+        const bounds = L.latLngBounds(allCoordinates.map(c => [c.lat, c.lng]));
+        map.fitBounds(bounds, { padding: [50, 50], animate: true });
+        console.log("Map fitted to route bounds");
+      } else {
+        console.error("No coordinates found in any phase!");
+      }
+    };
+
+    // Start drawing with a small delay to ensure map is ready
+    const timer = setTimeout(drawRoute, 100);
+    return () => clearTimeout(timer);
   }, [route, currentPhaseIndex, completedPhases]);
 
   // Handle loading state

@@ -1,0 +1,188 @@
+16Tracking Prevention blocked access to storage for <URL>.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.css.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.css.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.css.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.css.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.js.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.js.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.js.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.js.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js.
+de9da931-7cd7-4551-a275-87b717ab6682:1  Tracking Prevention blocked access to storage for https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js.
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+react-dom.development.js:29895 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+mobile-navigation.tsx:140 Route drawing effect triggered {mapReady: false, routeExists: false, leafletExists: true}
+mobile-navigation.tsx:143  Skipping route drawing: map not ready or route missing
+(anonymous) @ mobile-navigation.tsx:143
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+de9da931-7cd7-4551-a275-87b717ab6682:162 Found cache: iccat-v5
+de9da931-7cd7-4551-a275-87b717ab6682:162 Found cache: iccat-data-v5
+mobile-navigation.tsx:78  Map ref not ready, retrying in 100ms...
+initMap @ mobile-navigation.tsx:78
+setTimeout
+(anonymous) @ mobile-navigation.tsx:134
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+queryClient.ts:41 [QUERY] Network-first: Fetched fresh /api/routes/de9da931-7cd7-4551-a275-87b717ab6682 from server
+mobile-navigation.tsx:78  Map ref not ready, retrying in 100ms...
+initMap @ mobile-navigation.tsx:78
+setTimeout
+initMap @ mobile-navigation.tsx:79
+setTimeout
+(anonymous) @ mobile-navigation.tsx:134
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+mobile-navigation.tsx:140 Route drawing effect triggered {mapReady: false, routeExists: true, leafletExists: true}
+mobile-navigation.tsx:143  Skipping route drawing: map not ready or route missing
+(anonymous) @ mobile-navigation.tsx:143
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anonymous) @ react-dom.development.js:25690
+setTimeout
+scheduleFn @ notifyManager.ts:22
+flush @ notifyManager.ts:37
+batch @ notifyManager.ts:56
+dispatch_fn @ query.ts:617
+setData @ query.ts:218
+onSuccess @ query.ts:507
+resolve @ retryer.ts:107
+Promise.then
+run @ retryer.ts:159
+start @ retryer.ts:218
+fetch @ query.ts:540
+executeFetch_fn @ queryObserver.ts:346
+onSubscribe @ queryObserver.ts:108
+subscribe @ subscribable.ts:11
+(anonymous) @ useBaseQuery.ts:92
+subscribeToStore @ react-dom.development.js:16139
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+sw.js?1763877133976:77 [SW] Caching static assets
+de9da931-7cd7-4551-a275-87b717ab6682:150 Service Worker registered
+mobile-navigation.tsx:98 Map container dimensions: {width: 1037, height: 885}
+mobile-navigation.tsx:106 Initializing Leaflet map with container: <div data-replit-metadata=​"client/​src/​pages/​mobile-navigation.tsx:​296:​8" data-component-name=​"div" id=​"map" class=​"flex-1 z-0 relative leaflet-container leaflet-touch leaflet-fade-anim leaflet-grab leaflet-touch-drag leaflet-touch-zoom" data-testid=​"map-container" style=​"width:​ 100%;​ height:​ 100%;​ position:​ relative;​" tabindex=​"0">​…​</div>​
+mobile-navigation.tsx:121 Map initialized successfully
+mobile-navigation.tsx:126 Map size invalidated
+sw.js?1763877133976:85 [SW] Pre-caching API endpoints for offline use
+sw.js?1763877133976:91 [SW] Cached /api/buildings
+sw.js?1763877133976:91 [SW] Cached /api/walkpaths
+sw.js?1763877133976:91 [SW] Cached /api/drivepaths
+sw.js?1763877133976:91 [SW] Cached /api/events
+sw.js?1763877133976:91 [SW] Cached /api/staff
+sw.js?1763877133976:91 [SW] Cached /api/floors
+sw.js?1763877133976:91 [SW] Cached /api/rooms
+sw.js?1763877133976:104 [SW] API pre-caching complete: 7 succeeded, 0 failed
+sw.js?1763877133976:110 [SW] Starting map tile pre-caching for offline use...
+sw.js?1763877133976:47 [SW] Generating tile URLs for campus area...
+sw.js?1763877133976:48 [SW] Bounds: N=14.407, S=14.398, E=120.87, W=120.862
+sw.js?1763877133976:55 [SW] Zoom 16: tiles from (54770,30117) to (54771,30118)
+sw.js?1763877133976:55 [SW] Zoom 17: tiles from (109540,60234) to (109543,60237)
+sw.js?1763877133976:55 [SW] Zoom 18: tiles from (219081,120468) to (219086,120475)
+sw.js?1763877133976:55 [SW] Zoom 19: tiles from (438162,240937) to (438173,240951)
+sw.js?1763877133976:70 [SW] Generated 248 map tile URLs for pre-caching
+sw.js?1763877133976:112 [SW] Will attempt to cache 248 tiles
+sw.js?1763877133976:124 [SW] ✓ Cached tile 1/248: https://c.tile.openstreetmap.org/16/54770/30117.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 2/248: https://a.tile.openstreetmap.org/16/54770/30118.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 3/248: https://a.tile.openstreetmap.org/16/54771/30117.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 4/248: https://b.tile.openstreetmap.org/16/54771/30118.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 5/248: https://b.tile.openstreetmap.org/17/109540/60234.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 21/248: https://a.tile.openstreetmap.org/18/219081/120468.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 41/248: https://a.tile.openstreetmap.org/18/219083/120472.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 61/248: https://c.tile.openstreetmap.org/18/219086/120468.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 81/248: https://b.tile.openstreetmap.org/19/438162/240949.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 101/248: https://c.tile.openstreetmap.org/19/438164/240939.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 121/248: https://c.tile.openstreetmap.org/19/438165/240944.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 141/248: https://c.tile.openstreetmap.org/19/438166/240949.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 161/248: https://a.tile.openstreetmap.org/19/438168/240939.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 181/248: https://a.tile.openstreetmap.org/19/438169/240944.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 201/248: https://a.tile.openstreetmap.org/19/438170/240949.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 221/248: https://b.tile.openstreetmap.org/19/438172/240939.png
+sw.js?1763877133976:124 [SW] ✓ Cached tile 241/248: https://b.tile.openstreetmap.org/19/438173/240944.png
+sw.js?1763877133976:142 [SW] ========================================
+sw.js?1763877133976:143 [SW] Map tile pre-caching complete!
+sw.js?1763877133976:144 [SW] Success: 248/248 tiles
+sw.js?1763877133976:145 [SW] Failed: 0/248 tiles
+sw.js?1763877133976:146 [SW] ========================================
+sw.js?1763877133976:256 [SW] Activating new Service Worker...
+sw.js?1763877133976:257 [SW] Current caches: iccat-v5, iccat-data-v5
+sw.js?1763877133976:261 [SW] Found existing caches: iccat-v5, iccat-data-v5
+sw.js?1763877133976:271 [SW] Service Worker activated successfully!
+sw.js:171 [SW] Network-first: Fetched fresh /api/events from server
+sw.js?1763877133976:171 [SW] Network-first: Fetched fresh /api/routes/de9da931-7cd7-4551-a275-87b717ab6682 from server
+queryClient.ts:41 [QUERY] Network-first: Fetched fresh /api/routes/de9da931-7cd7-4551-a275-87b717ab6682 from server
