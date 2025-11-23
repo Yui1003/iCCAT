@@ -245,9 +245,9 @@ export default function MobileNavigation() {
   const phaseColor = PHASE_COLORS[currentPhaseIndex % PHASE_COLORS.length];
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="fixed inset-0 flex flex-col bg-background" data-testid="mobile-navigation-page">
       {/* Header with Map Toggle */}
-      <header className="bg-card border-b border-card-border p-4 flex-shrink-0 flex items-center gap-4">
+      <header className="bg-card border-b border-card-border p-4 flex-shrink-0 flex items-center gap-4 h-20">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -273,17 +273,16 @@ export default function MobileNavigation() {
       </header>
 
       {/* Main Layout: Map + Navigation Panel */}
-      <main className="flex-1 flex w-full h-full">
+      <main className="flex flex-1 overflow-hidden w-full">
         {/* Map Area - Leaflet Interactive Map */}
         <div
           ref={mapRef}
           id="map"
-          className="flex-1 z-0 relative"
+          className="flex-1 z-0"
           data-testid="map-container"
           style={{
-            width: '100%',
-            height: '100%',
-            position: 'relative',
+            width: 'calc(100% - 0px)',
+            height: 'calc(100% - 0px)',
           }}
         />
 
