@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { ArrowLeft, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +70,8 @@ interface FeedbackRatings {
 
 export default function FeedbackPage() {
   const [, navigate] = useLocation();
+  const searchParams = useSearch();
+  const isMobileSource = new URLSearchParams(searchParams).get('source') === 'mobile';
   const { toast } = useToast();
   const [showBackDialog, setShowBackDialog] = useState(false);
   const [submittedUserId, setSubmittedUserId] = useState<number | null>(null);
@@ -141,7 +143,9 @@ export default function FeedbackPage() {
         title: "Thank you!",
         description: "Your feedback has been submitted successfully.",
       });
-      setTimeout(() => navigate("/"), 3000);
+      // Redirect to thank you page for mobile users, home for desktop
+      const redirectPath = isMobileSource ? "/thank-you" : "/";
+      setTimeout(() => navigate(redirectPath), 3000);
     },
     onError: () => {
       toast({
@@ -205,7 +209,8 @@ export default function FeedbackPage() {
     if (hasAnyAnswers) {
       setShowBackDialog(true);
     } else {
-      navigate("/");
+      // Navigate based on source (mobile or desktop)
+      navigate(isMobileSource ? "/thank-you" : "/");
     }
   };
 
@@ -548,7 +553,7 @@ export default function FeedbackPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Continue Feedback</AlertDialogCancel>
-            <AlertDialogAction onClick={() => navigate("/")}>
+            <AlertDialogAction onClick={() => navigate(isMobileSource ? "/thank-you" : "/")}>
               Discard and Go Back
             </AlertDialogAction>
           </AlertDialogFooter>

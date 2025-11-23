@@ -56,9 +56,9 @@ export default function MobileNavigation() {
   const handleFeedbackDecision = (giveFeedback: boolean) => {
     setShowFeedbackDialog(false);
     if (giveFeedback) {
-      navigate('/feedback');
+      navigate('/feedback?source=mobile');
     } else {
-      navigate('/');
+      navigate('/thank-you');
     }
   };
 
