@@ -110,7 +110,10 @@ export default function MobileNavigation() {
           dragging: true,
         });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Add cache-busting for mobile navigation to avoid stale tile cache
+        // Use hourly timestamp so new tiles are fetched when zooming
+        const cacheHour = Math.floor(Date.now() / 3600000);
+        L.tileLayer(`https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png?mobile=${cacheHour}`, {
           attribution: '© OpenStreetMap contributors',
           maxZoom: 19,
         }).addTo(map);
@@ -158,23 +161,39 @@ export default function MobileNavigation() {
       const isCompleted = completedPhases.includes(index);
       const isCurrent = index === currentPhaseIndex;
 
+      console.log(`Phase ${index}:`, {
+        hasPolyline: !!phase.polyline,
+        isArray: Array.isArray(phase.polyline),
+        length: phase.polyline?.length,
+        sample: phase.polyline?.[0],
+      });
+
       if (phase.polyline && Array.isArray(phase.polyline) && phase.polyline.length > 0) {
         allCoordinates.push(...phase.polyline);
 
         // Draw polyline for this phase
-        const polyline = L.polyline(
-          phase.polyline.map((coord: any) => [coord.lat, coord.lng]),
-          {
-            color: color,
-            weight: isCurrent ? 5 : 3,
-            opacity: isCompleted ? 0.5 : 1,
-            dashArray: isCompleted ? '5, 5' : 'none',
-            lineCap: 'round',
-            lineJoin: 'round',
+        const coordinates = phase.polyline.map((coord: any) => {
+          // Handle both {lat, lng} and [lat, lng] formats
+          if (Array.isArray(coord)) {
+            return coord;
           }
-        ).addTo(map);
+          return [coord.lat, coord.lng];
+        });
 
-        console.log(`Phase ${index}: ${phase.polyline.length} coordinates, color: ${color}, current: ${isCurrent}`);
+        console.log(`Phase ${index}: Drawing ${coordinates.length} coords, color: ${color}, weight: ${isCurrent ? 5 : 3}`);
+
+        const polyline = L.polyline(coordinates, {
+          color: color,
+          weight: isCurrent ? 5 : 3,
+          opacity: isCompleted ? 0.5 : 1,
+          dashArray: isCompleted ? '5, 5' : 'none',
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(map);
+
+        console.log(`✓ Phase ${index} polyline added to map`);
+      } else {
+        console.warn(`✗ Phase ${index}: No valid polyline data`);
       }
     });
 
