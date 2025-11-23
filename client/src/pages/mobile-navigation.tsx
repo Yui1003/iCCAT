@@ -70,10 +70,10 @@ export default function MobileNavigation() {
     }
   };
 
-  // Initialize Leaflet map
+  // Initialize Leaflet map on mount (not dependent on route)
   useEffect(() => {
-    if (!mapRef.current || !route) {
-      console.warn("Map ref or route not ready", { mapRef: !!mapRef.current, route: !!route });
+    if (!mapRef.current) {
+      console.warn("Map ref not ready on mount");
       return;
     }
 
@@ -116,7 +116,7 @@ export default function MobileNavigation() {
         }).addTo(map);
 
         mapInstanceRef.current = map;
-        console.log("Map initialized successfully with instance:", map);
+        console.log("Map initialized successfully");
 
         // Invalidate map size after a short delay to ensure proper rendering
         setTimeout(() => {
@@ -131,7 +131,7 @@ export default function MobileNavigation() {
     // Small delay to ensure DOM is ready
     const timer = setTimeout(initMap, 100);
     return () => clearTimeout(timer);
-  }, [route]);
+  }, []);
 
   // Draw route on map when it updates
   useEffect(() => {
