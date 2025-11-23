@@ -72,55 +72,17 @@ export default function MobileNavigation() {
 
   // Initialize Leaflet map
   useEffect(() => {
-    console.log("useEffect running: mapRef.current exists?", !!mapRef.current);
-    console.log("window.L exists?", !!window.L);
-    
-    if (!mapRef.current) {
-      console.warn("❌ Map ref not ready, DOM not rendered yet");
-      return;
-    }
-
-    console.log("✅ Map ref is ready, starting init sequence");
+    if (!mapRef.current || mapInstanceRef.current) return;
 
     const initMap = () => {
-      console.log("[initMap called]");
-      
       const L = window.L;
-      console.log("Leaflet loaded?", !!L);
-      
       if (!L) {
-        console.warn("❌ Leaflet not loaded, retrying in 500ms...");
-        setTimeout(initMap, 500);
-        return;
-      }
-
-      if (mapInstanceRef.current) {
-        console.log("✅ Map already initialized, skipping");
+        console.warn("Leaflet not loaded yet, retrying...");
+        setTimeout(initMap, 100);
         return;
       }
 
       try {
-        console.log("📍 Map container DOM element:", mapRef.current);
-        console.log("📍 Map container innerHTML:", mapRef.current?.innerHTML);
-        console.log("📍 Map container className:", mapRef.current?.className);
-        console.log("📍 Map container style:", mapRef.current?.style.cssText);
-        
-        const rect = mapRef.current.getBoundingClientRect();
-        console.log("📐 Map container dimensions:", { 
-          width: rect.width, 
-          height: rect.height,
-          top: rect.top,
-          left: rect.left,
-        });
-
-        if (rect.width === 0 || rect.height === 0) {
-          console.warn("❌ Map container has ZERO dimensions! Width:", rect.width, "Height:", rect.height);
-          console.warn("Retrying in 200ms...");
-          setTimeout(initMap, 200);
-          return;
-        }
-
-        console.log("✅ Container has proper dimensions, creating Leaflet map...");
         const map = L.map(mapRef.current, {
           center: [14.4035451, 120.8659794],
           zoom: 17,
@@ -128,36 +90,26 @@ export default function MobileNavigation() {
           touchZoom: true,
           dragging: true,
         });
-        console.log("✅ Leaflet map created:", map);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',
           maxZoom: 19,
         }).addTo(map);
-        console.log("✅ Tile layer added");
 
         mapInstanceRef.current = map;
-        console.log("✅✅✅ MAP INITIALIZED SUCCESSFULLY ✅✅✅");
+        console.log("✅ Map initialized successfully");
 
+        // Ensure map is properly sized
         setTimeout(() => {
-          if (map) {
-            map.invalidateSize();
-            console.log("✅ Map size invalidated, map should be visible now");
-          }
-        }, 200);
+          map.invalidateSize();
+        }, 100);
       } catch (error) {
-        console.error("❌❌❌ ERROR INITIALIZING MAP:", error);
-        console.error("Error stack:", error instanceof Error ? error.stack : "no stack");
+        console.error("Error initializing map:", error);
       }
     };
 
-    // Try immediately, then with delays
-    console.log("Starting map initialization in 50ms");
-    const timer = setTimeout(initMap, 50);
-    return () => {
-      console.log("Cleanup: clearing initMap timeout");
-      clearTimeout(timer);
-    };
+    const timer = setTimeout(initMap, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   // Draw route on map when it updates
@@ -272,19 +224,9 @@ export default function MobileNavigation() {
   const phaseColor = PHASE_COLORS[currentPhaseIndex % PHASE_COLORS.length];
 
   return (
-    <div 
-      className="bg-background"
-      data-testid="mobile-navigation-page"
-      style={{
-        width: '100vw',
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-      }}
-    >
-      {/* Header with Map Toggle */}
-      <header className="bg-card border-b border-card-border p-4 flex-shrink-0 flex items-center gap-4" style={{ height: '80px' }}>
+    <div className="h-screen flex flex-col bg-background" data-testid="mobile-navigation-page">
+      {/* Header */}
+      <header className="bg-card border-b border-card-border p-4 flex-shrink-0 flex items-center gap-4">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -310,19 +252,13 @@ export default function MobileNavigation() {
       </header>
 
       {/* Main Layout: Map + Navigation Panel */}
-      <main style={{ display: 'flex', flex: 1, overflow: 'hidden', width: '100%' }}>
+      <main className="flex-1 flex overflow-hidden w-full">
         {/* Map Area - Leaflet Interactive Map */}
         <div
           ref={mapRef}
           id="map"
+          className="flex-1 z-0"
           data-testid="map-container"
-          style={{
-            flex: 1,
-            width: '100%',
-            height: '100%',
-            position: 'relative',
-            zIndex: 0,
-          }}
         />
 
         {/* Navigation Panel - Slides in/out */}
