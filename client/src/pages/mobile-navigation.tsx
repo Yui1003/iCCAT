@@ -72,8 +72,8 @@ export default function MobileNavigation() {
 
   // Initialize Leaflet map
   useEffect(() => {
-    if (!mapRef.current) {
-      console.warn("Map ref not ready");
+    if (!mapRef.current || !route) {
+      console.warn("Map ref or route not ready", { mapRef: !!mapRef.current, route: !!route });
       return;
     }
 
@@ -92,7 +92,7 @@ export default function MobileNavigation() {
 
       try {
         // Ensure map container has computed dimensions
-        const rect = mapRef.current.getBoundingClientRect();
+        const rect = mapRef.current!.getBoundingClientRect();
         console.log("Map container dimensions:", { width: rect.width, height: rect.height });
 
         if (rect.width === 0 || rect.height === 0) {
@@ -131,7 +131,7 @@ export default function MobileNavigation() {
     // Small delay to ensure DOM is ready
     const timer = setTimeout(initMap, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [route]);
 
   // Draw route on map when it updates
   useEffect(() => {
