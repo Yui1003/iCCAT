@@ -72,8 +72,8 @@ export default function MobileNavigation() {
 
   // Initialize Leaflet map
   useEffect(() => {
-    if (!mapRef.current || !route) {
-      console.warn("Map ref or route not ready", { mapRef: !!mapRef.current, route: !!route });
+    if (!mapRef.current) {
+      console.warn("Map ref not ready");
       return;
     }
 
@@ -92,7 +92,7 @@ export default function MobileNavigation() {
 
       try {
         // Ensure map container has computed dimensions
-        const rect = mapRef.current!.getBoundingClientRect();
+        const rect = mapRef.current.getBoundingClientRect();
         console.log("Map container dimensions:", { width: rect.width, height: rect.height });
 
         if (rect.width === 0 || rect.height === 0) {
@@ -110,10 +110,7 @@ export default function MobileNavigation() {
           dragging: true,
         });
 
-        // Add cache-busting for mobile navigation to avoid stale tile cache
-        // Use hourly timestamp so new tiles are fetched when zooming
-        const cacheHour = Math.floor(Date.now() / 3600000);
-        L.tileLayer(`https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png?mobile=${cacheHour}`, {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',
           maxZoom: 19,
         }).addTo(map);
@@ -134,7 +131,7 @@ export default function MobileNavigation() {
     // Small delay to ensure DOM is ready
     const timer = setTimeout(initMap, 100);
     return () => clearTimeout(timer);
-  }, [route]);
+  }, []);
 
   // Draw route on map when it updates
   useEffect(() => {
@@ -161,39 +158,23 @@ export default function MobileNavigation() {
       const isCompleted = completedPhases.includes(index);
       const isCurrent = index === currentPhaseIndex;
 
-      console.log(`Phase ${index}:`, {
-        hasPolyline: !!phase.polyline,
-        isArray: Array.isArray(phase.polyline),
-        length: phase.polyline?.length,
-        sample: phase.polyline?.[0],
-      });
-
       if (phase.polyline && Array.isArray(phase.polyline) && phase.polyline.length > 0) {
         allCoordinates.push(...phase.polyline);
 
         // Draw polyline for this phase
-        const coordinates = phase.polyline.map((coord: any) => {
-          // Handle both {lat, lng} and [lat, lng] formats
-          if (Array.isArray(coord)) {
-            return coord;
+        const polyline = L.polyline(
+          phase.polyline.map((coord: any) => [coord.lat, coord.lng]),
+          {
+            color: color,
+            weight: isCurrent ? 5 : 3,
+            opacity: isCompleted ? 0.5 : 1,
+            dashArray: isCompleted ? '5, 5' : 'none',
+            lineCap: 'round',
+            lineJoin: 'round',
           }
-          return [coord.lat, coord.lng];
-        });
+        ).addTo(map);
 
-        console.log(`Phase ${index}: Drawing ${coordinates.length} coords, color: ${color}, weight: ${isCurrent ? 5 : 3}`);
-
-        const polyline = L.polyline(coordinates, {
-          color: color,
-          weight: isCurrent ? 5 : 3,
-          opacity: isCompleted ? 0.5 : 1,
-          dashArray: isCompleted ? '5, 5' : 'none',
-          lineCap: 'round',
-          lineJoin: 'round',
-        }).addTo(map);
-
-        console.log(`✓ Phase ${index} polyline added to map`);
-      } else {
-        console.warn(`✗ Phase ${index}: No valid polyline data`);
+        console.log(`Phase ${index}: ${phase.polyline.length} coordinates, color: ${color}, current: ${isCurrent}`);
       }
     });
 
