@@ -68,16 +68,20 @@ export default function MobileNavigation() {
     if (!route || route.phases.length === 0) return;
 
     try {
-      // Collect all coordinates from all phases
+      // Collect all polyline coordinates from all phases
       const allCoordinates: Array<{ lat: number; lng: number }> = [];
       route.phases.forEach((phase: RoutePhase) => {
-        const coordinates = (phase as any).coordinates;
-        if (coordinates && Array.isArray(coordinates)) {
-          allCoordinates.push(...coordinates);
+        if (phase.polyline && Array.isArray(phase.polyline)) {
+          allCoordinates.push(...phase.polyline);
         }
       });
 
-      if (allCoordinates.length === 0) return;
+      if (allCoordinates.length === 0) {
+        console.warn("No polyline coordinates found in route phases");
+        return;
+      }
+
+      console.log("Found", allCoordinates.length, "coordinates in route");
 
       // Calculate bounds
       const lats = allCoordinates.map(c => c.lat);
@@ -87,43 +91,36 @@ export default function MobileNavigation() {
       const minLng = Math.min(...lngs);
       const maxLng = Math.max(...lngs);
 
-      // Add padding
-      const latPadding = (maxLat - minLat) * 0.2;
-      const lngPadding = (maxLng - minLng) * 0.2;
-
-      const bounds = {
-        north: maxLat + latPadding,
-        south: minLat - latPadding,
-        east: maxLng + lngPadding,
-        west: minLng - lngPadding,
-      };
-
-      // Build encoded polyline for path
-      const pathCoordinates = allCoordinates
-        .map(c => `${c.lat},${c.lng}`)
-        .join('|');
-
-      // Generate static map image using StaticMap or similar
-      // For now, using a simple approach with encoded path
-      const mapWidth = 600;
-      const mapHeight = 400;
-      const zoom = 16;
-
       // Center coordinates
       const centerLat = (minLat + maxLat) / 2;
       const centerLng = (minLng + maxLng) / 2;
 
-      // Build URL with polyline path - using OpenStreetMap static image approach
-      const encodedPath = encodeURIComponent(pathCoordinates);
-      const url = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l-a+4285f4(${centerLng},${centerLat})/${centerLng},${centerLat},${zoom},0/${mapWidth}x${mapHeight}@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycW1qNGxsZ3d4Y3gifQ.rJcFIG214AriISLbB6B5aw`;
+      console.log("Map bounds:", { minLat, maxLat, minLng, maxLng, centerLat, centerLng });
 
-      // Fallback: Use a simple approach with path visualization
-      const fallbackUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${centerLat},${centerLng}&zoom=${zoom}&size=${mapWidth}x${mapHeight}&markers=${pathCoordinates}`;
+      // Build marker points (start and end)
+      const markers = [
+        { lat: allCoordinates[0].lat, lng: allCoordinates[0].lng, label: "A" }, // Start
+        { lat: allCoordinates[allCoordinates.length - 1].lat, lng: allCoordinates[allCoordinates.length - 1].lng, label: "B" }, // End
+      ];
 
-      setMapImageUrl(fallbackUrl);
-      console.log("Static map URL generated:", fallbackUrl);
+      // Build static map URL using OpenStreetMap service
+      const mapWidth = 512;
+      const mapHeight = 384;
+      const zoom = 17;
+
+      // Create markers parameter
+      const markerStrings = markers.map(
+        (m, idx) => `${m.lat},${m.lng},${idx === 0 ? "lightgreen" : "lightred"}`
+      ).join("|");
+
+      // Simplified OpenStreetMap static map URL (uses open API)
+      const url = `https://staticmap.openstreetmap.de/staticmap.php?center=${centerLat},${centerLng}&zoom=${zoom}&size=${mapWidth}x${mapHeight}&markers=${markerStrings}`;
+
+      console.log("Generated map URL:", url);
+      setMapImageUrl(url);
     } catch (error) {
       console.error("Error generating static map:", error);
+      setMapImageUrl(null);
     }
   }, [route]);
 
