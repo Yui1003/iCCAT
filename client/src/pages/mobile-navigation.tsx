@@ -156,10 +156,11 @@ export default function MobileNavigation() {
       const isCompleted = completedPhases.includes(index);
       const isCurrent = index === currentPhaseIndex;
       
-      // Create polyline for this phase
-      if (phase.coordinates && phase.coordinates.length > 0) {
+      // Create polyline for this phase (if coordinates are available)
+      const coordinates = (phase as any).coordinates;
+      if (coordinates && coordinates.length > 0) {
         const polyline = L.polyline(
-          phase.coordinates.map((coord: any) => [coord.lat, coord.lng]),
+          coordinates.map((coord: any) => [coord.lat, coord.lng]),
           {
             color: color,
             weight: isCurrent ? 5 : 3,
