@@ -29,6 +29,26 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Cache control middleware - prevent stale content from Service Worker
+app.use((req, res, next) => {
+  // Never cache HTML files
+  if (req.path === '/' || req.path.endsWith('.html')) {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+  // Cache static assets for longer
+  else if (req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|eot|ttf)$/)) {
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+  // API responses - let Service Worker handle caching
+  else if (req.path.startsWith('/api')) {
+    res.set('Cache-Control', 'private, max-age=0');
+  }
+  
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
