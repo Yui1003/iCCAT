@@ -75,25 +75,38 @@ export default function MobileNavigation() {
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    const L = window.L;
-    if (!L) {
-      console.error("Leaflet not loaded");
-      return;
-    }
+    // Wait for Leaflet to be loaded
+    const initializeMap = () => {
+      const L = window.L;
+      if (!L) {
+        console.warn("Leaflet not loaded yet, retrying...");
+        setTimeout(initializeMap, 100);
+        return;
+      }
 
-    const map = L.map(mapRef.current, {
-      center: [14.4035451, 120.8659794],
-      zoom: 17,
-      zoomControl: true,
-      attributionControl: true,
-    });
+      try {
+        const map = L.map(mapRef.current, {
+          center: [14.4035451, 120.8659794],
+          zoom: 17,
+          zoomControl: true,
+          attributionControl: true,
+          dragging: true,
+          touchZoom: true,
+        });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
-    }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 19,
+        }).addTo(map);
 
-    mapInstanceRef.current = map;
+        mapInstanceRef.current = map;
+        console.log("Map initialized successfully");
+      } catch (error) {
+        console.error("Error initializing map:", error);
+      }
+    };
+
+    initializeMap();
 
     return () => {
       if (mapInstanceRef.current) {
@@ -182,11 +195,14 @@ export default function MobileNavigation() {
     <div className="h-screen flex flex-col bg-background">
       {/* Header with Map Toggle */}
       <header className="bg-card border-b border-card-border p-4 flex-shrink-0 flex items-center gap-4">
-        <Link href="/">
-          <Button variant="ghost" size="icon" data-testid="button-back-mobile">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => navigate('/thank-you')}
+          data-testid="button-back-mobile"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
         <div className="flex-1">
           <h1 className="text-lg font-semibold text-foreground">Navigation</h1>
           <p className="text-xs text-muted-foreground">
@@ -204,17 +220,18 @@ export default function MobileNavigation() {
       </header>
 
       {/* Main Layout: Map + Navigation Panel */}
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex overflow-hidden w-full min-h-0">
         {/* Map Area */}
         <div
           ref={mapRef}
-          className="flex-1 bg-background"
+          className="flex-1 h-full min-h-0 w-full bg-muted-foreground/10 z-0"
+          style={{ minHeight: 0 }}
           data-testid="map-container"
         />
 
         {/* Navigation Panel - Slides in/out */}
         <div
-          className={`flex flex-col border-l border-card-border bg-card transition-all duration-300 ${
+          className={`flex flex-col border-l border-card-border bg-card transition-all duration-300 flex-shrink-0 z-10 ${
             showNavPanel ? 'w-80' : 'w-0 overflow-hidden'
           }`}
         >

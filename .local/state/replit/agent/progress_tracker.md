@@ -64,7 +64,26 @@
 [x] 645. Workflow restarted with hooks fix applied
 [x] 646. Server running without errors - ready for mobile testing
 
-## Summary of Mobile Improvements:
+## Mobile Map & Back Button Fixes - Nov 23, 2025 (4:47 AM):
+
+[x] 647. Fixed back button to redirect to /thank-you instead of landing page
+[x] 648. Changed back button from Link component to onClick handler with navigate()
+[x] 649. Enforces mobile restriction - users cannot access home from navigation page
+[x] 650. Fixed map container sizing on mobile with proper flex/CSS properties:
+[x] 651. - Added min-h-0 to main and map container for proper flex sizing
+[x] 652. - Added inline minHeight: 0 style for extra safety
+[x] 653. - Changed background color to be visible when map loads
+[x] 654. Improved Leaflet initialization with retry logic:
+[x] 655. - Detects when Leaflet library loads asynchronously
+[x] 656. - Retries initialization every 100ms if Leaflet not available
+[x] 657. - Added try-catch error handling for map creation
+[x] 658. - Added console logging for debugging
+[x] 659. Added touchZoom support for better mobile interaction
+[x] 660. Z-index layering for proper panel/map stacking (z-0 for map, z-10 for panel)
+[x] 661. Workflow restarted with all fixes applied
+[x] 662. Application ready for final mobile testing
+
+## Summary of ALL Mobile Improvements:
 
 ### 1. Navigation Completion Restriction (COMPLETE)
 - After "Journey Complete", if user selects "No" to feedback, they're redirected to thank-you page
@@ -81,6 +100,7 @@
 - All restrictions apply only to mobile QR-code version
 - Desktop/kiosk version remains unchanged and fully accessible
 - Source detection via ?source=mobile parameter ensures proper routing
+- Back button now redirects to thank-you page (no access to landing page)
 
 ### 4. Mobile Map Integration (COMPLETE)
 - Navigation map now visible in mobile QR version
@@ -90,3 +110,5 @@
 - Current phase highlighted with thicker lines
 - Completed phases shown with dashed lines
 - All navigation information (steps, phases, distance) accessible in right panel
+- Map properly sized and responsive to flex container layout
+- Leaflet initialization handles async library loading
