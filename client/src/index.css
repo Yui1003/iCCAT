@@ -302,10 +302,12 @@
   transform: translate3d(0, 0, 0) !important;
 }
 
-/* General map styles for all Leaflet maps */
-#map {
+/* General map styles for all Leaflet maps (modals, etc) */
+#map:not(.mobile-map) {
   width: 100% !important;
   height: 100% !important;
+  position: relative !important;
+  overflow: hidden !important;
   -webkit-user-select: none !important;
   user-select: none !important;
   -webkit-touch-callout: none !important;
