@@ -24,6 +24,7 @@ import { findShortestPath } from "@/lib/pathfinding";
 import { getWalkpaths, getDrivepaths, getBuildings, getStaff, getFloors, getRooms } from "@/lib/offline-data";
 import { calculateMultiPhaseRoute, multiPhaseToNavigationRoute } from "@/lib/multi-phase-routes";
 import { calculateETA, parseDistanceToMeters } from "@/lib/eta-calculator";
+import { recordMetric } from "@/lib/analytics-recorder";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 
@@ -146,6 +147,7 @@ export default function Navigation() {
                   .map(id => buildings.find(b => b.id === id))
                   .filter(Boolean) as Building[];
 
+                const routeStartTime = performance.now();
                 const multiPhaseRoute = await calculateMultiPhaseRoute(
                   startBuilding as any,
                   waypointBuildings,
@@ -165,7 +167,16 @@ export default function Navigation() {
                     navigationRoute.vehicleType = vehicleParam;
                   }
 
+                  const routeDuration = performance.now() - routeStartTime;
                   setRoute(navigationRoute);
+                  
+                  // Record route generation metric
+                  recordMetric({
+                    metricType: 'route_generation',
+                    durationMs: routeDuration,
+                    actionName: `generate_route_${effectiveMode}_multi_stop`,
+                    success: true,
+                  });
 
                   // Save route
                   try {
@@ -193,6 +204,7 @@ export default function Navigation() {
               }
 
               // Single destination route
+              const routeStartTime = performance.now();
               const routePolyline = await calculateRouteClientSide(
                 startBuilding as any,
                 endBuilding,
@@ -207,6 +219,7 @@ export default function Navigation() {
                   endBuilding.name
                 );
 
+                const routeDuration = performance.now() - routeStartTime;
                 setRoute({
                   start: startBuilding as any,
                   end: endBuilding,
@@ -214,6 +227,14 @@ export default function Navigation() {
                   polyline: routePolyline,
                   steps,
                   totalDistance
+                });
+
+                // Record route generation metric
+                recordMetric({
+                  metricType: 'route_generation',
+                  durationMs: routeDuration,
+                  actionName: `generate_route_${effectiveMode}_single`,
+                  success: true,
                 });
 
                 // Save route
