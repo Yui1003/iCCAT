@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useToast } from "@/hooks/use-toast";
 import type { SavedRoute, Building, RoutePhase, RouteStep } from "@shared/schema";
 import { getPhaseColor } from "@shared/phase-colors";
+import { calculateETAFromString } from "@/lib/utils";
 
 declare global {
   interface Window {

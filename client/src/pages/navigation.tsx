@@ -24,6 +24,7 @@ import { findShortestPath } from "@/lib/pathfinding";
 import { getWalkpaths, getDrivepaths, getBuildings, getStaff, getFloors, getRooms } from "@/lib/offline-data";
 import { calculateMultiPhaseRoute, multiPhaseToNavigationRoute } from "@/lib/multi-phase-routes";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { calculateETAFromString, parseDistanceToMeters } from "@/lib/utils";
 import { useLocation } from "wouter";
 
 export default function Navigation() {
@@ -1640,7 +1641,7 @@ export default function Navigation() {
                     <p className="font-medium text-foreground">{route.end.name}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-2 text-sm flex-wrap">
                   <span className="text-muted-foreground">Distance:</span>
                   <span className="font-medium text-foreground">{route.totalDistance}</span>
                   <span className="text-muted-foreground">•</span>
@@ -1651,6 +1652,8 @@ export default function Navigation() {
                       <span className="text-muted-foreground capitalize">{route.vehicleType}</span>
                     </>
                   )}
+                  <span className="text-muted-foreground">•</span>
+                  <span className="font-medium text-foreground">{calculateETAFromString(route.totalDistance, route.mode)}</span>
                 </div>
                 {route.parkingLocation && (
                   <div className="mt-3 pt-3 border-t border-border">
@@ -1751,7 +1754,14 @@ export default function Navigation() {
                   </>
                 ) : (
                   <>
-                    <h4 className="text-sm font-medium text-foreground mb-3">Directions</h4>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-medium text-foreground">Directions</h4>
+                      <div className="text-xs text-muted-foreground flex gap-2">
+                        <span>{route.totalDistance}</span>
+                        <span>•</span>
+                        <span className="font-medium text-foreground">{calculateETAFromString(route.totalDistance, route.mode)}</span>
+                      </div>
+                    </div>
                     <div className="space-y-3">
                       {route.steps.map((step, index) => (
                         <div
