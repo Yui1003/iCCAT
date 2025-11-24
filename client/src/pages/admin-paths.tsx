@@ -193,12 +193,12 @@ export default function AdminPaths() {
                 </div>
                 <div className="w-full">
                   <Label>Draw Path on Map</Label>
-                  <div className="w-full">
+                  <div className="w-full" style={{ height: '350px', display: 'block' }}>
                     <PathDrawingMap
                       nodes={pathNodes}
                       onNodesChange={setPathNodes}
                       mode={activeTab === "walkpaths" ? "walking" : "driving"}
-                      className="h-[350px] w-full"
+                      className="h-full w-full"
                     />
                   </div>
                 </div>

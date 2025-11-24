@@ -34,7 +34,7 @@ export default function PathDrawingMap({
   const [isDrawing, setIsDrawing] = useState(true);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!mapRef.current) return;
 
     const L = window.L;
     if (!L) {
@@ -42,6 +42,12 @@ export default function PathDrawingMap({
       return;
     }
 
+    // Only initialize map once
+    if (mapInstanceRef.current) {
+      return;
+    }
+
+    // Create map instance
     const map = L.map(mapRef.current, {
       center: [14.4035451, 120.8659794],
       zoom: 17,
@@ -56,23 +62,23 @@ export default function PathDrawingMap({
 
     mapInstanceRef.current = map;
 
-    // Invalidate map size multiple times to handle async layout issues in dialogs
+    // Use ResizeObserver to handle dialog resize events
+    let resizeObserver: ResizeObserver | null = null;
+    try {
+      resizeObserver = new ResizeObserver(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      });
+      resizeObserver.observe(mapRef.current);
+    } catch (e) {
+      console.error("ResizeObserver not supported");
+    }
+
+    // Invalidate size on initial load
     map.invalidateSize();
 
-    // Call again after paint to ensure layout is complete
-    const timeoutId1 = setTimeout(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-      }
-    }, 50);
-
-    const timeoutId2 = setTimeout(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-      }
-    }, 200);
-
-    // Listen for window resize to call invalidateSize
+    // Also handle window resize
     const handleResize = () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.invalidateSize();
@@ -81,10 +87,26 @@ export default function PathDrawingMap({
     
     window.addEventListener('resize', handleResize);
 
+    // Trigger invalidateSize after delays for safety
+    const timeoutId1 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 100);
+
+    const timeoutId2 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 300);
+
     return () => {
       clearTimeout(timeoutId1);
       clearTimeout(timeoutId2);
       window.removeEventListener('resize', handleResize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -257,7 +279,18 @@ export default function PathDrawingMap({
           </Button>
         </div>
       </div>
-      <div ref={mapRef} className={`${className} rounded-lg overflow-hidden border`} data-testid="path-drawing-map" />
+      <div 
+        ref={mapRef} 
+        className={`${className} rounded-lg overflow-hidden border bg-slate-100`}
+        style={{ 
+          display: 'block', 
+          position: 'relative', 
+          width: '100%', 
+          height: '350px',
+          minHeight: '350px'
+        }}
+        data-testid="path-drawing-map" 
+      />
       {nodes.length > 0 && (
         <div className="text-xs text-muted-foreground p-2 bg-muted/50 rounded-md">
           <p className="font-medium mb-1">Path Nodes:</p>
