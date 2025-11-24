@@ -1,5 +1,5 @@
 import React from "react";
-import { Navigation, Car, Bike, Plus, X, GripVertical, MapPin } from "lucide-react";
+import { Navigation, Car, Bike, Plus, X, GripVertical, MapPin, Clock } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -12,6 +12,8 @@ import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import SearchableStartingPointSelect from "./searchable-starting-point-select";
 import SearchableDestinationSelect from "./searchable-destination-select";
 import type { Building, VehicleType } from "@shared/schema";
+import { KIOSK_LOCATION } from "@shared/schema";
+import { calculateETA, parseDistance } from "@/lib/eta-calculator";
 
 interface GetDirectionsDialogProps {
   open: boolean;
@@ -109,6 +111,44 @@ export default function GetDirectionsDialog({
     if (id === 'kiosk') return 'Your Location (Kiosk)';
     return buildings.find(b => b.id === id)?.name || '';
   };
+
+  // Calculate distance between two buildings
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371000; // Earth's radius in meters
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lng2 - lng1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) *
+      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
+
+  // Get estimated time for current route
+  const getEstimatedTime = (): string | null => {
+    if (!selectedStart || !destination) return null;
+
+    const startBuilding = selectedStart === 'kiosk'
+      ? KIOSK_LOCATION
+      : buildings.find(b => b.id === selectedStart);
+
+    if (!startBuilding) return null;
+
+    const distanceMeters = calculateDistance(
+      startBuilding.lat,
+      startBuilding.lng,
+      destination.lat,
+      destination.lng
+    );
+
+    return calculateETA(distanceMeters, mode);
+  };
+
+  const estimatedTime = getEstimatedTime();
 
   return (
     <>
@@ -229,6 +269,14 @@ export default function GetDirectionsDialog({
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
+              
+              {/* Estimated Time */}
+              {estimatedTime && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                  <Clock className="w-4 h-4" />
+                  <span>Estimated time: <span className="font-semibold text-foreground">{estimatedTime}</span></span>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
