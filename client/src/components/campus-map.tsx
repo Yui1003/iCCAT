@@ -393,8 +393,8 @@ export default function CampusMap({
       const mergedPoints: Array<{ lat: number; lng: number }> = [];
       
       routePhases.forEach((phase, index) => {
-        // Use distinct color for each phase
-        const color = PHASE_COLORS[index % PHASE_COLORS.length];
+        // Use the phase's assigned color (matches the badge color)
+        const color = phase.color || PHASE_COLORS[index % PHASE_COLORS.length];
         let polylinePoints = [...phase.polyline];
         
         // Ensure seamless continuity by always connecting consecutive phases

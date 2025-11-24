@@ -1676,38 +1676,78 @@ export default function Navigation() {
               <div>
                 {route.phases && route.phases.length > 0 ? (
                   <>
-                    {route.phases.map((phase, phaseIndex) => (
-                      <div key={phaseIndex} className="mb-6">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
-                            {phaseIndex + 1}
-                          </div>
-                          <h4 className="text-sm font-semibold text-foreground">
-                            {phaseIndex === 0 
-                              ? `${route.vehicleType === 'bike' ? 'Ride' : 'Drive'} to ${phase.endName}`
-                              : `Walk to ${phase.endName}`}
-                          </h4>
-                          <span className="text-xs text-muted-foreground ml-auto">{phase.distance}</span>
-                        </div>
-                        <div className="space-y-3 pl-8">
-                          {phase.steps.map((step, stepIndex) => (
-                            <div
-                              key={stepIndex}
-                              className="flex gap-3"
-                              data-testid={`route-phase-${phaseIndex}-step-${stepIndex}`}
+                    {route.phases.map((phase, phaseIndex) => {
+                      // Calculate ETA based on distance and travel mode
+                      const parseDistance = (distStr: string): number => {
+                        const match = distStr.match(/(\d+(?:\.\d+)?)\s*m/);
+                        return match ? parseFloat(match[1]) : 0;
+                      };
+                      
+                      const distanceMeters = parseDistance(phase.distance);
+                      // Average speeds: walking ~1.4 m/s, driving ~10 m/s
+                      const speed = phase.mode === 'walking' ? 1.4 : 10;
+                      const seconds = distanceMeters / speed;
+                      const minutes = Math.ceil(seconds / 60);
+                      const eta = minutes > 0 ? `${minutes} min` : '< 1 min';
+                      
+                      // Convert phase color to RGB for text contrast
+                      const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+                        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                        return result ? {
+                          r: parseInt(result[1], 16),
+                          g: parseInt(result[2], 16),
+                          b: parseInt(result[3], 16)
+                        } : null;
+                      };
+                      
+                      const phaseRgb = hexToRgb(phase.color);
+                      const isLightColor = phaseRgb ? 
+                        (phaseRgb.r * 299 + phaseRgb.g * 587 + phaseRgb.b * 114) / 1000 > 128 : 
+                        false;
+                      
+                      return (
+                        <div key={phaseIndex} className="mb-6">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div 
+                              className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                isLightColor ? 'text-black' : 'text-white'
+                              }`}
+                              style={{ backgroundColor: phase.color }}
+                              data-testid={`phase-badge-${phaseIndex}`}
                             >
-                              <div className="flex-shrink-0 w-6 h-6 bg-card border border-border rounded-full flex items-center justify-center text-xs font-medium text-muted-foreground">
-                                {stepIndex + 1}
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-foreground">{step.instruction}</p>
-                                <p className="text-xs text-muted-foreground">{step.distance}</p>
-                              </div>
+                              {phaseIndex + 1}
                             </div>
-                          ))}
+                            <h4 className="text-sm font-semibold text-foreground">
+                              {phaseIndex === 0 
+                                ? `${route.vehicleType === 'bike' ? 'Ride' : 'Drive'} to ${phase.endName}`
+                                : `Walk to ${phase.endName}`}
+                            </h4>
+                            <div className="text-xs text-muted-foreground ml-auto flex gap-2">
+                              <span>{phase.distance}</span>
+                              <span>•</span>
+                              <span>{eta}</span>
+                            </div>
+                          </div>
+                          <div className="space-y-3 pl-8">
+                            {phase.steps.map((step, stepIndex) => (
+                              <div
+                                key={stepIndex}
+                                className="flex gap-3"
+                                data-testid={`route-phase-${phaseIndex}-step-${stepIndex}`}
+                              >
+                                <div className="flex-shrink-0 w-6 h-6 bg-card border border-border rounded-full flex items-center justify-center text-xs font-medium text-muted-foreground">
+                                  {stepIndex + 1}
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-foreground">{step.instruction}</p>
+                                  <p className="text-xs text-muted-foreground">{step.distance}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </>
                 ) : (
                   <>
