@@ -25,7 +25,7 @@ export default function PathDrawingMap({
   nodes,
   onNodesChange,
   mode = 'walking',
-  className = "h-[350px] w-full"
+  className = "h-[500px] w-full"
 }: PathDrawingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);

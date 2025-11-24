@@ -155,14 +155,6 @@ export default function CampusMap({
     };
     mapContainer.addEventListener('contextmenu', disableContextMenu);
 
-    // Handle container resize (e.g., when side panel opens/closes)
-    const resizeObserver = new ResizeObserver(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize(false);
-      }
-    });
-    resizeObserver.observe(mapContainer);
-
     return () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
@@ -170,9 +162,7 @@ export default function CampusMap({
       }
       if (mapContainer) {
         mapContainer.removeEventListener('contextmenu', disableContextMenu);
-        resizeObserver.unobserve(mapContainer);
       }
-      resizeObserver.disconnect();
     };
   }, [centerLat, centerLng]);
 
