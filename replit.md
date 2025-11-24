@@ -3,15 +3,6 @@
 ## Overview
 iCCAT (Interactive Campus Companion and Assistance Terminal) is a full-stack web application designed as an **offline-first** smart kiosk system for Cavite State University's CCAT Campus. Its primary purpose is to provide interactive campus navigation, wayfinding, staff directory, and event information through a touch-optimized interface for public kiosk deployment. The system includes public-facing modules and a comprehensive admin panel for content management, built with complete offline capability including client-side pathfinding and embedded baseline datasets.
 
-## Recent Changes (November 24, 2025)
-- **NEW: Implemented ETA (Estimated Time of Arrival) display for all navigation types**
-  - Added ETA utility functions (`calculateETA`, `calculateETAFromString`, `calculateTotalETA`) to `lib/utils.ts`
-  - Displays ETA on single-phase routes in navigation summary
-  - Shows total ETA for multi-phase routes in route details card
-  - Mobile navigation already displays ETAs for each phase
-  - Walking speed: 1.4 m/s, Driving/Car/Motorcycle/Bike: 10 m/s
-  - ETA calculations use distance from route and selected travel mode
-
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
@@ -22,7 +13,6 @@ Preferred communication style: Simple, everyday language.
 - **UI Component System:** Shadcn/ui (Radix UI primitives), Material Design principles (48px tap targets), Tailwind CSS, Roboto font family.
 - **State Management:** TanStack Query for server state, local React state for UI interactions.
 - **Key Frontend Features:** Interactive map with Leaflet.js, offline-first design (Service Worker), touch-optimized interface, responsive layouts.
-- **Navigation Features:** ETA calculations for walking/driving modes, multi-phase route support, color-coded paths, offline pathfinding.
 
 ### Backend Architecture
 - **Server Framework:** Express.js with TypeScript, RESTful API.
@@ -43,7 +33,6 @@ Preferred communication style: Simple, everyday language.
 - **Graph Construction:** Paths converted to graph of nodes and weighted edges. Node snapping merges nodes from *different* paths within 10 meters, while preserving same-path structure. Edge weights use Haversine distance. Building start/end points project onto nearest path segment.
 - **Path Calculation:** Finds shortest route between buildings, returning waypoints along actual paths.
 - **Walkpath Network Design:** Supports unlimited branching paths with `pathId`-based merge control, ensuring correct junction creation and preservation of individual path structures.
-- **ETA Calculation:** Calculates travel time based on mode (walking 1.4 m/s, driving 10 m/s), displays on single and multi-phase routes.
 
 ### Offline-First Architecture
 - **Embedded Baseline Data:** All critical datasets (buildings, staff, floors, rooms, events, walkpaths, drivepaths) bundled in JavaScript build at `client/src/lib/baseline-data.json`.
