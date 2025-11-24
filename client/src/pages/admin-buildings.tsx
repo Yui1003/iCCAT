@@ -164,7 +164,7 @@ export default function AdminBuildings() {
 
   return (
     <AdminLayout>
-      <div className="p-8">
+      <div className="p-8 w-full">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Building Management</h1>
@@ -430,14 +430,14 @@ export default function AdminBuildings() {
           </Dialog>
         </div>
 
-        <div className="flex gap-8 w-full max-w-full overflow-hidden">
-          <div className="flex-[2] min-w-0 max-w-full overflow-hidden">
-            <Card className="h-[600px] overflow-hidden w-full">
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <Card className="h-[600px] w-full overflow-hidden">
               <CampusMap buildings={buildings} onBuildingClick={handleOpenDialog} />
             </Card>
           </div>
 
-          <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+          <div>
             <Card className="p-6 h-[600px] overflow-hidden flex flex-col w-full">
               <h2 className="text-lg font-semibold text-foreground mb-4">Buildings List</h2>
               

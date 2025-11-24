@@ -160,7 +160,7 @@ export default function AdminPaths() {
 
   return (
     <AdminLayout>
-      <div className="p-8">
+      <div className="p-8 w-full">
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Path Management</h1>
@@ -216,15 +216,15 @@ export default function AdminPaths() {
           </TabsList>
 
           <TabsContent value="walkpaths">
-            <div className="flex gap-6 w-full max-w-full overflow-hidden">
-              <div className="flex-[2] min-w-0 max-w-full overflow-hidden">
-                <Card className="h-[600px] overflow-hidden w-full">
+            <div className="grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="h-[600px] w-full overflow-hidden">
                   <CampusMap buildings={buildings} />
                 </Card>
               </div>
 
-              <div className="flex-1 min-w-0 max-w-full overflow-hidden">
-                <Card className="p-6 flex flex-col h-[600px] w-full">
+              <div>
+                <Card className="p-6 flex flex-col h-[600px] w-full overflow-hidden">
                   <h2 className="text-lg font-semibold text-foreground mb-4">Walking Paths</h2>
                   {walkpaths.length === 0 ? (
                     <div className="text-center py-8">
@@ -277,15 +277,15 @@ export default function AdminPaths() {
           </TabsContent>
 
           <TabsContent value="drivepaths">
-            <div className="flex gap-6 w-full">
-              <div className="flex-[2] min-w-0">
-                <Card className="h-[600px] overflow-hidden">
+            <div className="grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="h-[600px] w-full overflow-hidden">
                   <CampusMap buildings={buildings} />
                 </Card>
               </div>
 
-              <div className="flex-1 min-w-0 max-w-full overflow-hidden">
-                <Card className="p-6 flex flex-col h-[600px] w-full">
+              <div>
+                <Card className="p-6 flex flex-col h-[600px] w-full overflow-hidden">
                   <h2 className="text-lg font-semibold text-foreground mb-4">Driving Paths</h2>
                   {drivepaths.length === 0 ? (
                     <div className="text-center py-8">
