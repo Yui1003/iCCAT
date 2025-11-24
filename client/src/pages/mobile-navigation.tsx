@@ -26,6 +26,7 @@ export default function MobileNavigation() {
   const [showNavPanel, setShowNavPanel] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const touchHandlerRef = useRef<((e: TouchEvent) => void) | null>(null);
 
   const { data: route, isLoading, error } = useQuery<SavedRoute>({
     queryKey: ['/api/routes', params?.routeId],
@@ -110,11 +111,14 @@ export default function MobileNavigation() {
           zoomControl: true,
           touchZoom: true,
           dragging: true,
+          preferCanvas: true,
+          renderer: L.canvas(),
         });
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',
           maxZoom: 19,
+          crossOrigin: 'anonymous',
         }).addTo(map);
 
         mapInstanceRef.current = map;
@@ -122,9 +126,20 @@ export default function MobileNavigation() {
 
         // Invalidate map size after a short delay to ensure proper rendering
         setTimeout(() => {
-          map.invalidateSize();
+          map.invalidateSize(false);
           console.log("Map size invalidated");
         }, 100);
+
+        // Prevent default touch behavior to avoid conflicts
+        if (mapRef.current) {
+          const handler = (e: TouchEvent) => {
+            if (e.touches.length > 1) {
+              e.preventDefault();
+            }
+          };
+          touchHandlerRef.current = handler;
+          mapRef.current.addEventListener('touchmove', handler, { passive: false });
+        }
       } catch (error) {
         console.error("Error initializing map:", error);
       }
@@ -132,7 +147,13 @@ export default function MobileNavigation() {
 
     // Start initialization with a small delay to ensure DOM is ready
     const timer = setTimeout(initMap, 100);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      // Clean up touch event listener
+      if (mapRef.current && touchHandlerRef.current) {
+        mapRef.current.removeEventListener('touchmove', touchHandlerRef.current);
+      }
+    };
   }, []);
 
   // Draw route on map when it updates
@@ -396,6 +417,25 @@ export default function MobileNavigation() {
                   <span className="font-medium text-foreground">{currentPhase.distance}</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">ETA:</span>
+                  <span 
+                    className="font-medium text-foreground"
+                    data-testid={`mobile-eta-${currentPhaseIndex}`}
+                  >
+                    {(() => {
+                      const parseDistance = (distStr: string): number => {
+                        const match = distStr.match(/(\d+(?:\.\d+)?)\s*m/);
+                        return match ? parseFloat(match[1]) : 0;
+                      };
+                      const distanceMeters = parseDistance(currentPhase.distance);
+                      const speed = currentPhase.mode === 'walking' ? 1.4 : 10;
+                      const seconds = distanceMeters / speed;
+                      const minutes = Math.ceil(seconds / 60);
+                      return minutes > 0 ? `${minutes} min` : '< 1 min';
+                    })()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">Mode:</span>
                   <span className="font-medium text-foreground capitalize">{currentPhase.mode}</span>
                 </div>
@@ -433,6 +473,17 @@ export default function MobileNavigation() {
                   const isCurrent = index === currentPhaseIndex;
                   const color = phase.color || getPhaseColor(index);
 
+                  // Calculate ETA for this phase
+                  const parseDistance = (distStr: string): number => {
+                    const match = distStr.match(/(\d+(?:\.\d+)?)\s*m/);
+                    return match ? parseFloat(match[1]) : 0;
+                  };
+                  const distanceMeters = parseDistance(phase.distance);
+                  const speed = phase.mode === 'walking' ? 1.4 : 10;
+                  const seconds = distanceMeters / speed;
+                  const minutes = Math.ceil(seconds / 60);
+                  const eta = minutes > 0 ? `${minutes}m` : '<1m';
+
                   return (
                     <div
                       key={index}
@@ -460,7 +511,7 @@ export default function MobileNavigation() {
                           {phase.startName}
                         </p>
                         <p className="text-muted-foreground text-xs">
-                          {phase.distance}
+                          {phase.distance} • {eta}
                         </p>
                       </div>
                     </div>
