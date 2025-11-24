@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { SavedRoute, Building, RoutePhase, RouteStep } from "@shared/schema";
-import { PHASE_COLORS } from "@shared/phase-colors";
+import { getPhaseColor } from "@shared/phase-colors";
 
 declare global {
   interface Window {
@@ -165,7 +165,7 @@ export default function MobileNavigation() {
 
       // Draw each phase
       route.phases.forEach((phase: RoutePhase, index: number) => {
-        const color = PHASE_COLORS[index % PHASE_COLORS.length];
+        const color = phase.color || getPhaseColor(index);
         const isCompleted = completedPhases.includes(index);
         const isCurrent = index === currentPhaseIndex;
 
@@ -267,7 +267,7 @@ export default function MobileNavigation() {
   }
 
   const currentPhase = route.phases[currentPhaseIndex];
-  const phaseColor = PHASE_COLORS[currentPhaseIndex % PHASE_COLORS.length];
+  const phaseColor = currentPhase?.color || getPhaseColor(currentPhaseIndex);
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -324,7 +324,7 @@ export default function MobileNavigation() {
               {route.phases.map((phase: RoutePhase, index: number) => {
                 const isCompleted = completedPhases.includes(index);
                 const isCurrent = index === currentPhaseIndex;
-                const phaseColor = PHASE_COLORS[index % PHASE_COLORS.length];
+                const phaseColor = phase.color || getPhaseColor(index);
 
                 return (
                   <div
@@ -431,7 +431,7 @@ export default function MobileNavigation() {
                 {route.phases.map((phase: RoutePhase, index: number) => {
                   const isCompleted = completedPhases.includes(index);
                   const isCurrent = index === currentPhaseIndex;
-                  const color = PHASE_COLORS[index % PHASE_COLORS.length];
+                  const color = phase.color || getPhaseColor(index);
 
                   return (
                     <div

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Building, RoutePhase } from "@shared/schema";
 import { KIOSK_LOCATION } from "@shared/schema";
+import { PHASE_COLORS } from "@shared/phase-colors";
 
 import buildingIcon from '@assets/generated_images/Building_icon_green_background_3206ffb3.png';
 import kioskIcon from '@assets/generated_images/You_are_Here_location_icon_294f7572.png';
@@ -52,17 +53,6 @@ declare global {
   }
 }
 
-// Phase color palette - distinct colors for each phase
-const PHASE_COLORS = [
-  '#3b82f6', // Blue
-  '#ef4444', // Red
-  '#f97316', // Orange
-  '#eab308', // Yellow
-  '#22c55e', // Green
-  '#06b6d4', // Cyan
-  '#8b5cf6', // Purple
-  '#ec4899', // Pink
-];
 
 const getMarkerIconImage = (poiType?: string | null) => {
   const iconMap: Record<string, string> = {
