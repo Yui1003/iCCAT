@@ -216,15 +216,15 @@ export default function AdminPaths() {
           </TabsList>
 
           <TabsContent value="walkpaths">
-            <div className="flex gap-6 w-full">
-              <div className="flex-[2] min-w-0">
-                <Card className="h-[600px] overflow-hidden">
+            <div className="flex gap-6 w-full max-w-full overflow-hidden">
+              <div className="flex-[2] min-w-0 max-w-full overflow-hidden">
+                <Card className="h-[600px] overflow-hidden w-full">
                   <CampusMap buildings={buildings} />
                 </Card>
               </div>
 
-              <div className="flex-1 min-w-0">
-                <Card className="p-6 flex flex-col h-[600px]">
+              <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                <Card className="p-6 flex flex-col h-[600px] w-full">
                   <h2 className="text-lg font-semibold text-foreground mb-4">Walking Paths</h2>
                   {walkpaths.length === 0 ? (
                     <div className="text-center py-8">
@@ -284,8 +284,8 @@ export default function AdminPaths() {
                 </Card>
               </div>
 
-              <div className="flex-1 min-w-0">
-                <Card className="p-6 flex flex-col h-[600px]">
+              <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                <Card className="p-6 flex flex-col h-[600px] w-full">
                   <h2 className="text-lg font-semibold text-foreground mb-4">Driving Paths</h2>
                   {drivepaths.length === 0 ? (
                     <div className="text-center py-8">
