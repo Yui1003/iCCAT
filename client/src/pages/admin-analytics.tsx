@@ -8,6 +8,21 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AnalyticsEventType } from "@shared/analytics-schema";
 import { isAnalyticsAvailable } from "@/lib/analytics-tracker";
 import { useToast } from "@/hooks/use-toast";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line
+} from "recharts";
 
 interface AnalyticsSummary {
   eventType: AnalyticsEventType;
@@ -17,6 +32,8 @@ interface AnalyticsSummary {
   maxResponseTime: number;
   lastUpdated: number;
 }
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function AdminAnalytics() {
   const [isOnline, setIsOnline] = useState(isAnalyticsAvailable());
@@ -115,6 +132,21 @@ export default function AdminAnalytics() {
     [AnalyticsEventType.ROUTE_GENERATION]: "Route Generation"
   };
 
+  // Prepare data for charts
+  const chartData = analytics.map((stat) => ({
+    name: eventTypeLabels[stat.eventType].split(' ')[0],
+    avg: Math.round(stat.averageResponseTime),
+    min: Math.round(stat.minResponseTime),
+    max: Math.round(stat.maxResponseTime),
+    count: stat.totalCount,
+    fullName: eventTypeLabels[stat.eventType]
+  }));
+
+  const pieData = analytics.map((stat) => ({
+    name: eventTypeLabels[stat.eventType],
+    value: stat.totalCount
+  }));
+
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-card-border p-4 sticky top-0 z-10">
@@ -163,7 +195,7 @@ export default function AdminAnalytics() {
         </div>
 
         {/* Action Buttons */}
-        <div className="mb-6 flex justify-end gap-2 flex-wrap">
+        <div className="mb-8 flex justify-end gap-2 flex-wrap">
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -215,11 +247,10 @@ export default function AdminAnalytics() {
           )}
         </div>
 
-        {/* Analytics Cards */}
         {isLoading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Card key={i} className="h-64 animate-pulse bg-muted" />
+          <div className="grid gap-6">
+            {[1, 2].map((i) => (
+              <Card key={i} className="h-96 animate-pulse bg-muted" />
             ))}
           </div>
         ) : analytics.length === 0 ? (
@@ -231,56 +262,137 @@ export default function AdminAnalytics() {
             </p>
           </Card>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {analytics.map((stat) => (
-              <Card
-                key={stat.eventType}
-                className="p-6 hover-elevate active-elevate-2"
-                data-testid={`analytics-card-${stat.eventType}`}
-              >
-                <h3 className="text-lg font-semibold text-foreground mb-4">
-                  {eventTypeLabels[stat.eventType]}
-                </h3>
-
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Total Events:</span>
-                    <span className="font-medium text-foreground">{stat.totalCount}</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Average Time:</span>
-                    <span className="font-medium text-foreground">{formatTime(stat.averageResponseTime)}</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Min Time:</span>
-                    <span className="font-medium text-foreground">{formatTime(stat.minResponseTime)}</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Max Time:</span>
-                    <span className="font-medium text-foreground">{formatTime(stat.maxResponseTime)}</span>
-                  </div>
-
-                  <div className="pt-2 border-t border-border">
-                    <p className="text-xs text-muted-foreground">
-                      Last updated: {new Date(stat.lastUpdated).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
+          <>
+            {/* Charts Section */}
+            <div className="grid lg:grid-cols-2 gap-6 mb-8">
+              {/* Response Time Chart */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Response Times (ms)</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                    <XAxis dataKey="name" stroke="var(--color-muted-foreground)" />
+                    <YAxis stroke="var(--color-muted-foreground)" />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}
+                      labelStyle={{ color: 'var(--color-foreground)' }}
+                    />
+                    <Legend />
+                    <Bar dataKey="avg" fill="#3b82f6" name="Average" />
+                    <Bar dataKey="min" fill="#10b981" name="Min" />
+                    <Bar dataKey="max" fill="#ef4444" name="Max" />
+                  </BarChart>
+                </ResponsiveContainer>
               </Card>
-            ))}
-          </div>
-        )}
 
-        {/* Info Box */}
-        <Alert className="mt-8">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Metrics Tracked:</strong> Response times for interface actions, map loading, image loading, menu rendering, and route generation. All metrics are automatically collected when the kiosk is online.
-          </AlertDescription>
-        </Alert>
+              {/* Event Distribution Chart */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Event Distribution</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}
+                      labelStyle={{ color: 'var(--color-foreground)' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Card>
+            </div>
+
+            {/* Event Count Chart */}
+            <Card className="p-6 mb-8">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Events Tracked by Type</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis dataKey="name" stroke="var(--color-muted-foreground)" />
+                  <YAxis stroke="var(--color-muted-foreground)" />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}
+                    labelStyle={{ color: 'var(--color-foreground)' }}
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    name="Total Events"
+                    dot={{ fill: '#3b82f6', r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+
+            {/* Analytics Cards */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Detailed Statistics</h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {analytics.map((stat) => (
+                  <Card
+                    key={stat.eventType}
+                    className="p-6 hover-elevate active-elevate-2"
+                    data-testid={`analytics-card-${stat.eventType}`}
+                  >
+                    <h3 className="text-lg font-semibold text-foreground mb-4">
+                      {eventTypeLabels[stat.eventType]}
+                    </h3>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Total Events:</span>
+                        <span className="font-medium text-foreground">{stat.totalCount}</span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Average Time:</span>
+                        <span className="font-medium text-foreground">{formatTime(stat.averageResponseTime)}</span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Min Time:</span>
+                        <span className="font-medium text-foreground">{formatTime(stat.minResponseTime)}</span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Max Time:</span>
+                        <span className="font-medium text-foreground">{formatTime(stat.maxResponseTime)}</span>
+                      </div>
+
+                      <div className="pt-2 border-t border-border">
+                        <p className="text-xs text-muted-foreground">
+                          Last updated: {new Date(stat.lastUpdated).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Info Box */}
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Metrics Tracked:</strong> Response times for interface actions, map loading, image loading, menu rendering, and route generation. All metrics are automatically collected when the kiosk is online. Charts above are visual only and not included in exports.
+              </AlertDescription>
+            </Alert>
+          </>
+        )}
       </main>
     </div>
   );

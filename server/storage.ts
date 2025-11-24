@@ -793,7 +793,9 @@ export class DatabaseStorage implements IStorage {
       console.log('[Analytics] All analytics data cleared from Firestore');
     } catch (error) {
       console.error('Error resetting analytics:', error);
-      throw new Error('Cannot reset analytics');
+      // Clear in-memory cache on error (graceful fallback)
+      analyticsMemory.clear();
+      console.log('[Analytics] Cleared in-memory analytics cache');
     }
   }
 
