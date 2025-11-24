@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, Clock, MapPin, X, Navigation, Filter } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, X, Navigation, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import GetDirectionsDialog from "@/components/get-directions-dialog";
 import type { Event, Building } from "@shared/schema";
 import { eventClassifications } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
+import useEmblaCarousel from "embla-carousel-react";
 
 // Helper function to determine if event is upcoming/ongoing (green) or past (red)
 function getEventStatus(date: string, time?: string | null): 'upcoming' | 'past' {
@@ -64,6 +65,51 @@ function getEventStatus(date: string, time?: string | null): 'upcoming' | 'past'
   return 'past';
 }
 
+// Carousel Navigation Component
+function CarouselNavigation({ 
+  emblaApi, 
+  carouselName 
+}: { 
+  emblaApi: any;
+  carouselName: string;
+}) {
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(true);
+
+  const onSelect = () => {
+    if (!emblaApi) return;
+    setCanScrollPrev(emblaApi.canScrollPrev());
+    setCanScrollNext(emblaApi.canScrollNext());
+  };
+
+  emblaApi?.on('select', onSelect);
+
+  return (
+    <div className="flex gap-2">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => emblaApi?.scrollPrev()}
+        disabled={!canScrollPrev}
+        className="h-9 w-9"
+        data-testid={`carousel-prev-${carouselName}`}
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => emblaApi?.scrollNext()}
+        disabled={!canScrollNext}
+        className="h-9 w-9"
+        data-testid={`carousel-next-${carouselName}`}
+      >
+        <ChevronRight className="w-5 h-5" />
+      </Button>
+    </div>
+  );
+}
+
 export default function Events() {
   // Return to home after 3 minutes of inactivity
   useGlobalInactivity();
@@ -74,6 +120,19 @@ export default function Events() {
   const [classificationFilter, setClassificationFilter] = useState<string>("all");
   const [showPastEvents, setShowPastEvents] = useState(false);
   const [, navigate] = useLocation();
+
+  // Carousel refs and embla instances
+  const [ongoingEmblaRef, ongoingEmblaApi] = useEmblaCarousel({
+    align: 'start',
+    containScroll: 'trimSnaps',
+    skipSnaps: false,
+  });
+
+  const [achievementsEmblaRef, achievementsEmblaApi] = useEmblaCarousel({
+    align: 'start',
+    containScroll: 'trimSnaps',
+    skipSnaps: false,
+  });
 
   const { data: events = [], isLoading } = useQuery<Event[]>({
     queryKey: ['/api/events']
@@ -153,7 +212,7 @@ export default function Events() {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Ongoing/Upcoming Events with Past Events toggle button */}
+            {/* Ongoing/Upcoming Events - Horizontal Swipeable Carousel */}
             {ongoingUpcoming.length > 0 && (
               <div>
                 <div className="flex items-center gap-4 mb-6">
@@ -170,11 +229,18 @@ export default function Events() {
                     </Button>
                   )}
                   <Separator className="flex-1" />
+                  {ongoingUpcoming.length > 1 && (
+                    <CarouselNavigation emblaApi={ongoingEmblaApi} carouselName="ongoing" />
+                  )}
                 </div>
-                <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
-                  {ongoingUpcoming.map((event) => (
-                    <EventCard key={event.id} event={event} onSelect={setSelectedEvent} />
-                  ))}
+                <div className="overflow-hidden" ref={ongoingEmblaRef} data-testid="carousel-ongoing-upcoming">
+                  <div className="flex gap-6">
+                    {ongoingUpcoming.map((event) => (
+                      <div key={event.id} className="flex-shrink-0 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+                        <EventCard event={event} onSelect={setSelectedEvent} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -195,19 +261,24 @@ export default function Events() {
               </div>
             )}
 
-            {/* Achievements - Horizontal Scrollable */}
+            {/* Achievements - Horizontal Swipeable Carousel */}
             {achievements.length > 0 && (
               <div>
                 <div className="flex items-center gap-4 mb-6">
                   <h2 className="text-2xl font-bold text-foreground">Achievements</h2>
                   <Separator className="flex-1" />
+                  {achievements.length > 1 && (
+                    <CarouselNavigation emblaApi={achievementsEmblaApi} carouselName="achievements" />
+                  )}
                 </div>
-                <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth">
-                  {achievements.map((event) => (
-                    <div key={event.id} className="flex-shrink-0 w-[340px] snap-start">
-                      <EventCard event={event} onSelect={setSelectedEvent} />
-                    </div>
-                  ))}
+                <div className="overflow-hidden" ref={achievementsEmblaRef} data-testid="carousel-achievements">
+                  <div className="flex gap-6">
+                    {achievements.map((event) => (
+                      <div key={event.id} className="flex-shrink-0 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+                        <EventCard event={event} onSelect={setSelectedEvent} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -358,7 +429,7 @@ export default function Events() {
 function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event) => void }) {
   return (
     <Card
-      className="flex flex-col overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all"
+      className="flex flex-col overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all h-full"
       onClick={() => onSelect(event)}
       data-testid={`event-card-${event.id}`}
     >
