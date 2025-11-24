@@ -326,17 +326,20 @@ export default function MobileNavigation() {
       </header>
 
       {/* Main Layout: Map + Navigation Panel */}
-      <main className="flex-1 flex w-full h-full">
+      <main className="flex-1 flex w-full overflow-hidden relative">
         {/* Map Area - Leaflet Interactive Map */}
         <div
           ref={mapRef}
           id="map"
-          className="flex-1 z-0 relative"
+          className="absolute z-0"
           data-testid="map-container"
           style={{
             width: '100%',
             height: '100%',
-            position: 'relative',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
           }}
         />
 

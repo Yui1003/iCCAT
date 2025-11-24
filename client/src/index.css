@@ -291,12 +291,15 @@
 #map {
   width: 100% !important;
   height: 100% !important;
-  position: relative !important;
+  position: absolute !important;
   overflow: hidden !important;
   -webkit-user-select: none !important;
   user-select: none !important;
   -webkit-touch-callout: none !important;
   -webkit-tap-highlight-color: transparent !important;
+  touch-action: manipulation !important;
+  -webkit-transform: translate3d(0, 0, 0) !important;
+  transform: translate3d(0, 0, 0) !important;
 }
 
 .leaflet-container {
@@ -305,11 +308,16 @@
   background-color: #f3f4f6 !important;
   font-family: inherit !important;
   -webkit-font-smoothing: antialiased !important;
+  -webkit-text-size-adjust: 100% !important;
+  -webkit-transform: translate3d(0, 0, 0) !important;
+  transform: translate3d(0, 0, 0) !important;
 }
 
 .leaflet-tile {
   image-rendering: -webkit-optimize-contrast !important;
   image-rendering: crisp-edges !important;
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
 }
 
 .leaflet-pane,
@@ -320,10 +328,14 @@
 .leaflet-tooltip-pane,
 .leaflet-popup-pane {
   will-change: transform;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
 }
 
 .leaflet-layer {
   will-change: contents;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .leaflet-zoom-control {
@@ -333,4 +345,20 @@
 svg {
   -webkit-user-select: none !important;
   user-select: none !important;
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  #map,
+  .leaflet-container {
+    -webkit-perspective: 1000 !important;
+    perspective: 1000 !important;
+  }
+  
+  .leaflet-tile-pane {
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    transform: translate3d(0, 0, 0) !important;
+  }
 }
