@@ -173,14 +173,14 @@ export default function AdminPaths() {
                 Add Path
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingPath ? 'Edit' : 'Add'} {activeTab === "walkpaths" ? "Walking" : "Driving"} Path</DialogTitle>
                 <p className="text-sm text-muted-foreground">
                   {editingPath ? 'Update' : 'Create a new'} {activeTab === "walkpaths" ? "walking" : "driving"} path by clicking on the map
                 </p>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4 pr-4">
                 <div>
                   <Label htmlFor="name">Path Name</Label>
                   <Input
