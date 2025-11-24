@@ -24,7 +24,7 @@ let fallbackData: any = null;
 // In-memory storage for savedRoutes (used when Firebase is not available)
 const savedRoutesMemory = new Map<string, SavedRoute>();
 
-// In-memory analytics storage
+// In-memory analytics cache (Firestore is source of truth)
 const analyticsMemory = new Map<AnalyticsEventType, { events: AnalyticsEvent[] }>();
 
 function loadFallbackData() {
@@ -108,6 +108,7 @@ export interface IStorage {
   // Analytics
   addAnalyticsEvent(event: AnalyticsEvent): Promise<void>;
   getAnalyticsSummary(): Promise<AnalyticsSummary[]>;
+  getAnalyticsExport(): Promise<AnalyticsEvent[]>;
   resetAnalytics(): Promise<void>;
 
   exportToJSON(): Promise<void>;
@@ -696,45 +697,103 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Analytics
+  // Analytics - Persisted to Firestore
   async addAnalyticsEvent(event: AnalyticsEvent): Promise<void> {
     try {
+      const id = randomUUID();
+      const eventWithId = { ...event, id };
+      
+      // Save to Firestore
+      await db.collection('analytics').doc(id).set(eventWithId);
+      
+      // Also update in-memory cache for quick summary queries
       if (!analyticsMemory.has(event.eventType)) {
         analyticsMemory.set(event.eventType, { events: [] });
       }
       const typeData = analyticsMemory.get(event.eventType)!;
-      typeData.events.push({ ...event, id: randomUUID() });
+      typeData.events.push(eventWithId);
+      
+      console.log(`[Analytics] Event logged: ${event.eventType} (${event.responseTime}ms)`);
     } catch (error) {
       console.error('Error adding analytics event:', error);
     }
   }
 
   async getAnalyticsSummary(): Promise<AnalyticsSummary[]> {
-    const summaries: AnalyticsSummary[] = [];
+    try {
+      // Fetch all events from Firestore for accurate aggregation
+      const snapshot = await db.collection('analytics').get();
+      const allEvents = snapshot.docs.map(doc => doc.data() as AnalyticsEvent);
+      
+      // Group by event type and calculate statistics
+      const eventsByType = new Map<AnalyticsEventType, AnalyticsEvent[]>();
+      
+      for (const event of allEvents) {
+        if (!eventsByType.has(event.eventType)) {
+          eventsByType.set(event.eventType, []);
+        }
+        eventsByType.get(event.eventType)!.push(event);
+      }
 
-    for (const [eventType, typeData] of analyticsMemory) {
-      if (typeData.events.length === 0) continue;
+      const summaries: AnalyticsSummary[] = [];
+      
+      for (const [eventType, events] of eventsByType) {
+        if (events.length === 0) continue;
 
-      const responseTimes = typeData.events.map(e => e.responseTime);
-      const averageResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
-      const minResponseTime = Math.min(...responseTimes);
-      const maxResponseTime = Math.max(...responseTimes);
+        const responseTimes = events.map(e => e.responseTime);
+        const averageResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+        const minResponseTime = Math.min(...responseTimes);
+        const maxResponseTime = Math.max(...responseTimes);
 
-      summaries.push({
-        eventType,
-        totalCount: typeData.events.length,
-        averageResponseTime,
-        minResponseTime,
-        maxResponseTime,
-        lastUpdated: Date.now()
-      });
+        summaries.push({
+          eventType,
+          totalCount: events.length,
+          averageResponseTime,
+          minResponseTime,
+          maxResponseTime,
+          lastUpdated: Date.now()
+        });
+      }
+
+      // Update in-memory cache
+      analyticsMemory.clear();
+      for (const [eventType, events] of eventsByType) {
+        analyticsMemory.set(eventType, { events });
+      }
+
+      return summaries;
+    } catch (error) {
+      console.error('Error retrieving analytics summary:', error);
+      return [];
     }
+  }
 
-    return summaries;
+  async getAnalyticsExport(): Promise<AnalyticsEvent[]> {
+    try {
+      const snapshot = await db.collection('analytics').get();
+      return snapshot.docs.map(doc => doc.data() as AnalyticsEvent);
+    } catch (error) {
+      console.error('Error exporting analytics:', error);
+      return [];
+    }
   }
 
   async resetAnalytics(): Promise<void> {
-    analyticsMemory.clear();
+    try {
+      const snapshot = await db.collection('analytics').get();
+      const batch = db.batch();
+      
+      snapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      
+      await batch.commit();
+      analyticsMemory.clear();
+      console.log('[Analytics] All analytics data cleared');
+    } catch (error) {
+      console.error('Error resetting analytics:', error);
+      throw new Error('Cannot reset analytics');
+    }
   }
 
   async exportToJSON(): Promise<void> {

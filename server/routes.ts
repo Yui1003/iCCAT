@@ -774,6 +774,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export analytics as CSV or JSON
+  app.get('/api/admin/analytics/export/:format', async (req, res) => {
+    try {
+      const format = req.params.format as 'csv' | 'json';
+      const events = await storage.getAnalyticsExport();
+
+      if (format === 'json') {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="analytics-export-${Date.now()}.json"`);
+        res.json(events);
+      } else if (format === 'csv') {
+        // Convert to CSV
+        const csvHeader = 'ID,SessionID,EventType,ResponseTime(ms),Timestamp,Date\n';
+        const csvRows = events
+          .map(event => {
+            const date = new Date(event.timestamp).toISOString();
+            return `"${event.id}","${event.sessionId}","${event.eventType}",${event.responseTime},${event.timestamp},"${date}"`;
+          })
+          .join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="analytics-export-${Date.now()}.csv"`);
+        res.send(csvHeader + csvRows);
+      } else {
+        res.status(400).json({ error: 'Invalid format. Use "json" or "csv"' });
+      }
+    } catch (error) {
+      console.error('Error exporting analytics:', error);
+      res.status(500).json({ error: 'Failed to export analytics' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

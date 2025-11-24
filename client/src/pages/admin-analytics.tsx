@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, AlertCircle, BarChart3, RotateCcw, Wifi, WifiOff } from "lucide-react";
+import { ArrowLeft, AlertCircle, BarChart3, RotateCcw, Wifi, WifiOff, Download } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AnalyticsEventType } from "@shared/analytics-schema";
 import { isAnalyticsAvailable } from "@/lib/analytics-tracker";
+import { useToast } from "@/hooks/use-toast";
 
 interface AnalyticsSummary {
   eventType: AnalyticsEventType;
@@ -20,6 +21,8 @@ interface AnalyticsSummary {
 export default function AdminAnalytics() {
   const [isOnline, setIsOnline] = useState(isAnalyticsAvailable());
   const [resetConfirm, setResetConfirm] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
 
   // Listen for online/offline status
   useEffect(() => {
@@ -48,8 +51,56 @@ export default function AdminAnalytics() {
 
       await refetch();
       setResetConfirm(false);
+      toast({
+        title: "Success",
+        description: "Analytics data has been reset"
+      });
     } catch (error) {
       console.error('Error resetting analytics:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reset analytics",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleExport = async (format: 'csv' | 'json') => {
+    setIsExporting(true);
+    try {
+      const response = await fetch(`/api/admin/analytics/export/${format}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to export analytics');
+      }
+
+      // Get blob and filename
+      const blob = await response.blob();
+      const filename = `analytics-export-${Date.now()}.${format}`;
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Success",
+        description: `Analytics exported as ${format.toUpperCase()}`
+      });
+    } catch (error) {
+      console.error('Error exporting analytics:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export analytics",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -115,8 +166,29 @@ export default function AdminAnalytics() {
           </div>
         </div>
 
-        {/* Reset Button */}
-        <div className="mb-6 flex justify-end">
+        {/* Action Buttons */}
+        <div className="mb-6 flex justify-end gap-2 flex-wrap">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleExport('csv')}
+              disabled={isExporting}
+              data-testid="button-export-csv"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleExport('json')}
+              disabled={isExporting}
+              data-testid="button-export-json"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export JSON
+            </Button>
+          </div>
+
           {resetConfirm ? (
             <div className="flex gap-2">
               <Button
@@ -206,13 +278,29 @@ export default function AdminAnalytics() {
           </div>
         )}
 
-        {/* Info Box */}
-        <Alert className="mt-8">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Metrics Tracked:</strong> This analytics dashboard monitors response times for interface actions, map and image loading, menu rendering, route generation, and navigation start times. All metrics are automatically collected when the kiosk is online.
-          </AlertDescription>
-        </Alert>
+        {/* Info Boxes */}
+        <div className="mt-8 space-y-4">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Metrics Tracked:</strong> This analytics dashboard monitors response times for interface actions, map and image loading, menu rendering, route generation, and navigation start times. All metrics are automatically collected when the kiosk is online.
+            </AlertDescription>
+          </Alert>
+
+          <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
+            <Download className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="text-blue-800 dark:text-blue-200">
+              <strong>Data Export:</strong> Use CSV export for spreadsheet analysis or JSON for raw data. All events are tagged with sessionId and timestamp for accurate user session tracking.
+            </AlertDescription>
+          </Alert>
+
+          <Alert className="border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800">
+            <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <AlertDescription className="text-green-800 dark:text-green-200">
+              <strong>Session Tracking:</strong> New sessions automatically start on first use or after 15 minutes of inactivity. Each event includes the session ID, allowing you to group data by individual user sessions for detailed analysis.
+            </AlertDescription>
+          </Alert>
+        </div>
       </main>
     </div>
   );
