@@ -336,7 +336,12 @@ export default function MobileNavigation() {
           style={{
             width: '100%',
             height: '100%',
-          }}
+            WebkitUserSelect: 'none',
+            WebkitTouchCallout: 'none',
+            touchAction: 'manipulation',
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden',
+          } as React.CSSProperties}
         />
 
         {/* Navigation Panel - Slides in/out */}
