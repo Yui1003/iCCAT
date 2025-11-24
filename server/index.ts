@@ -31,17 +31,8 @@ app.use(express.urlencoded({ extended: false }));
 
 // Cache control middleware - prevent stale content from Service Worker
 app.use((req, res, next) => {
-  const userAgent = req.headers['user-agent'] || '';
-  const isMobileDevice = /iPhone|iPad|Android|Mobile/i.test(userAgent);
-  
   // Never cache HTML files
   if (req.path === '/' || req.path.endsWith('.html')) {
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
-  }
-  // Disable caching for mobile navigation routes to prevent zoom/rendering issues
-  else if (isMobileDevice && req.path.includes('/navigate/')) {
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');

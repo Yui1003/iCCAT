@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Check, MapPin, Navigation as NavigationIcon, Menu, X, Clock } from "lucide-react";
+import { ArrowLeft, Check, MapPin, Navigation as NavigationIcon, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,22 +16,6 @@ declare global {
   }
 }
 
-// Calculate ETA based on distance and travel mode
-function calculateETA(distance: string, mode: 'walking' | 'driving'): string {
-  const parseDistance = (distStr: string): number => {
-    const match = distStr.match(/(\d+(?:\.\d+)?)\s*km/);
-    if (match) return parseFloat(match[1]) * 1000;
-    const meterMatch = distStr.match(/(\d+(?:\.\d+)?)\s*m/);
-    return meterMatch ? parseFloat(meterMatch[1]) : 0;
-  };
-
-  const distanceMeters = parseDistance(distance);
-  const speed = mode === 'walking' ? 1.4 : 10; // m/s
-  const seconds = distanceMeters / speed;
-  const minutes = Math.ceil(seconds / 60);
-  return minutes > 0 ? `${minutes} min` : '< 1 min';
-}
-
 export default function MobileNavigation() {
   const [, params] = useRoute("/navigate/:routeId");
   const [, navigate] = useLocation();
@@ -42,8 +26,7 @@ export default function MobileNavigation() {
   const [showNavPanel, setShowNavPanel] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
-  const polylineLayersRef = useRef<any[]>([]);
-  const markerLayersRef = useRef<any[]>([]);
+  const touchHandlerRef = useRef<((e: TouchEvent) => void) | null>(null);
 
   const { data: route, isLoading, error } = useQuery<SavedRoute>({
     queryKey: ['/api/routes', params?.routeId],
@@ -123,60 +106,46 @@ export default function MobileNavigation() {
 
         console.log("Initializing Leaflet map with container:", mapRef.current);
         
-        // Mobile-specific options to prevent zoom destruction
+        // Create map with SVG renderer for better mobile support (don't use canvas on iOS)
         const map = L.map(mapRef.current, {
           center: [14.4035451, 120.8659794],
           zoom: 17,
-          zoomControl: false, // Disable default zoom on mobile
+          zoomControl: true,
           touchZoom: true,
+          bounceAtZoomLimits: false,
           dragging: true,
-          tap: true,
-          scrollWheelZoom: 'center',
-          doubleClickZoom: false, // Prevent double-click zoom issues on mobile
-          boxZoom: false, // Disable box zoom on mobile
+          attributionControl: false,
+          keyboard: false,
           inertia: true,
           inertiaDeceleration: 3000,
-          renderer: L.SVG(), // Use SVG renderer for better mobile performance
-          worldCopyJump: false,
-          preferCanvas: false,
-          attributionControl: false
+          inertiaMaxSpeed: 1500,
         });
 
-        // Add zoom controls with custom positioning
-        L.control.zoom({
-          position: 'topright'
-        }).addTo(map);
-
-        // Add tile layer with mobile-friendly options
+        // Use tile layer with better mobile support
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',
           maxZoom: 19,
-          minZoom: 16,
-          crossOrigin: true,
-          detectRetina: true,
-          className: 'map-tiles'
+          minZoom: 15,
+          crossOrigin: 'anonymous',
+          errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+          keepBuffer: 2,
+          updateWhenZooming: false,
+          updateWhenIdle: true,
         }).addTo(map);
 
         mapInstanceRef.current = map;
         console.log("Map initialized successfully");
 
-        // Fix map size and prevent white/black background issues
-        map.invalidateSize(true);
+        // Properly invalidate size with animation disabled
+        setTimeout(() => {
+          map.invalidateSize(false);
+          console.log("Map size invalidated");
+        }, 50);
         
-        // Add throttled resize handler for mobile orientation changes
-        const handleResize = () => {
-          if (mapInstanceRef.current) {
-            setTimeout(() => {
-              mapInstanceRef.current.invalidateSize(true);
-            }, 100);
-          }
-        };
-        
-        window.addEventListener('resize', handleResize);
-        window.addEventListener('orientationchange', handleResize);
-
-        // Store handlers for cleanup
-        (mapInstanceRef as any).current._resizeHandler = handleResize;
+        // Second invalidate for stubborn Safari
+        setTimeout(() => {
+          map.invalidateSize(false);
+        }, 300);
 
       } catch (error) {
         console.error("Error initializing map:", error);
@@ -187,9 +156,9 @@ export default function MobileNavigation() {
     const timer = setTimeout(initMap, 100);
     return () => {
       clearTimeout(timer);
-      if ((mapInstanceRef as any).current?._resizeHandler) {
-        window.removeEventListener('resize', (mapInstanceRef as any).current._resizeHandler);
-        window.removeEventListener('orientationchange', (mapInstanceRef as any).current._resizeHandler);
+      // Clean up touch event listener
+      if (mapRef.current && touchHandlerRef.current) {
+        mapRef.current.removeEventListener('touchmove', touchHandlerRef.current);
       }
     };
   }, []);
@@ -208,26 +177,15 @@ export default function MobileNavigation() {
       const L = window.L;
       const map = mapInstanceRef.current;
 
-      // Clear existing layers properly - remove only polylines and markers
-      polylineLayersRef.current.forEach(layer => {
-        try {
+      // Clear existing polylines and markers (keep tile layer)
+      map.eachLayer((layer: any) => {
+        if (layer instanceof L.Polyline || layer instanceof L.Marker || layer instanceof L.CircleMarker) {
           map.removeLayer(layer);
-        } catch (e) {
-          console.warn("Error removing polyline layer:", e);
         }
       });
-      polylineLayersRef.current = [];
-
-      markerLayersRef.current.forEach(layer => {
-        try {
-          map.removeLayer(layer);
-        } catch (e) {
-          console.warn("Error removing marker layer:", e);
-        }
-      });
-      markerLayersRef.current = [];
 
       console.log("Drawing route with", route.phases.length, "phases");
+      console.log("Full route data:", JSON.stringify(route, null, 2).substring(0, 500));
 
       // Collect all coordinates to calculate bounds
       let allCoordinates: Array<{ lat: number; lng: number }> = [];
@@ -239,39 +197,26 @@ export default function MobileNavigation() {
         const isCompleted = completedPhases.includes(index);
         const isCurrent = index === currentPhaseIndex;
 
-        console.log(`Phase ${index} check:`, { hasPolyline: !!phase.polyline, isArray: Array.isArray(phase.polyline), length: phase.polyline?.length || 0, color, isCompleted, isCurrent });
+        console.log(`Phase ${index} check:`, { hasPolyline: !!phase.polyline, isArray: Array.isArray(phase.polyline), length: phase.polyline?.length || 0 });
 
         if (phase.polyline && Array.isArray(phase.polyline) && phase.polyline.length > 0) {
           phasesWithPolylines++;
           allCoordinates.push(...phase.polyline);
 
-          // Create polyline with explicit RGB conversion to ensure colors render properly
-          const coordinates = phase.polyline.map((coord: any) => [coord.lat, coord.lng]);
-          
-          // Convert hex to ensure proper color rendering
-          let renderedColor = color;
-          if (color.startsWith('#')) {
-            renderedColor = color; // Keep hex as is for SVG rendering
-          }
+          // Draw polyline for this phase
+          const polyline = L.polyline(
+            phase.polyline.map((coord: any) => [coord.lat, coord.lng]),
+            {
+              color: color,
+              weight: isCurrent ? 5 : 3,
+              opacity: isCompleted ? 0.5 : 1,
+              dashArray: isCompleted ? '5, 5' : 'none',
+              lineCap: 'round',
+              lineJoin: 'round',
+            }
+          ).addTo(map);
 
-          const polylineOptions = {
-            color: renderedColor,
-            weight: isCurrent ? 6 : 4,
-            opacity: isCompleted ? 0.6 : 1,
-            dashArray: isCompleted ? '5, 5' : null,
-            lineCap: 'round' as const,
-            lineJoin: 'round' as const,
-            stroke: true,
-            fill: false,
-            renderer: L.SVG(), // Explicitly use SVG renderer for mobile
-            interactive: false, // Prevent event handlers from affecting performance
-            bubblingMouseEvents: false,
-          };
-
-          const polyline = L.polyline(coordinates, polylineOptions).addTo(map);
-          polylineLayersRef.current.push(polyline);
-
-          console.log(`Phase ${index}: ${phase.polyline.length} coordinates, color: ${renderedColor}, opacity: ${polylineOptions.opacity}`);
+          console.log(`Phase ${index}: ${phase.polyline.length} coordinates, color: ${color}, current: ${isCurrent}`);
         } else {
           console.warn(`Phase ${index} has no polyline data!`);
         }
@@ -281,19 +226,16 @@ export default function MobileNavigation() {
 
       // Add markers for start and end
       if (allCoordinates.length > 0) {
-        const startMarker = L.circleMarker([allCoordinates[0].lat, allCoordinates[0].lng], {
+        L.circleMarker([allCoordinates[0].lat, allCoordinates[0].lng], {
           radius: 10,
           fillColor: '#22c55e',
           color: '#ffffff',
           weight: 2,
           opacity: 1,
           fillOpacity: 0.9,
-          interactive: false,
-          bubblingMouseEvents: false,
         }).addTo(map).bindPopup('Start');
-        markerLayersRef.current.push(startMarker);
 
-        const endMarker = L.circleMarker(
+        L.circleMarker(
           [allCoordinates[allCoordinates.length - 1].lat, allCoordinates[allCoordinates.length - 1].lng],
           {
             radius: 10,
@@ -302,15 +244,12 @@ export default function MobileNavigation() {
             weight: 2,
             opacity: 1,
             fillOpacity: 0.9,
-            interactive: false,
-            bubblingMouseEvents: false,
           }
         ).addTo(map).bindPopup('End');
-        markerLayersRef.current.push(endMarker);
 
         // Fit map to all coordinates with padding
         const bounds = L.latLngBounds(allCoordinates.map(c => [c.lat, c.lng]));
-        map.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 0.5 });
+        map.fitBounds(bounds, { padding: [50, 50], animate: true });
         console.log("Map fitted to route bounds");
       } else {
         console.error("No coordinates found in any phase!");
@@ -387,18 +326,20 @@ export default function MobileNavigation() {
       </header>
 
       {/* Main Layout: Map + Navigation Panel */}
-      <main className="flex-1 flex w-full h-full overflow-hidden relative">
+      <main className="flex-1 flex w-full overflow-hidden relative">
         {/* Map Area - Leaflet Interactive Map */}
         <div
           ref={mapRef}
           id="map"
-          className="flex-1 z-0"
+          className="absolute z-0"
           data-testid="map-container"
           style={{
             width: '100%',
             height: '100%',
-            position: 'relative',
-            willChange: 'transform',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
           }}
         />
 
@@ -486,10 +427,22 @@ export default function MobileNavigation() {
                   <span className="font-medium text-foreground">{currentPhase.distance}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                   <span className="text-muted-foreground">ETA:</span>
-                  <span className="font-medium text-foreground" data-testid="text-current-eta">
-                    {calculateETA(currentPhase.distance, currentPhase.mode)}
+                  <span 
+                    className="font-medium text-foreground"
+                    data-testid={`mobile-eta-${currentPhaseIndex}`}
+                  >
+                    {(() => {
+                      const parseDistance = (distStr: string): number => {
+                        const match = distStr.match(/(\d+(?:\.\d+)?)\s*m/);
+                        return match ? parseFloat(match[1]) : 0;
+                      };
+                      const distanceMeters = parseDistance(currentPhase.distance);
+                      const speed = currentPhase.mode === 'walking' ? 1.4 : 10;
+                      const seconds = distanceMeters / speed;
+                      const minutes = Math.ceil(seconds / 60);
+                      return minutes > 0 ? `${minutes} min` : '< 1 min';
+                    })()}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -529,7 +482,17 @@ export default function MobileNavigation() {
                   const isCompleted = completedPhases.includes(index);
                   const isCurrent = index === currentPhaseIndex;
                   const color = phase.color || getPhaseColor(index);
-                  const eta = calculateETA(phase.distance, phase.mode);
+
+                  // Calculate ETA for this phase
+                  const parseDistance = (distStr: string): number => {
+                    const match = distStr.match(/(\d+(?:\.\d+)?)\s*m/);
+                    return match ? parseFloat(match[1]) : 0;
+                  };
+                  const distanceMeters = parseDistance(phase.distance);
+                  const speed = phase.mode === 'walking' ? 1.4 : 10;
+                  const seconds = distanceMeters / speed;
+                  const minutes = Math.ceil(seconds / 60);
+                  const eta = minutes > 0 ? `${minutes}m` : '<1m';
 
                   return (
                     <div
@@ -557,10 +520,8 @@ export default function MobileNavigation() {
                         <p className="font-medium text-foreground truncate">
                           {phase.startName}
                         </p>
-                        <p className="text-muted-foreground text-xs flex gap-2">
-                          <span>{phase.distance}</span>
-                          <span>•</span>
-                          <span data-testid={`text-phase-eta-${index}`}>{eta}</span>
+                        <p className="text-muted-foreground text-xs">
+                          {phase.distance} • {eta}
                         </p>
                       </div>
                     </div>

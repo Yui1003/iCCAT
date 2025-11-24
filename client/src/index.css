@@ -287,121 +287,78 @@
   }
 }
 
-/* Leaflet Mobile Optimization */
+/* Mobile Map Rendering Fixes */
 #map {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  backface-visibility: hidden;
-  perspective: 1000px;
-  transform: translate3d(0, 0, 0);
-  -webkit-transform: translate3d(0, 0, 0);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  overflow: hidden !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  touch-action: manipulation !important;
+  -webkit-transform: translate3d(0, 0, 0) !important;
+  transform: translate3d(0, 0, 0) !important;
 }
 
 .leaflet-container {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  font-size: 12px;
-  box-sizing: border-box;
   width: 100% !important;
   height: 100% !important;
-  background-color: #f0f0f0;
+  background-color: #f3f4f6 !important;
+  font-family: inherit !important;
+  -webkit-font-smoothing: antialiased !important;
+  -webkit-text-size-adjust: 100% !important;
+  -webkit-transform: translate3d(0, 0, 0) !important;
+  transform: translate3d(0, 0, 0) !important;
 }
 
-.leaflet-container.dark-mode {
-  background-color: #1a1a1a;
-}
-
-/* Prevent map tile rendering issues */
 .leaflet-tile {
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  -webkit-perspective: 1000;
-  perspective: 1000;
-  image-rendering: auto;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
-}
-
-.map-tiles {
-  image-rendering: auto;
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
 }
 
 .leaflet-pane,
-.leaflet-marker-shadow,
-.leaflet-shadow-pane,
+.leaflet-tile-pane,
 .leaflet-overlay-pane,
-.leaflet-shadow-pane {
-  pointer-events: auto;
-  will-change: auto;
+.leaflet-shadow-pane,
+.leaflet-marker-pane,
+.leaflet-tooltip-pane,
+.leaflet-popup-pane {
+  will-change: transform;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
 }
 
-.leaflet-marker-icon,
-.leaflet-marker-shadow {
-  -webkit-user-select: none;
-  -webkit-user-drag: none;
-  user-select: none;
-  user-drag: none;
+.leaflet-layer {
+  will-change: contents;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
-/* SVG rendering optimization for polylines on mobile */
-.leaflet-pane svg {
-  will-change: auto;
-  shape-rendering: geometricPrecision;
+.leaflet-zoom-control {
+  opacity: 0.8 !important;
 }
 
-.leaflet-polyline,
-.leaflet-path {
-  pointer-events: stroke;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
+svg {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
 }
 
-/* Ensure polylines render with correct colors */
-.phase-polyline-0, .phase-polyline-1, .phase-polyline-2, 
-.phase-polyline-3, .phase-polyline-4, .phase-polyline-5 {
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
-}
-
-/* Mobile touch optimization */
-@supports (touch-action: manipulation) {
-  .leaflet-interactive {
-    touch-action: manipulation;
-  }
-}
-
-/* Prevent zoom on text selection */
-.leaflet-container.dragging {
-  user-select: none;
-}
-
-/* Mobile-specific fixes for iOS Safari */
-@media (pointer: coarse) and (max-width: 768px) {
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  #map,
   .leaflet-container {
-    position: relative;
-    overflow: hidden;
+    -webkit-perspective: 1000 !important;
+    perspective: 1000 !important;
   }
   
-  #map {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-  }
-  
-  /* Prevent pinch-zoom destruction on iOS */
-  .leaflet-container {
-    -ms-touch-action: none;
-    touch-action: none;
-  }
-  
-  .leaflet-container.leaflet-touch {
-    -webkit-user-select: none;
-    user-select: none;
+  .leaflet-tile-pane {
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    transform: translate3d(0, 0, 0) !important;
   }
 }
