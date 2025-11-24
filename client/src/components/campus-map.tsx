@@ -362,19 +362,6 @@ export default function CampusMap({
 
       markersRef.current.push(marker);
     });
-
-    // Auto-fit all markers into view
-    if (markersRef.current.length > 0) {
-      // Use setTimeout to ensure DOM has rendered and map has proper dimensions
-      setTimeout(() => {
-        if (mapInstanceRef.current) {
-          // Recalculate map size after DOM layout
-          mapInstanceRef.current.invalidateSize();
-          const bounds = L.latLngBounds(markersRef.current.map(marker => marker.getLatLng()));
-          mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 17.5 });
-        }
-      }, 100);
-    }
   }, [buildings, onBuildingClick, selectedBuilding, currentZoom]);
 
   useEffect(() => {

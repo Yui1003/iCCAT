@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { calculateETA, parseDistanceToMeters } from "@/lib/eta-calculator";
-import { recordMetric } from "@/lib/analytics-recorder";
 import type { SavedRoute, Building, RoutePhase, RouteStep } from "@shared/schema";
 import { getPhaseColor } from "@shared/phase-colors";
 
@@ -405,15 +404,11 @@ export default function MobileNavigation() {
               </div>
 
               <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Distance:</span>
-                    <span className="font-medium text-foreground">{currentPhase.distance}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">ETA:</span>
-                    <span className="font-medium text-foreground">{calculateETA(parseDistanceToMeters(currentPhase.distance), currentPhase.mode)}</span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Distance:</span>
+                  <span className="font-medium text-foreground">{currentPhase.distance}</span>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="text-muted-foreground">ETA: {calculateETA(parseDistanceToMeters(currentPhase.distance), currentPhase.mode)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">Mode:</span>
