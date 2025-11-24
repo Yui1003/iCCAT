@@ -374,3 +374,24 @@ export const insertFeedbackSchema = createInsertSchema(feedbacks).omit({
 });
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 export type Feedback = typeof feedbacks.$inferSelect;
+
+// Analytics table - for performance metrics and system behavior logging
+export const analyticsMetrics = pgTable("analytics_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+  metricType: varchar("metric_type").notNull(), // "route_generation" | "map_load" | "api_response" | "interface_action"
+  durationMs: integer("duration_ms").notNull(), // milliseconds
+  deviceType: varchar("device_type").notNull(), // "kiosk" | "mobile"
+  actionName: varchar("action_name"), // e.g. "GenerateRoute", "MapInit", "BuildingSearch"
+  success: integer("success").notNull().default(1), // 1 = true, 0 = false
+  errorMessage: text("error_message"), // if failed
+  sourceRoute: varchar("source_route"), // route ID if applicable
+  additionalData: jsonb("additional_data"), // extra context
+});
+
+export const insertAnalyticsMetricSchema = createInsertSchema(analyticsMetrics).omit({ 
+  id: true,
+  timestamp: true,
+});
+export type InsertAnalyticsMetric = z.infer<typeof insertAnalyticsMetricSchema>;
+export type AnalyticsMetric = typeof analyticsMetrics.$inferSelect;
