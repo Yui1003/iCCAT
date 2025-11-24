@@ -21,11 +21,22 @@
 [x] 10. Workflow restarted successfully - all changes hot-reloaded
 [x] 11. Application running on port 5000 with new Staff Finder flow active
 
+## Enhanced Search Functionality - Nov 24, 2025:
+
+[x] 1. Modified departments view search to also search staff names
+[x] 2. Search now searches both department names AND staff names/positions
+[x] 3. When user searches a staff name (e.g., "Juan"), shows department containing that staff
+[x] 4. Updated search placeholder text to indicate "Search departments or staff names..."
+[x] 5. Maintained backward compatibility with existing department search
+[x] 6. Workflow hot-reloaded successfully with all search enhancements
+[x] 7. All changes live and tested on development server
+
 ## Features Summary:
 
 ### Staff Finder Flow:
 - **View 1 (Departments)**: Shows all departments with staff member count
-  - Search bar filters departments by name
+  - Search bar filters departments by name OR staff names/positions
+  - If searching "Juan" → shows only departments containing staff named "Juan"
   - Click any department to view its staff
   - Clean, organized grid layout (4 columns on large screens)
   
@@ -36,6 +47,6 @@
   - Original staff member cards with all information
 
 ### User Flow:
-HOME PAGE > STAFF FINDER > DEPARTMENTS LIST > (Click Department) > STAFF MEMBERS LIST
+HOME PAGE > STAFF FINDER > DEPARTMENTS LIST (search by name or staff) > (Click Department) > STAFF MEMBERS LIST
 
 All changes have been successfully implemented and are running on the development server.

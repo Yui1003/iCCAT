@@ -60,7 +60,17 @@ export default function StaffDirectory() {
 
   const filteredDepartments = staffCountByDepartment.filter(dept => {
     if (!searchQuery) return true;
-    return dept.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const searchLower = searchQuery.toLowerCase();
+    
+    // Search by department name
+    if (dept.name?.toLowerCase().includes(searchLower)) return true;
+    
+    // Search by staff names in this department
+    const staffInDept = staff.filter(s => s.department === dept.name);
+    return staffInDept.some(member => 
+      member.name.toLowerCase().includes(searchLower) ||
+      member.position?.toLowerCase().includes(searchLower)
+    );
   });
 
   const getBuildingName = (buildingId: string | null | undefined) => {
@@ -93,7 +103,7 @@ export default function StaffDirectory() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               type="search"
-              placeholder={viewMode === "departments" ? "Search departments..." : "Search by name, position, or department..."}
+              placeholder={viewMode === "departments" ? "Search departments or staff names..." : "Search by name, position, or department..."}
               className="pl-10 h-12"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
