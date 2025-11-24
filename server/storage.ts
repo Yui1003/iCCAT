@@ -20,8 +20,9 @@ import type {
 let usingFallback = false;
 let fallbackData: any = null;
 
-// In-memory storage for savedRoutes (used when Firebase is not available)
+// In-memory storage for savedRoutes and analytics (used when Firebase is not available)
 const savedRoutesMemory = new Map<string, SavedRoute>();
+const analyticsMetricsMemory: AnalyticsMetric[] = [];
 
 function loadFallbackData() {
   if (fallbackData) return fallbackData;
@@ -671,8 +672,12 @@ export class DatabaseStorage implements IStorage {
       const snapshot = await query.orderBy('timestamp', 'desc').limit(1000).get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AnalyticsMetric));
     } catch (error) {
-      console.error('Firestore error getting analytics:', error);
-      return [];
+      console.error('Firestore error getting analytics, using in-memory storage:', error);
+      // Fallback to in-memory storage
+      let filtered = [...analyticsMetricsMemory];
+      if (startDate) filtered = filtered.filter(m => new Date(m.timestamp) >= startDate);
+      if (endDate) filtered = filtered.filter(m => new Date(m.timestamp) <= endDate);
+      return filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 1000);
     }
   }
 
@@ -685,8 +690,16 @@ export class DatabaseStorage implements IStorage {
       const doc = await docRef.get();
       return { id: doc.id, ...doc.data() } as AnalyticsMetric;
     } catch (error) {
-      console.error('Firestore error creating analytics metric:', error);
-      throw new Error('Cannot create analytics metric');
+      console.error('Firestore error creating analytics metric, using in-memory storage:', error);
+      // Fallback to in-memory storage
+      const id = randomUUID();
+      const analyticsMetric: AnalyticsMetric = {
+        id,
+        ...metric,
+        timestamp: new Date(),
+      };
+      analyticsMetricsMemory.push(analyticsMetric);
+      return analyticsMetric;
     }
   }
 
@@ -724,8 +737,10 @@ export class DatabaseStorage implements IStorage {
       await batch.commit();
       console.log('All analytics metrics cleared');
     } catch (error) {
-      console.error('Error clearing analytics metrics:', error);
-      throw new Error('Cannot clear analytics metrics');
+      console.error('Error clearing analytics metrics from Firestore, clearing in-memory storage:', error);
+      // Fallback: clear in-memory storage
+      analyticsMetricsMemory.length = 0;
+      console.log('All analytics metrics cleared from in-memory storage');
     }
   }
 
