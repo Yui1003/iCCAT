@@ -31,8 +31,14 @@ app.use(express.urlencoded({ extended: false }));
 
 // Cache control middleware - prevent stale content from Service Worker
 app.use((req, res, next) => {
+  // Mobile navigation - never cache (disable service worker for this route)
+  if (req.path.match(/^\/navigate\//)) {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
   // Never cache HTML files
-  if (req.path === '/' || req.path.endsWith('.html')) {
+  else if (req.path === '/' || req.path.endsWith('.html')) {
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
