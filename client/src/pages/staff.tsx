@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Search, MapPin, Mail, Phone, Navigation } from "lucide-react";
+import { ArrowLeft, Search, MapPin, Mail, Phone, Navigation, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { useGlobalInactivity } from "@/hooks/use-inactivity";
 export default function StaffDirectory() {
   // Return to home after 3 minutes of inactivity
   useGlobalInactivity();
+  const [viewMode, setViewMode] = useState<"departments" | "staff">("departments");
   const [searchQuery, setSearchQuery] = useState("");
   const [buildingFilter, setBuildingFilter] = useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
@@ -39,6 +40,12 @@ export default function StaffDirectory() {
 
   const departments = Array.from(new Set(staff.map(s => s.department).filter(Boolean)));
 
+  // Get staff count per department
+  const staffCountByDepartment = departments.map(dept => ({
+    name: dept,
+    count: staff.filter(s => s.department === dept).length
+  }));
+
   const filteredStaff = staff.filter(member => {
     const matchesSearch = !searchQuery || 
       member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -49,6 +56,11 @@ export default function StaffDirectory() {
     const matchesDepartment = departmentFilter === "all" || member.department === departmentFilter;
 
     return matchesSearch && matchesBuilding && matchesDepartment;
+  });
+
+  const filteredDepartments = staffCountByDepartment.filter(dept => {
+    if (!searchQuery) return true;
+    return dept.name?.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const getBuildingName = (buildingId: string | null | undefined) => {
@@ -68,7 +80,9 @@ export default function StaffDirectory() {
           </Link>
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Staff Directory</h1>
-            <p className="text-sm text-muted-foreground">Find faculty and staff members</p>
+            <p className="text-sm text-muted-foreground">
+              {viewMode === "departments" ? "Find staff by department" : "Find faculty and staff members"}
+            </p>
           </div>
         </div>
       </header>
@@ -79,7 +93,7 @@ export default function StaffDirectory() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search by name, position, or department..."
+              placeholder={viewMode === "departments" ? "Search departments..." : "Search by name, position, or department..."}
               className="pl-10 h-12"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -87,112 +101,161 @@ export default function StaffDirectory() {
             />
           </div>
 
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-64">
-              <Select value={buildingFilter} onValueChange={setBuildingFilter}>
-                <SelectTrigger data-testid="select-building-filter">
-                  <SelectValue placeholder="Filter by building" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Buildings</SelectItem>
-                  {buildingsWithStaff.map(building => (
-                    <SelectItem key={building.id} value={building.id}>
-                      {building.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {viewMode === "staff" && (
+            <div className="flex flex-wrap gap-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setViewMode("departments");
+                  setDepartmentFilter("all");
+                  setSearchQuery("");
+                }}
+                data-testid="button-back-to-departments"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Departments
+              </Button>
 
-            <div className="flex-1 min-w-64">
-              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger data-testid="select-department-filter">
-                  <SelectValue placeholder="Filter by department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map(dept => (
-                    <SelectItem key={dept} value={dept!}>
-                      {dept}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex-1 min-w-64">
+                <Select value={buildingFilter} onValueChange={setBuildingFilter}>
+                  <SelectTrigger data-testid="select-building-filter">
+                    <SelectValue placeholder="Filter by building" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Buildings</SelectItem>
+                    {buildingsWithStaff.map(building => (
+                      <SelectItem key={building.id} value={building.id}>
+                        {building.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {isLoading ? (
-          <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="h-40 animate-pulse bg-muted" />
-            ))}
-          </div>
-        ) : filteredStaff.length === 0 ? (
-          <div className="text-center py-16">
-            <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-foreground mb-2">No Staff Found</h3>
-            <p className="text-muted-foreground">
-              {searchQuery || buildingFilter !== "all" || departmentFilter !== "all"
-                ? "Try adjusting your search filters"
-                : "No staff members have been added yet"}
-            </p>
-          </div>
+        {viewMode === "departments" ? (
+          // DEPARTMENTS VIEW
+          <>
+            {isLoading ? (
+              <div className="grid lg:grid-cols-4 md:grid-cols-2 grid-cols-1 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Card key={i} className="h-32 animate-pulse bg-muted" />
+                ))}
+              </div>
+            ) : filteredDepartments.length === 0 ? (
+              <div className="text-center py-16">
+                <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-foreground mb-2">No Departments Found</h3>
+                <p className="text-muted-foreground">
+                  {searchQuery ? "Try adjusting your search" : "No departments have been added yet"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid lg:grid-cols-4 md:grid-cols-2 grid-cols-1 gap-4">
+                {filteredDepartments.map((dept) => (
+                  <Card
+                    key={dept.name}
+                    className="p-6 hover-elevate active-elevate-2 cursor-pointer"
+                    data-testid={`department-card-${dept.name}`}
+                    onClick={() => {
+                      setDepartmentFilter(dept.name!);
+                      setViewMode("staff");
+                      setSearchQuery("");
+                    }}
+                  >
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                        <span className="text-2xl font-bold text-primary">{dept.count}</span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-1">{dept.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {dept.count} staff {dept.count === 1 ? "member" : "members"}
+                      </p>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground mt-4" />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
         ) : (
-          <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4">
-            {filteredStaff.map((member) => (
-              <Card
-                key={member.id}
-                className="p-6 hover-elevate active-elevate-2 cursor-pointer"
-                data-testid={`staff-card-${member.id}`}
-                onClick={() => setSelectedStaff(member)}
-              >
-                <div className="flex items-start gap-4 mb-4">
-                  <Avatar className="w-16 h-16">
-                    <AvatarImage src={member.photo || undefined} alt={member.name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-lg">
-                      {member.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-foreground">{member.name}</h3>
-                    {member.position && (
-                      <p className="text-sm text-muted-foreground">{member.position}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {member.department && (
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {member.department}
-                      </Badge>
+          // STAFF VIEW
+          <>
+            {isLoading ? (
+              <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Card key={i} className="h-40 animate-pulse bg-muted" />
+                ))}
+              </div>
+            ) : filteredStaff.length === 0 ? (
+              <div className="text-center py-16">
+                <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-foreground mb-2">No Staff Found</h3>
+                <p className="text-muted-foreground">
+                  {searchQuery || buildingFilter !== "all"
+                    ? "Try adjusting your search filters"
+                    : "No staff members have been added yet"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4">
+                {filteredStaff.map((member) => (
+                  <Card
+                    key={member.id}
+                    className="p-6 hover-elevate active-elevate-2 cursor-pointer"
+                    data-testid={`staff-card-${member.id}`}
+                    onClick={() => setSelectedStaff(member)}
+                  >
+                    <div className="flex items-start gap-4 mb-4">
+                      <Avatar className="w-16 h-16">
+                        <AvatarImage src={member.photo || undefined} alt={member.name} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                          {member.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-foreground">{member.name}</h3>
+                        {member.position && (
+                          <p className="text-sm text-muted-foreground">{member.position}</p>
+                        )}
+                      </div>
                     </div>
-                  )}
 
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate">{getBuildingName(member.buildingId)}</span>
-                  </div>
+                    <div className="space-y-2">
+                      {member.department && (
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {member.department}
+                          </Badge>
+                        </div>
+                      )}
 
-                  {member.email && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Mail className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate">{member.email}</span>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{getBuildingName(member.buildingId)}</span>
+                      </div>
+
+                      {member.email && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Mail className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">{member.email}</span>
+                        </div>
+                      )}
+
+                      {member.phone && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Phone className="w-4 h-4 flex-shrink-0" />
+                          <span>{member.phone}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-
-                  {member.phone && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="w-4 h-4 flex-shrink-0" />
-                      <span>{member.phone}</span>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
 
