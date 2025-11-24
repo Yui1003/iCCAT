@@ -430,7 +430,7 @@ export default function AdminBuildings() {
           </Dialog>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <Card className="h-[600px] overflow-hidden">
               <CampusMap buildings={buildings} onBuildingClick={handleOpenDialog} />
@@ -438,10 +438,10 @@ export default function AdminBuildings() {
           </div>
 
           <div>
-            <Card className="p-6">
+            <Card className="p-6 h-[600px] overflow-hidden flex flex-col">
               <h2 className="text-lg font-semibold text-foreground mb-4">Buildings List</h2>
               
-              <div className="mb-4">
+              <div className="mb-4 flex-shrink-0">
                 <Label htmlFor="type-filter" className="text-sm">Filter by Type</Label>
                 <Select
                   value={selectedTypeFilter}
@@ -473,7 +473,7 @@ export default function AdminBuildings() {
                   <p className="text-sm text-muted-foreground">No buildings yet</p>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                <div className="space-y-3 overflow-y-auto flex-1">
                   {buildings
                     .filter((building) => 
                       selectedTypeFilter === "All Types" || building.type === selectedTypeFilter
