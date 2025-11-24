@@ -216,14 +216,14 @@ export default function AdminPaths() {
           </TabsList>
 
           <TabsContent value="walkpaths">
-            <div className="grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
+            <div className="grid lg:grid-cols-3 gap-6 relative">
+              <div className="lg:col-span-2 relative z-0">
                 <Card className="h-[600px] w-full overflow-hidden">
                   <CampusMap buildings={buildings} />
                 </Card>
               </div>
 
-              <div>
+              <div className="relative z-10">
                 <Card className="p-6 flex flex-col h-[600px] w-full overflow-hidden">
                   <h2 className="text-lg font-semibold text-foreground mb-4">Walking Paths</h2>
                   {walkpaths.length === 0 ? (
@@ -277,14 +277,14 @@ export default function AdminPaths() {
           </TabsContent>
 
           <TabsContent value="drivepaths">
-            <div className="grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
+            <div className="grid lg:grid-cols-3 gap-6 relative">
+              <div className="lg:col-span-2 relative z-0">
                 <Card className="h-[600px] w-full overflow-hidden">
                   <CampusMap buildings={buildings} />
                 </Card>
               </div>
 
-              <div>
+              <div className="relative z-10">
                 <Card className="p-6 flex flex-col h-[600px] w-full overflow-hidden">
                   <h2 className="text-lg font-semibold text-foreground mb-4">Driving Paths</h2>
                   {drivepaths.length === 0 ? (
