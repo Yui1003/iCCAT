@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { calculateETA, parseDistanceToMeters } from "@/lib/eta-calculator";
 import type { SavedRoute, Building, RoutePhase, RouteStep } from "@shared/schema";
 import { getPhaseColor } from "@shared/phase-colors";
 
@@ -176,29 +175,18 @@ export default function MobileNavigation() {
           phasesWithPolylines++;
           allCoordinates.push(...phase.polyline);
 
-          // Draw polyline for this phase with enhanced mobile rendering
+          // Draw polyline for this phase
           const polyline = L.polyline(
             phase.polyline.map((coord: any) => [coord.lat, coord.lng]),
             {
               color: color,
-              weight: isCurrent ? 6 : 4,
-              opacity: isCompleted ? 0.6 : 1,
-              dashArray: isCompleted ? '5, 5' : undefined,
+              weight: isCurrent ? 5 : 3,
+              opacity: isCompleted ? 0.5 : 1,
+              dashArray: isCompleted ? '5, 5' : 'none',
               lineCap: 'round',
               lineJoin: 'round',
-              stroke: true,
-              fillOpacity: 0.1,
-              className: `phase-polyline-${index}`,
             }
           ).addTo(map);
-          
-          // Force the polyline to render properly on mobile
-          if (polyline.setStyle) {
-            polyline.setStyle({
-              color: color,
-              opacity: isCompleted ? 0.6 : 1,
-            });
-          }
 
           console.log(`Phase ${index}: ${phase.polyline.length} coordinates, color: ${color}, current: ${isCurrent}`);
         } else {
@@ -310,18 +298,17 @@ export default function MobileNavigation() {
       </header>
 
       {/* Main Layout: Map + Navigation Panel */}
-      <main className="flex-1 flex w-full h-full overflow-hidden relative">
+      <main className="flex-1 flex w-full h-full">
         {/* Map Area - Leaflet Interactive Map */}
         <div
           ref={mapRef}
           id="map"
-          className="flex-1 z-0"
+          className="flex-1 z-0 relative"
           data-testid="map-container"
           style={{
             width: '100%',
             height: '100%',
             position: 'relative',
-            willChange: 'transform',
           }}
         />
 
@@ -407,8 +394,6 @@ export default function MobileNavigation() {
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">Distance:</span>
                   <span className="font-medium text-foreground">{currentPhase.distance}</span>
-                  <span className="text-muted-foreground">•</span>
-                  <span className="text-muted-foreground">ETA: {calculateETA(parseDistanceToMeters(currentPhase.distance), currentPhase.mode)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">Mode:</span>

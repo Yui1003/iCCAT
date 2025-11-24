@@ -23,7 +23,6 @@ import AdminFloorPlans from "@/pages/admin-floor-plans";
 import AdminStaff from "@/pages/admin-staff";
 import AdminEvents from "@/pages/admin-events";
 import AdminSettings from "@/pages/admin-settings";
-import AdminAnalytics from "@/pages/admin-analytics";
 
 import NotFound from "@/pages/not-found";
 
@@ -48,7 +47,6 @@ function Router() {
       <Route path="/admin/staff" component={AdminStaff} />
       <Route path="/admin/events" component={AdminEvents} />
       <Route path="/admin/settings" component={AdminSettings} />
-      <Route path="/admin/analytics" component={AdminAnalytics} />
       
       <Route component={NotFound} />
     </Switch>

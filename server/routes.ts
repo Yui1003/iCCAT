@@ -13,7 +13,6 @@ import {
   insertSettingSchema,
   insertFeedbackSchema,
   insertSavedRouteSchema,
-  insertAnalyticsMetricSchema,
   canHaveStaff,
   type POIType
 } from "@shared/schema";
@@ -739,48 +738,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error retrieving route:', error);
       res.status(500).json({ error: 'Failed to retrieve route' });
-    }
-  });
-
-  // Analytics endpoints
-  app.post('/api/metrics', async (req, res) => {
-    try {
-      const metric = insertAnalyticsMetricSchema.parse(req.body);
-      const created = await storage.createAnalyticsMetric(metric);
-      res.json(created);
-    } catch (error) {
-      console.error('Error creating metric:', error);
-      res.status(400).json({ error: 'Failed to create metric' });
-    }
-  });
-
-  app.get('/api/analytics/metrics', async (req, res) => {
-    try {
-      const metrics = await storage.getAnalyticsMetrics();
-      res.json(metrics);
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-      res.status(400).json({ error: 'Failed to fetch metrics' });
-    }
-  });
-
-  app.get('/api/analytics/summary', async (req, res) => {
-    try {
-      const summary = await storage.getAnalyticsSummary();
-      res.json(summary);
-    } catch (error) {
-      console.error('Error getting analytics summary:', error);
-      res.status(400).json({ error: 'Failed to get summary' });
-    }
-  });
-
-  app.post('/api/analytics/reset', async (req, res) => {
-    try {
-      await storage.clearAllAnalyticsMetrics();
-      res.json({ success: true, message: 'All analytics metrics have been reset' });
-    } catch (error) {
-      console.error('Error resetting analytics:', error);
-      res.status(400).json({ error: 'Failed to reset analytics' });
     }
   });
 

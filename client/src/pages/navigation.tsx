@@ -23,7 +23,6 @@ import { useGlobalInactivity } from "@/hooks/use-inactivity";
 import { findShortestPath } from "@/lib/pathfinding";
 import { getWalkpaths, getDrivepaths, getBuildings, getStaff, getFloors, getRooms } from "@/lib/offline-data";
 import { calculateMultiPhaseRoute, multiPhaseToNavigationRoute } from "@/lib/multi-phase-routes";
-import { calculateETA, parseDistanceToMeters } from "@/lib/eta-calculator";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 
@@ -1644,8 +1643,6 @@ export default function Navigation() {
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-muted-foreground">Distance:</span>
                   <span className="font-medium text-foreground">{route.totalDistance}</span>
-                  <span className="text-muted-foreground">•</span>
-                  <span className="text-muted-foreground">ETA: {calculateETA(parseDistanceToMeters(route.totalDistance), route.mode)}</span>
                   <span className="text-muted-foreground">•</span>
                   <span className="text-muted-foreground capitalize">{route.mode}</span>
                   {route.vehicleType && (

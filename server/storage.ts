@@ -13,8 +13,7 @@ import type {
   AdminUser, InsertAdminUser,
   Setting, InsertSetting,
   Feedback, InsertFeedback,
-  SavedRoute, InsertSavedRoute,
-  AnalyticsMetric, InsertAnalyticsMetric
+  SavedRoute, InsertSavedRoute
 } from "@shared/schema";
 
 let usingFallback = false;
@@ -100,18 +99,6 @@ export interface IStorage {
 
   getSavedRoute(id: string): Promise<SavedRoute | undefined>;
   createSavedRoute(route: InsertSavedRoute): Promise<SavedRoute>;
-
-  // Analytics
-  getAnalyticsMetrics(startDate?: Date, endDate?: Date): Promise<AnalyticsMetric[]>;
-  createAnalyticsMetric(metric: InsertAnalyticsMetric): Promise<AnalyticsMetric>;
-  getAnalyticsSummary(): Promise<{
-    totalRoutes: number;
-    avgRouteGenerationTime: number;
-    avgMapLoadTime: number;
-    successRate: number;
-    recentMetrics: AnalyticsMetric[];
-  }>;
-  clearAllAnalyticsMetrics(): Promise<void>;
 
   exportToJSON(): Promise<void>;
 }
@@ -659,73 +646,6 @@ export class DatabaseStorage implements IStorage {
       console.error('Firestore error, checking in-memory storage:', error);
       // Fallback to in-memory storage
       return savedRoutesMemory.get(id);
-    }
-  }
-
-  // Analytics implementation
-  async getAnalyticsMetrics(startDate?: Date, endDate?: Date): Promise<AnalyticsMetric[]> {
-    try {
-      let query: any = db.collection('analyticsMetrics');
-      if (startDate) query = query.where('timestamp', '>=', startDate);
-      if (endDate) query = query.where('timestamp', '<=', endDate);
-      const snapshot = await query.orderBy('timestamp', 'desc').limit(1000).get();
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AnalyticsMetric));
-    } catch (error) {
-      console.error('Firestore error getting analytics:', error);
-      return [];
-    }
-  }
-
-  async createAnalyticsMetric(metric: InsertAnalyticsMetric): Promise<AnalyticsMetric> {
-    try {
-      const docRef = await db.collection('analyticsMetrics').add({
-        ...metric,
-        timestamp: new Date(),
-      });
-      const doc = await docRef.get();
-      return { id: doc.id, ...doc.data() } as AnalyticsMetric;
-    } catch (error) {
-      console.error('Firestore error creating analytics metric:', error);
-      throw new Error('Cannot create analytics metric');
-    }
-  }
-
-  async getAnalyticsSummary(): Promise<{ totalRoutes: number; avgRouteGenerationTime: number; avgMapLoadTime: number; successRate: number; recentMetrics: AnalyticsMetric[] }> {
-    try {
-      const metrics = await this.getAnalyticsMetrics();
-      const routeMetrics = metrics.filter(m => m.metricType === 'route_generation');
-      const mapMetrics = metrics.filter(m => m.metricType === 'map_load');
-      const successCount = metrics.filter(m => m.success).length;
-      
-      return {
-        totalRoutes: routeMetrics.length,
-        avgRouteGenerationTime: routeMetrics.length > 0 
-          ? Math.round(routeMetrics.reduce((sum, m) => sum + m.durationMs, 0) / routeMetrics.length)
-          : 0,
-        avgMapLoadTime: mapMetrics.length > 0
-          ? Math.round(mapMetrics.reduce((sum, m) => sum + m.durationMs, 0) / mapMetrics.length)
-          : 0,
-        successRate: metrics.length > 0 ? Math.round((successCount / metrics.length) * 100) : 100,
-        recentMetrics: metrics.slice(0, 50),
-      };
-    } catch (error) {
-      console.error('Error getting analytics summary:', error);
-      return { totalRoutes: 0, avgRouteGenerationTime: 0, avgMapLoadTime: 0, successRate: 0, recentMetrics: [] };
-    }
-  }
-
-  async clearAllAnalyticsMetrics(): Promise<void> {
-    try {
-      const snapshot = await db.collection('analyticsMetrics').get();
-      const batch = db.batch();
-      snapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-      });
-      await batch.commit();
-      console.log('All analytics metrics cleared');
-    } catch (error) {
-      console.error('Error clearing analytics metrics:', error);
-      throw new Error('Cannot clear analytics metrics');
     }
   }
 
