@@ -287,28 +287,6 @@
   }
 }
 
-/* Basic Map Styles */
-#map {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.leaflet-container {
-  width: 100%;
-  height: 100%;
-  background-color: #f3f4f6;
-  font-family: inherit;
-  -webkit-font-smoothing: antialiased;
-}
-
-.leaflet-zoom-control {
-  opacity: 0.8;
-}
 
 /* Mobile Navigation Map - Specific Fixes */
 .mobile-map-container #map {
