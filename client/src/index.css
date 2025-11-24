@@ -287,7 +287,7 @@
   }
 }
 
-/* Mobile Map Rendering Fixes - Only for mobile navigation */
+/* MOBILE MAP ONLY - iPhone rendering fixes */
 #map.mobile-map {
   width: 100% !important;
   height: 100% !important;
@@ -302,75 +302,32 @@
   transform: translate3d(0, 0, 0) !important;
 }
 
-/* General map styles for all Leaflet maps (modals, etc) */
-#map:not(.mobile-map) {
-  width: 100% !important;
-  height: 100% !important;
-  position: relative !important;
-  overflow: hidden !important;
-  -webkit-user-select: none !important;
-  user-select: none !important;
-  -webkit-touch-callout: none !important;
-  -webkit-tap-highlight-color: transparent !important;
-}
-
-.leaflet-container {
-  width: 100% !important;
-  height: 100% !important;
-  background-color: #f3f4f6 !important;
-  font-family: inherit !important;
-  -webkit-font-smoothing: antialiased !important;
-  -webkit-text-size-adjust: 100% !important;
+#map.mobile-map .leaflet-container {
   -webkit-transform: translate3d(0, 0, 0) !important;
   transform: translate3d(0, 0, 0) !important;
 }
 
-.leaflet-tile {
-  image-rendering: -webkit-optimize-contrast !important;
-  image-rendering: crisp-edges !important;
+#map.mobile-map .leaflet-tile {
   -webkit-backface-visibility: hidden !important;
   backface-visibility: hidden !important;
 }
 
-.leaflet-pane,
-.leaflet-tile-pane,
-.leaflet-overlay-pane,
-.leaflet-shadow-pane,
-.leaflet-marker-pane,
-.leaflet-tooltip-pane,
-.leaflet-popup-pane {
-  will-change: transform;
-  -webkit-transform: translate3d(0, 0, 0);
-  transform: translate3d(0, 0, 0);
+#map.mobile-map .leaflet-pane,
+#map.mobile-map .leaflet-tile-pane,
+#map.mobile-map .leaflet-overlay-pane {
+  -webkit-transform: translate3d(0, 0, 0) !important;
+  transform: translate3d(0, 0, 0) !important;
 }
 
-.leaflet-layer {
-  will-change: contents;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-}
-
-.leaflet-zoom-control {
-  opacity: 0.8 !important;
-}
-
-svg {
-  -webkit-user-select: none !important;
-  user-select: none !important;
-  -webkit-backface-visibility: hidden !important;
-  backface-visibility: hidden !important;
-}
-
-/* iOS Safari specific fixes - only for mobile map */
+/* iOS Safari specific fixes */
 @supports (-webkit-touch-callout: none) {
-  #map.mobile-map,
-  #map.mobile-map ~ .leaflet-container {
+  #map.mobile-map {
     -webkit-perspective: 1000 !important;
     perspective: 1000 !important;
   }
-  
-  #map.mobile-map .leaflet-tile-pane {
-    -webkit-transform: translate3d(0, 0, 0) !important;
-    transform: translate3d(0, 0, 0) !important;
-  }
+}
+
+/* Ensure leaflet containers render with proper dimensions */
+.leaflet-container {
+  display: block !important;
 }
