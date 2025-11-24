@@ -331,7 +331,7 @@ export default function MobileNavigation() {
         <div
           ref={mapRef}
           id="map"
-          className="absolute z-0"
+          className="absolute z-0 mobile-map"
           data-testid="map-container"
           style={{
             width: '100%',
