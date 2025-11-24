@@ -286,17 +286,3 @@
     inset: -1px;
   }
 }
-
-/* Leaflet Map Rendering Optimization - Safe iOS fixes only */
-.leaflet-container {
-  font-family: inherit !important;
-}
-
-.leaflet-tile {
-  image-rendering: -webkit-optimize-contrast !important;
-  image-rendering: crisp-edges !important;
-}
-
-.leaflet-zoom-control {
-  opacity: 0.8 !important;
-}
