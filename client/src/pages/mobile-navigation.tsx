@@ -105,41 +105,48 @@ export default function MobileNavigation() {
         }
 
         console.log("Initializing Leaflet map with container:", mapRef.current);
+        
+        // Create map with SVG renderer for better mobile support (don't use canvas on iOS)
         const map = L.map(mapRef.current, {
           center: [14.4035451, 120.8659794],
           zoom: 17,
           zoomControl: true,
           touchZoom: true,
+          bounceAtZoomLimits: false,
           dragging: true,
-          preferCanvas: true,
-          renderer: L.canvas(),
+          attributionControl: false,
+          keyboard: false,
+          inertia: true,
+          inertiaDeceleration: 3000,
+          inertiaMaxSpeed: 1500,
         });
 
+        // Use tile layer with better mobile support
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',
           maxZoom: 19,
+          minZoom: 15,
           crossOrigin: 'anonymous',
+          errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+          keepBuffer: 2,
+          updateWhenZooming: false,
+          updateWhenIdle: true,
         }).addTo(map);
 
         mapInstanceRef.current = map;
         console.log("Map initialized successfully");
 
-        // Invalidate map size after a short delay to ensure proper rendering
+        // Properly invalidate size with animation disabled
         setTimeout(() => {
           map.invalidateSize(false);
           console.log("Map size invalidated");
-        }, 100);
+        }, 50);
+        
+        // Second invalidate for stubborn Safari
+        setTimeout(() => {
+          map.invalidateSize(false);
+        }, 300);
 
-        // Prevent default touch behavior to avoid conflicts
-        if (mapRef.current) {
-          const handler = (e: TouchEvent) => {
-            if (e.touches.length > 1) {
-              e.preventDefault();
-            }
-          };
-          touchHandlerRef.current = handler;
-          mapRef.current.addEventListener('touchmove', handler, { passive: false });
-        }
       } catch (error) {
         console.error("Error initializing map:", error);
       }

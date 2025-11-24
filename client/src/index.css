@@ -286,3 +286,51 @@
     inset: -1px;
   }
 }
+
+/* Mobile Map Rendering Fixes */
+#map {
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+  overflow: hidden !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  background-color: #f3f4f6 !important;
+  font-family: inherit !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
+.leaflet-tile {
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+}
+
+.leaflet-pane,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-shadow-pane,
+.leaflet-marker-pane,
+.leaflet-tooltip-pane,
+.leaflet-popup-pane {
+  will-change: transform;
+}
+
+.leaflet-layer {
+  will-change: contents;
+}
+
+.leaflet-zoom-control {
+  opacity: 0.8 !important;
+}
+
+svg {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
