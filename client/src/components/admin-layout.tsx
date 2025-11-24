@@ -8,8 +8,7 @@ import {
   Layers,
   LogOut,
   Map,
-  Settings,
-  BarChart3
+  Settings
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "./ui/sidebar";
@@ -63,11 +62,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       title: "Settings",
       url: "/admin/settings",
       icon: Settings,
-    },
-    {
-      title: "Analytics",
-      url: "/admin/analytics",
-      icon: BarChart3,
     },
   ];
 

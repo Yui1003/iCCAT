@@ -22,20 +22,6 @@ let fallbackData: any = null;
 // In-memory storage for savedRoutes (used when Firebase is not available)
 const savedRoutesMemory = new Map<string, SavedRoute>();
 
-// In-memory storage for analytics metrics
-export interface AnalyticsMetric {
-  id: string;
-  metric_type: string;
-  duration_ms: number;
-  timestamp: number;
-  device: string;
-  action: string;
-  success: boolean;
-  created_at: Date;
-}
-
-const analyticsMemory: AnalyticsMetric[] = [];
-
 function loadFallbackData() {
   if (fallbackData) return fallbackData;
   
