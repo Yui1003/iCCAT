@@ -56,7 +56,35 @@ export default function PathDrawingMap({
 
     mapInstanceRef.current = map;
 
+    // Invalidate map size multiple times to handle async layout issues in dialogs
+    map.invalidateSize();
+
+    // Call again after paint to ensure layout is complete
+    const timeoutId1 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 50);
+
+    const timeoutId2 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 200);
+
+    // Listen for window resize to call invalidateSize
+    const handleResize = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+
     return () => {
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      window.removeEventListener('resize', handleResize);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;

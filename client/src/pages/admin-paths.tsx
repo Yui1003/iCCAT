@@ -180,7 +180,7 @@ export default function AdminPaths() {
                   {editingPath ? 'Update' : 'Create a new'} {activeTab === "walkpaths" ? "walking" : "driving"} path by clicking on the map
                 </p>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4 pr-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="name">Path Name</Label>
                   <Input
@@ -191,13 +191,16 @@ export default function AdminPaths() {
                     data-testid="input-path-name"
                   />
                 </div>
-                <div>
+                <div className="w-full">
                   <Label>Draw Path on Map</Label>
-                  <PathDrawingMap
-                    nodes={pathNodes}
-                    onNodesChange={setPathNodes}
-                    mode={activeTab === "walkpaths" ? "walking" : "driving"}
-                  />
+                  <div className="w-full">
+                    <PathDrawingMap
+                      nodes={pathNodes}
+                      onNodesChange={setPathNodes}
+                      mode={activeTab === "walkpaths" ? "walking" : "driving"}
+                      className="h-[350px] w-full"
+                    />
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={pathNodes.length < 2}>{editingPath ? 'Update Path' : 'Create Path'}</Button>
               </form>
