@@ -1,12 +1,10 @@
 import { AnalyticsEventType } from "@shared/analytics-schema";
-import { getCurrentSessionId } from "./session-manager";
 
 interface PendingEvent {
   eventType: AnalyticsEventType;
   responseTime: number;
   timestamp: number;
   metadata?: Record<string, any>;
-  sessionId: string;
 }
 
 // In-memory queue for offline events
@@ -24,14 +22,6 @@ window.addEventListener('offline', () => {
 });
 
 /**
- * Initialize analytics (start session tracking)
- */
-export function initializeAnalytics(): void {
-  // Import here to avoid circular dependency
-  import('./session-manager').then(m => m.initializeSessionTracking());
-}
-
-/**
  * Track an analytics event (response time measurement)
  */
 export function trackEvent(
@@ -43,8 +33,7 @@ export function trackEvent(
     eventType,
     responseTime: responseTimeMs,
     timestamp: Date.now(),
-    metadata,
-    sessionId: getCurrentSessionId()
+    metadata
   };
 
   if (isOnline) {

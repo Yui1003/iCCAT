@@ -697,25 +697,25 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Analytics - Persisted to Firestore
+  // Analytics - Persisted to Firestore (source of truth)
   async addAnalyticsEvent(event: AnalyticsEvent): Promise<void> {
     try {
       const id = randomUUID();
       const eventWithId = { ...event, id };
       
-      // Save to Firestore
+      // Save to Firestore (persisted - survives server restart)
       await db.collection('analytics').doc(id).set(eventWithId);
       
-      // Also update in-memory cache for quick summary queries
+      // Update in-memory cache for quick access
       if (!analyticsMemory.has(event.eventType)) {
         analyticsMemory.set(event.eventType, { events: [] });
       }
       const typeData = analyticsMemory.get(event.eventType)!;
       typeData.events.push(eventWithId);
       
-      console.log(`[Analytics] Event logged: ${event.eventType} (${event.responseTime}ms)`);
+      console.log(`[Analytics] Event persisted to Firestore: ${event.eventType} (${event.responseTime}ms)`);
     } catch (error) {
-      console.error('Error adding analytics event:', error);
+      console.error('Error adding analytics event to Firestore:', error);
     }
   }
 
@@ -763,17 +763,18 @@ export class DatabaseStorage implements IStorage {
 
       return summaries;
     } catch (error) {
-      console.error('Error retrieving analytics summary:', error);
+      console.error('Error retrieving analytics summary from Firestore:', error);
       return [];
     }
   }
 
   async getAnalyticsExport(): Promise<AnalyticsEvent[]> {
     try {
+      // Export all events from Firestore
       const snapshot = await db.collection('analytics').get();
       return snapshot.docs.map(doc => doc.data() as AnalyticsEvent);
     } catch (error) {
-      console.error('Error exporting analytics:', error);
+      console.error('Error exporting analytics from Firestore:', error);
       return [];
     }
   }
@@ -789,7 +790,7 @@ export class DatabaseStorage implements IStorage {
       
       await batch.commit();
       analyticsMemory.clear();
-      console.log('[Analytics] All analytics data cleared');
+      console.log('[Analytics] All analytics data cleared from Firestore');
     } catch (error) {
       console.error('Error resetting analytics:', error);
       throw new Error('Cannot reset analytics');

@@ -1,22 +1,17 @@
 import { z } from "zod";
 
-// Analytics event types
+// Analytics event types - tracks the three critical metrics
 export enum AnalyticsEventType {
-  INTERFACE_ACTION = "interface_action",
-  MAP_LOAD = "map_load",
-  IMAGE_LOAD = "image_load",
-  MENU_RENDER = "menu_render",
-  ROUTE_GENERATION = "route_generation",
-  NAVIGATION_START = "navigation_start",
-  PAGE_VIEW = "page_view",
-  SESSION_START = "session_start",
-  SESSION_END = "session_end"
+  INTERFACE_ACTION = "interface_action",      // Response time of interface actions
+  MAP_LOAD = "map_load",                      // Loading speed of maps
+  IMAGE_LOAD = "image_load",                  // Loading speed of images
+  MENU_RENDER = "menu_render",                // Loading speed of menus
+  ROUTE_GENERATION = "route_generation"       // Route-generation speed
 }
 
 // Schema for analytics events (persisted to Firestore)
 export const analyticsEventSchema = z.object({
   id: z.string().uuid().optional(),
-  sessionId: z.string().uuid(), // Groups events by user session
   eventType: z.nativeEnum(AnalyticsEventType),
   responseTime: z.number(), // in milliseconds
   timestamp: z.number(), // Unix timestamp
@@ -38,25 +33,6 @@ export const analyticsSummarySchema = z.object({
 });
 
 export type AnalyticsSummary = z.infer<typeof analyticsSummarySchema>;
-
-// Schema for session data
-export const analyticsSessionSchema = z.object({
-  id: z.string().uuid(),
-  startTime: z.number(),
-  endTime: z.number().nullable(),
-  eventCount: z.number(),
-  totalDuration: z.number() // in milliseconds
-});
-
-export type AnalyticsSession = z.infer<typeof analyticsSessionSchema>;
-
-// Schema for bulk export
-export const analyticsExportSchema = z.object({
-  format: z.enum(['csv', 'json']),
-  includeMetadata: z.boolean().optional()
-});
-
-export type AnalyticsExport = z.infer<typeof analyticsExportSchema>;
 
 // Schema for analytics reset
 export const analyticsResetSchema = z.object({
