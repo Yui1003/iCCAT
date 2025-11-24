@@ -151,7 +151,7 @@ export default function AdminAnalytics() {
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-card-border p-4 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex items-center gap-4">
-          <Link href="/admin-dashboard">
+          <Link href="/admin/dashboard">
             <Button variant="ghost" size="icon" data-testid="button-back">
               <ArrowLeft className="w-5 h-5" />
             </Button>
