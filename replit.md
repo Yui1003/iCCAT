@@ -1,75 +1,180 @@
-# iCCAT Smart Campus Information Kiosk
+# CVSU CCAT Campus Navigation App
 
-## Overview
-iCCAT (Interactive Campus Companion and Assistance Terminal) is a full-stack web application designed as an **offline-first** smart kiosk system for Cavite State University's CCAT Campus. Its primary purpose is to provide interactive campus navigation, wayfinding, staff directory, and event information through a touch-optimized interface for public kiosk deployment. The system includes public-facing modules and a comprehensive admin panel for content management, built with complete offline capability including client-side pathfinding and embedded baseline datasets.
+## Project Overview
+Comprehensive campus wayfinding/navigation web application with kiosk and mobile QR-code versions. Features interactive campus maps, multi-phase route navigation with color-coded paths, ETA calculations, admin management tools, feedback collection, analytics tracking, and offline support. Deployed on Render with Firebase backend; Replit used for testing before production deployment.
+
+## Recent Changes (Nov 24, 2025)
+
+### Analytics System Implementation ✅
+- **Admin Analytics Dashboard**: New dedicated page at `/admin/analytics` for monitoring kiosk performance
+- **Performance Metrics Tracked**:
+  - Interface action response times (button clicks, searches)
+  - Map loading speeds
+  - Image loading times
+  - Menu rendering performance
+  - Route generation speed
+  - Navigation start times
+  - Page view metrics
+
+- **Features**:
+  - Real-time data collection when kiosk is online
+  - Offline disclaimer warning (data NOT collected while offline)
+  - Reset button to clear all analytics data
+  - Performance statistics: Total events, average/min/max response times
+  - Last updated timestamp for each metric
+  - Online/offline status indicator
+
+- **Architecture**:
+  - **Client-side**: `analytics-tracker.ts` - tracks metrics and queues events when offline
+  - **Backend**: Storage interface for analytics CRUD operations
+  - **API Routes**: 
+    - `POST /api/analytics` - Log performance events
+    - `GET /api/admin/analytics` - Retrieve analytics summary
+    - `POST /api/admin/analytics/reset` - Clear all data
+  - **Database**: In-memory storage (in-memory Map) with aggregated statistics
+
+### Previous: ETA System ✅
+- Response time displays for point-to-point routing
+- Clock icon with ETA in Route Details card
+- Walking: 1.4 m/s, Driving: 10 m/s
+- Minutes rounded up for display
+- ETA shows in: Get Directions Dialog, Route Details, phases, multi-phase routes
 
 ## User Preferences
-Preferred communication style: Simple, everyday language.
+- N/A (awaiting first preferences)
 
-## System Architecture
+## Project Architecture
 
-### Frontend Architecture
-- **Framework & Build System:** React 18 with TypeScript, Vite, Wouter for routing, SPA architecture.
-- **UI Component System:** Shadcn/ui (Radix UI primitives), Material Design principles (48px tap targets), Tailwind CSS, Roboto font family.
-- **State Management:** TanStack Query for server state, local React state for UI interactions.
-- **Key Frontend Features:** Interactive map with Leaflet.js, offline-first design (Service Worker), touch-optimized interface, responsive layouts.
+### Directory Structure
+```
+client/
+  src/
+    lib/
+      analytics-tracker.ts    # Client-side performance tracking utility
+      eta-calculator.ts       # ETA calculation logic
+      queryClient.ts          # React Query setup
+    pages/
+      admin-analytics.tsx     # Analytics dashboard page
+      navigation.tsx          # Main kiosk navigation UI
+      [other admin pages]
+    components/
+      admin-layout.tsx        # Admin sidebar with analytics link
+      get-directions-dialog.tsx
+      [UI components]
 
-### Backend Architecture
-- **Server Framework:** Express.js with TypeScript, RESTful API.
-- **API Structure:** CRUD operations for `buildings`, `floors`, `rooms`, `staff`, `events`, `walkpaths`, `drivepaths`, and admin login.
-- **Data Persistence:** PostgreSQL database, Drizzle ORM, schema-first approach with Zod validation, UUID primary keys.
-- **Development Environment:** HMR via Vite, custom logging, standardized JSON error handling.
+shared/
+  analytics-schema.ts         # Analytics Zod schemas & types
+  schema.ts                   # Main data models
 
-### Data Schema Design
-- **Core Entities:** Buildings (geolocation, departments), Floors (hierarchical to buildings), Rooms (x/y coordinates on floor plans), Staff (linked to locations), Events (temporal, optional building link), Walkpaths/Drivepaths (coordinate nodes).
-- **Relationships:** One-to-many relationships (Buildings to Floors, Floors to Rooms), direct references, and JSONB arrays for paths.
+server/
+  storage.ts                  # Analytics storage interface & implementation
+  routes.ts                   # Analytics API endpoints
+  db.ts                       # Firebase connection
+  pathfinding.ts
+```
 
-### Authentication & Authorization
-- **Admin Access:** Simple username/password via `/api/admin/login`, localStorage flag for session persistence, client-side protected routes.
+### Key Files for Analytics
+1. **shared/analytics-schema.ts** - Defines:
+   - `AnalyticsEventType` enum (INTERFACE_ACTION, MAP_LOAD, IMAGE_LOAD, etc.)
+   - `analyticsEventSchema` - Event structure with responseTime in ms
+   - `analyticsSummary` - Aggregated statistics per event type
 
-### Navigation & Pathfinding
-- **Algorithm:** Dijkstra's shortest path algorithm (client-side implementation).
-- **Offline Capability:** Complete pathfinding operates in browser without server dependency.
-- **Graph Construction:** Paths converted to graph of nodes and weighted edges. Node snapping merges nodes from *different* paths within 10 meters, while preserving same-path structure. Edge weights use Haversine distance. Building start/end points project onto nearest path segment.
-- **Path Calculation:** Finds shortest route between buildings, returning waypoints along actual paths.
-- **Walkpath Network Design:** Supports unlimited branching paths with `pathId`-based merge control, ensuring correct junction creation and preservation of individual path structures.
+2. **client/src/lib/analytics-tracker.ts** - Exports:
+   - `trackEvent(eventType, responseTimeMs, metadata)` - Log a single event
+   - `measurePerformance<T>(eventType, fn, metadata)` - Measure function execution time
+   - `flushEvents()` - Send queued events when coming online
+   - `isAnalyticsAvailable()` - Check if online
 
-### Offline-First Architecture
-- **Embedded Baseline Data:** All critical datasets (buildings, staff, floors, rooms, events, walkpaths, drivepaths) bundled in JavaScript build at `client/src/lib/baseline-data.json`.
-- **Triple-Tier Fallback Strategy:** 
-  1. **Tier 1:** Try fetch from API (served from Service Worker cache if available)
-  2. **Tier 2:** Read directly from CacheStorage if fetch fails
-  3. **Tier 3:** Use embedded baseline data (guaranteed to work)
-- **Global React Query Integration:** All queries automatically use offline-first strategy via custom `offlineFirstQueryFn` in queryClient.
-- **First-Boot Offline Support:** Kiosk works perfectly on first boot with zero network connectivity - all features render from embedded data.
-- **Service Worker Caching:** Cache-first strategy for API requests, resilient install process tolerates offline conditions, pre-caches critical endpoints when online.
-- **Browser Compatibility:** Uses `window.caches` API for proper browser main-thread compatibility.
-- **Cache Invalidation Strategy (Three-Layer):** Admin mutations clear all cache layers to ensure immediate updates in navigation:
-  1. **In-Memory Cache:** `cachedDrivepaths`/`cachedWalkpaths` set to null
-  2. **React Query Cache:** `invalidateQueries` for `/api/walkpaths` and `/api/drivepaths`
-  3. **Service Worker CacheStorage:** Delete cached entries for path endpoints
-  - All invalidation steps are awaited to prevent race conditions before UI updates
-  - `fetchWithCacheFallback` and `offlineFirstQueryFn` update CacheStorage with fresh data on successful network fetches
+3. **client/src/pages/admin-analytics.tsx** - UI with:
+   - Online/offline status indicator
+   - Offline disclaimer (orange alert)
+   - Reset data button with confirmation
+   - Analytics cards showing: total count, avg/min/max response times
+   - Info box explaining tracked metrics
 
-## External Dependencies
+4. **server/storage.ts** - Methods:
+   - `addAnalyticsEvent(event)` - Store event in memory
+   - `getAnalyticsSummary()` - Aggregate stats by event type
+   - `resetAnalytics()` - Clear all data
 
-### Third-Party Services
-- **Mapping Services:** OpenStreetMap tile servers, Leaflet.js library (v1.9.4).
-- **CDN Resources:** Google Fonts API.
+5. **server/routes.ts** - Endpoints:
+   - `POST /api/analytics` - Receive tracking data from client
+   - `GET /api/admin/analytics` - Fetch summary for dashboard
+   - `POST /api/admin/analytics/reset` - Clear analytics
 
-### Database
-- **PostgreSQL:** Configured via `DATABASE_URL`, uses `@neondatabase/serverless` driver, Drizzle Kit for migrations.
+## How Analytics Work
 
-### Build & Development Tools
-- **Core Dependencies:** Node.js, TypeScript, esbuild, PostCSS with Autoprefixer.
+### Data Collection Flow
+```
+User interacts with kiosk
+    ↓
+Client measures performance (e.g., 245ms for map load)
+    ↓
+Is kiosk online?
+    ├─ YES → Send to backend immediately
+    └─ NO  → Queue locally, show offline disclaimer
+    ↓
+Backend aggregates events by type
+    ↓
+Admin views in Analytics Dashboard
+    ↓
+Can reset/clear all data
+```
 
-### UI Component Libraries
-- **Radix UI Primitives:** Dialog, Alert Dialog, Dropdown Menu, Select, Tabs, Toast, Tooltips, Popovers, Form controls, Navigation components.
-- **Additional UI:** `class-variance-authority`, `cmdk`, `embla-carousel-react`, `date-fns`, `lucide-react`.
+### Admin Monitoring Process
+1. **Access Analytics**: Admin → Sidebar → Analytics
+2. **View Metrics**: Dashboard shows performance cards for each event type
+3. **Monitor Performance**: Track average response times, identify bottlenecks
+4. **Check Status**: Green "Analytics Active" = data being collected
+5. **Reset Data**: Click "Reset All Data" button to clear counts for new test session
 
-### Form Management
-- `react-hook-form` for state management, `@hookform/resolvers` with Zod for validation, `drizzle-zod`.
+### Offline Behavior
+- **While Offline**: Orange alert banner shows "Analytics data collection is disabled"
+- **Locally Queued**: Events stored in memory queue
+- **Auto-sync**: When connection restored, all queued events sent automatically
+- **Data Accuracy**: Only data collected online is analyzed (ensures research accuracy)
 
-### Service Worker
-- **Offline Caching:** Static assets cached on install, cache-first strategy for API requests, separate cache namespaces for static and data.
-- **Map Tile Pre-Caching:** Deterministic subdomain selection algorithm `(x + y) % subdomains.length` matches Leaflet's runtime URL generation. Pre-caches all campus area tiles (zoom levels 17-18, ~16-20 tiles covering lat: 14.400-14.405, lng: 120.864-120.868) during Service Worker installation for complete offline map functionality. Uses explicit subdomain array `['a', 'b', 'c']` matching Leaflet configuration to ensure perfect cache hits.
+## Current Implementation Status
+
+### ✅ Completed
+- Analytics schema and types
+- Client-side performance tracking utility
+- Backend storage interface and implementation
+- Analytics API endpoints (3 routes)
+- Admin Analytics dashboard page
+- Online/offline status detection
+- Offline disclaimer alert
+- Reset button with confirmation
+- Analytics sidebar link in admin layout
+- Route registration in App.tsx
+- Full integration with existing kiosk
+
+### 🔄 Ready for Use
+- Researchers can now:
+  - Monitor real-time kiosk performance
+  - Track interface action speeds
+  - Measure map/image loading times
+  - See route generation performance
+  - Collect data over test sessions
+  - Reset data between tests
+  - Ensure data accuracy (no offline data)
+
+## ETA System Details
+- **Speeds**: Walking 1.4 m/s, Driving 10 m/s
+- **Display**: Shows "1 min", "45 sec", "< 1 min" format
+- **Locations**: Get Directions Dialog, Route Details card, individual phases
+- **Clock Icon**: Lucide React Clock icon (w-4 h-4, text-primary)
+
+## Build & Deployment
+- Build: `npm run build` (20-23s, ~1MB bundle)
+- Dev Server: `npm run dev` (Vite + Express)
+- Deployed on: Render (Firebase backend)
+- Testing: Replit before production push
+
+## Tech Stack
+- Frontend: React 18, TypeScript, Tailwind CSS, Vite, wouter, TanStack Query
+- Backend: Express, Node.js
+- Database: Firebase (Firestore)
+- UI: Shadcn components, Lucide icons
+- Validation: Zod
+- ORM: Drizzle (schemas only, Firebase used for persistence)

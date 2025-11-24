@@ -16,6 +16,7 @@ import {
   canHaveStaff,
   type POIType
 } from "@shared/schema";
+import { analyticsEventSchema } from "@shared/analytics-schema";
 import { z } from "zod";
 import { findShortestPath } from "./pathfinding";
 
@@ -738,6 +739,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error retrieving route:', error);
       res.status(500).json({ error: 'Failed to retrieve route' });
+    }
+  });
+
+  // Analytics endpoints
+  app.post('/api/analytics', async (req, res) => {
+    try {
+      const event = analyticsEventSchema.parse(req.body);
+      await storage.addAnalyticsEvent(event);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error logging analytics:', error);
+      res.status(400).json({ error: 'Invalid analytics event' });
+    }
+  });
+
+  app.get('/api/admin/analytics', async (req, res) => {
+    try {
+      const summary = await storage.getAnalyticsSummary();
+      res.json(summary);
+    } catch (error) {
+      console.error('Error retrieving analytics:', error);
+      res.status(500).json({ error: 'Failed to retrieve analytics' });
+    }
+  });
+
+  app.post('/api/admin/analytics/reset', async (req, res) => {
+    try {
+      await storage.resetAnalytics();
+      res.json({ success: true, message: 'Analytics data reset' });
+    } catch (error) {
+      console.error('Error resetting analytics:', error);
+      res.status(500).json({ error: 'Failed to reset analytics' });
     }
   });
 

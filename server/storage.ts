@@ -15,12 +15,17 @@ import type {
   Feedback, InsertFeedback,
   SavedRoute, InsertSavedRoute
 } from "@shared/schema";
+import type { AnalyticsEvent, AnalyticsSummary } from "@shared/analytics-schema";
+import { AnalyticsEventType } from "@shared/analytics-schema";
 
 let usingFallback = false;
 let fallbackData: any = null;
 
 // In-memory storage for savedRoutes (used when Firebase is not available)
 const savedRoutesMemory = new Map<string, SavedRoute>();
+
+// In-memory analytics storage
+const analyticsMemory = new Map<AnalyticsEventType, { events: AnalyticsEvent[] }>();
 
 function loadFallbackData() {
   if (fallbackData) return fallbackData;
@@ -99,6 +104,11 @@ export interface IStorage {
 
   getSavedRoute(id: string): Promise<SavedRoute | undefined>;
   createSavedRoute(route: InsertSavedRoute): Promise<SavedRoute>;
+
+  // Analytics
+  addAnalyticsEvent(event: AnalyticsEvent): Promise<void>;
+  getAnalyticsSummary(): Promise<AnalyticsSummary[]>;
+  resetAnalytics(): Promise<void>;
 
   exportToJSON(): Promise<void>;
 }
@@ -684,6 +694,47 @@ export class DatabaseStorage implements IStorage {
       console.log('Route saved to in-memory storage with ID:', id);
       return savedRoute;
     }
+  }
+
+  // Analytics
+  async addAnalyticsEvent(event: AnalyticsEvent): Promise<void> {
+    try {
+      if (!analyticsMemory.has(event.eventType)) {
+        analyticsMemory.set(event.eventType, { events: [] });
+      }
+      const typeData = analyticsMemory.get(event.eventType)!;
+      typeData.events.push({ ...event, id: randomUUID() });
+    } catch (error) {
+      console.error('Error adding analytics event:', error);
+    }
+  }
+
+  async getAnalyticsSummary(): Promise<AnalyticsSummary[]> {
+    const summaries: AnalyticsSummary[] = [];
+
+    for (const [eventType, typeData] of analyticsMemory) {
+      if (typeData.events.length === 0) continue;
+
+      const responseTimes = typeData.events.map(e => e.responseTime);
+      const averageResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+      const minResponseTime = Math.min(...responseTimes);
+      const maxResponseTime = Math.max(...responseTimes);
+
+      summaries.push({
+        eventType,
+        totalCount: typeData.events.length,
+        averageResponseTime,
+        minResponseTime,
+        maxResponseTime,
+        lastUpdated: Date.now()
+      });
+    }
+
+    return summaries;
+  }
+
+  async resetAnalytics(): Promise<void> {
+    analyticsMemory.clear();
   }
 
   async exportToJSON(): Promise<void> {
