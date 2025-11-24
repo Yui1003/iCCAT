@@ -287,78 +287,89 @@
   }
 }
 
-/* Mobile Map Rendering Fixes */
+/* Basic Map Styles */
 #map {
-  width: 100% !important;
-  height: 100% !important;
-  position: absolute !important;
-  overflow: hidden !important;
-  -webkit-user-select: none !important;
-  user-select: none !important;
-  -webkit-touch-callout: none !important;
-  -webkit-tap-highlight-color: transparent !important;
-  touch-action: manipulation !important;
-  -webkit-transform: translate3d(0, 0, 0) !important;
-  transform: translate3d(0, 0, 0) !important;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .leaflet-container {
-  width: 100% !important;
-  height: 100% !important;
-  background-color: #f3f4f6 !important;
-  font-family: inherit !important;
-  -webkit-font-smoothing: antialiased !important;
-  -webkit-text-size-adjust: 100% !important;
-  -webkit-transform: translate3d(0, 0, 0) !important;
-  transform: translate3d(0, 0, 0) !important;
+  width: 100%;
+  height: 100%;
+  background-color: #f3f4f6;
+  font-family: inherit;
+  -webkit-font-smoothing: antialiased;
 }
 
-.leaflet-tile {
-  image-rendering: -webkit-optimize-contrast !important;
-  image-rendering: crisp-edges !important;
-  -webkit-backface-visibility: hidden !important;
-  backface-visibility: hidden !important;
+.leaflet-zoom-control {
+  opacity: 0.8;
 }
 
-.leaflet-pane,
-.leaflet-tile-pane,
-.leaflet-overlay-pane,
-.leaflet-shadow-pane,
-.leaflet-marker-pane,
-.leaflet-tooltip-pane,
-.leaflet-popup-pane {
+/* Mobile Navigation Map - Specific Fixes */
+.mobile-map-container #map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  touch-action: manipulation;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+}
+
+.mobile-map-container .leaflet-container {
+  -webkit-text-size-adjust: 100%;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+}
+
+.mobile-map-container .leaflet-tile {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.mobile-map-container .leaflet-pane,
+.mobile-map-container .leaflet-tile-pane,
+.mobile-map-container .leaflet-overlay-pane,
+.mobile-map-container .leaflet-shadow-pane,
+.mobile-map-container .leaflet-marker-pane,
+.mobile-map-container .leaflet-tooltip-pane,
+.mobile-map-container .leaflet-popup-pane {
   will-change: transform;
   -webkit-transform: translate3d(0, 0, 0);
   transform: translate3d(0, 0, 0);
 }
 
-.leaflet-layer {
+.mobile-map-container .leaflet-layer {
   will-change: contents;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
 
-.leaflet-zoom-control {
-  opacity: 0.8 !important;
+.mobile-map-container svg {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
-svg {
-  -webkit-user-select: none !important;
-  user-select: none !important;
-  -webkit-backface-visibility: hidden !important;
-  backface-visibility: hidden !important;
-}
-
-/* iOS Safari specific fixes */
+/* iOS Safari specific fixes for mobile map only */
 @supports (-webkit-touch-callout: none) {
-  #map,
-  .leaflet-container {
-    -webkit-perspective: 1000 !important;
-    perspective: 1000 !important;
+  .mobile-map-container #map,
+  .mobile-map-container .leaflet-container {
+    -webkit-perspective: 1000;
+    perspective: 1000;
   }
   
-  .leaflet-tile-pane {
-    -webkit-transform: translate3d(0, 0, 0) !important;
-    transform: translate3d(0, 0, 0) !important;
+  .mobile-map-container .leaflet-tile-pane {
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
   }
 }
