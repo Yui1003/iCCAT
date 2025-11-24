@@ -430,14 +430,14 @@ export default function AdminBuildings() {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+        <div className="flex gap-8 w-full">
+          <div className="flex-[2] min-w-0">
             <Card className="h-[600px] overflow-hidden">
               <CampusMap buildings={buildings} onBuildingClick={handleOpenDialog} />
             </Card>
           </div>
 
-          <div>
+          <div className="flex-1 min-w-0">
             <Card className="p-6 h-[600px] overflow-hidden flex flex-col">
               <h2 className="text-lg font-semibold text-foreground mb-4">Buildings List</h2>
               
