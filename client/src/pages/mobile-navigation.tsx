@@ -175,18 +175,29 @@ export default function MobileNavigation() {
           phasesWithPolylines++;
           allCoordinates.push(...phase.polyline);
 
-          // Draw polyline for this phase
+          // Draw polyline for this phase with enhanced mobile rendering
           const polyline = L.polyline(
             phase.polyline.map((coord: any) => [coord.lat, coord.lng]),
             {
               color: color,
-              weight: isCurrent ? 5 : 3,
-              opacity: isCompleted ? 0.5 : 1,
-              dashArray: isCompleted ? '5, 5' : 'none',
+              weight: isCurrent ? 6 : 4,
+              opacity: isCompleted ? 0.6 : 1,
+              dashArray: isCompleted ? '5, 5' : undefined,
               lineCap: 'round',
               lineJoin: 'round',
+              stroke: true,
+              fillOpacity: 0.1,
+              className: `phase-polyline-${index}`,
             }
           ).addTo(map);
+          
+          // Force the polyline to render properly on mobile
+          if (polyline.setStyle) {
+            polyline.setStyle({
+              color: color,
+              opacity: isCompleted ? 0.6 : 1,
+            });
+          }
 
           console.log(`Phase ${index}: ${phase.polyline.length} coordinates, color: ${color}, current: ${isCurrent}`);
         } else {
@@ -298,17 +309,18 @@ export default function MobileNavigation() {
       </header>
 
       {/* Main Layout: Map + Navigation Panel */}
-      <main className="flex-1 flex w-full h-full">
+      <main className="flex-1 flex w-full h-full overflow-hidden relative">
         {/* Map Area - Leaflet Interactive Map */}
         <div
           ref={mapRef}
           id="map"
-          className="flex-1 z-0 relative"
+          className="flex-1 z-0"
           data-testid="map-container"
           style={{
             width: '100%',
             height: '100%',
             position: 'relative',
+            willChange: 'transform',
           }}
         />
 
