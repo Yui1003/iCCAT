@@ -1,11 +1,19 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, AlertCircle } from "lucide-react";
+import { Download, AlertCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import AdminLayout from "@/components/admin-layout";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { AnalyticsMetric } from "@shared/schema";
 
 export default function AdminAnalytics() {
+  const { toast } = useToast();
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
   const { data: summary, isLoading } = useQuery({
     queryKey: ['/api/analytics/summary'],
   });
@@ -13,6 +21,28 @@ export default function AdminAnalytics() {
   const { data: metrics = [] } = useQuery<AnalyticsMetric[]>({
     queryKey: ['/api/analytics/metrics'],
   });
+
+  const handleReset = async () => {
+    setResetting(true);
+    try {
+      await apiRequest('POST', '/api/analytics/reset');
+      toast({
+        title: "Success",
+        description: "All analytics metrics have been reset.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/summary'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/metrics'] });
+      setShowResetConfirm(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reset analytics.",
+        variant: "destructive",
+      });
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const handleExportCSV = () => {
     if (!metrics.length) return;
@@ -85,8 +115,8 @@ export default function AdminAnalytics() {
           </div>
         )}
 
-        {/* Export Button */}
-        <div className="mb-6">
+        {/* Export & Reset Buttons */}
+        <div className="mb-6 flex gap-3">
           <Button 
             onClick={handleExportCSV}
             disabled={!metrics.length}
@@ -96,7 +126,46 @@ export default function AdminAnalytics() {
             <Download className="w-4 h-4" />
             Export to CSV
           </Button>
+          <Button 
+            onClick={() => setShowResetConfirm(true)}
+            disabled={!metrics.length}
+            variant="outline"
+            className="gap-2"
+            data-testid="button-reset-analytics"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset Data
+          </Button>
         </div>
+
+        {/* Reset Confirmation Dialog */}
+        <Dialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset Analytics Data?</DialogTitle>
+              <DialogDescription>
+                This will permanently delete all recorded analytics metrics. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => setShowResetConfirm(false)}
+                disabled={resetting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={handleReset}
+                disabled={resetting}
+                data-testid="button-confirm-reset"
+              >
+                {resetting ? 'Resetting...' : 'Reset All Data'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Metrics Table */}
         <Card className="overflow-hidden">

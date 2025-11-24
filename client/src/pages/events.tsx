@@ -12,6 +12,7 @@ import GetDirectionsDialog from "@/components/get-directions-dialog";
 import type { Event, Building } from "@shared/schema";
 import { eventClassifications } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
+import { calculateETA, parseDistanceToMeters } from "@/lib/eta-calculator";
 
 // Helper function to determine if event is upcoming/ongoing (green) or past (red)
 function getEventStatus(date: string, time?: string | null): 'upcoming' | 'past' {

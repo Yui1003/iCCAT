@@ -774,6 +774,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/analytics/reset', async (req, res) => {
+    try {
+      await storage.clearAllAnalyticsMetrics();
+      res.json({ success: true, message: 'All analytics metrics have been reset' });
+    } catch (error) {
+      console.error('Error resetting analytics:', error);
+      res.status(400).json({ error: 'Failed to reset analytics' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import GetDirectionsDialog from "@/components/get-directions-dialog";
 import type { Staff, Building } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
+import { calculateETA, parseDistanceToMeters } from "@/lib/eta-calculator";
 
 export default function StaffDirectory() {
   // Return to home after 3 minutes of inactivity

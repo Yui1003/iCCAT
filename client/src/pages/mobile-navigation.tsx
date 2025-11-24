@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { calculateETA, parseDistanceToMeters } from "@/lib/eta-calculator";
 import type { SavedRoute, Building, RoutePhase, RouteStep } from "@shared/schema";
 import { getPhaseColor } from "@shared/phase-colors";
 
@@ -406,6 +407,8 @@ export default function MobileNavigation() {
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">Distance:</span>
                   <span className="font-medium text-foreground">{currentPhase.distance}</span>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="text-muted-foreground">ETA: {calculateETA(parseDistanceToMeters(currentPhase.distance), currentPhase.mode)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">Mode:</span>

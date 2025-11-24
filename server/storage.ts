@@ -111,6 +111,7 @@ export interface IStorage {
     successRate: number;
     recentMetrics: AnalyticsMetric[];
   }>;
+  clearAllAnalyticsMetrics(): Promise<void>;
 
   exportToJSON(): Promise<void>;
 }
@@ -710,6 +711,21 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting analytics summary:', error);
       return { totalRoutes: 0, avgRouteGenerationTime: 0, avgMapLoadTime: 0, successRate: 0, recentMetrics: [] };
+    }
+  }
+
+  async clearAllAnalyticsMetrics(): Promise<void> {
+    try {
+      const snapshot = await db.collection('analyticsMetrics').get();
+      const batch = db.batch();
+      snapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      console.log('All analytics metrics cleared');
+    } catch (error) {
+      console.error('Error clearing analytics metrics:', error);
+      throw new Error('Cannot clear analytics metrics');
     }
   }
 
