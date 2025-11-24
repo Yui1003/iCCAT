@@ -1718,7 +1718,7 @@ export default function Navigation() {
                               {phaseIndex + 1}
                             </div>
                             <h4 className="text-sm font-semibold text-foreground">
-                              {phaseIndex === 0 
+                              {phase.mode === 'driving' 
                                 ? `${route.vehicleType === 'bike' ? 'Ride' : 'Drive'} to ${phase.endName}`
                                 : `Walk to ${phase.endName}`}
                             </h4>
