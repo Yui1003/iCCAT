@@ -392,24 +392,83 @@ export function findShortestPath(
     return [startPoint, endPoint];
   }
 
-  const path: string[] = [];
+  // Reconstruct Dijkstra path (just the key nodes)
+  const dijkstraPath: string[] = [];
   let current: string | null = endKey;
 
   while (current !== null) {
-    path.unshift(current);
+    dijkstraPath.unshift(current);
     current = previous.get(current) || null;
   }
 
-  const route: LatLng[] = path.map(key => {
-    const node = augmentedNodes.get(key);
-    return node ? { lat: node.lat, lng: node.lng } : null;
-  }).filter((p): p is LatLng => p !== null);
+  console.log(`[CLIENT] Dijkstra found ${dijkstraPath.length} key nodes`);
 
-  // Add start and end building points to the route
-  const finalRoute = [startPoint, ...route, endPoint];
+  // Now expand the path to include ALL waypoints along the segments
+  const expandedRoute: LatLng[] = [];
 
-  console.log(`[CLIENT] ✅ Route found with ${route.length} path waypoints from "${start.name}" to "${end.name}"`);
-  console.log(`[CLIENT] Using ALL ${finalRoute.length} waypoints in final route (no simplification)`);
+  // Helper function to find segment index for a node key
+  function findSegmentForNodeInPath(path: Walkpath | Drivepath, searchKey: string): number {
+    const pathNodes = path.nodes as LatLng[];
+    for (let i = 0; i < pathNodes.length; i++) {
+      if (nodeKey(pathNodes[i].lat, pathNodes[i].lng) === searchKey) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  // Helper to get all waypoints between two nodes on a path
+  function getWaypointsBetweenNodes(path: Walkpath | Drivepath, fromKey: string, toKey: string): LatLng[] {
+    const pathNodes = path.nodes as LatLng[];
+    const fromIdx = findSegmentForNodeInPath(path, fromKey);
+    const toIdx = findSegmentForNodeInPath(path, toKey);
+    
+    if (fromIdx === -1 || toIdx === -1) return [];
+    
+    const waypoints: LatLng[] = [];
+    if (fromIdx <= toIdx) {
+      for (let i = fromIdx; i <= toIdx; i++) {
+        waypoints.push(pathNodes[i]);
+      }
+    } else {
+      for (let i = fromIdx; i >= toIdx; i--) {
+        waypoints.push(pathNodes[i]);
+      }
+    }
+    return waypoints;
+  }
+
+  // For each consecutive pair of nodes in Dijkstra path, add all waypoints between them
+  for (let i = 0; i < dijkstraPath.length - 1; i++) {
+    const fromKey = dijkstraPath[i];
+    const toKey = dijkstraPath[i + 1];
+
+    // Find which path contains these nodes
+    for (const path of paths) {
+      const fromWaypoints = getWaypointsBetweenNodes(path, fromKey, toKey);
+      if (fromWaypoints.length > 0) {
+        // Add all waypoints, excluding the last one if it's not the final node
+        // (to avoid duplicates with next segment's first node)
+        for (let j = 0; j < fromWaypoints.length; j++) {
+          if (expandedRoute.length === 0 || 
+              Math.abs(fromWaypoints[j].lat - expandedRoute[expandedRoute.length - 1].lat) > 0.00001 ||
+              Math.abs(fromWaypoints[j].lng - expandedRoute[expandedRoute.length - 1].lng) > 0.00001) {
+            expandedRoute.push(fromWaypoints[j]);
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  // Add final destination
+  if (expandedRoute.length === 0) {
+    expandedRoute.push(startPoint);
+  }
+
+  const finalRoute = [startPoint, ...expandedRoute.slice(1), endPoint];
+
+  console.log(`[CLIENT] ✅ Route found: Dijkstra ${dijkstraPath.length} nodes → Expanded ${expandedRoute.length} waypoints → Final ${finalRoute.length} with buildings`);
   
   return finalRoute;
 }
