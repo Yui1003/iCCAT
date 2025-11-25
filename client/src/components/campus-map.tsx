@@ -343,25 +343,9 @@ export default function CampusMap({
     const kioskSize = isZoomedOut ? { img: 'w-12 h-12', icon: 48, ping: 'w-8 h-8' } : { img: 'w-16 h-16', icon: 64, ping: 'w-10 h-10' };
     const buildingSize = isZoomedOut ? { img: 'w-8 h-8', icon: 32, ping: 'w-6 h-6' } : { img: 'w-12 h-12', icon: 48, ping: 'w-8 h-8' };
 
-    // Only show kiosk marker during navigation
+    // During navigation, don't show any markers - only route markers will be shown
     if (isNavigating) {
-      const kioskIconHtml = L.divIcon({
-        html: `
-          <div class="relative flex items-center justify-center">
-            <div class="relative opacity-40">
-              <img src="${kioskIcon}" alt="You are Here" class="${kioskSize.img} object-contain drop-shadow-lg" />
-            </div>
-          </div>
-        `,
-        className: 'kiosk-marker',
-        iconSize: [kioskSize.icon, kioskSize.icon],
-        iconAnchor: [kioskSize.icon / 2, kioskSize.icon / 2],
-      });
-
-      const kioskMarker = L.marker([KIOSK_LOCATION.lat, KIOSK_LOCATION.lng], { icon: kioskIconHtml })
-        .addTo(mapInstanceRef.current);
-
-      markersRef.current.push(kioskMarker);
+      // Skip marker rendering during navigation
     } else {
       const kioskIconHtml = L.divIcon({
         html: `
