@@ -46,13 +46,15 @@ export default function PolygonDrawingMap({
       center: [centerLat, centerLng],
       zoom: 18,
       minZoom: 17,
+      maxZoom: 20.5,
       zoomControl: true,
       attributionControl: true,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
+      maxZoom: 20.5,
+      maxNativeZoom: 19,
       subdomains: ['a', 'b', 'c'],
     }).addTo(map);
 

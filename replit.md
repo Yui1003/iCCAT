@@ -23,15 +23,22 @@ Comprehensive campus wayfinding/navigation web application with kiosk and mobile
   - Zoom in up to level 22 for accurate node placement
   - Users can zoom in and pan freely without map resetting
   - Add multiple nodes seamlessly by panning and clicking
+  - Much smoother path creation workflow
   
 #### Campus Navigation Map
 - **Enhancement**: Increased max zoom level to 20.5 for better viewing detail
 - **Implementation**: Used `maxNativeZoom: 19` and `maxZoom: 20.5` to scale OSM tiles beyond their native resolution
 - **Result**: Users can zoom up to level 20.5 to see fine details while maintaining clean tile rendering
+
+#### Building Area/Boundary Map (Polygon Drawing)
+- **Enhancement**: Increased max zoom level to 20.5 for precise building boundary definition
+- **Implementation**: Used `maxNativeZoom: 19` and `maxZoom: 20.5` to scale OSM tiles beyond their native resolution
+- **Result**: Users can zoom up to level 20.5 when drawing building boundaries for accurate footprint mapping
   
 - **Files Modified**:
-  - `client/src/components/path-drawing-map.tsx` - Path drawing zoom and tile loading
+  - `client/src/components/path-drawing-map.tsx` - Path drawing zoom to 22
   - `client/src/components/campus-map.tsx` - Campus navigation zoom to 20.5
+  - `client/src/components/polygon-drawing-map.tsx` - Building boundary map zoom to 20.5
 
 ### Path Visualization on Admin Maps 🗺️✅
 - **Feature**: Existing walkpaths and drivepaths now display on their respective maps for verification
