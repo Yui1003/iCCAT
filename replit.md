@@ -3,7 +3,15 @@
 ## Project Overview
 Comprehensive campus wayfinding/navigation web application with kiosk and mobile QR-code versions. Features interactive campus maps, multi-phase route navigation with color-coded paths, ETA calculations, admin management tools, feedback collection, analytics tracking, and offline support. Deployed on Render with Firebase backend; Replit used for testing before production deployment.
 
-## Recent Changes (Nov 25, 2025) - EXISTING PATHS VISUALIZATION + SEARCH & FILTERING ✅
+## Recent Changes (Nov 25, 2025) - EXISTING PATHS VISUALIZATION + ZOOM IMPROVEMENT + SEARCH & FILTERING ✅
+
+### Path Drawing Map - Enhanced Zoom Capability 🔍✅
+- **Issue**: Hard to accurately place nodes when adding/editing paths due to limited zoom level
+- **Solution**: Increased maxZoom from 19 to 22 for path drawing maps
+- **Benefit**: Users can now zoom in 3 additional levels for precise node placement
+- **Result**: Smoother paths with more accurate waypoints for both walking and driving routes
+- **Files Modified**:
+  - `client/src/components/path-drawing-map.tsx` - Updated tileLayer maxZoom to 22
 
 ### Path Visualization on Admin Maps 🗺️✅
 - **Feature**: Existing walkpaths and drivepaths now display on their respective maps for verification
