@@ -196,7 +196,7 @@ export default function AdminPaths() {
                 <div className="w-full">
                   <Label>Draw Path on Map</Label>
                   <p className="text-xs text-muted-foreground mb-2">
-                    Click on map to add waypoints • Click gray dots to snap to existing waypoints and connect paths
+                    Gray dots show existing waypoints from other paths - useful for checking proximity
                   </p>
                   <div className="w-full" style={{ height: '350px', display: 'block' }}>
                     <PathDrawingMap
