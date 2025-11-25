@@ -3,7 +3,31 @@
 ## Project Overview
 Comprehensive campus wayfinding/navigation web application with kiosk and mobile QR-code versions. Features interactive campus maps, multi-phase route navigation with color-coded paths, ETA calculations, admin management tools, feedback collection, analytics tracking, and offline support. Deployed on Render with Firebase backend; Replit used for testing before production deployment.
 
-## Recent Changes (Nov 25, 2025) - ANALYTICS BUG FIX ✅
+## Recent Changes (Nov 25, 2025) - ANALYTICS FIXES & CSV IMPROVEMENTS ✅
+
+### CSV Export Format Improved 📊✅
+- **Issue**: CSV exports had three problems:
+  1. SessionID column showed "undefined" for all entries (not useful)
+  2. Timestamp values displayed as scientific notation in Excel (1.764005E+12)
+  3. Date and time were combined in ISO format, not properly separated
+
+- **Fix Applied**:
+  1. **Removed SessionID column** - No longer included in exports
+  2. **Proper date/time formatting**:
+     - Date: `YYYY-MM-DD` format (e.g., `2025-11-25`)
+     - Time: `HH:MM:SS` format (e.g., `05:47:40`)
+  3. **New CSV columns**: `ID,EventType,ResponseTime(ms),Date,Time`
+
+- **Example Output**:
+  ```
+  ID,EventType,ResponseTime(ms),Date,Time
+  "061e143e-86fb-4a81",interface_action,1,2025-11-25,05:47:40
+  "0ff75eb1-b8f3-43d3",map_load,14,2025-11-25,05:49:52
+  "5fb85a3e-32a1-4822",image_load,23,2025-11-25,05:47:47
+  ```
+
+- **Files Modified**: 
+  - `server/routes.ts` (lines 777-812) - CSV export endpoint
 
 ### Analytics Response Time Bug Fixed 🐛✅ **COMPREHENSIVE FIXES ACROSS ALL COMPONENTS**
 - **Issue**: Response times for MAP_LOAD, INTERFACE_ACTION, and IMAGE_LOAD were showing 0ms

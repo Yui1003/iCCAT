@@ -785,12 +785,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Content-Disposition', `attachment; filename="analytics-export-${Date.now()}.json"`);
         res.json(events);
       } else if (format === 'csv') {
-        // Convert to CSV
-        const csvHeader = 'ID,SessionID,EventType,ResponseTime(ms),Timestamp,Date\n';
+        // Convert to CSV with proper formatting
+        const csvHeader = 'ID,EventType,ResponseTime(ms),Date,Time\n';
         const csvRows = events
           .map(event => {
-            const date = new Date(event.timestamp).toISOString();
-            return `"${event.id}","${event.sessionId}","${event.eventType}",${event.responseTime},${event.timestamp},"${date}"`;
+            const eventDate = new Date(event.timestamp);
+            const dateStr = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
+            const timeStr = eventDate.toISOString().split('T')[1].substring(0, 8); // HH:MM:SS
+            return `"${event.id}","${event.eventType}",${event.responseTime},"${dateStr}","${timeStr}"`;
           })
           .join('\n');
 
