@@ -18,10 +18,41 @@ The application features interactive campus maps for path drawing, navigation, a
 ### Technical Implementations
 The system tracks three key metrics: interface action response times, loading speeds for maps/images/menus, and route-generation speed. Analytics data is collected in real-time, persisted to Firestore, and displayed on an admin dashboard using interactive Recharts visualizations (Bar, Pie, Line charts). Offline data collection queues events locally and syncs them upon reconnection. CSV exports are formatted for clarity with proper date/time and timezone handling (Philippine Time). ETA calculations for routing are based on predefined speeds for walking and driving.
 
+### Pathfinding Architecture (Nov 25, 2025)
+**Design Decision: Manual Path Control with Zero Automatic Merging**
+
+The pathfinding system now operates on a **purely manual connection model**:
+
+1. **User-Controlled Path Network**: 
+   - Admins manually connect path waypoints by clicking on existing nodes when creating/editing paths
+   - Building markers (orange) are clickable to snap paths directly to building locations
+   - NO automatic node merging - paths connect ONLY where admins explicitly connect them
+
+2. **Why No Auto-Merging?**
+   - Previous 10-meter automatic node merging created false shortcuts by merging nodes from different paths
+   - Users are already manually connecting nodes, making auto-merging redundant
+   - Manual connections give precise control over the navigation network
+   - Result: Routes follow the EXACT path network admins created, not arbitrary proximity-based connections
+
+3. **How Pathfinding Works**:
+   - Dijkstra's algorithm finds the shortest path through connected nodes (Dijkstra nodes only)
+   - Route expansion: For each consecutive pair of Dijkstra nodes, ALL intermediate waypoints are included
+   - Example: If Dijkstra finds [NodeA → NodeC → NodeE], the route includes [NodeA, NodeB, NodeC, NodeD, NodeE]
+   - Result: Routes trace the complete manually-created paths with zero node skipping
+
+4. **Connection Points**:
+   - **Path-to-Path**: Connected by overlapping/clicking on adjacent waypoints
+   - **Building-to-Path**: Connected by clicking building markers (which snap to nearest path)
+   - **Path Segments**: All intermediate waypoints between connected nodes are preserved in final route
+
 ### Feature Specifications
 - **Campus Maps**: Interactive, multi-zoom level (up to 22), stable tile loading, visualization of existing paths.
 - **Admin Tools**: Search and filter for events, buildings, and paths; robust analytics dashboard with visual charts; CSV/JSON export of analytics data; data reset functionality.
-- **Navigation**: Multi-phase route generation, color-coded paths, ETA display.
+- **Path Drawing**: 
+  - Building markers (orange) visible and clickable to add path waypoints
+  - Existing waypoints (gray dots) from other paths clickable to connect
+  - Visual feedback showing number of buildings, waypoints, and nearby path segments
+- **Navigation**: Multi-phase route generation using manually-created path network, color-coded paths, ETA display.
 - **Analytics**: Tracks interface actions, loading speeds, route generation; offline data queuing and syncing; Firebase persistence.
 - **Data Export**: Formatted CSV with Philippine Timezone and separate date/time columns; JSON export.
 
@@ -30,8 +61,16 @@ The system tracks three key metrics: interface action response times, loading sp
 - **Backend Persistence**: Firebase Firestore is used for reliable data storage, ensuring data integrity across server restarts.
 - **Offline Resilience**: Implements mechanisms to queue and sync data collected while offline, preventing data loss.
 - **Modularity**: Codebase is structured with clear separation of concerns (client, server, shared), and dedicated libraries for analytics tracking and ETA calculation.
+- **Pathfinding Purity**: Zero automatic node merging; routes reflect user's manual path creation exactly.
 
 ## Recent Changes
+- **Pathfinding - Automatic Node Merging Disabled (Nov 25, 2025)**:
+  - Issue: Routes were skipping path waypoints due to 10-meter automatic node merging creating false shortcuts
+  - Root Cause: Auto-merging was connecting nodes from different paths that users never explicitly connected
+  - Solution: Removed `mergeNearbyNodes()` function entirely
+  - Result: Routes now follow EXACTLY the paths users manually created and connected
+  - Verification: Pathfinding trace now matches user-drawn walkpath exactly with no diagonal shortcuts
+
 - **All Campus Maps - Tile Loading & Performance (OPTIMIZED)**: 
   - **Campus Navigation Map**: 
     - Issue: Tiles weren't loading on initial render; users had to zoom out then zoom in to see tiles
@@ -60,3 +99,4 @@ The system tracks three key metrics: interface action response times, loading sp
 - **Backend Framework**: Express, Node.js
 - **Database**: Firebase (Firestore)
 - **Validation**: Zod
+- **Mapping**: Leaflet with OpenStreetMap tiles
