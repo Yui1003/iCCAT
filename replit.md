@@ -28,8 +28,12 @@ Comprehensive campus wayfinding/navigation web application with kiosk and mobile
 #### Campus Navigation Map
 - **Enhancement**: Increased max zoom level to 20.5 for better viewing detail
 - **Implementation**: Used `maxNativeZoom: 19` and `maxZoom: 20.5` to scale OSM tiles beyond their native resolution
-- **Tile Fix**: Removed `subdomains` parameter and added `map.invalidateSize()` call for proper tile rendering
-- **Result**: Tiles now load cleanly at all zoom levels; users can zoom up to 20.5 to see fine details
+- **Tile Fix Applied**: 
+  1. Removed `subdomains` parameter that was interfering with tile loading
+  2. Added `ResizeObserver` to handle container resize events
+  3. Called `map.invalidateSize()` on initial load AND on resize events
+  4. Added delayed `invalidateSize()` calls at 100ms and 300ms for safety
+- **Result**: Tiles now load cleanly at all zoom levels with proper scaling; users can zoom up to 20.5 to see fine details
 
 #### Building Area/Boundary Map (Polygon Drawing)
 - **Enhancement**: Increased max zoom level to 20.5 for precise building boundary definition

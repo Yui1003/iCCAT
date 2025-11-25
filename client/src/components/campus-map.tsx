@@ -162,8 +162,43 @@ export default function CampusMap({
 
     mapInstanceRef.current = map;
 
-    // Invalidate size to ensure tiles load properly
+    // Use ResizeObserver to handle dialog/container resize events (same as path-drawing-map)
+    let resizeObserver: ResizeObserver | null = null;
+    try {
+      resizeObserver = new ResizeObserver(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      });
+      resizeObserver.observe(mapRef.current);
+    } catch (e) {
+      console.error("ResizeObserver not supported");
+    }
+
+    // Invalidate size on initial load
     map.invalidateSize();
+
+    // Also handle window resize
+    const handleResize = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+
+    // Trigger invalidateSize after delays for safety (same as path-drawing-map)
+    const timeoutId1 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 100);
+
+    const timeoutId2 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 300);
 
     // Track map load
     const mapLoadDuration = performance.now() - mapLoadStart;
@@ -181,6 +216,12 @@ export default function CampusMap({
     mapContainer.addEventListener('contextmenu', disableContextMenu);
 
     return () => {
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      window.removeEventListener('resize', handleResize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
