@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Search, MapPin, Mail, Phone, Navigation, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "wouter";
@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import GetDirectionsDialog from "@/components/get-directions-dialog";
 import type { Staff, Building } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
+import { trackEvent } from "@/lib/analytics-tracker";
+import { AnalyticsEventType } from "@shared/analytics-schema";
 
 export default function StaffDirectory() {
   // Return to home after 3 minutes of inactivity
@@ -24,6 +26,41 @@ export default function StaffDirectory() {
   const [showDirections, setShowDirections] = useState(false);
   const [directionsDestination, setDirectionsDestination] = useState<string | null>(null);
   const [, navigate] = useLocation();
+
+  // Track staff search
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+        action: 'staff_searched',
+        searchQuery: searchQuery,
+        viewMode: viewMode
+      });
+    }
+  }, [searchQuery, viewMode]);
+
+  // Track filter changes
+  useEffect(() => {
+    if (buildingFilter !== "all" || departmentFilter !== "all") {
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+        action: 'staff_filtered',
+        buildingFilter: buildingFilter,
+        departmentFilter: departmentFilter
+      });
+    }
+  }, [buildingFilter, departmentFilter]);
+
+  // Track staff selection
+  useEffect(() => {
+    if (selectedStaff) {
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+        action: 'staff_profile_viewed',
+        staffId: selectedStaff.id,
+        staffName: selectedStaff.name,
+        position: selectedStaff.position,
+        department: selectedStaff.department
+      });
+    }
+  }, [selectedStaff]);
 
   const { data: staff = [], isLoading } = useQuery<Staff[]>({
     queryKey: ['/api/staff']

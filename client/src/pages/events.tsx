@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, Clock, MapPin, X, Navigation, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "wouter";
@@ -13,6 +13,8 @@ import type { Event, Building } from "@shared/schema";
 import { eventClassifications } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
 import useEmblaCarousel from "embla-carousel-react";
+import { trackEvent } from "@/lib/analytics-tracker";
+import { AnalyticsEventType } from "@shared/analytics-schema";
 
 // Helper function to determine if event is upcoming/ongoing (green) or past (red)
 function getEventStatus(date: string, time?: string | null): 'upcoming' | 'past' {
@@ -120,6 +122,28 @@ export default function Events() {
   const [classificationFilter, setClassificationFilter] = useState<string>("all");
   const [showPastEvents, setShowPastEvents] = useState(false);
   const [, navigate] = useLocation();
+
+  // Track filter changes
+  useEffect(() => {
+    if (classificationFilter !== "all") {
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+        action: 'events_filtered',
+        classification: classificationFilter
+      });
+    }
+  }, [classificationFilter]);
+
+  // Track event selection
+  useEffect(() => {
+    if (selectedEvent) {
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+        action: 'event_details_viewed',
+        eventId: selectedEvent.id,
+        eventTitle: selectedEvent.title,
+        classification: selectedEvent.classification
+      });
+    }
+  }, [selectedEvent]);
 
   // Carousel refs and embla instances
   const [ongoingEmblaRef, ongoingEmblaApi] = useEmblaCarousel({
