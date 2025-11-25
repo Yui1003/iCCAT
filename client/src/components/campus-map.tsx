@@ -149,20 +149,20 @@ export default function CampusMap({
       center: [centerLat || 14.402598, centerLng || 120.866280],
       zoom: 17.5,
       minZoom: 17.5,
-      maxZoom: 20.5,
+      maxZoom: 21,
       zoomControl: true,
       attributionControl: true,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
-      maxZoom: 20.5,
+      maxZoom: 21,
       maxNativeZoom: 19,
     }).addTo(map);
 
     mapInstanceRef.current = map;
 
-    // Use ResizeObserver to handle dialog/container resize events (same as path-drawing-map)
+    // Use ResizeObserver to handle dialog/container resize events
     let resizeObserver: ResizeObserver | null = null;
     try {
       resizeObserver = new ResizeObserver(() => {
@@ -194,30 +194,18 @@ export default function CampusMap({
       }
     });
 
-    // Trigger invalidateSize after delays for safety (same as path-drawing-map)
+    // Trigger invalidateSize after minimal delays for fast tile rendering
     const timeoutId1 = setTimeout(() => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.invalidateSize();
       }
-    }, 50);
+    }, 75);
 
     const timeoutId2 = setTimeout(() => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.invalidateSize();
       }
-    }, 100);
-
-    const timeoutId3 = setTimeout(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-      }
-    }, 200);
-
-    const timeoutId4 = setTimeout(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-      }
-    }, 500);
+    }, 250);
 
     // Track map load
     const mapLoadDuration = performance.now() - mapLoadStart;
@@ -237,8 +225,6 @@ export default function CampusMap({
     return () => {
       clearTimeout(timeoutId1);
       clearTimeout(timeoutId2);
-      clearTimeout(timeoutId3);
-      clearTimeout(timeoutId4);
       window.removeEventListener('resize', handleResize);
       if (resizeObserver) {
         resizeObserver.disconnect();
@@ -306,7 +292,7 @@ export default function CampusMap({
 
     // Restrict zoom levels to stay focused on campus
     map.setMinZoom(17.5);
-    map.setMaxZoom(20.5);
+    map.setMaxZoom(21);
 
     // CRITICAL: Delay bounds setup to allow tiles to render first
     // This prevents the bounds constraint from interfering with tile loading
@@ -316,7 +302,7 @@ export default function CampusMap({
       
       // Update bounds whenever zoom level changes
       map.on('zoomend', updateBoundsBasedOnZoom);
-    }, 600); // Delay after last invalidateSize call (500ms) + buffer
+    }, 350); // Reduced delay for faster tile rendering (after last invalidateSize at 250ms)
 
     return () => {
       clearTimeout(boundsTimeout);
