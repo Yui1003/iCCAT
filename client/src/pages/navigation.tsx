@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Navigation as NavigationIcon, TrendingUp, MapPin, Filter, Search, Users, Car, Bike, QrCode, Plus, X, GripVertical, Clock } from "lucide-react";
+import { ArrowLeft, Navigation as NavigationIcon, TrendingUp, MapPin, Filter, Search, Users, Car, Bike, QrCode, Plus, X, GripVertical, Clock, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import CampusMap from "@/components/campus-map";
 import BuildingInfoModal from "@/components/building-info-modal";
@@ -41,7 +43,7 @@ export default function Navigation() {
   const [route, setRoute] = useState<NavigationRoute | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
-  const [filterType, setFilterType] = useState<string>("all");
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(Array.from(poiTypes));
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showDirectionsDialog, setShowDirectionsDialog] = useState(false);
   const [directionsDestination, setDirectionsDestination] = useState<Building | null>(null);
@@ -1371,7 +1373,7 @@ export default function Navigation() {
 
   // Filter buildings by type and search query
   const filteredBuildings = buildings.filter(b => {
-    const matchesType = filterType === "all" || b.type === filterType;
+    const matchesType = selectedTypes.includes(b.type);
     const matchesSearch = searchQuery === "" || 
       b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (b.description && b.description.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -1426,19 +1428,68 @@ export default function Navigation() {
                   <Filter className="w-4 h-4" />
                   Filter Map Markers
                 </label>
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger data-testid="select-marker-filter">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[100]">
-                    <SelectItem value="all">All Types</SelectItem>
-                    {poiTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-between"
+                      data-testid="select-marker-filter"
+                    >
+                      <span>
+                        {selectedTypes.length === poiTypes.length 
+                          ? "All Types" 
+                          : `${selectedTypes.length} Selected`}
+                      </span>
+                      <ChevronDown className="w-4 h-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-3">
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedTypes(Array.from(poiTypes))}
+                          className="flex-1"
+                        >
+                          Select All
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedTypes([])}
+                          className="flex-1"
+                        >
+                          Clear All
+                        </Button>
+                      </div>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {poiTypes.map((type) => (
+                          <div key={type} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`type-${type}`}
+                              checked={selectedTypes.includes(type)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedTypes([...selectedTypes, type]);
+                                } else {
+                                  setSelectedTypes(selectedTypes.filter(t => t !== type));
+                                }
+                              }}
+                              data-testid={`checkbox-marker-type-${type}`}
+                            />
+                            <label 
+                              htmlFor={`type-${type}`}
+                              className="text-sm cursor-pointer flex-1"
+                            >
+                              {type}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div>
@@ -1589,7 +1640,7 @@ export default function Navigation() {
 
               <div className="pt-4 border-t border-border">
                 <h3 className="text-sm font-medium text-foreground mb-3">
-                  {filterType === "all" ? "Available Buildings" : `${filterType} Locations`}
+                  {selectedTypes.length === poiTypes.length ? "All Locations" : "Filtered Locations"}
                 </h3>
                 <div className="space-y-2">
                   {filteredBuildings.length > 0 ? (
@@ -1609,7 +1660,7 @@ export default function Navigation() {
                     ))
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      No {filterType} locations found
+                      No locations found
                     </p>
                   )}
                 </div>
