@@ -246,7 +246,7 @@ function buildGraph(paths: (Walkpath | Drivepath)[]): {
   });
 
   console.log(`[CLIENT] Before merge: ${nodes.size} nodes, ${edges.length} edges`);
-  const merged = mergeNearbyNodes(nodes, edges, 10);
+  const merged = mergeNearbyNodes(nodes, edges, 20); // Increased to 20m to properly connect path junctions
   console.log(`[CLIENT] After merge: ${merged.nodes.size} nodes, ${merged.edges.length} edges`);
   
   return { nodes: merged.nodes, edges: merged.edges };
