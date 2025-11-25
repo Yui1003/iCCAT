@@ -196,7 +196,7 @@ export default function AdminPaths() {
                 <div className="w-full">
                   <Label>Draw Path on Map</Label>
                   <p className="text-xs text-muted-foreground mb-2">
-                    Gray dots show existing waypoints from other paths - useful for checking proximity
+                    🏢 Orange markers = buildings (click to snap path) • Gray dots = existing waypoints • Click map to add waypoints
                   </p>
                   <div className="w-full" style={{ height: '350px', display: 'block' }}>
                     <PathDrawingMap
@@ -206,6 +206,7 @@ export default function AdminPaths() {
                       className="h-full w-full"
                       existingPaths={activeTab === "walkpaths" ? walkpaths : drivepaths}
                       currentPathId={editingPath?.id}
+                      buildings={buildings.map(b => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng }))}
                     />
                   </div>
                 </div>

@@ -8,6 +8,14 @@ interface PathNode {
   lng: number;
 }
 
+interface Building {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  type?: string;
+}
+
 interface PathDrawingMapProps {
   nodes: PathNode[];
   onNodesChange: (nodes: PathNode[]) => void;
@@ -15,6 +23,7 @@ interface PathDrawingMapProps {
   className?: string;
   existingPaths?: Array<{ id?: string; nodes: PathNode[] }>;
   currentPathId?: string;
+  buildings?: Building[];
 }
 
 declare global {
@@ -29,7 +38,8 @@ export default function PathDrawingMap({
   mode = 'walking',
   className = "h-[500px] w-full",
   existingPaths = [],
-  currentPathId
+  currentPathId,
+  buildings = []
 }: PathDrawingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -154,6 +164,42 @@ export default function PathDrawingMap({
       polylineRef.current = null;
     }
 
+    // Render building markers - clickable to snap paths to buildings
+    if (buildings && buildings.length > 0) {
+      buildings.forEach((building) => {
+        const iconHtml = `
+          <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white font-bold text-xs text-white">
+            B
+          </div>
+        `;
+
+        const icon = L.divIcon({
+          html: iconHtml,
+          className: 'building-waypoint-marker',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        });
+
+        const marker = L.marker([building.lat, building.lng], { icon })
+          .addTo(mapInstanceRef.current)
+          .bindTooltip(`Building: ${building.name}`, {
+            permanent: false,
+            direction: 'top',
+            offset: [0, -12],
+          });
+
+        marker.on('click', (e: any) => {
+          L.DomEvent.stopPropagation(e);
+          if (isDrawing) {
+            // Auto-add building location as waypoint when clicked
+            onNodesChange([...nodes, { lat: building.lat, lng: building.lng }]);
+          }
+        });
+
+        markersRef.current.push(marker);
+      });
+    }
+
     // Render existing path markers (from other paths)
     if (existingPaths && existingPaths.length > 0) {
       existingPaths.forEach((path) => {
@@ -268,7 +314,7 @@ export default function PathDrawingMap({
         hasInitializedBoundsRef.current = true;
       }
     }
-  }, [nodes, mode, isDrawing, onNodesChange, existingPaths, currentPathId]);
+  }, [nodes, mode, isDrawing, onNodesChange, existingPaths, currentPathId, buildings]);
 
   const handleUndo = () => {
     if (nodes.length > 0) {
@@ -290,6 +336,16 @@ export default function PathDrawingMap({
           <Badge variant="outline">
             {nodes.length} waypoint{nodes.length !== 1 ? 's' : ''}
           </Badge>
+          {buildings.length > 0 && (
+            <Badge variant="outline" className="bg-orange-50">
+              🏢 {buildings.length} building{buildings.length !== 1 ? 's' : ''}
+            </Badge>
+          )}
+          {existingPaths && existingPaths.length > 0 && (
+            <Badge variant="outline" className="bg-gray-50">
+              •••  {existingPaths.filter(p => !currentPathId || p.id !== currentPathId).length} path segment{existingPaths.filter(p => !currentPathId || p.id !== currentPathId).length !== 1 ? 's' : ''}
+            </Badge>
+          )}
         </div>
         <div className="flex gap-1">
           <Button
