@@ -13,6 +13,8 @@ interface PathDrawingMapProps {
   onNodesChange: (nodes: PathNode[]) => void;
   mode?: 'walking' | 'driving';
   className?: string;
+  existingPaths?: Array<{ id?: string; nodes: PathNode[] }>;
+  currentPathId?: string;
 }
 
 declare global {
@@ -25,7 +27,9 @@ export default function PathDrawingMap({
   nodes,
   onNodesChange,
   mode = 'walking',
-  className = "h-[500px] w-full"
+  className = "h-[500px] w-full",
+  existingPaths = [],
+  currentPathId
 }: PathDrawingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -150,6 +154,43 @@ export default function PathDrawingMap({
       polylineRef.current = null;
     }
 
+    // Render existing path markers (from other paths)
+    if (existingPaths && existingPaths.length > 0) {
+      existingPaths.forEach((path) => {
+        // Skip rendering the current path being edited
+        if (currentPathId && path.id === currentPathId) {
+          return;
+        }
+
+        if (path.nodes && path.nodes.length > 0) {
+          path.nodes.forEach((node, index) => {
+            const iconHtml = `
+              <div class="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center shadow-sm border-2 border-gray-300 opacity-60">
+              </div>
+            `;
+
+            const icon = L.divIcon({
+              html: iconHtml,
+              className: 'existing-waypoint-marker',
+              iconSize: [16, 16],
+              iconAnchor: [8, 8],
+            });
+
+            const marker = L.marker([node.lat, node.lng], { icon })
+              .addTo(mapInstanceRef.current)
+              .bindTooltip('Existing waypoint', {
+                permanent: false,
+                direction: 'top',
+                offset: [0, -10],
+              });
+
+            markersRef.current.push(marker);
+          });
+        }
+      });
+    }
+
+    // Render current path nodes
     if (nodes.length > 0) {
       const color = mode === 'driving' ? '#22c55e' : '#3b82f6';
 
@@ -227,7 +268,7 @@ export default function PathDrawingMap({
         hasInitializedBoundsRef.current = true;
       }
     }
-  }, [nodes, mode, isDrawing, onNodesChange]);
+  }, [nodes, mode, isDrawing, onNodesChange, existingPaths, currentPathId]);
 
   const handleUndo = () => {
     if (nodes.length > 0) {

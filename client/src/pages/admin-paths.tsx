@@ -195,12 +195,17 @@ export default function AdminPaths() {
                 </div>
                 <div className="w-full">
                   <Label>Draw Path on Map</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Gray dots show existing waypoints from other paths - useful for checking proximity
+                  </p>
                   <div className="w-full" style={{ height: '350px', display: 'block' }}>
                     <PathDrawingMap
                       nodes={pathNodes}
                       onNodesChange={setPathNodes}
                       mode={activeTab === "walkpaths" ? "walking" : "driving"}
                       className="h-full w-full"
+                      existingPaths={activeTab === "walkpaths" ? walkpaths : drivepaths}
+                      currentPathId={editingPath?.id}
                     />
                   </div>
                 </div>
