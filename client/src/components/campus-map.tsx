@@ -187,18 +187,37 @@ export default function CampusMap({
     
     window.addEventListener('resize', handleResize);
 
+    // Use requestAnimationFrame for immediate next paint
+    requestAnimationFrame(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    });
+
     // Trigger invalidateSize after delays for safety (same as path-drawing-map)
     const timeoutId1 = setTimeout(() => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.invalidateSize();
       }
-    }, 100);
+    }, 50);
 
     const timeoutId2 = setTimeout(() => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.invalidateSize();
       }
-    }, 300);
+    }, 100);
+
+    const timeoutId3 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 200);
+
+    const timeoutId4 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 500);
 
     // Track map load
     const mapLoadDuration = performance.now() - mapLoadStart;
@@ -218,6 +237,8 @@ export default function CampusMap({
     return () => {
       clearTimeout(timeoutId1);
       clearTimeout(timeoutId2);
+      clearTimeout(timeoutId3);
+      clearTimeout(timeoutId4);
       window.removeEventListener('resize', handleResize);
       if (resizeObserver) {
         resizeObserver.disconnect();
