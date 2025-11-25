@@ -282,20 +282,10 @@ function buildGraph(paths: (Walkpath | Drivepath)[]): {
     }
   });
 
-  console.log(`[CLIENT] Before merge: ${nodes.size} nodes, ${edges.length} edges`);
+  console.log(`[CLIENT] Final graph: ${nodes.size} nodes, ${edges.length} edges`);
+  console.log(`[CLIENT] ✅ NO node merging - using exact paths you created`);
   
-  // Debug: Log separate path node counts
-  const pathIds = new Set<string>();
-  nodes.forEach(node => {
-    if (node.pathId) pathIds.add(node.pathId);
-  });
-  console.log(`[CLIENT] Paths in graph: ${pathIds.size}, Path IDs:`, Array.from(pathIds).slice(0, 5));
-  
-  const merged = mergeNearbyNodes(nodes, edges, 10);
-  console.log(`[CLIENT] After merge: ${merged.nodes.size} nodes, ${merged.edges.length} edges`);
-  console.log(`[CLIENT] Merge reduced nodes from ${nodes.size} to ${merged.nodes.size} (${nodes.size - merged.nodes.size} merged)`);
-  
-  return { nodes: merged.nodes, edges: merged.edges };
+  return { nodes, edges };
 }
 
 export function findShortestPath(
