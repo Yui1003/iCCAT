@@ -10,24 +10,26 @@ Comprehensive campus wayfinding/navigation web application with kiosk and mobile
   1. SessionID column showed "undefined" for all entries (not useful)
   2. Timestamp values displayed as scientific notation in Excel (1.764005E+12)
   3. Date and time were combined in ISO format, not properly separated
+  4. Times were in UTC instead of Philippine Time (UTC+8)
 
 - **Fix Applied**:
   1. **Removed SessionID column** - No longer included in exports
   2. **Proper date/time formatting**:
      - Date: `YYYY-MM-DD` format (e.g., `2025-11-25`)
-     - Time: `HH:MM:SS` format (e.g., `05:47:40`)
-  3. **New CSV columns**: `ID,EventType,ResponseTime(ms),Date,Time`
+     - Time: `HH:MM:SS` format in Philippine Time (e.g., `13:47:40`)
+  3. **Philippine Timezone (UTC+8)** - All times now show Asia/Manila timezone
+  4. **New CSV columns**: `ID,EventType,ResponseTime(ms),Date,Time`
 
-- **Example Output**:
+- **Example Output** (Philippine Time):
   ```
   ID,EventType,ResponseTime(ms),Date,Time
-  "061e143e-86fb-4a81",interface_action,1,2025-11-25,05:47:40
-  "0ff75eb1-b8f3-43d3",map_load,14,2025-11-25,05:49:52
-  "5fb85a3e-32a1-4822",image_load,23,2025-11-25,05:47:47
+  "061e143e-86fb-4a81",interface_action,1,2025-11-25,13:47:40
+  "0ff75eb1-b8f3-43d3",map_load,14,2025-11-25,13:49:52
+  "5fb85a3e-32a1-4822",image_load,23,2025-11-25,13:47:47
   ```
 
 - **Files Modified**: 
-  - `server/routes.ts` (lines 777-812) - CSV export endpoint
+  - `server/routes.ts` (lines 790-815) - CSV export with Philippine timezone using Intl.DateTimeFormat with Asia/Manila
 
 ### Analytics Response Time Bug Fixed 🐛✅ **COMPREHENSIVE FIXES ACROSS ALL COMPONENTS**
 - **Issue**: Response times for MAP_LOAD, INTERFACE_ACTION, and IMAGE_LOAD were showing 0ms

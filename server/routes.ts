@@ -785,13 +785,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Content-Disposition', `attachment; filename="analytics-export-${Date.now()}.json"`);
         res.json(events);
       } else if (format === 'csv') {
-        // Convert to CSV with proper formatting
+        // Convert to CSV with proper formatting in Philippine Time (UTC+8)
         const csvHeader = 'ID,EventType,ResponseTime(ms),Date,Time\n';
         const csvRows = events
           .map(event => {
             const eventDate = new Date(event.timestamp);
-            const dateStr = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
-            const timeStr = eventDate.toISOString().split('T')[1].substring(0, 8); // HH:MM:SS
+            // Format using Philippine timezone (Asia/Manila - UTC+8)
+            const dateFormatter = new Intl.DateTimeFormat('en-CA', {
+              timeZone: 'Asia/Manila'
+            });
+            const timeFormatter = new Intl.DateTimeFormat('en-US', {
+              timeZone: 'Asia/Manila',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            });
+            const dateStr = dateFormatter.format(eventDate);
+            const timeStr = timeFormatter.format(eventDate);
             return `"${event.id}","${event.eventType}",${event.responseTime},"${dateStr}","${timeStr}"`;
           })
           .join('\n');
