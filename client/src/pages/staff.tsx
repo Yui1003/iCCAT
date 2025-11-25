@@ -30,7 +30,9 @@ export default function StaffDirectory() {
   // Track staff search
   useEffect(() => {
     if (searchQuery.trim()) {
-      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+      const startTime = performance.now();
+      const duration = performance.now() - startTime;
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, Math.max(1, Math.round(duration)), {
         action: 'staff_searched',
         searchQuery: searchQuery,
         viewMode: viewMode
@@ -41,7 +43,9 @@ export default function StaffDirectory() {
   // Track filter changes
   useEffect(() => {
     if (buildingFilter !== "all" || departmentFilter !== "all") {
-      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+      const startTime = performance.now();
+      const duration = performance.now() - startTime;
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, Math.max(1, Math.round(duration)), {
         action: 'staff_filtered',
         buildingFilter: buildingFilter,
         departmentFilter: departmentFilter
@@ -52,7 +56,9 @@ export default function StaffDirectory() {
   // Track staff selection
   useEffect(() => {
     if (selectedStaff) {
-      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+      const startTime = performance.now();
+      const duration = performance.now() - startTime;
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, Math.max(1, Math.round(duration)), {
         action: 'staff_profile_viewed',
         staffId: selectedStaff.id,
         staffName: selectedStaff.name,

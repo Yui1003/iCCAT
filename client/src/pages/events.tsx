@@ -128,7 +128,9 @@ export default function Events() {
   // Track filter changes
   useEffect(() => {
     if (classificationFilter !== "all") {
-      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+      const startTime = performance.now();
+      const duration = performance.now() - startTime;
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, Math.max(1, Math.round(duration)), {
         action: 'events_filtered',
         classification: classificationFilter
       });
@@ -138,7 +140,9 @@ export default function Events() {
   // Track event selection
   useEffect(() => {
     if (selectedEvent) {
-      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+      const startTime = performance.now();
+      const duration = performance.now() - startTime;
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, Math.max(1, Math.round(duration)), {
         action: 'event_details_viewed',
         eventId: selectedEvent.id,
         eventTitle: selectedEvent.title,

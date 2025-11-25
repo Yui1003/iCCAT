@@ -5,17 +5,35 @@ Comprehensive campus wayfinding/navigation web application with kiosk and mobile
 
 ## Recent Changes (Nov 25, 2025) - ANALYTICS BUG FIX ✅
 
-### Analytics Response Time Bug Fixed 🐛✅
-- **Issue**: Response times for MAP_LOAD, INTERFACE_ACTION, and IMAGE_LOAD were all showing 0ms
-- **Root Cause**: Response times were hardcoded to `0` instead of measuring actual operation duration
-- **Fix Applied**:
-  - `MAP_LOAD` (campus-map.tsx): Now measures map initialization time from effect start
-  - `INTERFACE_ACTION` (navigation.tsx): Now measures effect execution time for building info modal
-  - `IMAGE_LOAD` (navigation.tsx): Now measures effect execution time for floor plan opening
-  - All three use `Math.max(1, Math.round(duration))` to ensure minimum 1ms values
-- **Files Modified**: 
-  - `client/src/components/campus-map.tsx` (line 153)
-  - `client/src/pages/navigation.tsx` (lines 85, 96)
+### Analytics Response Time Bug Fixed 🐛✅ **COMPREHENSIVE FIXES ACROSS ALL COMPONENTS**
+- **Issue**: Response times for MAP_LOAD, INTERFACE_ACTION, and IMAGE_LOAD were showing 0ms
+- **Root Cause**: Response times were hardcoded to `0` in multiple locations instead of measuring actual operation duration
+- **Fix Applied**: Replaced ALL hardcoded 0ms values with actual performance measurements
+  
+#### Files Modified (9 tracking calls fixed):
+1. **campus-map.tsx** (1 fix):
+   - `MAP_LOAD`: Line 158 - Now measures map initialization time from effect start
+   
+2. **navigation.tsx** (2 fixes):
+   - `INTERFACE_ACTION`: Line 86 - Measures effect execution time for building info modal
+   - `IMAGE_LOAD`: Line 99 - Measures effect execution time for floor plan opening
+   
+3. **building-info-modal.tsx** (2 fixes):
+   - `INTERFACE_ACTION`: Lines 44, 51 - Measures effect execution time for tab changes (staff/floors)
+   
+4. **floor-plan-viewer.tsx** (1 fix):
+   - `IMAGE_LOAD`: Line 48 - Measures actual image loading time using onload callback
+   
+5. **staff.tsx** (3 fixes):
+   - `INTERFACE_ACTION`: Lines 38, 51, 64 - Measures staff search, filter changes, and profile view
+   
+6. **events.tsx** (2 fixes):
+   - `INTERFACE_ACTION`: Lines 136, 148 - Measures event filter changes and event selection
+
+#### Implementation Detail:
+- All fixes use `Math.max(1, Math.round(duration))` to ensure minimum 1ms values (prevents 0ms from rounding)
+- IMAGE_LOAD in floor-plan-viewer now measures from image creation to onload completion
+- All other metrics measure from effect start to tracking call
 
 ## Previous: Recent Changes (Nov 24, 2025) - ANALYTICS WITH CHARTS ✅
 

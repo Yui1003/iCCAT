@@ -36,11 +36,13 @@ export default function FloorPlanViewer({ floor, rooms = [], onClose, onPlaceRoo
 
   useEffect(() => {
     if (floor.floorPlanImage) {
+      const imageLoadStart = performance.now();
       const img = new Image();
       img.src = floor.floorPlanImage;
       img.onload = () => {
+        const imageLoadDuration = performance.now() - imageLoadStart;
         setImage(img);
-        trackEvent(AnalyticsEventType.IMAGE_LOAD, 0, {
+        trackEvent(AnalyticsEventType.IMAGE_LOAD, Math.max(1, Math.round(imageLoadDuration)), {
           action: 'floor_plan_image_loaded',
           floorId: floor.id,
           floorName: floor.name,

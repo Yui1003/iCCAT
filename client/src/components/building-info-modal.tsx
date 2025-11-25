@@ -34,15 +34,18 @@ export default function BuildingInfoModal({
   const modalRef = useRef<HTMLDivElement>(null);
 
   const handleTabChange = (value: string) => {
+    const startTime = performance.now();
     setActiveTab(value);
     if (value === "staff") {
-      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+      const duration = performance.now() - startTime;
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, Math.max(1, Math.round(duration)), {
         action: 'staff_directory_viewed',
         buildingId: building.id,
         staffCount: staff.length
       });
     } else if (value === "floors") {
-      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+      const duration = performance.now() - startTime;
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, Math.max(1, Math.round(duration)), {
         action: 'floor_plans_viewed',
         buildingId: building.id,
         floorCount: floors.length
