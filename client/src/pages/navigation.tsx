@@ -82,7 +82,8 @@ export default function Navigation() {
   useEffect(() => {
     if (selectedBuilding) {
       const startTime = performance.now();
-      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+      const duration = performance.now() - startTime;
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, Math.max(1, Math.round(duration)), {
         action: 'building_info_opened',
         buildingId: selectedBuilding.id,
         buildingName: selectedBuilding.name
@@ -93,7 +94,9 @@ export default function Navigation() {
   // Track floor plan viewer open
   useEffect(() => {
     if (selectedFloor) {
-      trackEvent(AnalyticsEventType.IMAGE_LOAD, 0, {
+      const startTime = performance.now();
+      const duration = performance.now() - startTime;
+      trackEvent(AnalyticsEventType.IMAGE_LOAD, Math.max(1, Math.round(duration)), {
         action: 'floor_plan_opened',
         floorId: selectedFloor.id,
         floorName: selectedFloor.name,

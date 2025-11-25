@@ -127,6 +127,7 @@ export default function CampusMap({
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
+    const mapLoadStart = performance.now();
     const L = window.L;
     if (!L) {
       console.error("Leaflet not loaded");
@@ -150,7 +151,8 @@ export default function CampusMap({
     mapInstanceRef.current = map;
 
     // Track map load
-    trackEvent(AnalyticsEventType.MAP_LOAD, 0, {
+    const mapLoadDuration = performance.now() - mapLoadStart;
+    trackEvent(AnalyticsEventType.MAP_LOAD, Math.max(1, Math.round(mapLoadDuration)), {
       action: 'campus_map_loaded',
       buildingCount: buildings.length
     });

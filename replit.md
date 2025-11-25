@@ -3,7 +3,21 @@
 ## Project Overview
 Comprehensive campus wayfinding/navigation web application with kiosk and mobile QR-code versions. Features interactive campus maps, multi-phase route navigation with color-coded paths, ETA calculations, admin management tools, feedback collection, analytics tracking, and offline support. Deployed on Render with Firebase backend; Replit used for testing before production deployment.
 
-## Recent Changes (Nov 24, 2025) - ANALYTICS WITH CHARTS ✅
+## Recent Changes (Nov 25, 2025) - ANALYTICS BUG FIX ✅
+
+### Analytics Response Time Bug Fixed 🐛✅
+- **Issue**: Response times for MAP_LOAD, INTERFACE_ACTION, and IMAGE_LOAD were all showing 0ms
+- **Root Cause**: Response times were hardcoded to `0` instead of measuring actual operation duration
+- **Fix Applied**:
+  - `MAP_LOAD` (campus-map.tsx): Now measures map initialization time from effect start
+  - `INTERFACE_ACTION` (navigation.tsx): Now measures effect execution time for building info modal
+  - `IMAGE_LOAD` (navigation.tsx): Now measures effect execution time for floor plan opening
+  - All three use `Math.max(1, Math.round(duration))` to ensure minimum 1ms values
+- **Files Modified**: 
+  - `client/src/components/campus-map.tsx` (line 153)
+  - `client/src/pages/navigation.tsx` (lines 85, 96)
+
+## Previous: Recent Changes (Nov 24, 2025) - ANALYTICS WITH CHARTS ✅
 
 ### Analytics System Implementation ✅ **COMPLETE WITH VISUAL CHARTS**
 
