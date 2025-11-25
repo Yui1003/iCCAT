@@ -158,10 +158,12 @@ export default function CampusMap({
       attribution: '© OpenStreetMap contributors',
       maxZoom: 20.5,
       maxNativeZoom: 19,
-      subdomains: ['a', 'b', 'c'],
     }).addTo(map);
 
     mapInstanceRef.current = map;
+
+    // Invalidate size to ensure tiles load properly
+    map.invalidateSize();
 
     // Track map load
     const mapLoadDuration = performance.now() - mapLoadStart;
