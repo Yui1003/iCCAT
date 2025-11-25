@@ -408,12 +408,8 @@ export function findShortestPath(
   // Add start and end building points to the route
   const finalRoute = [startPoint, ...route, endPoint];
 
-  console.log(`[CLIENT] Route has ${route.length} path waypoints from "${start.name}" to "${end.name}"`);
-  console.log(`[CLIENT] Final route with buildings: Start (${finalRoute[0]?.lat.toFixed(6)}, ${finalRoute[0]?.lng.toFixed(6)}) → End (${finalRoute[finalRoute.length - 1]?.lat.toFixed(6)}, ${finalRoute[finalRoute.length - 1]?.lng.toFixed(6)})`);
-
-  // Simplify polyline to remove unnecessary waypoints and create smooth route
-  const simplifiedRoute = simplifyPolyline(finalRoute, 3); // 3 meter tolerance
-  console.log(`[CLIENT] Simplified route from ${finalRoute.length} to ${simplifiedRoute.length} waypoints`);
+  console.log(`[CLIENT] ✅ Route found with ${route.length} path waypoints from "${start.name}" to "${end.name}"`);
+  console.log(`[CLIENT] Using ALL ${finalRoute.length} waypoints in final route (no simplification)`);
   
-  return simplifiedRoute;
+  return finalRoute;
 }
