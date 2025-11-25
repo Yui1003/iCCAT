@@ -5,13 +5,24 @@ Comprehensive campus wayfinding/navigation web application with kiosk and mobile
 
 ## Recent Changes (Nov 25, 2025) - EXISTING PATHS VISUALIZATION + ZOOM IMPROVEMENT + SEARCH & FILTERING ✅
 
-### Path Drawing Map - Enhanced Zoom Capability 🔍✅
-- **Issue**: Hard to accurately place nodes when adding/editing paths due to limited zoom level
-- **Solution**: Increased maxZoom from 19 to 22 for path drawing maps
-- **Benefit**: Users can now zoom in 3 additional levels for precise node placement
-- **Result**: Smoother paths with more accurate waypoints for both walking and driving routes
+### Path Drawing Map - Stable Zoom + Fixed Tile Loading 🔍✅
+- **Issues Fixed**:
+  1. Map tiles showing artifacts at high zoom levels (OSM only supports up to zoom 19)
+  2. Map zooming out every time a node was added, forcing users to re-zoom
+  
+- **Solutions Applied**:
+  1. **Tile loading**: Set maxZoom to 19 (OpenStreetMap limit) for clean tile rendering
+  2. **Preserve zoom level**: Only fit bounds on initial load with existing nodes, not on every node addition
+  3. **Better initial zoom**: Increased default zoom from 17 to 18 for better starting perspective
+  
+- **Result**: 
+  - Smooth map tiles with no artifacts
+  - Users can zoom in and pan freely without map resetting
+  - Add multiple nodes seamlessly by panning and clicking
+  - Much smoother path creation workflow
+  
 - **Files Modified**:
-  - `client/src/components/path-drawing-map.tsx` - Updated tileLayer maxZoom to 22
+  - `client/src/components/path-drawing-map.tsx` - Fixed zoom behavior and tile loading
 
 ### Path Visualization on Admin Maps 🗺️✅
 - **Feature**: Existing walkpaths and drivepaths now display on their respective maps for verification

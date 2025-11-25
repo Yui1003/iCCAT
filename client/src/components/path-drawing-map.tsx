@@ -31,6 +31,7 @@ export default function PathDrawingMap({
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const polylineRef = useRef<any>(null);
+  const hasInitializedBoundsRef = useRef(false);
   const [isDrawing, setIsDrawing] = useState(true);
 
   useEffect(() => {
@@ -50,14 +51,15 @@ export default function PathDrawingMap({
     // Create map instance
     const map = L.map(mapRef.current, {
       center: [14.4035451, 120.8659794],
-      zoom: 17,
+      zoom: 18,
+      maxZoom: 19,
       zoomControl: true,
       attributionControl: true,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
-      maxZoom: 22,
+      maxZoom: 19,
     }).addTo(map);
 
     mapInstanceRef.current = map;
@@ -217,11 +219,11 @@ export default function PathDrawingMap({
         }).addTo(mapInstanceRef.current);
       }
 
-      if (nodes.length === 1) {
-        mapInstanceRef.current.setView([nodes[0].lat, nodes[0].lng], 17);
-      } else if (nodes.length > 1) {
+      // Only fit bounds on initial load with existing nodes, not on every node addition
+      if (!hasInitializedBoundsRef.current && nodes.length > 1) {
         const bounds = L.latLngBounds(nodes);
-        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
+        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+        hasInitializedBoundsRef.current = true;
       }
     }
   }, [nodes, mode, isDrawing, onNodesChange]);
