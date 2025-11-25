@@ -5,6 +5,15 @@ interface LatLng {
   lng: number;
 }
 
+interface Building {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  polygon?: LatLng[] | null;
+  polygonColor?: string;
+}
+
 interface PolygonDrawingMapProps {
   centerLat: number;
   centerLng: number;
@@ -12,6 +21,7 @@ interface PolygonDrawingMapProps {
   onPolygonChange: (polygon: LatLng[] | null) => void;
   polygonColor?: string;
   className?: string;
+  existingBuildings?: Building[];
 }
 
 declare global {
@@ -26,7 +36,8 @@ export default function PolygonDrawingMap({
   polygon,
   onPolygonChange,
   polygonColor = "#FACC15",
-  className = "h-full w-full"
+  className = "h-full w-full",
+  existingBuildings = []
 }: PolygonDrawingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -205,6 +216,26 @@ export default function PolygonDrawingMap({
     const L = window.L;
     drawnItemsRef.current.clearLayers();
 
+    // Render other existing building polygons as non-clickable (for reference)
+    if (existingBuildings && existingBuildings.length > 0) {
+      existingBuildings.forEach((building) => {
+        if (building.polygon && Array.isArray(building.polygon) && building.polygon.length > 0) {
+          const buildingColor = building.polygonColor || "#9CA3AF";
+          const polygonLatLngs = building.polygon.map(p => [p.lat, p.lng]);
+          
+          L.polygon(polygonLatLngs, {
+            color: buildingColor,
+            fillColor: buildingColor,
+            fillOpacity: 0.15,
+            weight: 2,
+            opacity: 0.5,
+            dashArray: '5, 5',
+            interactive: false
+          }).addTo(mapInstanceRef.current);
+        }
+      });
+    }
+
     if (polygon && polygon.length > 0) {
       const latlngs = polygon.map((p: LatLng) => [p.lat, p.lng]);
       const polygonLayer = L.polygon(latlngs, {
@@ -216,7 +247,7 @@ export default function PolygonDrawingMap({
       
       drawnItemsRef.current.addLayer(polygonLayer);
     }
-  }, [polygon, polygonColor]);
+  }, [polygon, polygonColor, existingBuildings]);
 
   return <div ref={mapRef} className={className} data-testid="polygon-drawing-map" />;
 }

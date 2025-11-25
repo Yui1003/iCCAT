@@ -350,6 +350,7 @@ export default function AdminBuildings() {
                       polygon={formData.polygon as LatLng[] | null}
                       onPolygonChange={(polygon) => setFormData({ ...formData, polygon: polygon as any })}
                       polygonColor={formData.polygonColor || "#FACC15"}
+                      existingBuildings={buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id) as any}
                     />
                   </div>
                   {formData.polygon && Array.isArray(formData.polygon) && formData.polygon.length > 0 && (
