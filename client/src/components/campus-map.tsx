@@ -36,6 +36,12 @@ import waterFountainIcon from '@assets/generated_images/Water_fountain_drinking_
 import printCenterIcon from '@assets/generated_images/Print_copy_center_printer_7c56d319.png';
 import otherIcon from '@assets/generated_images/Other_generic_question_mark_40bcf8cf.png';
 
+interface PathType {
+  id: string;
+  name?: string;
+  nodes: Array<{ lat: number; lng: number }>;
+}
+
 interface CampusMapProps {
   buildings?: Building[];
   onBuildingClick?: (building: Building) => void;
@@ -47,6 +53,8 @@ interface CampusMapProps {
   onMapClick?: (lat: number, lng: number) => void;
   centerLat?: number;
   centerLng?: number;
+  existingPaths?: PathType[];
+  pathsColor?: string;
 }
 
 declare global {
@@ -112,7 +120,9 @@ export default function CampusMap({
   className = "h-full w-full",
   onMapClick,
   centerLat,
-  centerLng
+  centerLng,
+  existingPaths = [],
+  pathsColor = '#8b5cf6'
 }: CampusMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -120,6 +130,7 @@ export default function CampusMap({
   const routeLayerRef = useRef<any>(null);
   const routeMarkersRef = useRef<any[]>([]);
   const polygonsRef = useRef<any[]>([]);
+  const pathsLayerRef = useRef<any>(null);
   const [currentZoom, setCurrentZoom] = useState(17.5);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressRef = useRef(false);
@@ -539,6 +550,41 @@ export default function CampusMap({
       }
     });
   }, [buildings]);
+
+  // Render existing paths on the map
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.L || !existingPaths || existingPaths.length === 0) {
+      if (pathsLayerRef.current) {
+        pathsLayerRef.current.remove();
+        pathsLayerRef.current = null;
+      }
+      return;
+    }
+
+    const L = window.L;
+
+    if (pathsLayerRef.current) {
+      pathsLayerRef.current.remove();
+      pathsLayerRef.current = null;
+    }
+
+    const layerGroup = L.layerGroup();
+
+    existingPaths.forEach((path) => {
+      if (path.nodes && Array.isArray(path.nodes) && path.nodes.length > 0) {
+        L.polyline(path.nodes, {
+          color: pathsColor,
+          weight: 3,
+          opacity: 0.6,
+          smoothFactor: 1,
+          dashArray: '5, 5'
+        }).addTo(layerGroup);
+      }
+    });
+
+    layerGroup.addTo(mapInstanceRef.current);
+    pathsLayerRef.current = layerGroup;
+  }, [existingPaths, pathsColor]);
 
   return <div ref={mapRef} className={className} data-testid="map-container" />;
 }

@@ -3,7 +3,22 @@
 ## Project Overview
 Comprehensive campus wayfinding/navigation web application with kiosk and mobile QR-code versions. Features interactive campus maps, multi-phase route navigation with color-coded paths, ETA calculations, admin management tools, feedback collection, analytics tracking, and offline support. Deployed on Render with Firebase backend; Replit used for testing before production deployment.
 
-## Recent Changes (Nov 25, 2025) - ADMIN SEARCH & FILTERING + ANALYTICS FIXES ✅
+## Recent Changes (Nov 25, 2025) - EXISTING PATHS VISUALIZATION + SEARCH & FILTERING ✅
+
+### Path Visualization on Admin Maps 🗺️✅
+- **Feature**: Existing walkpaths and drivepaths now display on their respective maps for verification
+- **Walking Paths Map**: Shows all existing walkpaths in **green dashed lines** (#22c55e)
+- **Driving Paths Map**: Shows all existing drivepaths in **blue dashed lines** (#3b82f6)
+- **Purpose**: Allows admins to verify that all required paths have been added to the system
+- **Implementation**:
+  - Modified `CampusMap` component to accept `existingPaths` and `pathsColor` props
+  - Added new useEffect in CampusMap to render paths as polylines with dashed style
+  - Updated admin-paths page to pass walkpaths/drivepaths with appropriate colors
+  - Paths display with 60% opacity and dashed pattern for visual distinction
+
+- **Files Modified**:
+  - `client/src/components/campus-map.tsx` - Added PathType interface and existingPaths rendering
+  - `client/src/pages/admin-paths.tsx` - Updated both map tabs to show existing paths
 
 ### Admin Pages: Search & Filtering Added 🔍✅
 - **Events Management**: 
