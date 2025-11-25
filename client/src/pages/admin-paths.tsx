@@ -206,7 +206,14 @@ export default function AdminPaths() {
                       className="h-full w-full"
                       existingPaths={activeTab === "walkpaths" ? walkpaths : drivepaths}
                       currentPathId={editingPath?.id}
-                      buildings={buildings.map(b => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng }))}
+                      buildings={buildings.map(b => ({ 
+                        id: b.id, 
+                        name: b.name, 
+                        lat: b.lat, 
+                        lng: b.lng,
+                        polygon: Array.isArray(b.polygon) ? b.polygon as any : null,
+                        polygonColor: b.polygonColor || "#FACC15"
+                      }))}
                     />
                   </div>
                 </div>

@@ -8,12 +8,19 @@ interface PathNode {
   lng: number;
 }
 
+interface PolygonPoint {
+  lat: number;
+  lng: number;
+}
+
 interface Building {
   id: string;
   name: string;
   lat: number;
   lng: number;
   type?: string;
+  polygon?: PolygonPoint[] | null;
+  polygonColor?: string;
 }
 
 interface PathDrawingMapProps {
@@ -162,6 +169,30 @@ export default function PathDrawingMap({
     if (polylineRef.current) {
       polylineRef.current.remove();
       polylineRef.current = null;
+    }
+
+    // Render building boundary polygons
+    if (buildings && buildings.length > 0) {
+      buildings.forEach((building) => {
+        if (building.polygon && Array.isArray(building.polygon) && building.polygon.length > 0) {
+          const polygonColor = building.polygonColor || "#FACC15";
+          const polygonLatLngs = building.polygon.map(p => [p.lat, p.lng]);
+          
+          L.polygon(polygonLatLngs, {
+            color: polygonColor,
+            fillColor: polygonColor,
+            fillOpacity: 0.25,
+            weight: 2,
+            opacity: 0.6,
+            dashArray: '5, 5'
+          }).addTo(mapInstanceRef.current)
+            .bindTooltip(`${building.name} (boundary)`, {
+              permanent: false,
+              direction: 'center',
+              offset: [0, 0],
+            });
+        }
+      });
     }
 
     // Render building markers - clickable to snap paths to buildings
