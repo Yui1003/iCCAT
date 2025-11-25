@@ -13,7 +13,7 @@ The CVSU CCAT Campus Navigation App is a comprehensive web application designed 
 ## System Architecture
 
 ### UI/UX Decisions
-The application features interactive campus maps for path drawing, navigation, and building boundary definition, with enhanced zoom capabilities (up to 22 for path drawing, 20.5 for navigation and polygon drawing) and stable tile loading across all zoom levels. Existing paths are visualized on admin maps with distinct colors for walkpaths (green dashed) and drivepaths (blue dashed) to aid verification. Admin interfaces include search and filtering functionalities for Events, Buildings, and Paths management to improve usability.
+The application features interactive campus maps for path drawing, navigation, and building boundary definition, with enhanced zoom capabilities (up to 22 for path drawing, 21 for navigation and polygon drawing) and stable tile loading across all zoom levels. Existing paths are visualized on admin maps with distinct colors for walkpaths (green dashed) and drivepaths (blue dashed) to aid verification. Admin interfaces include search and filtering functionalities for Events, Buildings, and Paths management to improve usability.
 
 ### Technical Implementations
 The system tracks three key metrics: interface action response times, loading speeds for maps/images/menus, and route-generation speed. Analytics data is collected in real-time, persisted to Firestore, and displayed on an admin dashboard using interactive Recharts visualizations (Bar, Pie, Line charts). Offline data collection queues events locally and syncs them upon reconnection. CSV exports are formatted for clarity with proper date/time and timezone handling (Philippine Time). ETA calculations for routing are based on predefined speeds for walking and driving.
@@ -32,17 +32,23 @@ The system tracks three key metrics: interface action response times, loading sp
 - **Modularity**: Codebase is structured with clear separation of concerns (client, server, shared), and dedicated libraries for analytics tracking and ETA calculation.
 
 ## Recent Changes
-- **Campus Navigation Map Tile Loading & Performance (OPTIMIZED)**: 
-  - Issue: Tiles weren't loading on initial render; users had to zoom out then zoom in to see tiles
-  - Root Cause: `setMaxBounds()` bounds constraint was applied immediately, blocking tile loading
-  - Solutions Applied:
-    1. Delayed bounds constraint to 350ms to allow tiles to fully render first
-    2. ResizeObserver for container resize handling
-    3. requestAnimationFrame for immediate next paint (critical)
-    4. Streamlined invalidateSize() calls: 75ms and 250ms delays (reduced from 4 to 2 calls)
-    5. **Increased max zoom from 20.5 to 21** for better detail viewing
-  - Performance: Map load time now **101ms** (extremely fast)
-  - Result: Tiles load smoothly on initial render without delays or manual zoom out/in; max zoom 21 provides detailed campus view
+- **All Campus Maps - Tile Loading & Performance (OPTIMIZED)**: 
+  - **Campus Navigation Map**: 
+    - Issue: Tiles weren't loading on initial render; users had to zoom out then zoom in to see tiles
+    - Root Cause: `setMaxBounds()` bounds constraint was applied immediately, blocking tile loading
+    - Solutions Applied:
+      1. Delayed bounds constraint to 350ms to allow tiles to fully render first
+      2. ResizeObserver for container resize handling
+      3. requestAnimationFrame for immediate next paint (critical)
+      4. Streamlined invalidateSize() calls: 75ms and 250ms delays (reduced from 4 to 2 calls)
+      5. **Increased max zoom from 20.5 to 21** for better detail viewing
+    - Performance: Map load time now **101ms** (extremely fast)
+  - **Building Boundary Map (Polygon Drawing)**:
+    - Applied identical tile loading optimizations as campus navigation map
+    - Removed `subdomains` parameter that was interfering with tile loading
+    - Added ResizeObserver, requestAnimationFrame, and optimized invalidateSize calls
+    - **Increased max zoom from 20.5 to 21** for precise polygon drawing
+  - **Result**: All maps now load tiles smoothly on initial render without delays; max zoom 21 provides enhanced detail for all map types
 
 ## External Dependencies
 - **Frontend Framework**: React 18

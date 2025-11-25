@@ -46,16 +46,15 @@ export default function PolygonDrawingMap({
       center: [centerLat, centerLng],
       zoom: 18,
       minZoom: 17,
-      maxZoom: 20.5,
+      maxZoom: 21,
       zoomControl: true,
       attributionControl: true,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
-      maxZoom: 20.5,
+      maxZoom: 21,
       maxNativeZoom: 19,
-      subdomains: ['a', 'b', 'c'],
     }).addTo(map);
 
     const drawnItems = new L.FeatureGroup();
@@ -99,6 +98,52 @@ export default function PolygonDrawingMap({
 
     map.addControl(drawControl);
 
+    // Optimize tile loading with same pattern as campus-map
+    // Use ResizeObserver to handle dialog/container resize events
+    let resizeObserver: ResizeObserver | null = null;
+    try {
+      resizeObserver = new ResizeObserver(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      });
+      resizeObserver.observe(mapRef.current);
+    } catch (e) {
+      console.error("ResizeObserver not supported");
+    }
+
+    // Invalidate size on initial load
+    map.invalidateSize();
+
+    // Also handle window resize
+    const handleResize = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+
+    // Use requestAnimationFrame for immediate next paint
+    requestAnimationFrame(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    });
+
+    // Trigger invalidateSize after minimal delays for fast tile rendering
+    const timeoutId1 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 75);
+
+    const timeoutId2 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 250);
+
     map.on(L.Draw.Event.CREATED, function (e: any) {
       const layer = e.layer;
       drawnItems.clearLayers();
@@ -135,6 +180,12 @@ export default function PolygonDrawingMap({
     drawControlRef.current = drawControl;
 
     return () => {
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      window.removeEventListener('resize', handleResize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
