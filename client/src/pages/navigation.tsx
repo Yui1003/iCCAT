@@ -1933,6 +1933,7 @@ export default function Navigation() {
             routePolyline={route?.polyline}
             routeMode={route?.mode}
             routePhases={route?.phases}
+            hidePolygonsInNavigation={!!route}
           />
         </main>
       </div>

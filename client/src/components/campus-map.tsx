@@ -55,6 +55,7 @@ interface CampusMapProps {
   centerLng?: number;
   existingPaths?: PathType[];
   pathsColor?: string;
+  hidePolygonsInNavigation?: boolean;
 }
 
 declare global {
@@ -122,7 +123,8 @@ export default function CampusMap({
   centerLat,
   centerLng,
   existingPaths = [],
-  pathsColor = '#8b5cf6'
+  pathsColor = '#8b5cf6',
+  hidePolygonsInNavigation = false
 }: CampusMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -619,6 +621,11 @@ export default function CampusMap({
     polygonsRef.current.forEach(polygon => polygon.remove());
     polygonsRef.current = [];
 
+    // Don't render building polygons when in navigation mode
+    if (hidePolygonsInNavigation) {
+      return;
+    }
+
     buildings.forEach(building => {
       if (building.polygon && Array.isArray(building.polygon) && building.polygon.length > 2) {
         const latlngs = building.polygon.map((p: any) => [p.lat, p.lng]);
@@ -633,7 +640,7 @@ export default function CampusMap({
         polygonsRef.current.push(polygon);
       }
     });
-  }, [buildings]);
+  }, [buildings, hidePolygonsInNavigation]);
 
   // Render existing paths on the map
   useEffect(() => {
