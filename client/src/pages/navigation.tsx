@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { trackEvent } from "@/lib/analytics-tracker";
+import { AnalyticsEventType } from "@shared/analytics-schema";
 import CampusMap from "@/components/campus-map";
 import BuildingInfoModal from "@/components/building-info-modal";
 import FloorPlanViewer from "@/components/floor-plan-viewer";
@@ -638,6 +640,8 @@ export default function Navigation() {
   const generateRoute = async () => {
     if (!selectedStart || !selectedEnd) return;
 
+    const routeStartTime = performance.now();
+
     // Filter out empty waypoints
     const validWaypoints = waypoints.filter(w => w !== '');
 
@@ -645,6 +649,8 @@ export default function Navigation() {
     if (mode === 'driving' && !vehicleType) {
       setPendingNavigationData({ start: selectedStart, end: selectedEnd, mode });
       setShowVehicleSelector(true);
+      const duration = performance.now() - routeStartTime;
+      trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, hasWaypoints: validWaypoints.length > 0, vehicleSelected: false });
       return;
     }
 
@@ -707,6 +713,8 @@ export default function Navigation() {
           console.error('Error saving multi-phase route:', error);
         }
 
+        const duration = performance.now() - routeStartTime;
+        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, hasWaypoints: validWaypoints.length > 0, routeType: 'multi-phase' });
         return;
       }
 
@@ -738,6 +746,8 @@ export default function Navigation() {
             console.error('Error saving two-phase route:', error);
           }
 
+          const duration = performance.now() - routeStartTime;
+          trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'two-phase' });
           return;
         }
         // If two-phase routing fails, fall back appropriately
@@ -768,6 +778,8 @@ export default function Navigation() {
             description: `Unable to calculate ${fallbackMode} route. Please try a different destination.`,
             variant: "destructive"
           });
+          const duration = performance.now() - routeStartTime;
+          trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: fallbackMode, routeType: 'fallback', routeFound: false });
           return;
         }
 
@@ -835,6 +847,8 @@ export default function Navigation() {
           description: `Unable to calculate ${mode} route. Please try a different destination.`,
           variant: "destructive"
         });
+        const duration = performance.now() - routeStartTime;
+        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, routeType: 'standard', routeFound: false });
         return;
       }
 
@@ -886,8 +900,13 @@ export default function Navigation() {
       } catch (error) {
         console.error('Error saving single route:', error);
       }
+
+      const duration = performance.now() - routeStartTime;
+      trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, routeType: 'standard', routeFound: true });
     } catch (error) {
       console.error('Error generating route:', error);
+      const duration = performance.now() - routeStartTime;
+      trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, error: true });
       toast({
         title: "Navigation Error",
         description: "An unexpected error occurred. Please try again.",
