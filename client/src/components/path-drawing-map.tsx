@@ -184,13 +184,9 @@ export default function PathDrawingMap({
             fillOpacity: 0.25,
             weight: 2,
             opacity: 0.6,
-            dashArray: '5, 5'
-          }).addTo(mapInstanceRef.current)
-            .bindTooltip(`${building.name} (boundary)`, {
-              permanent: false,
-              direction: 'center',
-              offset: [0, 0],
-            });
+            dashArray: '5, 5',
+            interactive: false
+          }).addTo(mapInstanceRef.current);
         }
       });
     }
