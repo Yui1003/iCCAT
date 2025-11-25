@@ -246,10 +246,33 @@ function buildGraph(paths: (Walkpath | Drivepath)[]): {
   });
 
   console.log(`[CLIENT] Before merge: ${nodes.size} nodes, ${edges.length} edges`);
-  const merged = mergeNearbyNodes(nodes, edges, 10);
+  const merged = mergeNearbyNodes(nodes, edges, 15); // Increased from 10 to 15 for better connectivity
   console.log(`[CLIENT] After merge: ${merged.nodes.size} nodes, ${merged.edges.length} edges`);
   
   return { nodes: merged.nodes, edges: merged.edges };
+}
+
+/**
+ * Interpolate waypoints between two points to create smoother routes
+ */
+function interpolateWaypoints(start: LatLng, end: LatLng, maxDistance: number = 30): LatLng[] {
+  const distance = calculateDistance(start.lat, start.lng, end.lat, end.lng);
+  if (distance <= maxDistance) {
+    return [end]; // No interpolation needed
+  }
+
+  const steps = Math.ceil(distance / maxDistance);
+  const result: LatLng[] = [];
+
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    result.push({
+      lat: start.lat + (end.lat - start.lat) * t,
+      lng: start.lng + (end.lng - start.lng) * t
+    });
+  }
+
+  return result;
 }
 
 export function findShortestPath(
@@ -458,8 +481,18 @@ export function findShortestPath(
     }
   }
 
-  console.log(`[CLIENT] Route has ${route.length} waypoints from "${start.name}" to "${end.name}"`);
-  console.log(`[CLIENT] Final route: Start (${route[0]?.lat.toFixed(6)}, ${route[0]?.lng.toFixed(6)}) → End (${route[route.length - 1]?.lat.toFixed(6)}, ${route[route.length - 1]?.lng.toFixed(6)})`);
+  // Interpolate waypoints for smoother route rendering (max 30m between points)
+  const smoothRoute: LatLng[] = [];
+  for (let i = 0; i < route.length; i++) {
+    smoothRoute.push(route[i]);
+    if (i < route.length - 1) {
+      const interpolated = interpolateWaypoints(route[i], route[i + 1], 30);
+      smoothRoute.push(...interpolated);
+    }
+  }
 
-  return route;
+  console.log(`[CLIENT] Route has ${route.length} waypoints (${smoothRoute.length} after interpolation) from "${start.name}" to "${end.name}"`);
+  console.log(`[CLIENT] Final route: Start (${smoothRoute[0]?.lat.toFixed(6)}, ${smoothRoute[0]?.lng.toFixed(6)}) → End (${smoothRoute[smoothRoute.length - 1]?.lat.toFixed(6)}, ${smoothRoute[smoothRoute.length - 1]?.lng.toFixed(6)})`);
+
+  return smoothRoute;
 }
