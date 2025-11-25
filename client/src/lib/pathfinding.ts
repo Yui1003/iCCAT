@@ -443,12 +443,13 @@ export function findShortestPath(
     const fromKey = dijkstraPath[i];
     const toKey = dijkstraPath[i + 1];
 
-    // Find which path contains these nodes
+    let foundOnSamePath = false;
+    
+    // Try to find both nodes on the same path
     for (const path of paths) {
       const fromWaypoints = getWaypointsBetweenNodes(path, fromKey, toKey);
       if (fromWaypoints.length > 0) {
-        // Add all waypoints, excluding the last one if it's not the final node
-        // (to avoid duplicates with next segment's first node)
+        // Both nodes are on the same path - add all waypoints between them
         for (let j = 0; j < fromWaypoints.length; j++) {
           if (expandedRoute.length === 0 || 
               Math.abs(fromWaypoints[j].lat - expandedRoute[expandedRoute.length - 1].lat) > 0.00001 ||
@@ -456,7 +457,51 @@ export function findShortestPath(
             expandedRoute.push(fromWaypoints[j]);
           }
         }
+        foundOnSamePath = true;
         break;
+      }
+    }
+
+    // If not on same path, find the fromKey and toKey on different paths
+    if (!foundOnSamePath) {
+      let fromPathWaypoints: LatLng[] = [];
+      let toPathWaypoints: LatLng[] = [];
+
+      // Find path containing fromKey - trace from fromKey to end of its path
+      for (const path of paths) {
+        const pathNodes = path.nodes as LatLng[];
+        const fromIdx = findSegmentForNodeInPath(path, fromKey);
+        if (fromIdx !== -1) {
+          // Found fromKey in this path - add from here to end
+          for (let j = fromIdx; j < pathNodes.length; j++) {
+            fromPathWaypoints.push(pathNodes[j]);
+          }
+          break;
+        }
+      }
+
+      // Find path containing toKey - trace from start to toKey
+      for (const path of paths) {
+        const pathNodes = path.nodes as LatLng[];
+        const toIdx = findSegmentForNodeInPath(path, toKey);
+        if (toIdx !== -1) {
+          // Found toKey in this path - add from start to here
+          for (let j = 0; j <= toIdx; j++) {
+            toPathWaypoints.push(pathNodes[j]);
+          }
+          break;
+        }
+      }
+
+      // Combine waypoints from both paths
+      const combinedWaypoints = [...fromPathWaypoints, ...toPathWaypoints];
+      
+      for (let j = 0; j < combinedWaypoints.length; j++) {
+        if (expandedRoute.length === 0 || 
+            Math.abs(combinedWaypoints[j].lat - expandedRoute[expandedRoute.length - 1].lat) > 0.00001 ||
+            Math.abs(combinedWaypoints[j].lng - expandedRoute[expandedRoute.length - 1].lng) > 0.00001) {
+          expandedRoute.push(combinedWaypoints[j]);
+        }
       }
     }
   }
