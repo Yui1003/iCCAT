@@ -36,10 +36,13 @@ export function trackEvent(
     metadata
   };
 
+  console.log('[Analytics] trackEvent called:', { eventType, responseTime: responseTimeMs, isOnline });
+
   if (isOnline) {
     sendEvent(event);
   } else {
     // Queue locally when offline
+    console.log('[Analytics] Browser offline, queueing event');
     eventQueue.push(event);
   }
 }
@@ -71,12 +74,26 @@ export async function measurePerformance<T>(
 function sendEvent(event: PendingEvent): void {
   if (!isOnline) return;
 
+  console.log('[Analytics] sendEvent: Attempting to send:', { eventType: event.eventType, url: '/api/analytics' });
+  
   fetch('/api/analytics', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(event)
+  }).then(response => {
+    console.log('[Analytics] sendEvent: Response received, status:', response.status);
+    if (!response.ok) {
+      console.warn('[Analytics] Backend returned error status:', response.status);
+      // Queue event if request fails
+      eventQueue.push(event);
+    } else {
+      console.log('[Analytics] Event sent successfully:', event.eventType);
+    }
+    return response.json();
+  }).then(data => {
+    console.log('[Analytics] Response body:', data);
   }).catch((error) => {
-    console.debug('[Analytics] Failed to send event:', error);
+    console.error('[Analytics] Failed to send event:', error);
     // Queue event if send fails
     eventQueue.push(event);
   });
