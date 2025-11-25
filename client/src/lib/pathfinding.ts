@@ -306,123 +306,42 @@ export function findShortestPath(
   const { nodes, edges } = buildGraph(paths);
 
   console.log(`[CLIENT] Pathfinding from "${start.name}" to "${end.name}"`);
+  console.log(`[CLIENT] Graph has ${nodes.size} nodes and ${edges.length} edges`);
+  
   const startPoint = { lat: start.lat, lng: start.lng };
   const endPoint = { lat: end.lat, lng: end.lng };
 
-  const startProjection = findClosestSegmentProjection(startPoint, paths);
-  const endProjection = findClosestSegmentProjection(endPoint, paths);
+  // Find closest path nodes to start and end buildings
+  let closestStartNode: { key: string; distance: number } | null = null;
+  let closestEndNode: { key: string; distance: number } | null = null;
 
-  if (!startProjection || !endProjection) {
-    console.log(`[CLIENT] Could not find projections for buildings`);
+  nodes.forEach((node: GraphNode, key: string) => {
+    const distToStart = calculateDistance(startPoint.lat, startPoint.lng, node.lat, node.lng);
+    const distToEnd = calculateDistance(endPoint.lat, endPoint.lng, node.lat, node.lng);
+
+    if (closestStartNode === null || distToStart < closestStartNode.distance) {
+      closestStartNode = { key, distance: distToStart };
+    }
+
+    if (closestEndNode === null || distToEnd < closestEndNode.distance) {
+      closestEndNode = { key, distance: distToEnd };
+    }
+  });
+
+  if (closestStartNode === null || closestEndNode === null) {
+    console.warn(`[CLIENT] Could not find path nodes: start=${closestStartNode !== null}, end=${closestEndNode !== null}`);
     return null;
   }
 
-  let startProjKey = nodeKey(startProjection.lat, startProjection.lng);
-  let endProjKey = nodeKey(endProjection.lat, endProjection.lng);
-  const startKey = nodeKey(startPoint.lat, startPoint.lng);
-  const endKey = nodeKey(endPoint.lat, endPoint.lng);
-  
-  console.log(`[CLIENT] Start projection: ${startProjKey.substring(0, 30)}... on path ${startProjection.pathIndex}`);
-  console.log(`[CLIENT] End projection: ${endProjKey.substring(0, 30)}... on path ${endProjection.pathIndex}`);
+  console.log(`[CLIENT] Closest start node: ${closestStartNode.distance.toFixed(1)}m away`);
+  console.log(`[CLIENT] Closest end node: ${closestEndNode.distance.toFixed(1)}m away`);
 
-  const snapThreshold = 10;
-  
-  nodes.forEach((node, key) => {
-    const distToStart = calculateDistance(startProjection.lat, startProjection.lng, node.lat, node.lng);
-    if (distToStart <= snapThreshold && distToStart > 0) {
-      console.log(`[CLIENT] Snapping start projection to existing node ${key.substring(0, 30)}... (${distToStart.toFixed(1)}m away)`);
-      startProjKey = key;
-    }
-    
-    const distToEnd = calculateDistance(endProjection.lat, endProjection.lng, node.lat, node.lng);
-    if (distToEnd <= snapThreshold && distToEnd > 0) {
-      console.log(`[CLIENT] Snapping end projection to existing node ${key.substring(0, 30)}... (${distToEnd.toFixed(1)}m away)`);
-      endProjKey = key;
-    }
-  });
+  const startKey = closestStartNode.key;
+  const endKey = closestEndNode.key;
 
+  // Use the path network directly without projections
   const augmentedNodes = new Map(nodes);
-  let augmentedEdges = [...edges];
-
-  augmentedNodes.set(startKey, { id: startKey, lat: startPoint.lat, lng: startPoint.lng });
-  augmentedNodes.set(endKey, { id: endKey, lat: endPoint.lat, lng: endPoint.lng });
-
-  const segmentProjections = new Map<string, Array<{ key: string; lat: number; lng: number; t: number }>>();
-
-  const projectionsToAdd = [
-    { key: startProjKey, ...startProjection },
-    { key: endProjKey, ...endProjection }
-  ];
-
-  projectionsToAdd.forEach(proj => {
-    if (!augmentedNodes.has(proj.key)) {
-      augmentedNodes.set(proj.key, {
-        id: proj.key,
-        lat: proj.lat,
-        lng: proj.lng
-      });
-    }
-
-    const path = paths[proj.pathIndex];
-    const pathNodes = path.nodes as LatLng[];
-    const segStart = pathNodes[proj.segmentIndex];
-    const segEnd = pathNodes[proj.segmentIndex + 1];
-    const segKey = `${proj.pathIndex}-${proj.segmentIndex}`;
-
-    const dx = segEnd.lng - segStart.lng;
-    const dy = segEnd.lat - segStart.lat;
-    const t = dx === 0 && dy === 0 ? 0 : Math.max(0, Math.min(1,
-      ((proj.lng - segStart.lng) * dx + (proj.lat - segStart.lat) * dy) /
-      (dx * dx + dy * dy)
-    ));
-
-    if (!segmentProjections.has(segKey)) {
-      segmentProjections.set(segKey, []);
-    }
-    segmentProjections.get(segKey)!.push({ key: proj.key, lat: proj.lat, lng: proj.lng, t });
-  });
-
-  segmentProjections.forEach((projs, segKey) => {
-    const [pathIndex, segmentIndex] = segKey.split('-').map(Number);
-    const path = paths[pathIndex];
-    const pathNodes = path.nodes as LatLng[];
-    const segStart = pathNodes[segmentIndex];
-    const segEnd = pathNodes[segmentIndex + 1];
-    const segStartKey = nodeKey(segStart.lat, segStart.lng);
-    const segEndKey = nodeKey(segEnd.lat, segEnd.lng);
-
-    augmentedEdges = augmentedEdges.filter(
-      e => !(e.from === segStartKey && e.to === segEndKey) &&
-           !(e.from === segEndKey && e.to === segStartKey)
-    );
-
-    projs.sort((a, b) => a.t - b.t);
-
-    const allPoints = [
-      { key: segStartKey, lat: segStart.lat, lng: segStart.lng },
-      ...projs,
-      { key: segEndKey, lat: segEnd.lat, lng: segEnd.lng }
-    ];
-
-    for (let i = 0; i < allPoints.length - 1; i++) {
-      const from = allPoints[i];
-      const to = allPoints[i + 1];
-      const dist = calculateDistance(from.lat, from.lng, to.lat, to.lng);
-      
-      if (dist > 0) {
-        augmentedEdges.push({ from: from.key, to: to.key, distance: dist });
-        augmentedEdges.push({ from: to.key, to: from.key, distance: dist });
-      }
-    }
-  });
-
-  const startToProjDist = calculateDistance(startPoint.lat, startPoint.lng, startProjection.lat, startProjection.lng);
-  const endToProjDist = calculateDistance(endPoint.lat, endPoint.lng, endProjection.lat, endProjection.lng);
-
-  augmentedEdges.push({ from: startKey, to: startProjKey, distance: startToProjDist });
-  augmentedEdges.push({ from: startProjKey, to: startKey, distance: startToProjDist });
-  augmentedEdges.push({ from: endKey, to: endProjKey, distance: endToProjDist });
-  augmentedEdges.push({ from: endProjKey, to: endKey, distance: endToProjDist });
+  const augmentedEdges = [...edges];
 
   const distances = new Map<string, number>();
   const previous = new Map<string, string | null>();
@@ -486,30 +405,15 @@ export function findShortestPath(
     return node ? { lat: node.lat, lng: node.lng } : null;
   }).filter((p): p is LatLng => p !== null);
 
-  // Ensure route starts with actual start building coordinates
-  if (route.length > 0 && route[0]) {
-    const firstPoint = route[0];
-    // Only replace if the first point is not already the start building
-    if (Math.abs(firstPoint.lat - startPoint.lat) > 0.00001 || Math.abs(firstPoint.lng - startPoint.lng) > 0.00001) {
-      route[0] = startPoint;
-    }
-  }
+  // Add start and end building points to the route
+  const finalRoute = [startPoint, ...route, endPoint];
 
-  // Ensure route ends with actual destination building coordinates
-  if (route.length > 0 && route[route.length - 1]) {
-    const lastPoint = route[route.length - 1];
-    // Only replace if the last point is not already the end building
-    if (Math.abs(lastPoint.lat - endPoint.lat) > 0.00001 || Math.abs(lastPoint.lng - endPoint.lng) > 0.00001) {
-      route[route.length - 1] = endPoint;
-    }
-  }
-
-  console.log(`[CLIENT] Route has ${route.length} waypoints from "${start.name}" to "${end.name}"`);
-  console.log(`[CLIENT] Final route: Start (${route[0]?.lat.toFixed(6)}, ${route[0]?.lng.toFixed(6)}) → End (${route[route.length - 1]?.lat.toFixed(6)}, ${route[route.length - 1]?.lng.toFixed(6)})`);
+  console.log(`[CLIENT] Route has ${route.length} path waypoints from "${start.name}" to "${end.name}"`);
+  console.log(`[CLIENT] Final route with buildings: Start (${finalRoute[0]?.lat.toFixed(6)}, ${finalRoute[0]?.lng.toFixed(6)}) → End (${finalRoute[finalRoute.length - 1]?.lat.toFixed(6)}, ${finalRoute[finalRoute.length - 1]?.lng.toFixed(6)})`);
 
   // Simplify polyline to remove unnecessary waypoints and create smooth route
-  const simplifiedRoute = simplifyPolyline(route, 3); // 3 meter tolerance
-  console.log(`[CLIENT] Simplified route from ${route.length} to ${simplifiedRoute.length} waypoints`);
+  const simplifiedRoute = simplifyPolyline(finalRoute, 3); // 3 meter tolerance
+  console.log(`[CLIENT] Simplified route from ${finalRoute.length} to ${simplifiedRoute.length} waypoints`);
   
   return simplifiedRoute;
 }
