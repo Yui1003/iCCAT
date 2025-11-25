@@ -29,6 +29,8 @@ export default function AdminPaths() {
   const [deletingPath, setDeletingPath] = useState<any | null>(null);
   const [pathName, setPathName] = useState("");
   const [pathNodes, setPathNodes] = useState<PathNode[]>([]);
+  const [walkpathSearch, setWalkpathSearch] = useState("");
+  const [drivepathSearch, setDrivepathSearch] = useState("");
   const { toast } = useToast();
 
   const { data: buildings = [] } = useQuery<Building[]>({
@@ -229,6 +231,17 @@ export default function AdminPaths() {
               <div>
                 <Card className="p-6 flex flex-col h-[600px]">
                   <h2 className="text-lg font-semibold text-foreground mb-4">Walking Paths</h2>
+                  <div className="mb-4">
+                    <Label htmlFor="search-walkpaths" className="text-sm">Search Walking Paths</Label>
+                    <Input
+                      id="search-walkpaths"
+                      placeholder="Search by path name..."
+                      value={walkpathSearch}
+                      onChange={(e) => setWalkpathSearch(e.target.value)}
+                      data-testid="input-search-walkpaths"
+                      className="mt-1"
+                    />
+                  </div>
                   {walkpaths.length === 0 ? (
                     <div className="text-center py-8">
                       <RouteIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
@@ -236,7 +249,11 @@ export default function AdminPaths() {
                     </div>
                   ) : (
                     <div className="space-y-3 overflow-y-auto flex-1 pr-2">
-                      {walkpaths.map((path, index) => (
+                      {walkpaths
+                        .filter((path) => 
+                          walkpathSearch === "" || (path.name || "").toLowerCase().includes(walkpathSearch.toLowerCase())
+                        )
+                        .map((path, index) => (
                         <div
                           key={path.id || index}
                           className="p-3 bg-muted/50 rounded-lg"
@@ -272,6 +289,14 @@ export default function AdminPaths() {
                           </div>
                         </div>
                       ))}
+                      {walkpaths.filter((path) => 
+                        walkpathSearch === "" || (path.name || "").toLowerCase().includes(walkpathSearch.toLowerCase())
+                      ).length === 0 && (
+                        <div className="text-center py-8">
+                          <RouteIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No walking paths match your search</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </Card>
@@ -290,6 +315,17 @@ export default function AdminPaths() {
               <div>
                 <Card className="p-6 flex flex-col h-[600px]">
                   <h2 className="text-lg font-semibold text-foreground mb-4">Driving Paths</h2>
+                  <div className="mb-4">
+                    <Label htmlFor="search-drivepaths" className="text-sm">Search Driving Paths</Label>
+                    <Input
+                      id="search-drivepaths"
+                      placeholder="Search by path name..."
+                      value={drivepathSearch}
+                      onChange={(e) => setDrivepathSearch(e.target.value)}
+                      data-testid="input-search-drivepaths"
+                      className="mt-1"
+                    />
+                  </div>
                   {drivepaths.length === 0 ? (
                     <div className="text-center py-8">
                       <RouteIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
@@ -297,7 +333,11 @@ export default function AdminPaths() {
                     </div>
                   ) : (
                     <div className="space-y-3 overflow-y-auto flex-1 pr-2">
-                      {drivepaths.map((path, index) => (
+                      {drivepaths
+                        .filter((path) => 
+                          drivepathSearch === "" || (path.name || "").toLowerCase().includes(drivepathSearch.toLowerCase())
+                        )
+                        .map((path, index) => (
                         <div
                           key={path.id || index}
                           className="p-3 bg-muted/50 rounded-lg"
@@ -333,6 +373,14 @@ export default function AdminPaths() {
                           </div>
                         </div>
                       ))}
+                      {drivepaths.filter((path) => 
+                        drivepathSearch === "" || (path.name || "").toLowerCase().includes(drivepathSearch.toLowerCase())
+                      ).length === 0 && (
+                        <div className="text-center py-8">
+                          <RouteIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No driving paths match your search</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </Card>

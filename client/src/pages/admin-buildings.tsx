@@ -35,6 +35,7 @@ export default function AdminBuildings() {
   const [departmentInput, setDepartmentInput] = useState("");
   const [mapClickEnabled, setMapClickEnabled] = useState(false);
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>("All Types");
+  const [searchQuery, setSearchQuery] = useState("");
   const mapClickEnabledRef = useRef(false);
   const { toast } = useToast();
 
@@ -441,24 +442,37 @@ export default function AdminBuildings() {
             <Card className="p-6">
               <h2 className="text-lg font-semibold text-foreground mb-4">Buildings List</h2>
               
-              <div className="mb-4">
-                <Label htmlFor="type-filter" className="text-sm">Filter by Type</Label>
-                <Select
-                  value={selectedTypeFilter}
-                  onValueChange={setSelectedTypeFilter}
-                >
-                  <SelectTrigger id="type-filter" data-testid="select-type-filter" className="mt-1">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[100] max-h-[300px]">
-                    <SelectItem value="All Types">All Types</SelectItem>
-                    {poiTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="mb-4 space-y-3">
+                <div>
+                  <Label htmlFor="search-buildings" className="text-sm">Search Buildings</Label>
+                  <Input
+                    id="search-buildings"
+                    placeholder="Search by name or type..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    data-testid="input-search-buildings"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="type-filter" className="text-sm">Filter by Type</Label>
+                  <Select
+                    value={selectedTypeFilter}
+                    onValueChange={setSelectedTypeFilter}
+                  >
+                    <SelectTrigger id="type-filter" data-testid="select-type-filter" className="mt-1">
+                      <SelectValue placeholder="All Types" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[100] max-h-[300px]">
+                      <SelectItem value="All Types">All Types</SelectItem>
+                      {poiTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {isLoading ? (
@@ -475,9 +489,13 @@ export default function AdminBuildings() {
               ) : (
                 <div className="space-y-3 max-h-[500px] overflow-y-auto">
                   {buildings
-                    .filter((building) => 
-                      selectedTypeFilter === "All Types" || building.type === selectedTypeFilter
-                    )
+                    .filter((building) => {
+                      const matchesSearch = searchQuery === "" || 
+                        building.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (building.type?.toLowerCase().includes(searchQuery.toLowerCase()));
+                      const matchesType = selectedTypeFilter === "All Types" || building.type === selectedTypeFilter;
+                      return matchesSearch && matchesType;
+                    })
                     .map((building) => (
                     <div
                       key={building.id}

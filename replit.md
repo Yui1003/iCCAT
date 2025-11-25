@@ -3,7 +3,30 @@
 ## Project Overview
 Comprehensive campus wayfinding/navigation web application with kiosk and mobile QR-code versions. Features interactive campus maps, multi-phase route navigation with color-coded paths, ETA calculations, admin management tools, feedback collection, analytics tracking, and offline support. Deployed on Render with Firebase backend; Replit used for testing before production deployment.
 
-## Recent Changes (Nov 25, 2025) - ANALYTICS FIXES & CSV IMPROVEMENTS ✅
+## Recent Changes (Nov 25, 2025) - ADMIN SEARCH & FILTERING + ANALYTICS FIXES ✅
+
+### Admin Pages: Search & Filtering Added 🔍✅
+- **Events Management**: 
+  - Search function: Search events by title, description, or location
+  - Filter: Classification dropdown (Event, Announcement, Achievement)
+  - Empty state message when no events match filters
+
+- **Buildings Management**:
+  - Search function: Search buildings by name or type
+  - Existing type filter enhanced with search functionality
+  - Empty state message when no buildings match
+
+- **Path Management** (Walking & Driving):
+  - Search for walking paths by name
+  - Search for driving paths by name
+  - Empty state messages when no paths match search
+
+- **Files Modified**:
+  - `client/src/pages/admin-events.tsx` - Search & classification filter
+  - `client/src/pages/admin-buildings.tsx` - Search alongside type filter
+  - `client/src/pages/admin-paths.tsx` - Search for both walkpaths and drivepaths
+
+### Previous: ANALYTICS FIXES & CSV IMPROVEMENTS ✅
 
 ### CSV Export Format Improved 📊✅
 - **Issue**: CSV exports had three problems:

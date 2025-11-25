@@ -19,6 +19,8 @@ import { invalidateEndpointCache } from "@/lib/offline-data";
 export default function AdminEvents() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [classificationFilter, setClassificationFilter] = useState<string>("All");
   const [formData, setFormData] = useState<InsertEvent>({
     title: "",
     description: "",
@@ -306,6 +308,41 @@ export default function AdminEvents() {
           </Dialog>
         </div>
 
+        <div className="mb-6 space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="search-events" className="text-sm">Search Events</Label>
+              <Input
+                id="search-events"
+                placeholder="Search by title, description, or location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                data-testid="input-search-events"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="classification-filter" className="text-sm">Filter by Classification</Label>
+              <Select
+                value={classificationFilter}
+                onValueChange={setClassificationFilter}
+              >
+                <SelectTrigger id="classification-filter" data-testid="select-classification-filter" className="mt-1">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent className="z-[100]">
+                  <SelectItem value="All">All Classifications</SelectItem>
+                  {eventClassifications.map((classification) => (
+                    <SelectItem key={classification} value={classification}>
+                      {classification}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
         <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
           {isLoading ? (
             [1, 2, 3].map((i) => (
@@ -318,7 +355,16 @@ export default function AdminEvents() {
               <p className="text-muted-foreground">Create your first event to get started</p>
             </div>
           ) : (
-            events.map((event) => (
+            events
+              .filter((event) => {
+                const matchesSearch = searchQuery === "" || 
+                  event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (event.description?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                  (event.location?.toLowerCase().includes(searchQuery.toLowerCase()));
+                const matchesClassification = classificationFilter === "All" || event.classification === classificationFilter;
+                return matchesSearch && matchesClassification;
+              })
+              .map((event) => (
               <Card key={event.id} className="flex flex-col overflow-hidden" data-testid={`event-item-${event.id}`}>
                 {event.image ? (
                   <div className="w-full aspect-[4/3] bg-muted">
@@ -374,6 +420,13 @@ export default function AdminEvents() {
                 </div>
               </Card>
             ))
+              .length === 0 && (
+              <div className="col-span-full text-center py-16">
+                <CalendarIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-foreground mb-2">No Events Found</h3>
+                <p className="text-muted-foreground">Try adjusting your search or filters</p>
+              </div>
+            )
           )}
         </div>
       </div>
