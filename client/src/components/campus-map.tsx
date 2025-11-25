@@ -272,6 +272,7 @@ export default function CampusMap({
   }, [onMapClick]);
 
   // Add campus boundary constraint (conditional on zoom level)
+  // DELAYED to allow tiles to load first
   useEffect(() => {
     if (!mapInstanceRef.current) return;
 
@@ -303,17 +304,22 @@ export default function CampusMap({
       }
     };
 
-    // Set initial bounds
-    updateBoundsBasedOnZoom();
-    
-    // Update bounds whenever zoom level changes
-    map.on('zoomend', updateBoundsBasedOnZoom);
-    
     // Restrict zoom levels to stay focused on campus
     map.setMinZoom(17.5);
     map.setMaxZoom(20.5);
 
+    // CRITICAL: Delay bounds setup to allow tiles to render first
+    // This prevents the bounds constraint from interfering with tile loading
+    const boundsTimeout = setTimeout(() => {
+      // Set initial bounds after tiles have loaded
+      updateBoundsBasedOnZoom();
+      
+      // Update bounds whenever zoom level changes
+      map.on('zoomend', updateBoundsBasedOnZoom);
+    }, 600); // Delay after last invalidateSize call (500ms) + buffer
+
     return () => {
+      clearTimeout(boundsTimeout);
       map.off('zoomend', updateBoundsBasedOnZoom);
       map.setMaxBounds(null);
     };

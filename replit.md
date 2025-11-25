@@ -31,6 +31,14 @@ The system tracks three key metrics: interface action response times, loading sp
 - **Offline Resilience**: Implements mechanisms to queue and sync data collected while offline, preventing data loss.
 - **Modularity**: Codebase is structured with clear separation of concerns (client, server, shared), and dedicated libraries for analytics tracking and ETA calculation.
 
+## Recent Changes
+- **Campus Navigation Map Tile Loading (FIXED)**: 
+  - Issue: Tiles weren't loading on initial render; users had to zoom out then zoom in to see tiles
+  - Root Cause: `setMaxBounds()` bounds constraint was applied immediately, blocking tile loading
+  - Solution: Delayed bounds constraint by 600ms to allow tiles to fully render first
+  - Also added: ResizeObserver, requestAnimationFrame, and multiple delayed `invalidateSize()` calls
+  - Result: Tiles now load smoothly on initial render without user interaction
+
 ## External Dependencies
 - **Frontend Framework**: React 18
 - **Styling**: Tailwind CSS
