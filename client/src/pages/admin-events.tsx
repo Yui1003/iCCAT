@@ -24,6 +24,8 @@ export default function AdminEvents() {
     description: "",
     date: "",
     time: "",
+    endDate: "",
+    endTime: "",
     location: "",
     buildingId: null,
     image: "",
@@ -74,6 +76,8 @@ export default function AdminEvents() {
         description: event.description || "",
         date: event.date,
         time: event.time || "",
+        endDate: event.endDate || "",
+        endTime: event.endTime || "",
         location: event.location || "",
         buildingId: event.buildingId || null,
         image: event.image || "",
@@ -87,6 +91,8 @@ export default function AdminEvents() {
         description: "",
         date: today,
         time: "",
+        endDate: "",
+        endTime: "",
         location: "",
         buildingId: null,
         image: "",
@@ -178,27 +184,51 @@ export default function AdminEvents() {
 
                 {/* Only show date and time for non-Achievement classifications */}
                 {formData.classification !== "Achievement" && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="date">Date *</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                        required
-                        data-testid="input-event-date"
-                      />
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="date">Start Date *</Label>
+                        <Input
+                          id="date"
+                          type="date"
+                          value={formData.date}
+                          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                          required
+                          data-testid="input-event-date"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="time">Start Time</Label>
+                        <Input
+                          id="time"
+                          type="time"
+                          value={formData.time || ""}
+                          onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                          data-testid="input-event-time"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="time">Time</Label>
-                      <Input
-                        id="time"
-                        type="time"
-                        value={formData.time || ""}
-                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                        data-testid="input-event-time"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="endDate">End Date</Label>
+                        <Input
+                          id="endDate"
+                          type="date"
+                          value={formData.endDate || ""}
+                          onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                          data-testid="input-event-end-date"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="endTime">End Time</Label>
+                        <Input
+                          id="endTime"
+                          type="time"
+                          value={formData.endTime || ""}
+                          onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                          data-testid="input-event-end-time"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -309,8 +339,11 @@ export default function AdminEvents() {
                     {event.title}
                   </h3>
                   {event.classification !== "Achievement" && (
-                    <div className="text-sm text-muted-foreground mb-3">
-                      {event.date} {event.time && `• ${event.time}`}
+                    <div className="text-sm text-muted-foreground mb-3 space-y-1">
+                      <div>{event.date} {event.time && `• ${event.time}`}</div>
+                      {event.endDate && (
+                        <div className="text-xs">→ {event.endDate} {event.endTime && `• ${event.endTime}`}</div>
+                      )}
                     </div>
                   )}
                   {event.description && (

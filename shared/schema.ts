@@ -186,6 +186,8 @@ export const events = pgTable("events", {
   description: text("description"),
   date: text("date").notNull(),
   time: text("time"),
+  endDate: text("end_date"),
+  endTime: text("end_time"),
   location: text("location"),
   buildingId: varchar("building_id"),
   image: text("image"),

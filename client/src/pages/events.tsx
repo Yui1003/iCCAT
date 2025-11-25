@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GetDirectionsDialog from "@/components/get-directions-dialog";
+import { CalendarView } from "@/components/calendar-view";
 import type { Event, Building } from "@shared/schema";
 import { eventClassifications } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
@@ -196,31 +198,61 @@ export default function Events() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Classification Filter */}
-        <div className="mb-6">
-          <Label className="flex items-center gap-2 mb-2 text-foreground">
-            <Filter className="w-4 h-4" />
-            Filter by Classification
-          </Label>
-          <Select
-            value={classificationFilter}
-            onValueChange={setClassificationFilter}
-          >
-            <SelectTrigger className="max-w-xs" data-testid="select-classification-filter">
-              <SelectValue placeholder="Select classification" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {eventClassifications.map((classification) => (
-                <SelectItem key={classification} value={classification}>
-                  {classification}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Tabs for Calendar and Event List Views */}
+        <Tabs defaultValue="calendar" className="mb-8" data-testid="tabs-events-view">
+          <TabsList className="grid w-full max-w-xs grid-cols-2">
+            <TabsTrigger value="calendar" data-testid="tab-calendar">Calendar</TabsTrigger>
+            <TabsTrigger value="list" data-testid="tab-event-list">Event List</TabsTrigger>
+          </TabsList>
 
-        {isLoading ? (
+          {/* Calendar Tab */}
+          <TabsContent value="calendar" className="mt-6" data-testid="tab-content-calendar">
+            {isLoading ? (
+              <Card className="p-8">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-10 bg-muted rounded" />
+                  <div className="grid grid-cols-7 gap-2">
+                    {Array.from({ length: 35 }).map((_, i) => (
+                      <div key={i} className="aspect-square bg-muted rounded" />
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              <CalendarView
+                events={filteredEvents}
+                onEventSelect={setSelectedEvent}
+              />
+            )}
+          </TabsContent>
+
+          {/* Event List Tab */}
+          <TabsContent value="list" className="mt-6" data-testid="tab-content-list">
+            {/* Classification Filter */}
+            <div className="mb-6">
+              <Label className="flex items-center gap-2 mb-2 text-foreground">
+                <Filter className="w-4 h-4" />
+                Filter by Classification
+              </Label>
+              <Select
+                value={classificationFilter}
+                onValueChange={setClassificationFilter}
+              >
+                <SelectTrigger className="max-w-xs" data-testid="select-classification-filter">
+                  <SelectValue placeholder="Select classification" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {eventClassifications.map((classification) => (
+                    <SelectItem key={classification} value={classification}>
+                      {classification}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {isLoading ? (
           <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="h-96 animate-pulse bg-muted" />
@@ -323,6 +355,8 @@ export default function Events() {
             )}
           </div>
         )}
+          </TabsContent>
+        </Tabs>
       </main>
 
       {selectedEvent && (
@@ -363,23 +397,36 @@ export default function Events() {
 
               {/* Only show date/time for non-Achievement events */}
               {selectedEvent.classification !== "Achievement" && (
-                <div className="flex flex-wrap items-center gap-4 text-base mb-6 pb-6 border-b border-border">
-                  <div className={`flex items-center gap-2 ${
-                    getEventStatus(selectedEvent.date, selectedEvent.time) === 'upcoming' 
-                      ? 'text-green-600 dark:text-green-500' 
-                      : 'text-red-600 dark:text-red-500'
-                  }`}>
-                    <Calendar className="w-5 h-5" />
-                    <span>{selectedEvent.date}</span>
-                  </div>
-                  {selectedEvent.time && (
+                <div className="flex flex-col gap-3 text-base mb-6 pb-6 border-b border-border">
+                  <div className="flex flex-wrap items-center gap-4">
                     <div className={`flex items-center gap-2 ${
                       getEventStatus(selectedEvent.date, selectedEvent.time) === 'upcoming' 
                         ? 'text-green-600 dark:text-green-500' 
                         : 'text-red-600 dark:text-red-500'
                     }`}>
-                      <Clock className="w-5 h-5" />
-                      <span>{selectedEvent.time}</span>
+                      <Calendar className="w-5 h-5" />
+                      <span>{selectedEvent.date}</span>
+                    </div>
+                    {selectedEvent.time && (
+                      <div className={`flex items-center gap-2 ${
+                        getEventStatus(selectedEvent.date, selectedEvent.time) === 'upcoming' 
+                          ? 'text-green-600 dark:text-green-500' 
+                          : 'text-red-600 dark:text-red-500'
+                      }`}>
+                        <Clock className="w-5 h-5" />
+                        <span>{selectedEvent.time}</span>
+                      </div>
+                    )}
+                  </div>
+                  {selectedEvent.endDate && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground ml-7">
+                      → to {selectedEvent.endDate}
+                      {selectedEvent.endTime && (
+                        <>
+                          <span>•</span>
+                          <span>{selectedEvent.endTime}</span>
+                        </>
+                      )}
                     </div>
                   )}
                   {selectedEvent.location && (
@@ -480,19 +527,32 @@ function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event)
 
         {/* Only show date/time for non-Achievement events */}
         {event.classification !== "Achievement" && (
-          <div className={`flex items-center gap-2 text-sm mb-3 ${
+          <div className={`flex flex-col gap-1 text-sm mb-3 ${
             getEventStatus(event.date, event.time) === 'upcoming' 
               ? 'text-green-600 dark:text-green-500' 
               : 'text-red-600 dark:text-red-500'
           }`}>
-            <Calendar className="w-4 h-4" />
-            <span>{event.date}</span>
-            {event.time && (
-              <>
-                <span>•</span>
-                <Clock className="w-4 h-4" />
-                <span>{event.time}</span>
-              </>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              <span>{event.date}</span>
+              {event.time && (
+                <>
+                  <span>•</span>
+                  <Clock className="w-4 h-4" />
+                  <span>{event.time}</span>
+                </>
+              )}
+            </div>
+            {event.endDate && (
+              <div className="flex items-center gap-2 text-xs ml-6">
+                → {event.endDate}
+                {event.endTime && (
+                  <>
+                    <span>•</span>
+                    <span>{event.endTime}</span>
+                  </>
+                )}
+              </div>
             )}
           </div>
         )}
