@@ -11,12 +11,14 @@ Comprehensive campus wayfinding/navigation web application with kiosk and mobile
   2. Map zooming out every time a node was added, forcing users to re-zoom
   
 - **Solutions Applied**:
-  1. **Tile loading**: Set maxZoom to 19 (OpenStreetMap limit) for clean tile rendering
+  1. **Proper tile loading**: Used `maxNativeZoom: 19` to allow tiles to scale beyond their native resolution up to zoom 22
   2. **Preserve zoom level**: Only fit bounds on initial load with existing nodes, not on every node addition
-  3. **Better initial zoom**: Increased default zoom from 17 to 18 for better starting perspective
+  3. **Better initial zoom**: Set default zoom to 18 for better starting perspective
+  4. **Full zoom range**: Enabled zoom levels up to 22 for precise node placement
   
 - **Result**: 
-  - Smooth map tiles with no artifacts
+  - Clean, artifact-free map tiles at all zoom levels
+  - Zoom in up to level 22 for accurate node placement
   - Users can zoom in and pan freely without map resetting
   - Add multiple nodes seamlessly by panning and clicking
   - Much smoother path creation workflow

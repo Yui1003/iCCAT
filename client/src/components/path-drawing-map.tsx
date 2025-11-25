@@ -52,14 +52,15 @@ export default function PathDrawingMap({
     const map = L.map(mapRef.current, {
       center: [14.4035451, 120.8659794],
       zoom: 18,
-      maxZoom: 19,
+      maxZoom: 22,
       zoomControl: true,
       attributionControl: true,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
+      maxZoom: 22,
+      maxNativeZoom: 19,
     }).addTo(map);
 
     mapInstanceRef.current = map;
@@ -222,7 +223,7 @@ export default function PathDrawingMap({
       // Only fit bounds on initial load with existing nodes, not on every node addition
       if (!hasInitializedBoundsRef.current && nodes.length > 1) {
         const bounds = L.latLngBounds(nodes);
-        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 22 });
         hasInitializedBoundsRef.current = true;
       }
     }
