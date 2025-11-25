@@ -247,58 +247,58 @@ export default function AdminPaths() {
                       <RouteIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
                       <p className="text-sm text-muted-foreground">No walking paths yet</p>
                     </div>
-                  ) : (
-                    <div className="space-y-3 overflow-y-auto flex-1 pr-2">
-                      {walkpaths
-                        .filter((path) => 
-                          walkpathSearch === "" || (path.name || "").toLowerCase().includes(walkpathSearch.toLowerCase())
-                        )
-                        .map((path, index) => (
-                        <div
-                          key={path.id || index}
-                          className="p-3 bg-muted/50 rounded-lg"
-                          data-testid={`walkpath-${index}`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <p className="font-medium text-foreground">
-                                {path.name || `Path ${index + 1}`}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {Array.isArray(path.nodes) ? path.nodes.length : 0} waypoints
-                              </p>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => handleOpenDialog(path, 'walkpath')}
-                                data-testid={`button-edit-walkpath-${index}`}
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => setDeletingPath({ ...path, type: 'walkpath' })}
-                                data-testid={`button-delete-walkpath-${index}`}
-                              >
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
-                            </div>
+                  ) : (() => {
+                    const filteredWalkpaths = walkpaths.filter((path) => 
+                      walkpathSearch === "" || (path.name || "").toLowerCase().includes(walkpathSearch.toLowerCase())
+                    );
+                    return (
+                      <div className="space-y-3 overflow-y-auto flex-1 pr-2">
+                        {filteredWalkpaths.length === 0 ? (
+                          <div className="text-center py-8">
+                            <RouteIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">No walking paths match your search</p>
                           </div>
-                        </div>
-                      ))}
-                      {walkpaths.filter((path) => 
-                        walkpathSearch === "" || (path.name || "").toLowerCase().includes(walkpathSearch.toLowerCase())
-                      ).length === 0 && (
-                        <div className="text-center py-8">
-                          <RouteIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                          <p className="text-sm text-muted-foreground">No walking paths match your search</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        ) : (
+                          filteredWalkpaths.map((path, index) => (
+                            <div
+                              key={path.id || index}
+                              className="p-3 bg-muted/50 rounded-lg"
+                              data-testid={`walkpath-${index}`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  <p className="font-medium text-foreground">
+                                    {path.name || `Path ${index + 1}`}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {Array.isArray(path.nodes) ? path.nodes.length : 0} waypoints
+                                  </p>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => handleOpenDialog(path, 'walkpath')}
+                                    data-testid={`button-edit-walkpath-${index}`}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => setDeletingPath({ ...path, type: 'walkpath' })}
+                                    data-testid={`button-delete-walkpath-${index}`}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    );
+                  })()}
                 </Card>
               </div>
             </div>
@@ -331,58 +331,58 @@ export default function AdminPaths() {
                       <RouteIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
                       <p className="text-sm text-muted-foreground">No driving paths yet</p>
                     </div>
-                  ) : (
-                    <div className="space-y-3 overflow-y-auto flex-1 pr-2">
-                      {drivepaths
-                        .filter((path) => 
-                          drivepathSearch === "" || (path.name || "").toLowerCase().includes(drivepathSearch.toLowerCase())
-                        )
-                        .map((path, index) => (
-                        <div
-                          key={path.id || index}
-                          className="p-3 bg-muted/50 rounded-lg"
-                          data-testid={`drivepath-${index}`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <p className="font-medium text-foreground">
-                                {path.name || `Path ${index + 1}`}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {Array.isArray(path.nodes) ? path.nodes.length : 0} waypoints
-                              </p>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => handleOpenDialog(path, 'drivepath')}
-                                data-testid={`button-edit-drivepath-${index}`}
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => setDeletingPath({ ...path, type: 'drivepath' })}
-                                data-testid={`button-delete-drivepath-${index}`}
-                              >
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
-                            </div>
+                  ) : (() => {
+                    const filteredDrivepaths = drivepaths.filter((path) => 
+                      drivepathSearch === "" || (path.name || "").toLowerCase().includes(drivepathSearch.toLowerCase())
+                    );
+                    return (
+                      <div className="space-y-3 overflow-y-auto flex-1 pr-2">
+                        {filteredDrivepaths.length === 0 ? (
+                          <div className="text-center py-8">
+                            <RouteIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">No driving paths match your search</p>
                           </div>
-                        </div>
-                      ))}
-                      {drivepaths.filter((path) => 
-                        drivepathSearch === "" || (path.name || "").toLowerCase().includes(drivepathSearch.toLowerCase())
-                      ).length === 0 && (
-                        <div className="text-center py-8">
-                          <RouteIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                          <p className="text-sm text-muted-foreground">No driving paths match your search</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        ) : (
+                          filteredDrivepaths.map((path, index) => (
+                            <div
+                              key={path.id || index}
+                              className="p-3 bg-muted/50 rounded-lg"
+                              data-testid={`drivepath-${index}`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  <p className="font-medium text-foreground">
+                                    {path.name || `Path ${index + 1}`}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {Array.isArray(path.nodes) ? path.nodes.length : 0} waypoints
+                                  </p>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => handleOpenDialog(path, 'drivepath')}
+                                    data-testid={`button-edit-drivepath-${index}`}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => setDeletingPath({ ...path, type: 'drivepath' })}
+                                    data-testid={`button-delete-drivepath-${index}`}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    );
+                  })()}
                 </Card>
               </div>
             </div>

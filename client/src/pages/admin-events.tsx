@@ -354,80 +354,80 @@ export default function AdminEvents() {
               <h3 className="text-xl font-medium text-foreground mb-2">No Events Yet</h3>
               <p className="text-muted-foreground">Create your first event to get started</p>
             </div>
-          ) : (
-            events
-              .filter((event) => {
-                const matchesSearch = searchQuery === "" || 
-                  event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (event.description?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                  (event.location?.toLowerCase().includes(searchQuery.toLowerCase()));
-                const matchesClassification = classificationFilter === "All" || event.classification === classificationFilter;
-                return matchesSearch && matchesClassification;
-              })
-              .map((event) => (
-              <Card key={event.id} className="flex flex-col overflow-hidden" data-testid={`event-item-${event.id}`}>
-                {event.image ? (
-                  <div className="w-full aspect-[4/3] bg-muted">
-                    <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
-                  </div>
-                ) : (
-                  <div className="w-full aspect-[4/3] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                    <CalendarIcon className="w-12 h-12 text-primary/40" />
-                  </div>
-                )}
-                <div className="p-6 flex flex-col flex-1">
-                  <div className="mb-3">
-                    <Badge variant="secondary" className="mb-2">
-                      {event.classification}
-                    </Badge>
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-2">
-                    {event.title}
-                  </h3>
-                  {event.classification !== "Achievement" && (
-                    <div className="text-sm text-muted-foreground mb-3 space-y-1">
-                      <div>{event.date} {event.time && `• ${event.time}`}</div>
-                      {event.endDate && (
-                        <div className="text-xs">→ {event.endDate} {event.endTime && `• ${event.endTime}`}</div>
-                      )}
-                    </div>
-                  )}
-                  {event.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-                      {event.description}
-                    </p>
-                  )}
-                  <div className="flex gap-2 mt-auto">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => handleOpenDialog(event)}
-                      data-testid={`button-edit-${event.id}`}
-                    >
-                      <Pencil className="w-3 h-3 mr-2" />
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => deleteMutation.mutate(event.id)}
-                      data-testid={`button-delete-${event.id}`}
-                    >
-                      <Trash2 className="w-3 h-3 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))
-              .length === 0 && (
+          ) : (() => {
+            const filteredEvents = events.filter((event) => {
+              const matchesSearch = searchQuery === "" || 
+                event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (event.description?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                (event.location?.toLowerCase().includes(searchQuery.toLowerCase()));
+              const matchesClassification = classificationFilter === "All" || event.classification === classificationFilter;
+              return matchesSearch && matchesClassification;
+            });
+            return filteredEvents.length === 0 ? (
               <div className="col-span-full text-center py-16">
                 <CalendarIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-xl font-medium text-foreground mb-2">No Events Found</h3>
                 <p className="text-muted-foreground">Try adjusting your search or filters</p>
               </div>
-            )
-          )}
+            ) : (
+              filteredEvents.map((event) => (
+                <Card key={event.id} className="flex flex-col overflow-hidden" data-testid={`event-item-${event.id}`}>
+                  {event.image ? (
+                    <div className="w-full aspect-[4/3] bg-muted">
+                      <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-full aspect-[4/3] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                      <CalendarIcon className="w-12 h-12 text-primary/40" />
+                    </div>
+                  )}
+                  <div className="p-6 flex flex-col flex-1">
+                    <div className="mb-3">
+                      <Badge variant="secondary" className="mb-2">
+                        {event.classification}
+                      </Badge>
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-2">
+                      {event.title}
+                    </h3>
+                    {event.classification !== "Achievement" && (
+                      <div className="text-sm text-muted-foreground mb-3 space-y-1">
+                        <div>{event.date} {event.time && `• ${event.time}`}</div>
+                        {event.endDate && (
+                          <div className="text-xs">→ {event.endDate} {event.endTime && `• ${event.endTime}`}</div>
+                        )}
+                      </div>
+                    )}
+                    {event.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+                        {event.description}
+                      </p>
+                    )}
+                    <div className="flex gap-2 mt-auto">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => handleOpenDialog(event)}
+                        data-testid={`button-edit-${event.id}`}
+                      >
+                        <Pencil className="w-3 h-3 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => deleteMutation.mutate(event.id)}
+                        data-testid={`button-delete-${event.id}`}
+                      >
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            );
+          })()}
         </div>
       </div>
     </AdminLayout>
