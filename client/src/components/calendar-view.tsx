@@ -12,6 +12,7 @@ interface CalendarViewProps {
 
 export function CalendarView({ events, onEventSelect }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
@@ -115,17 +116,20 @@ export function CalendarView({ events, onEventSelect }: CalendarViewProps) {
           {days.map((day) => {
             const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
             const dayEvents = getEventsForDate(date);
-            const isToday =
-              date.toDateString() === new Date().toDateString();
+            const isToday = date.toDateString() === new Date().toDateString();
+            const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
 
             return (
-              <div
+              <button
                 key={day}
-                className={`aspect-square p-2 rounded-md border transition-all ${
-                  isToday
+                onClick={() => setSelectedDate(date)}
+                className={`aspect-square p-2 rounded-md border transition-all cursor-pointer ${
+                  isSelected
+                    ? "border-primary bg-primary/20 ring-2 ring-primary"
+                    : isToday
                     ? "border-primary bg-primary/10"
                     : dayEvents.length > 0
-                    ? "border-accent bg-accent/5"
+                    ? "border-accent bg-accent/5 hover:bg-accent/10"
                     : "border-border bg-background hover:bg-muted"
                 }`}
                 data-testid={`calendar-day-${day}`}
@@ -136,7 +140,10 @@ export function CalendarView({ events, onEventSelect }: CalendarViewProps) {
                     {dayEvents.slice(0, 2).map((event) => (
                       <div
                         key={event.id}
-                        onClick={() => onEventSelect(event)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventSelect(event);
+                        }}
                         className="text-xs bg-primary/80 text-primary-foreground rounded px-1 py-0.5 truncate cursor-pointer hover:bg-primary transition-colors"
                         title={event.title}
                         data-testid={`calendar-event-${event.id}`}
@@ -151,48 +158,109 @@ export function CalendarView({ events, onEventSelect }: CalendarViewProps) {
                     )}
                   </div>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
       </Card>
 
-      {/* Upcoming Events List */}
+      {/* Selected Date Events or Upcoming Events List */}
       <div>
-        <h3 className="text-lg font-semibold text-foreground mb-3">Upcoming Events</h3>
-        {events.length === 0 ? (
-          <Card className="p-6 text-center text-muted-foreground">
-            No events scheduled
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {events
-              .filter(event => {
-                const eventDate = new Date(event.date);
-                return eventDate >= new Date();
-              })
-              .slice(0, 5)
-              .map((event) => (
-                <Card
-                  key={event.id}
-                  className="p-4 cursor-pointer hover:bg-muted transition-colors"
-                  onClick={() => onEventSelect(event)}
-                  data-testid={`upcoming-event-${event.id}`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-medium text-foreground">{event.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {event.date}
-                        {event.time && ` at ${event.time}`}
-                        {event.endDate && ` - ${event.endDate}${event.endTime ? ` at ${event.endTime}` : ""}`}
-                      </p>
+        {selectedDate ? (
+          <>
+            <h3 className="text-lg font-semibold text-foreground mb-3">
+              Events on {selectedDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+            </h3>
+            {getEventsForDate(selectedDate).length === 0 ? (
+              <Card className="p-6 text-center text-muted-foreground">
+                No events scheduled for this date
+              </Card>
+            ) : (
+              <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
+                {getEventsForDate(selectedDate).map((event) => (
+                  <Card
+                    key={event.id}
+                    className="flex flex-col overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all h-full"
+                    onClick={() => onEventSelect(event)}
+                    data-testid={`selected-date-event-${event.id}`}
+                  >
+                    {event.image ? (
+                      <div className="w-full aspect-[4/3] bg-muted">
+                        <img
+                          src={event.image}
+                          alt={event.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full aspect-[4/3] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                        {/* Calendar Icon */}
+                      </div>
+                    )}
+                    <div className="p-4 flex flex-col flex-1">
+                      <div className="mb-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {event.classification}
+                        </Badge>
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-1 line-clamp-2">
+                        {event.title}
+                      </h3>
+                      {event.time && (
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {event.time}
+                          {event.endTime && ` - ${event.endTime}`}
+                        </p>
+                      )}
+                      {event.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {event.description}
+                        </p>
+                      )}
                     </div>
-                    <Badge variant="secondary">{event.classification}</Badge>
-                  </div>
-                </Card>
-              ))}
-          </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <h3 className="text-lg font-semibold text-foreground mb-3">Upcoming Events</h3>
+            {events.length === 0 ? (
+              <Card className="p-6 text-center text-muted-foreground">
+                No events scheduled
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {events
+                  .filter(event => {
+                    const eventDate = new Date(event.date);
+                    return eventDate >= new Date();
+                  })
+                  .slice(0, 5)
+                  .map((event) => (
+                    <Card
+                      key={event.id}
+                      className="p-4 cursor-pointer hover:bg-muted transition-colors"
+                      onClick={() => onEventSelect(event)}
+                      data-testid={`upcoming-event-${event.id}`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-medium text-foreground">{event.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {event.date}
+                            {event.time && ` at ${event.time}`}
+                            {event.endDate && ` - ${event.endDate}${event.endTime ? ` at ${event.endTime}` : ""}`}
+                          </p>
+                        </div>
+                        <Badge variant="secondary">{event.classification}</Badge>
+                      </div>
+                    </Card>
+                  ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
