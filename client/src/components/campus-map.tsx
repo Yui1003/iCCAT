@@ -330,6 +330,10 @@ export default function CampusMap({
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
+    // When displaying a route (navigation mode), don't show building markers
+    // to reduce clutter and make the pathway more visible
+    const isNavigating = !!(routePolyline && routePolyline.length > 0) || !!(routePhases && routePhases.length > 0);
+    
     // Adjust marker sizes based on zoom level
     // When zoomed out (< 18), use smaller sizes
     // When zoomed in (>= 18), use normal sizes
@@ -337,111 +341,133 @@ export default function CampusMap({
     const kioskSize = isZoomedOut ? { img: 'w-12 h-12', icon: 48, ping: 'w-8 h-8' } : { img: 'w-16 h-16', icon: 64, ping: 'w-10 h-10' };
     const buildingSize = isZoomedOut ? { img: 'w-8 h-8', icon: 32, ping: 'w-6 h-6' } : { img: 'w-12 h-12', icon: 48, ping: 'w-8 h-8' };
 
-    const kioskIconHtml = L.divIcon({
-      html: `
-        <div class="relative flex items-center justify-center">
-          <div class="absolute ${kioskSize.ping} bg-blue-500/30 rounded-full animate-ping"></div>
-          <div class="relative">
-            <img src="${kioskIcon}" alt="You are Here" class="${kioskSize.img} object-contain drop-shadow-lg" />
-          </div>
-        </div>
-      `,
-      className: 'kiosk-marker',
-      iconSize: [kioskSize.icon, kioskSize.icon],
-      iconAnchor: [kioskSize.icon / 2, kioskSize.icon / 2],
-    });
-
-    const kioskMarker = L.marker([KIOSK_LOCATION.lat, KIOSK_LOCATION.lng], { icon: kioskIconHtml })
-      .addTo(mapInstanceRef.current)
-      .bindTooltip(KIOSK_LOCATION.name, {
-        permanent: false,
-        direction: 'top',
-        offset: [0, -(kioskSize.icon / 2)],
-        className: 'bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
-      });
-
-    markersRef.current.push(kioskMarker);
-
-    buildings.forEach(building => {
-      const iconImage = getMarkerIconImage(building.type);
-      const icon = L.divIcon({
+    // Only show kiosk marker during navigation
+    if (isNavigating) {
+      const kioskIconHtml = L.divIcon({
         html: `
           <div class="relative flex items-center justify-center">
-            <div class="absolute ${buildingSize.ping} bg-primary/20 rounded-full animate-ping ${selectedBuilding?.id === building.id ? 'scale-125' : ''}"></div>
-            <div class="relative ${selectedBuilding?.id === building.id ? 'scale-125' : ''}">
-              <img src="${iconImage}" alt="${building.type || 'Building'}" class="${buildingSize.img} object-contain" />
+            <div class="relative opacity-40">
+              <img src="${kioskIcon}" alt="You are Here" class="${kioskSize.img} object-contain drop-shadow-lg" />
             </div>
           </div>
         `,
-        className: 'building-marker',
-        iconSize: [buildingSize.icon, buildingSize.icon],
-        iconAnchor: [buildingSize.icon / 2, buildingSize.icon / 2],
+        className: 'kiosk-marker',
+        iconSize: [kioskSize.icon, kioskSize.icon],
+        iconAnchor: [kioskSize.icon / 2, kioskSize.icon / 2],
       });
 
-      const marker = L.marker([building.lat, building.lng], { icon })
+      const kioskMarker = L.marker([KIOSK_LOCATION.lat, KIOSK_LOCATION.lng], { icon: kioskIconHtml })
+        .addTo(mapInstanceRef.current);
+
+      markersRef.current.push(kioskMarker);
+    } else {
+      const kioskIconHtml = L.divIcon({
+        html: `
+          <div class="relative flex items-center justify-center">
+            <div class="absolute ${kioskSize.ping} bg-blue-500/30 rounded-full animate-ping"></div>
+            <div class="relative">
+              <img src="${kioskIcon}" alt="You are Here" class="${kioskSize.img} object-contain drop-shadow-lg" />
+            </div>
+          </div>
+        `,
+        className: 'kiosk-marker',
+        iconSize: [kioskSize.icon, kioskSize.icon],
+        iconAnchor: [kioskSize.icon / 2, kioskSize.icon / 2],
+      });
+
+      const kioskMarker = L.marker([KIOSK_LOCATION.lat, KIOSK_LOCATION.lng], { icon: kioskIconHtml })
         .addTo(mapInstanceRef.current)
-        .bindTooltip(building.name, {
+        .bindTooltip(KIOSK_LOCATION.name, {
           permanent: false,
           direction: 'top',
-          offset: [0, -(buildingSize.icon / 2)],
-          className: 'bg-card text-card-foreground px-3 py-2 rounded-lg shadow-lg border border-card-border'
+          offset: [0, -(kioskSize.icon / 2)],
+          className: 'bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
         });
 
-      // Touchscreen-friendly interaction for kiosks
-      const markerElement = marker.getElement();
-      if (markerElement) {
-        // Disable context menu on marker
-        markerElement.addEventListener('contextmenu', (e: Event) => {
-          e.preventDefault();
-          return false;
+      markersRef.current.push(kioskMarker);
+
+      // Only render building markers when NOT navigating
+      buildings.forEach(building => {
+        const iconImage = getMarkerIconImage(building.type);
+        const icon = L.divIcon({
+          html: `
+            <div class="relative flex items-center justify-center">
+              <div class="absolute ${buildingSize.ping} bg-primary/20 rounded-full animate-ping ${selectedBuilding?.id === building.id ? 'scale-125' : ''}"></div>
+              <div class="relative ${selectedBuilding?.id === building.id ? 'scale-125' : ''}">
+                <img src="${iconImage}" alt="${building.type || 'Building'}" class="${buildingSize.img} object-contain" />
+              </div>
+            </div>
+          `,
+          className: 'building-marker',
+          iconSize: [buildingSize.icon, buildingSize.icon],
+          iconAnchor: [buildingSize.icon / 2, buildingSize.icon / 2],
         });
 
-        // Long-press detection
-        const handleTouchStart = () => {
-          isLongPressRef.current = false;
-          
-          // Set timer for long press (500ms)
-          longPressTimerRef.current = setTimeout(() => {
-            isLongPressRef.current = true;
-            // Show tooltip on long press
-            marker.openTooltip();
-          }, 500);
-        };
+        const marker = L.marker([building.lat, building.lng], { icon })
+          .addTo(mapInstanceRef.current)
+          .bindTooltip(building.name, {
+            permanent: false,
+            direction: 'top',
+            offset: [0, -(buildingSize.icon / 2)],
+            className: 'bg-card text-card-foreground px-3 py-2 rounded-lg shadow-lg border border-card-border'
+          });
 
-        const handleTouchEnd = () => {
-          // Clear the long press timer
-          if (longPressTimerRef.current) {
-            clearTimeout(longPressTimerRef.current);
-            longPressTimerRef.current = null;
-          }
+        // Touchscreen-friendly interaction for kiosks
+        const markerElement = marker.getElement();
+        if (markerElement) {
+          // Disable context menu on marker
+          markerElement.addEventListener('contextmenu', (e: Event) => {
+            e.preventDefault();
+            return false;
+          });
 
-          // Hide tooltip when finger lifts
-          if (isLongPressRef.current) {
-            marker.closeTooltip();
-            // Reset flag after a short delay to prevent click from firing
-            setTimeout(() => {
-              isLongPressRef.current = false;
-            }, 100);
-          }
-        };
+          // Long-press detection
+          const handleTouchStart = () => {
+            isLongPressRef.current = false;
+            
+            // Set timer for long press (500ms)
+            longPressTimerRef.current = setTimeout(() => {
+              isLongPressRef.current = true;
+              // Show tooltip on long press
+              marker.openTooltip();
+            }, 500);
+          };
 
-        markerElement.addEventListener('touchstart', handleTouchStart);
-        markerElement.addEventListener('touchend', handleTouchEnd);
-        markerElement.addEventListener('touchcancel', handleTouchEnd);
-      }
+          const handleTouchEnd = () => {
+            // Clear the long press timer
+            if (longPressTimerRef.current) {
+              clearTimeout(longPressTimerRef.current);
+              longPressTimerRef.current = null;
+            }
 
-      if (onBuildingClick) {
-        marker.on('click', () => {
-          // Only trigger click if it wasn't a long press
-          if (!isLongPressRef.current) {
-            onBuildingClick(building);
-          }
-        });
-      }
+            // Hide tooltip when finger lifts
+            if (isLongPressRef.current) {
+              marker.closeTooltip();
+              // Reset flag after a short delay to prevent click from firing
+              setTimeout(() => {
+                isLongPressRef.current = false;
+              }, 100);
+            }
+          };
 
-      markersRef.current.push(marker);
-    });
-  }, [buildings, onBuildingClick, selectedBuilding, currentZoom]);
+          markerElement.addEventListener('touchstart', handleTouchStart);
+          markerElement.addEventListener('touchend', handleTouchEnd);
+          markerElement.addEventListener('touchcancel', handleTouchEnd);
+        }
+
+        if (onBuildingClick) {
+          marker.on('click', () => {
+            // Only trigger click if it wasn't a long press
+            if (!isLongPressRef.current) {
+              onBuildingClick(building);
+            }
+          });
+        }
+
+        markersRef.current.push(marker);
+      });
+    }
+  }, [buildings, onBuildingClick, selectedBuilding, currentZoom, routePolyline, routePhases]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
