@@ -295,46 +295,6 @@ export function CalendarView({ events, onEventSelect }: CalendarViewProps) {
         </div>
       )}
 
-      {/* Upcoming Events List (when no date is selected) */}
-      {!selectedDate && (
-        <div>
-          <h3 className="text-lg font-semibold text-foreground mb-3">Upcoming Events</h3>
-          {events.length === 0 ? (
-            <Card className="p-6 text-center text-muted-foreground">
-              No events scheduled
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {events
-                .filter(event => {
-                  const eventDate = new Date(event.date);
-                  return eventDate >= new Date();
-                })
-                .slice(0, 5)
-                .map((event) => (
-                  <Card
-                    key={event.id}
-                    className="p-4 cursor-pointer hover:bg-muted transition-colors"
-                    onClick={() => onEventSelect(event)}
-                    data-testid={`upcoming-event-${event.id}`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-medium text-foreground">{event.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {event.date}
-                          {event.time && ` at ${event.time}`}
-                          {event.endDate && ` - ${event.endDate}${event.endTime ? ` at ${event.endTime}` : ""}`}
-                        </p>
-                      </div>
-                      <Badge variant="secondary">{event.classification}</Badge>
-                    </div>
-                  </Card>
-                ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

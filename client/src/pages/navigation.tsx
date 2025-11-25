@@ -1934,6 +1934,14 @@ export default function Navigation() {
             routeMode={route?.mode}
             routePhases={route?.phases}
             hidePolygonsInNavigation={!!route}
+            waypointsData={
+              route && waypoints.length > 0
+                ? waypoints
+                    .map(id => buildings.find(b => b.id === id))
+                    .filter((b): b is Building => !!b)
+                    .map(b => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng }))
+                : []
+            }
           />
         </main>
       </div>

@@ -20,6 +20,8 @@ import { AnalyticsEventType } from "@shared/analytics-schema";
 
 let usingFallback = false;
 let fallbackData: any = null;
+// TEMPORARY: Force fallback mode to use data.json for this Replit session (Firebase quota exceeded)
+const FORCE_FALLBACK_MODE = true;
 
 // In-memory storage for savedRoutes (used when Firebase is not available)
 const savedRoutesMemory = new Map<string, SavedRoute>();
@@ -117,6 +119,10 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // Buildings
   async getBuildings(): Promise<Building[]> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return data.buildings || [];
+    }
     try {
       const snapshot = await db.collection('buildings').get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Building));
@@ -174,6 +180,10 @@ export class DatabaseStorage implements IStorage {
 
   // Floors
   async getFloors(): Promise<Floor[]> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return data.floors || [];
+    }
     try {
       const snapshot = await db.collection('floors').get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Floor));
@@ -242,6 +252,10 @@ export class DatabaseStorage implements IStorage {
 
   // Rooms
   async getRooms(): Promise<Room[]> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return data.rooms || [];
+    }
     try {
       const snapshot = await db.collection('rooms').get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Room));
@@ -321,6 +335,10 @@ export class DatabaseStorage implements IStorage {
 
   // Staff
   async getStaff(): Promise<Staff[]> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return data.staff || [];
+    }
     try {
       const snapshot = await db.collection('staff').get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
@@ -389,6 +407,10 @@ export class DatabaseStorage implements IStorage {
 
   // Events
   async getEvents(): Promise<Event[]> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return data.events || [];
+    }
     try {
       const snapshot = await db.collection('events').get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Event));
@@ -446,6 +468,10 @@ export class DatabaseStorage implements IStorage {
 
   // Walkpaths
   async getWalkpaths(): Promise<Walkpath[]> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return data.walkpaths || [];
+    }
     try {
       const snapshot = await db.collection('walkpaths').get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Walkpath));
@@ -503,6 +529,10 @@ export class DatabaseStorage implements IStorage {
 
   // Drivepaths
   async getDrivepaths(): Promise<Drivepath[]> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return data.drivepaths || [];
+    }
     try {
       const snapshot = await db.collection('drivepaths').get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Drivepath));

@@ -56,6 +56,7 @@ interface CampusMapProps {
   existingPaths?: PathType[];
   pathsColor?: string;
   hidePolygonsInNavigation?: boolean;
+  waypointsData?: Array<{id: string; name: string; lat: number; lng: number}>;
 }
 
 declare global {
@@ -123,6 +124,7 @@ export default function CampusMap({
   centerLat,
   centerLng,
   existingPaths = [],
+  waypointsData = [],
   pathsColor = '#8b5cf6',
   hidePolygonsInNavigation = false
 }: CampusMapProps) {
@@ -538,6 +540,26 @@ export default function CampusMap({
         
         routeMarkersRef.current.push(startMarker, endMarker);
 
+        // Render waypoint markers (blue)
+        if (waypointsData && waypointsData.length > 0) {
+          waypointsData.forEach((waypoint) => {
+            const waypointIcon = L.divIcon({
+              html: `
+                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                  <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                  </svg>
+                </div>
+              `,
+              className: 'route-waypoint-marker',
+              iconSize: [40, 40],
+              iconAnchor: [20, 40],
+            });
+            const waypointMarker = L.marker({ lat: waypoint.lat, lng: waypoint.lng }, { icon: waypointIcon }).addTo(mapInstanceRef.current);
+            routeMarkersRef.current.push(waypointMarker);
+          });
+        }
+
         const bounds = L.latLngBounds(allPoints);
         mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 17.5 });
       }
@@ -583,6 +605,26 @@ export default function CampusMap({
         const endMarker = L.marker(routePolyline[routePolyline.length - 1], { icon: endIcon }).addTo(mapInstanceRef.current);
         
         routeMarkersRef.current.push(startMarker, endMarker);
+
+        // Render waypoint markers (blue) for single-phase routes
+        if (waypointsData && waypointsData.length > 0) {
+          waypointsData.forEach((waypoint) => {
+            const waypointIcon = L.divIcon({
+              html: `
+                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                  <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                  </svg>
+                </div>
+              `,
+              className: 'route-waypoint-marker',
+              iconSize: [40, 40],
+              iconAnchor: [20, 40],
+            });
+            const waypointMarker = L.marker({ lat: waypoint.lat, lng: waypoint.lng }, { icon: waypointIcon }).addTo(mapInstanceRef.current);
+            routeMarkersRef.current.push(waypointMarker);
+          });
+        }
 
         const bounds = L.latLngBounds(routePolyline);
         mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 17.5 });
