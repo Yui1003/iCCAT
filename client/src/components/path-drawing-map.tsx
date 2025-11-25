@@ -224,11 +224,25 @@ export default function PathDrawingMap({
 
             const marker = L.marker([node.lat, node.lng], { icon })
               .addTo(mapInstanceRef.current)
-              .bindTooltip('Existing waypoint', {
+              .bindTooltip('Existing waypoint (click to connect)', {
                 permanent: false,
                 direction: 'top',
                 offset: [0, -10],
               });
+
+            // Make existing waypoints clickable to snap to them
+            marker.on('click', (e: any) => {
+              L.DomEvent.stopPropagation(e);
+              if (isDrawing) {
+                // Check if this waypoint is already in the path
+                const alreadyExists = nodes.some(
+                  n => Math.abs(n.lat - node.lat) < 0.00001 && Math.abs(n.lng - node.lng) < 0.00001
+                );
+                if (!alreadyExists) {
+                  onNodesChange([...nodes, { lat: node.lat, lng: node.lng }]);
+                }
+              }
+            });
 
             markersRef.current.push(marker);
           });
