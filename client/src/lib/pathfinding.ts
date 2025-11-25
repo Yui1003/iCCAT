@@ -18,6 +18,43 @@ interface Edge {
   distance: number;
 }
 
+/**
+ * Simplify polyline using Ramer-Douglas-Peucker algorithm
+ * Reduces unnecessary waypoints while maintaining route shape
+ * @param points - Array of lat/lng points
+ * @param tolerance - Distance tolerance in meters (default 5m)
+ */
+function simplifyPolyline(points: LatLng[], tolerance: number = 5): LatLng[] {
+  if (points.length <= 2) return points;
+
+  function perpendicularDistance(point: LatLng, lineStart: LatLng, lineEnd: LatLng): number {
+    const dx = lineEnd.lng - lineStart.lng;
+    const dy = lineEnd.lat - lineStart.lat;
+    const numerator = Math.abs(dy * point.lng - dx * point.lat + lineEnd.lng * lineStart.lat - lineEnd.lat * lineStart.lng);
+    const denominator = Math.sqrt(dx * dx + dy * dy);
+    return denominator === 0 ? calculateDistance(point.lat, point.lng, lineStart.lat, lineStart.lng) : (numerator / denominator) * 111000; // convert to meters
+  }
+
+  let maxDist = 0;
+  let maxIndex = 0;
+
+  for (let i = 1; i < points.length - 1; i++) {
+    const dist = perpendicularDistance(points[i], points[0], points[points.length - 1]);
+    if (dist > maxDist) {
+      maxDist = dist;
+      maxIndex = i;
+    }
+  }
+
+  if (maxDist > tolerance) {
+    const leftSide = simplifyPolyline(points.slice(0, maxIndex + 1), tolerance);
+    const rightSide = simplifyPolyline(points.slice(maxIndex), tolerance);
+    return leftSide.slice(0, -1).concat(rightSide);
+  } else {
+    return [points[0], points[points.length - 1]];
+  }
+}
+
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -461,5 +498,9 @@ export function findShortestPath(
   console.log(`[CLIENT] Route has ${route.length} waypoints from "${start.name}" to "${end.name}"`);
   console.log(`[CLIENT] Final route: Start (${route[0]?.lat.toFixed(6)}, ${route[0]?.lng.toFixed(6)}) → End (${route[route.length - 1]?.lat.toFixed(6)}, ${route[route.length - 1]?.lng.toFixed(6)})`);
 
-  return route;
+  // Simplify polyline to remove unnecessary waypoints and create smooth route
+  const simplifiedRoute = simplifyPolyline(route, 3); // 3 meter tolerance
+  console.log(`[CLIENT] Simplified route from ${route.length} to ${simplifiedRoute.length} waypoints`);
+  
+  return simplifiedRoute;
 }
