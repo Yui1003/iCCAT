@@ -165,24 +165,32 @@ export default function PathDrawingMap({
         if (path.nodes && path.nodes.length > 0) {
           path.nodes.forEach((node, index) => {
             const iconHtml = `
-              <div class="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center shadow-sm border-2 border-gray-300 opacity-60">
+              <div class="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center shadow-sm border-2 border-gray-300 opacity-60 cursor-pointer hover:opacity-100 hover:shadow-md transition-all">
               </div>
             `;
 
             const icon = L.divIcon({
               html: iconHtml,
-              className: 'existing-waypoint-marker',
+              className: 'existing-waypoint-marker cursor-pointer',
               iconSize: [16, 16],
               iconAnchor: [8, 8],
             });
 
             const marker = L.marker([node.lat, node.lng], { icon })
               .addTo(mapInstanceRef.current)
-              .bindTooltip('Existing waypoint', {
+              .bindTooltip('Click to connect here • Existing waypoint', {
                 permanent: false,
                 direction: 'top',
                 offset: [0, -10],
               });
+
+            // Make existing waypoint markers clickable
+            marker.on('click', (e: any) => {
+              L.DomEvent.stopPropagation(e);
+              // Add this node to the current path
+              const newNodes = [...nodes, { lat: node.lat, lng: node.lng }];
+              onNodesChange(newNodes);
+            });
 
             markersRef.current.push(marker);
           });
