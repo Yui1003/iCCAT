@@ -140,7 +140,7 @@ export function CalendarView({ events, onEventSelect }: CalendarViewProps) {
               <button
                 key={day}
                 onClick={() => setSelectedDate(date)}
-                className={`aspect-square p-1 rounded-md border transition-all cursor-pointer text-xs flex flex-col items-center justify-start ${
+                className={`aspect-square p-1 rounded-md border transition-all cursor-pointer text-xs flex flex-col items-start justify-start overflow-hidden ${
                   isSelected
                     ? "border-primary bg-primary/20 ring-2 ring-primary"
                     : isToday
@@ -151,10 +151,18 @@ export function CalendarView({ events, onEventSelect }: CalendarViewProps) {
                 }`}
                 data-testid={`calendar-day-${day}`}
               >
-                <div className="font-medium text-foreground text-xs">{day}</div>
+                <div className="font-medium text-foreground text-xs font-semibold">{day}</div>
                 {dayEvents.length > 0 && (
-                  <div className="text-xs text-primary font-semibold mt-0.5">
-                    {dayEvents.length > 1 ? `${dayEvents.length}` : "●"}
+                  <div className="flex flex-col gap-0.5 w-full flex-1 justify-start overflow-hidden">
+                    {dayEvents.map((event, idx) => (
+                      <div
+                        key={event.id}
+                        className="text-xs bg-primary text-primary-foreground px-1 rounded truncate whitespace-nowrap pointer-events-none"
+                        title={event.title}
+                      >
+                        {event.title}
+                      </div>
+                    ))}
                   </div>
                 )}
               </button>
