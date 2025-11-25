@@ -462,14 +462,26 @@ export default function Navigation() {
     travelMode: 'walking' | 'driving'
   ): Promise<Array<{ lat: number; lng: number }> | null> => {
     try {
-      const paths = travelMode === 'walking' 
-        ? await getWalkpaths()
-        : await getDrivepaths();
+      // For route calculations, always fetch fresh paths data to ensure pathfinding uses latest updates
+      const endpoint = travelMode === 'walking' ? '/api/walkpaths' : '/api/drivepaths';
+      const response = await fetch(endpoint, { 
+        credentials: "include",
+        cache: 'no-cache'
+      });
+      
+      if (!response.ok) {
+        console.error(`[CLIENT] Failed to fetch ${endpoint} for pathfinding`);
+        return null;
+      }
+
+      const paths = await response.json();
 
       if (!paths || paths.length === 0) {
         console.error('[CLIENT] No paths available for pathfinding');
         return null;
       }
+
+      console.log(`[CLIENT] Fetched fresh ${travelMode} paths for route calculation:`, paths.length);
 
       const route = findShortestPath(
         startBuilding as Building,
