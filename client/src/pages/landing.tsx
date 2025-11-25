@@ -152,13 +152,6 @@ export default function Landing() {
               <span className="font-medium">Provide Feedback</span>
             </button>
           </Link>
-          <div>
-            <Link href="/admin/login">
-              <span className="text-sm text-muted-foreground hover:text-foreground underline cursor-pointer" data-testid="link-admin">
-                Admin Access
-              </span>
-            </Link>
-          </div>
         </div>
       </footer>
     </div>
