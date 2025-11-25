@@ -149,13 +149,15 @@ export default function CampusMap({
       center: [centerLat || 14.402598, centerLng || 120.866280],
       zoom: 17.5,
       minZoom: 17.5,
+      maxZoom: 20.5,
       zoomControl: true,
       attributionControl: true,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
+      maxZoom: 20.5,
+      maxNativeZoom: 19,
       subdomains: ['a', 'b', 'c'],
     }).addTo(map);
 
@@ -245,7 +247,7 @@ export default function CampusMap({
     
     // Restrict zoom levels to stay focused on campus
     map.setMinZoom(17.5);
-    map.setMaxZoom(19);
+    map.setMaxZoom(20.5);
 
     return () => {
       map.off('zoomend', updateBoundsBasedOnZoom);

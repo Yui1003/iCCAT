@@ -5,7 +5,9 @@ Comprehensive campus wayfinding/navigation web application with kiosk and mobile
 
 ## Recent Changes (Nov 25, 2025) - EXISTING PATHS VISUALIZATION + ZOOM IMPROVEMENT + SEARCH & FILTERING ✅
 
-### Path Drawing Map - Stable Zoom + Fixed Tile Loading 🔍✅
+### Maps - Stable Zoom + Fixed Tile Loading 🔍✅
+
+#### Path Drawing Map 
 - **Issues Fixed**:
   1. Map tiles showing artifacts at high zoom levels (OSM only supports up to zoom 19)
   2. Map zooming out every time a node was added, forcing users to re-zoom
@@ -21,10 +23,15 @@ Comprehensive campus wayfinding/navigation web application with kiosk and mobile
   - Zoom in up to level 22 for accurate node placement
   - Users can zoom in and pan freely without map resetting
   - Add multiple nodes seamlessly by panning and clicking
-  - Much smoother path creation workflow
+  
+#### Campus Navigation Map
+- **Enhancement**: Increased max zoom level to 20.5 for better viewing detail
+- **Implementation**: Used `maxNativeZoom: 19` and `maxZoom: 20.5` to scale OSM tiles beyond their native resolution
+- **Result**: Users can zoom up to level 20.5 to see fine details while maintaining clean tile rendering
   
 - **Files Modified**:
-  - `client/src/components/path-drawing-map.tsx` - Fixed zoom behavior and tile loading
+  - `client/src/components/path-drawing-map.tsx` - Path drawing zoom and tile loading
+  - `client/src/components/campus-map.tsx` - Campus navigation zoom to 20.5
 
 ### Path Visualization on Admin Maps 🗺️✅
 - **Feature**: Existing walkpaths and drivepaths now display on their respective maps for verification
