@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Building, RoutePhase } from "@shared/schema";
 import { KIOSK_LOCATION } from "@shared/schema";
 import { PHASE_COLORS } from "@shared/phase-colors";
+import { trackEvent } from "@/lib/analytics-tracker";
+import { AnalyticsEventType } from "@shared/analytics-schema";
 
 import buildingIcon from '@assets/generated_images/Building_icon_green_background_3206ffb3.png';
 import kioskIcon from '@assets/generated_images/You_are_Here_location_icon_294f7572.png';
@@ -146,6 +148,12 @@ export default function CampusMap({
     }).addTo(map);
 
     mapInstanceRef.current = map;
+
+    // Track map load
+    trackEvent(AnalyticsEventType.MAP_LOAD, 0, {
+      action: 'campus_map_loaded',
+      buildingCount: buildings.length
+    });
 
     // Disable context menu on the map for touchscreen kiosks
     const mapContainer = mapRef.current;

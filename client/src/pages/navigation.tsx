@@ -78,6 +78,30 @@ export default function Navigation() {
     setSelectedStart(KIOSK_LOCATION as any);
   }, []);
 
+  // Track building info modal open
+  useEffect(() => {
+    if (selectedBuilding) {
+      const startTime = performance.now();
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+        action: 'building_info_opened',
+        buildingId: selectedBuilding.id,
+        buildingName: selectedBuilding.name
+      });
+    }
+  }, [selectedBuilding]);
+
+  // Track floor plan viewer open
+  useEffect(() => {
+    if (selectedFloor) {
+      trackEvent(AnalyticsEventType.IMAGE_LOAD, 0, {
+        action: 'floor_plan_opened',
+        floorId: selectedFloor.id,
+        floorName: selectedFloor.name,
+        buildingId: selectedFloor.buildingId
+      });
+    }
+  }, [selectedFloor]);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const fromId = params.get('from');

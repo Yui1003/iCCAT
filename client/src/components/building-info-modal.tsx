@@ -7,6 +7,8 @@ import { Badge } from "./ui/badge";
 import type { Building, Staff, Floor } from "@shared/schema";
 import { canHaveDepartments, canHaveFloorPlan, isDescriptionOnly } from "@shared/schema";
 import { useState, useRef, useEffect } from "react";
+import { trackEvent } from "@/lib/analytics-tracker";
+import { AnalyticsEventType } from "@shared/analytics-schema";
 
 interface BuildingInfoModalProps {
   building: Building;
@@ -28,7 +30,25 @@ export default function BuildingInfoModal({
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [activeTab, setActiveTab] = useState("overview");
   const modalRef = useRef<HTMLDivElement>(null);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === "staff") {
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+        action: 'staff_directory_viewed',
+        buildingId: building.id,
+        staffCount: staff.length
+      });
+    } else if (value === "floors") {
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, {
+        action: 'floor_plans_viewed',
+        buildingId: building.id,
+        floorCount: floors.length
+      });
+    }
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.modal-header')) {
@@ -100,7 +120,7 @@ export default function BuildingInfoModal({
           </Button>
         </div>
 
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="w-full justify-start px-4 pt-4 bg-transparent">
             <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
             {!isDescriptionOnly(building.type as any) && (

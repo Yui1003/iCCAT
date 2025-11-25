@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { ScrollArea } from "./ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import type { Floor, Room } from "@shared/schema";
+import { trackEvent } from "@/lib/analytics-tracker";
+import { AnalyticsEventType } from "@shared/analytics-schema";
 
 interface FloorPlanViewerProps {
   floor: Floor;
@@ -38,9 +40,15 @@ export default function FloorPlanViewer({ floor, rooms = [], onClose, onPlaceRoo
       img.src = floor.floorPlanImage;
       img.onload = () => {
         setImage(img);
+        trackEvent(AnalyticsEventType.IMAGE_LOAD, 0, {
+          action: 'floor_plan_image_loaded',
+          floorId: floor.id,
+          floorName: floor.name,
+          imageSize: img.width + 'x' + img.height
+        });
       };
     }
-  }, [floor.floorPlanImage]);
+  }, [floor.floorPlanImage, floor.id, floor.name]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
