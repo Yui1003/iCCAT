@@ -21,6 +21,7 @@ interface GetDirectionsDialogProps {
   buildings: Building[];
   onClose: () => void;
   onNavigate: (startId: string, waypointIds: string[], mode: 'walking' | 'driving', vehicleType?: VehicleType) => void;
+  selectedRoom?: { id: string; name: string; buildingName: string } | null;
 }
 
 export default function GetDirectionsDialog({
@@ -28,7 +29,8 @@ export default function GetDirectionsDialog({
   destination,
   buildings,
   onClose,
-  onNavigate
+  onNavigate,
+  selectedRoom
 }: GetDirectionsDialogProps) {
   const [selectedStart, setSelectedStart] = React.useState<string>("kiosk");
   const [waypoints, setWaypoints] = React.useState<string[]>([]);
@@ -160,7 +162,7 @@ export default function GetDirectionsDialog({
               Get Directions
             </DialogTitle>
             <DialogDescription>
-              Plan your route to {destination?.name}. Add stops along the way if needed.
+              Plan your route to {selectedRoom ? selectedRoom.name : destination?.name}. Add stops along the way if needed.
             </DialogDescription>
           </DialogHeader>
 
@@ -250,7 +252,12 @@ export default function GetDirectionsDialog({
               </label>
               <div className="flex items-center gap-2 px-3 py-2 border rounded-md bg-muted text-foreground">
                 <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span>{destination?.name}</span>
+                <div className="flex flex-col">
+                  <span>{selectedRoom ? selectedRoom.name : destination?.name}</span>
+                  {selectedRoom && (
+                    <span className="text-xs text-muted-foreground">{selectedRoom.buildingName}</span>
+                  )}
+                </div>
               </div>
             </div>
 

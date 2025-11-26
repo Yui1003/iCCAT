@@ -58,6 +58,7 @@ export default function Navigation() {
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showRoomFinder, setShowRoomFinder] = useState(false);
   const [roomFinderFloorPlan, setRoomFinderFloorPlan] = useState<{ floor: Floor; rooms: Room[] } | null>(null);
+  const [selectedRoomForNav, setSelectedRoomForNav] = useState<{ id: string; name: string; buildingName: string } | null>(null);
 
   const { data: buildings = [] } = useQuery<Building[]>({
     queryKey: ['/api/buildings'],
@@ -1230,14 +1231,13 @@ export default function Navigation() {
         }
 
         // Check if routing to a specific room (outdoor-to-indoor navigation)
-        const selectedRoomData = (window as any).__selectedRoomForNavigation;
         let endpointName = directionsDestination.name;
         let endpointId = directionsDestination.id;
 
-        if (selectedRoomData?.roomId) {
-          const selectedRoom = indoorNodes.find(n => n.id === selectedRoomData.roomId && n.type === 'room');
+        if (selectedRoomForNav?.id) {
+          const selectedRoom = indoorNodes.find(n => n.id === selectedRoomForNav.id && n.type === 'room');
           if (selectedRoom) {
-            endpointName = selectedRoomData.roomName || selectedRoom.label || 'Room';
+            endpointName = selectedRoomForNav.name;
             endpointId = selectedRoom.id;
             
             // Build indoor graph for pathfinding within the building
@@ -1252,7 +1252,6 @@ export default function Navigation() {
             // Find path from an entrance to the selected room using indoor graph
             if (entranceNodes.length > 0) {
               const entrance = entranceNodes[0];
-              const roomFloor = floors.find(f => f.id === selectedRoom.floorId);
               
               // If on same floor, we can route from entrance to room
               if (entrance.floorId === selectedRoom.floorId) {
@@ -1274,9 +1273,6 @@ export default function Navigation() {
               }
             }
           }
-          
-          // Clear the selected room after storing it
-          delete (window as any).__selectedRoomForNavigation;
         }
 
         const { steps, totalDistance } = generateSmartSteps(
@@ -2075,7 +2071,11 @@ export default function Navigation() {
         open={showDirectionsDialog}
         destination={directionsDestination}
         buildings={buildings}
-        onClose={() => setShowDirectionsDialog(false)}
+        selectedRoom={selectedRoomForNav}
+        onClose={() => {
+          setShowDirectionsDialog(false);
+          setSelectedRoomForNav(null);
+        }}
         onNavigate={handleNavigateFromDialog}
       />
 
@@ -2188,27 +2188,19 @@ export default function Navigation() {
         onGetDirections={(buildingId, roomId) => {
           const building = buildings.find(b => b.id === buildingId);
           if (building) {
-            // If roomId provided, route to the room; otherwise route to building
+            setDirectionsDestination(building);
+            // If roomId provided, store room info for display
             if (roomId) {
-              // Store room destination for indoor routing
               const room = indoorNodes.find(n => n.id === roomId && n.type === 'room');
               if (room) {
-                const floor = floors.find(f => f.id === room.floorId);
-                // Set building as destination and mark that we want to route to a specific room
-                setDirectionsDestination(building);
-                // Store the room info in state for use during route calculation
-                (window as any).__selectedRoomForNavigation = {
-                  roomId,
-                  roomName: room.label,
-                  floorId: floor?.id,
-                  building
-                };
-                setShowDirectionsDialog(true);
+                setSelectedRoomForNav({
+                  id: roomId,
+                  name: room.label || 'Unnamed Room',
+                  buildingName: building.name
+                });
               }
-            } else {
-              setDirectionsDestination(building);
-              setShowDirectionsDialog(true);
             }
+            setShowDirectionsDialog(true);
           }
         }}
         onViewFloorPlan={(floor, floorRooms) => {
