@@ -120,7 +120,7 @@ export default function Navigation() {
       trackEvent(AnalyticsEventType.IMAGE_LOAD, Math.max(1, Math.round(duration)), {
         action: 'floor_plan_opened',
         floorId: selectedFloor.id,
-        floorName: selectedFloor.name,
+        floorName: selectedFloor.floorName || `Floor ${selectedFloor.floorNumber}`,
         buildingId: selectedFloor.buildingId
       });
     }
@@ -137,7 +137,7 @@ export default function Navigation() {
 
     if (fromId && toId && buildings.length > 0) {
       const startBuilding = fromId === 'kiosk' 
-        ? { ...KIOSK_LOCATION, description: null, departments: null, image: null, markerIcon: null }
+        ? { ...KIOSK_LOCATION, description: null, departments: null, image: null, markerIcon: null, polygon: null, polygonColor: null }
         : buildings.find(b => b.id === fromId);
       const endBuilding = buildings.find(b => b.id === toId);
 

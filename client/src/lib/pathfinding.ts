@@ -323,11 +323,14 @@ export function findShortestPath(
     return null;
   }
 
-  console.log(`[CLIENT] Closest start node: ${closestStartNode.distance.toFixed(1)}m away`);
-  console.log(`[CLIENT] Closest end node: ${closestEndNode.distance.toFixed(1)}m away`);
+  const startNodeData = closestStartNode as { key: string; distance: number };
+  const endNodeData = closestEndNode as { key: string; distance: number };
 
-  const startKey = closestStartNode.key;
-  const endKey = closestEndNode.key;
+  console.log(`[CLIENT] Closest start node: ${startNodeData.distance.toFixed(1)}m away`);
+  console.log(`[CLIENT] Closest end node: ${endNodeData.distance.toFixed(1)}m away`);
+
+  const startKey = startNodeData.key;
+  const endKey = endNodeData.key;
 
   // Use the path network directly without projections
   const augmentedNodes = new Map(nodes);
