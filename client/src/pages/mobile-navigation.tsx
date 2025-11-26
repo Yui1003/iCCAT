@@ -471,6 +471,57 @@ export default function MobileNavigation() {
   const currentPhase = route.phases[currentPhaseIndex];
   const phaseColor = currentPhase?.color || getPhaseColor(currentPhaseIndex);
 
+  // Calculate indoor path polyline for current floor
+  const getIndoorPathPolyline = () => {
+    if (!navigationPhase || navigationPhase !== 'indoor' || !currentIndoorFloor || !destinationRoom) {
+      return undefined;
+    }
+
+    // Find entrance node on current floor
+    const entranceNode = indoorNodes.find(n => n.floorId === currentIndoorFloor.id && n.type === 'entrance');
+    if (!entranceNode) {
+      console.log('[MOBILE] No entrance node found on floor', currentIndoorFloor.id);
+      return undefined;
+    }
+
+    // If already at destination floor, get waypoints from room paths
+    if (currentIndoorFloor.id === destinationRoom.floorId) {
+      const waypoints: Array<{ lat: number; lng: number }> = [];
+      
+      // Find a room path that connects entrance to destination
+      for (const path of roomPaths) {
+        if (path.floorId === currentIndoorFloor.id && path.waypoints && path.waypoints.length > 0) {
+          // Check if this path connects entrance to destination
+          const hasStart = path.waypoints.some((wp: any) => wp.nodeId === entranceNode.id || (wp.x === entranceNode.x && wp.y === entranceNode.y));
+          const hasEnd = path.waypoints.some((wp: any) => wp.nodeId === destinationRoom.id || (wp.x === destinationRoom.x && wp.y === destinationRoom.y));
+          
+          if (hasStart || hasEnd) {
+            // Convert waypoints to lat/lng format
+            (path.waypoints as Array<{x: number; y: number}>).forEach(wp => {
+              waypoints.push({ lat: wp.x, lng: wp.y });
+            });
+          }
+        }
+      }
+
+      if (waypoints.length > 0) {
+        console.log('[MOBILE] Found indoor path with', waypoints.length, 'waypoints');
+        return waypoints;
+      }
+
+      // Fallback: create simple path from entrance to destination
+      console.log('[MOBILE] Using fallback path from entrance to destination');
+      return [
+        { lat: entranceNode.x, lng: entranceNode.y },
+        { lat: destinationRoom.x, lng: destinationRoom.y }
+      ];
+    }
+
+    return undefined;
+  };
+
+  const indoorPathPolyline = getIndoorPathPolyline();
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header with Map Toggle */}
