@@ -57,7 +57,12 @@ export function buildIndoorGraph(
   // Create COMPLETE waypoint graph from all room paths
   roomPaths.forEach((path, pathIndex) => {
     const waypoints = path.waypoints as RoomPathWaypoint[];
-    if (!waypoints || waypoints.length < 1) return;
+    if (!waypoints || waypoints.length < 1) {
+      console.log(`[INDOOR-GRAPH] Path ${pathIndex} has no waypoints, skipping`);
+      return;
+    }
+
+    console.log(`[INDOOR-GRAPH] Processing path ${pathIndex} on floor ${path.floorId} with ${waypoints.length} waypoints`);
 
     // Create nodes for each waypoint
     const waypointNodes: string[] = [];
@@ -67,25 +72,26 @@ export function buildIndoorGraph(
       
       if (wp.nodeId) {
         nodeId = nodeKey(wp.nodeId, path.floorId);
+        console.log(`[INDOOR-GRAPH]   Waypoint ${wpIndex}: using nodeId ${nodeId}`);
       } else {
         // Merge waypoints at same coordinates
         const coordKey = `${wp.x.toFixed(1)},${wp.y.toFixed(1)}`;
         
         if (coordKeyToNodeId.has(coordKey)) {
           nodeId = coordKeyToNodeId.get(coordKey)!;
+          console.log(`[INDOOR-GRAPH]   Waypoint ${wpIndex}: REUSING merged node ${nodeId} at ${coordKey}`);
         } else {
           nodeId = `${path.floorId}:waypoint:${pathIndex}:${wpIndex}`;
           coordKeyToNodeId.set(coordKey, nodeId);
           
-          if (!nodes.has(nodeId)) {
-            nodes.set(nodeId, {
-              id: nodeId,
-              x: wp.x,
-              y: wp.y,
-              type: 'waypoint',
-              floorId: path.floorId
-            });
-          }
+          nodes.set(nodeId, {
+            id: nodeId,
+            x: wp.x,
+            y: wp.y,
+            type: 'waypoint',
+            floorId: path.floorId
+          });
+          console.log(`[INDOOR-GRAPH]   Waypoint ${wpIndex}: created new node ${nodeId} at ${coordKey}`);
         }
       }
       
@@ -116,6 +122,8 @@ export function buildIndoorGraph(
     ...rooms.map(r => ({ ...r, type: 'room', floorId: r.floorId, x: r.x, y: r.y })),
     ...indoorNodes.map(n => ({ ...n, type: n.type, floorId: n.floorId, x: n.x, y: n.y }))
   ];
+
+  console.log('[INDOOR-GRAPH] Found', allRoomsAndNodes.length, 'rooms and indoor nodes to potentially connect');
 
   allRoomsAndNodes.forEach((entity: any) => {
     const entityKey = nodeKey(entity.id, entity.floorId);
@@ -148,8 +156,11 @@ export function buildIndoorGraph(
     // Connect the entity to the closest waypoint if one exists
     if (closestWaypoint) {
       const meterDist = closestWaypoint.distance * pixelToMeterScale;
+      console.log(`[INDOOR-GRAPH] Connecting ${entity.type} (${entityKey}) to waypoint ${closestWaypoint.nodeKey} (distance: ${closestWaypoint.distance.toFixed(1)}px)`);
       edges.push({ from: entityKey, to: closestWaypoint.nodeKey, distance: meterDist, pathWaypoints: [] });
       edges.push({ from: closestWaypoint.nodeKey, to: entityKey, distance: meterDist, pathWaypoints: [] });
+    } else {
+      console.log(`[INDOOR-GRAPH] NO waypoint found for ${entity.type} (${entityKey}) on floor ${entity.floorId}`);
     }
   });
 

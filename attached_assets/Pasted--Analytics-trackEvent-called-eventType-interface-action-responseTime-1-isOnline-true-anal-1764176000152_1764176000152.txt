@@ -1,0 +1,105 @@
+[Analytics] trackEvent called: {eventType: 'interface_action', responseTime: 1, isOnline: true}
+analytics-tracker.ts:77 [Analytics] sendEvent: Attempting to send: {eventType: 'interface_action', url: '/api/analytics'}
+sw.js?1764175671273:124 [SW] ✓ Cached tile 41/248: https://a.tile.openstreetmap.org/18/219083/120472.png
+analytics-tracker.ts:84 [Analytics] sendEvent: Response received, status: 200
+analytics-tracker.ts:90 [Analytics] Event sent successfully: interface_action
+analytics-tracker.ts:94 [Analytics] Response body: {success: true}
+sw.js?1764175961032:124 [SW] ✓ Cached tile 81/248: https://b.tile.openstreetmap.org/19/438162/240949.png
+sw.js?1764175961032:124 [SW] ✓ Cached tile 101/248: https://c.tile.openstreetmap.org/19/438164/240939.png
+sw.js?1764175961032:124 [SW] ✓ Cached tile 121/248: https://c.tile.openstreetmap.org/19/438165/240944.png
+analytics-tracker.ts:39 [Analytics] trackEvent called: {eventType: 'interface_action', responseTime: 1, isOnline: true}
+analytics-tracker.ts:77 [Analytics] sendEvent: Attempting to send: {eventType: 'interface_action', url: '/api/analytics'}
+sw.js?1764175671273:124 [SW] ✓ Cached tile 61/248: https://c.tile.openstreetmap.org/18/219086/120468.png
+analytics-tracker.ts:84 [Analytics] sendEvent: Response received, status: 200
+analytics-tracker.ts:90 [Analytics] Event sent successfully: interface_action
+analytics-tracker.ts:94 [Analytics] Response body: {success: true}
+sw.js?1764175671273:124 [SW] ✓ Cached tile 81/248: https://b.tile.openstreetmap.org/19/438162/240949.png
+sw.js?1764175961032:124 [SW] ✓ Cached tile 141/248: https://c.tile.openstreetmap.org/19/438166/240949.png
+sw.js?1764175961032:124 [SW] ✓ Cached tile 161/248: https://a.tile.openstreetmap.org/19/438168/240939.png
+sw.js?1764175671273:124 [SW] ✓ Cached tile 101/248: https://c.tile.openstreetmap.org/19/438164/240939.png
+sw.js?1764175961032:124 [SW] ✓ Cached tile 181/248: https://a.tile.openstreetmap.org/19/438169/240944.png
+navigation.tsx:507 [CLIENT] Fetched fresh walking paths for route calculation: 27
+pathfinding.ts:258 [CLIENT] Building graph from 27 paths
+pathfinding.ts:285 [CLIENT] Final graph: 424 nodes, 870 edges
+pathfinding.ts:286 [CLIENT] ✅ NO node merging - using exact paths you created
+pathfinding.ts:298 [CLIENT] Pathfinding from "Your Location (Kiosk)" to "Engineering Building"
+pathfinding.ts:299 [CLIENT] Graph has 424 nodes and 870 edges
+pathfinding.ts:329 [CLIENT] Closest start node: 2.5m away
+pathfinding.ts:330 [CLIENT] Closest end node: 0.0m away
+pathfinding.ts:397 [CLIENT] Dijkstra found 6 key nodes
+pathfinding.ts:481 [CLIENT] ✅ Route found: Dijkstra 6 nodes → Expanded 6 waypoints → Final 7 with buildings
+sw.js?1764175961032:124 [SW] ✓ Cached tile 201/248: https://a.tile.openstreetmap.org/19/438170/240949.png
+sw.js?1764175671273:124 [SW] ✓ Cached tile 121/248: https://c.tile.openstreetmap.org/19/438165/240944.png
+sw.js?1764175961032:124 [SW] ✓ Cached tile 221/248: https://b.tile.openstreetmap.org/19/438172/240939.png
+sw.js?1764175961032:124 [SW] ✓ Cached tile 241/248: https://b.tile.openstreetmap.org/19/438173/240944.png
+sw.js?1764175961032:142 [SW] ========================================
+sw.js?1764175961032:143 [SW] Map tile pre-caching complete!
+sw.js?1764175961032:144 [SW] Success: 248/248 tiles
+sw.js?1764175961032:145 [SW] Failed: 0/248 tiles
+sw.js?1764175961032:146 [SW] ========================================
+sw.js?1764175671273:124 [SW] ✓ Cached tile 141/248: https://c.tile.openstreetmap.org/19/438166/240949.png
+sw.js?1764175671273:124 [SW] ✓ Cached tile 161/248: https://a.tile.openstreetmap.org/19/438168/240939.png
+navigation.tsx:1149 [INDOOR-PATH] Building graph...
+navigation.tsx:1150 [INDOOR-PATH] Total nodes: 20
+navigation.tsx:1151 [INDOOR-PATH] Total edges: 48
+navigation.tsx:1158 [INDOOR-PATH] Entrance key: f3d2d04a-b7d2-4588-9a21-e7f0feca606c:1614bb99-522b-49cd-b014-292a402e7fbc Dest key: f3d2d04a-b7d2-4588-9a21-e7f0feca606c:e3320f9a-0e8b-43bb-9b0f-5912640db677
+navigation.tsx:1159 [INDOOR-PATH] Entrance exists: true Dest exists: true
+navigation.tsx:1211 [INDOOR-PATH] Shortest path: ['f3d2d04a-b7d2-4588-9a21-e7f0feca606c:e3320f9a-0e8b-43bb-9b0f-5912640db677']
+navigation.tsx:1212 [INDOOR-PATH] Path length: 1
+navigation.tsx:1238 [INDOOR-PATH] Final polyline waypoints: 1 [{…}]
+analytics-tracker.ts:39 [Analytics] trackEvent called: {eventType: 'image_load', responseTime: 1, isOnline: true}
+analytics-tracker.ts:77 [Analytics] sendEvent: Attempting to send: {eventType: 'image_load', url: '/api/analytics'}
+analytics-tracker.ts:39 [Analytics] trackEvent called: {eventType: 'image_load', responseTime: 41, isOnline: true}
+analytics-tracker.ts:77 [Analytics] sendEvent: Attempting to send: {eventType: 'image_load', url: '/api/analytics'}
+sw.js?1764175671273:124 [SW] ✓ Cached tile 181/248: https://a.tile.openstreetmap.org/19/438169/240944.png
+sw.js?1764175671273:124 [SW] ✓ Cached tile 201/248: https://a.tile.openstreetmap.org/19/438170/240949.png
+sw.js?1764175671273:124 [SW] ✓ Cached tile 221/248: https://b.tile.openstreetmap.org/19/438172/240939.png
+sw.js?1764175961032:256 [SW] Activating new Service Worker...
+sw.js?1764175961032:257 [SW] Current caches: iccat-v5, iccat-data-v5
+sw.js?1764175961032:261 [SW] Found existing caches: iccat-v5, iccat-data-v5
+sw.js?1764175961032:271 [SW] Service Worker activated successfully!
+sw.js?1764175671273:124 [SW] ✓ Cached tile 241/248: https://b.tile.openstreetmap.org/19/438173/240944.png
+analytics-tracker.ts:84 [Analytics] sendEvent: Response received, status: 200
+analytics-tracker.ts:90 [Analytics] Event sent successfully: image_load
+analytics-tracker.ts:94 [Analytics] Response body: {success: true}
+analytics-tracker.ts:84 [Analytics] sendEvent: Response received, status: 200
+analytics-tracker.ts:90 [Analytics] Event sent successfully: image_load
+analytics-tracker.ts:94 [Analytics] Response body: {success: true}
+sw.js?1764175671273:142 [SW] ========================================
+sw.js?1764175671273:143 [SW] Map tile pre-caching complete!
+sw.js?1764175671273:144 [SW] Success: 248/248 tiles
+sw.js?1764175671273:145 [SW] Failed: 0/248 tiles
+sw.js?1764175671273:146 [SW] ========================================
+sw.js?1764175733665:77 [SW] Caching static assets
+sw.js?1764175733665:85 [SW] Pre-caching API endpoints for offline use
+sw.js?1764175671273:256 [SW] Activating new Service Worker...
+sw.js?1764175671273:257 [SW] Current caches: iccat-v5, iccat-data-v5
+sw.js?1764175671273:261 [SW] Found existing caches: iccat-v5, iccat-data-v5
+sw.js?1764175671273:271 [SW] Service Worker activated successfully!
+sw.js?1764175733665:91 [SW] Cached /api/buildings
+sw.js?1764175733665:91 [SW] Cached /api/drivepaths
+sw.js?1764175733665:91 [SW] Cached /api/walkpaths
+sw.js?1764175733665:91 [SW] Cached /api/events
+sw.js?1764175733665:91 [SW] Cached /api/staff
+sw.js?1764175733665:91 [SW] Cached /api/floors
+sw.js?1764175733665:91 [SW] Cached /api/rooms
+sw.js?1764175733665:104 [SW] API pre-caching complete: 7 succeeded, 0 failed
+sw.js?1764175733665:110 [SW] Starting map tile pre-caching for offline use...
+sw.js?1764175733665:47 [SW] Generating tile URLs for campus area...
+sw.js?1764175733665:48 [SW] Bounds: N=14.407, S=14.398, E=120.87, W=120.862
+sw.js?1764175733665:55 [SW] Zoom 16: tiles from (54770,30117) to (54771,30118)
+sw.js?1764175733665:55 [SW] Zoom 17: tiles from (109540,60234) to (109543,60237)
+sw.js?1764175733665:55 [SW] Zoom 18: tiles from (219081,120468) to (219086,120475)
+sw.js?1764175733665:55 [SW] Zoom 19: tiles from (438162,240937) to (438173,240951)
+sw.js?1764175733665:70 [SW] Generated 248 map tile URLs for pre-caching
+sw.js?1764175733665:112 [SW] Will attempt to cache 248 tiles
+sw.js?1764175733665:124 [SW] ✓ Cached tile 2/248: https://a.tile.openstreetmap.org/16/54770/30118.png
+sw.js?1764175733665:124 [SW] ✓ Cached tile 1/248: https://c.tile.openstreetmap.org/16/54770/30117.png
+sw.js?1764175733665:124 [SW] ✓ Cached tile 3/248: https://a.tile.openstreetmap.org/16/54771/30117.png
+sw.js?1764175733665:124 [SW] ✓ Cached tile 4/248: https://b.tile.openstreetmap.org/16/54771/30118.png
+sw.js?1764175733665:124 [SW] ✓ Cached tile 5/248: https://b.tile.openstreetmap.org/17/109540/60234.png
+sw.js?1764175733665:124 [SW] ✓ Cached tile 21/248: https://a.tile.openstreetmap.org/18/219081/120468.png
+sw.js?1764175733665:124 [SW] ✓ Cached tile 41/248: https://a.tile.openstreetmap.org/18/219083/120472.png
+sw.js?1764175733665:124 [SW] ✓ Cached tile 61/248: https://c.tile.openstreetmap.org/18/219086/120468.png
+sw.js?1764175733665:124 [SW] ✓ Cached tile 81/248: https://b.tile.openstreetmap.org/19/438162/240949.png
+sw.j
