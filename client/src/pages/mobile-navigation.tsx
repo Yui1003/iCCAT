@@ -334,7 +334,7 @@ export default function MobileNavigation() {
   // Draw route on map when it updates
   useEffect(() => {
     const drawRoute = () => {
-      console.log("Route drawing effect triggered", { mapReady: !!mapInstanceRef.current, routeExists: !!route, leafletExists: !!window.L });
+      console.log("Route drawing effect triggered", { mapReady: !!mapInstanceRef.current, routeExists: !!route, leafletExists: !!window.L, navigationPhase });
       
       if (!mapInstanceRef.current || !route || !window.L) {
         console.warn("Map not ready yet, retrying in 100ms...");
@@ -351,6 +351,12 @@ export default function MobileNavigation() {
           map.removeLayer(layer);
         }
       });
+
+      // Don't draw outdoor route markers if in indoor mode
+      if (navigationPhase === 'indoor') {
+        console.log("In indoor mode, skipping outdoor route drawing");
+        return;
+      }
 
       console.log("Drawing route with", route.phases.length, "phases");
       console.log("Full route data:", JSON.stringify(route, null, 2).substring(0, 500));
@@ -427,7 +433,7 @@ export default function MobileNavigation() {
     // Start drawing with a small delay to ensure map is ready
     const timer = setTimeout(drawRoute, 100);
     return () => clearTimeout(timer);
-  }, [route, currentPhaseIndex, completedPhases]);
+  }, [route, currentPhaseIndex, completedPhases, navigationPhase]);
 
   // Handle loading state
   if (isLoading) {
@@ -483,7 +489,7 @@ export default function MobileNavigation() {
           </h1>
           <p className="text-xs text-muted-foreground">
             {navigationPhase === 'indoor' 
-              ? `${currentIndoorFloor?.name || 'Floor'} - ${destinationRoom?.label || route.destinationRoomName || 'Destination'}`
+              ? `${currentIndoorFloor?.floorName || `Floor ${currentIndoorFloor?.floorNumber}` || 'Floor'} - ${destinationRoom?.label || route.destinationRoomName || 'Destination'}`
               : `Phase ${currentPhaseIndex + 1} of ${route.phases.length}`
             }
           </p>
@@ -498,8 +504,8 @@ export default function MobileNavigation() {
         </Button>
       </header>
 
-      {/* Main Layout: Map/FloorPlan + Navigation Panel */}
-      <main className="flex-1 flex w-full h-full overflow-hidden">
+      {/* Main Layout: Map/FloorPlan takes full space, Navigation Panel overlays on top */}
+      <main className="flex-1 relative w-full h-full overflow-hidden">
         {/* Map/FloorPlan Area */}
         {navigationPhase === 'outdoor' ? (
           <div
@@ -539,9 +545,9 @@ export default function MobileNavigation() {
           </div>
         )}
 
-        {/* Navigation Panel - Slides in/out */}
+        {/* Navigation Panel - Overlays and slides in/out from right */}
         <div
-          className={`flex flex-col border-l border-card-border bg-card transition-all duration-300 flex-shrink-0 z-10 overflow-hidden ${
+          className={`absolute right-0 top-0 bottom-0 flex flex-col border-l border-card-border bg-card transition-all duration-300 z-20 overflow-hidden ${
             showNavPanel ? 'w-80' : 'w-0'
           }`}
         >
