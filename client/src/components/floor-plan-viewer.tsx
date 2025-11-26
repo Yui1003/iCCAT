@@ -150,26 +150,27 @@ export default function FloorPlanViewer({ floor, rooms = [], onClose, onPlaceRoo
     if (!canvas || !container) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / zoom;
-    const y = (e.clientY - rect.top) / zoom;
+    const canvasX = e.clientX - rect.left;
+    const canvasY = e.clientY - rect.top;
+    
+    // Adjust for zoom
+    const x = canvasX / zoom;
+    const y = canvasY / zoom;
 
+    // Calculate exact rendering parameters (must match the draw function)
     const scale = Math.min(canvas.width / image.width, canvas.height / image.height) * 0.9;
-    const offsetX = (canvas.width / zoom - image.width * scale) / 2;
-    const offsetY = (canvas.height / zoom - image.height * scale) / 2;
+    const imgX = (canvas.width / zoom - image.width * scale) / 2;
+    const imgY = (canvas.height / zoom - image.height * scale) / 2;
 
     const clickedRoom = rooms.find(room => {
-      // room.x and room.y are now absolute pixel coordinates on the floor plan image
-      const roomX = offsetX + room.x * scale;
-      const roomY = offsetY + room.y * scale;
+      const roomX = imgX + room.x * scale;
+      const roomY = imgY + room.y * scale;
       const pinSize = 20 / zoom;
       
-      // Check if click is within the pin shape (circle at top + triangle at bottom)
-      // Top circle part of pin
       const circleCenterY = roomY - pinSize / 2;
       const distanceToCircle = Math.sqrt(Math.pow(x - roomX, 2) + Math.pow(y - circleCenterY, 2));
       if (distanceToCircle < pinSize / 2) return true;
       
-      // Bottom triangle part of pin (simple bounding box check)
       const triangleTop = roomY - pinSize / 4;
       const triangleBottom = roomY + pinSize;
       const triangleLeft = roomX - pinSize / 3;
@@ -184,7 +185,6 @@ export default function FloorPlanViewer({ floor, rooms = [], onClose, onPlaceRoo
 
     if (clickedRoom) {
       if (isAdminMode) {
-        // Admin mode: edit the room
         setEditingRoom(clickedRoom);
         setRoomFormData({
           name: clickedRoom.name,
@@ -194,29 +194,31 @@ export default function FloorPlanViewer({ floor, rooms = [], onClose, onPlaceRoo
           y: clickedRoom.y
         });
       } else {
-        // View-only mode: show room info
         setViewingRoomInfo(clickedRoom);
       }
     } else if (isAdminMode) {
-      // Admin mode: place new room marker with absolute pixel coordinates
-      const absoluteX = (x - offsetX) / scale;
-      const absoluteY = (y - offsetY) / scale;
+      // Reverse-engineer pixel coordinates: if roomX = imgX + room.x * scale, then room.x = (roomX - imgX) / scale
+      const roomPixelX = (x - imgX) / scale;
+      const roomPixelY = (y - imgY) / scale;
       
-      // Clamp to image bounds
-      const clampedX = Math.max(0, Math.min(image.width, absoluteX));
-      const clampedY = Math.max(0, Math.min(image.height, absoluteY));
+      const clampedX = Math.max(0, Math.min(image.width, roomPixelX));
+      const clampedY = Math.max(0, Math.min(image.height, roomPixelY));
       
-      if (clampedX >= 0 && clampedX <= image.width && clampedY >= 0 && clampedY <= image.height) {
-        setEditingRoom(null);
-        setRoomFormData({ name: "", type: "classroom", description: "", x: clampedX, y: clampedY });
-      }
+      setEditingRoom(null);
+      setRoomFormData({ name: "", type: "classroom", description: "", x: clampedX, y: clampedY });
     }
   };
 
   const handleSaveRoom = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!roomFormData.type || !roomFormData.name) {
+    if (!roomFormData.name.trim()) {
+      alert("Please enter a room name");
+      return;
+    }
+    
+    if (!roomFormData.type) {
+      alert("Please select a room type");
       return;
     }
     
