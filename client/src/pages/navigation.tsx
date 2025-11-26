@@ -1462,6 +1462,8 @@ export default function Navigation() {
       current = previous.get(current) || null;
     }
     
+    console.log('[FLOOR2] Shortest path found:', shortestPath.length, shortestPath);
+    
     // Extract waypoints
     let polylineWaypoints: Array<{ lat: number; lng: number }> = [
       { lat: entranceNode.x, lng: entranceNode.y }
@@ -1471,6 +1473,8 @@ export default function Navigation() {
       const fromNode = shortestPath[i];
       const toNode = shortestPath[i + 1];
       const edge = edges.find(e => e.from === fromNode && e.to === toNode);
+      
+      console.log(`[FLOOR2] Edge ${i}: ${fromNode} -> ${toNode}, has edge: ${!!edge}, waypoints: ${edge?.pathWaypoints?.length || 0}`);
       
       if (edge && edge.pathWaypoints && edge.pathWaypoints.length > 0) {
         for (let j = 1; j < edge.pathWaypoints.length; j++) {
@@ -1482,6 +1486,8 @@ export default function Navigation() {
     
     polylineWaypoints.push({ lat: targetNode.x, lng: targetNode.y });
     
+    console.log('[FLOOR2] Polyline waypoints before dedup:', polylineWaypoints.length, polylineWaypoints);
+    
     // Remove duplicates
     const seen = new Set<string>();
     polylineWaypoints = polylineWaypoints.filter(wp => {
@@ -1490,6 +1496,8 @@ export default function Navigation() {
       seen.add(key);
       return true;
     });
+    
+    console.log('[FLOOR2] Final polyline waypoints:', polylineWaypoints.length, polylineWaypoints);
     
     // Update route
     const isMultiFloor = roomFloor.id !== nextFloor.id;
@@ -1521,6 +1529,9 @@ export default function Navigation() {
       ...route,
       phases: [...(route.phases || []), indoorPhase]
     };
+    
+    console.log('[FLOOR2] Updated route phases count:', updatedRoute.phases?.length);
+    console.log('[FLOOR2] Last phase polyline:', indoorPhase.polyline?.length);
     
     setRoute(updatedRoute);
   };
