@@ -58,6 +58,14 @@ export default function FloorPlanNodePlacer({
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Auto-fit image to canvas on first load
+    if (scale === 1 && offset.x === 0 && offset.y === 0) {
+      const scaleX = canvas.width / imageRef.current.width;
+      const scaleY = canvas.height / imageRef.current.height;
+      const fitScale = Math.min(scaleX, scaleY) * 0.95; // 95% to leave margin
+      setScale(fitScale);
+    }
+
     ctx.save();
     ctx.translate(offset.x, offset.y);
     ctx.scale(scale, scale);
@@ -107,6 +115,8 @@ export default function FloorPlanNodePlacer({
           color = '#6B7280';
           label = 'H';
           break;
+        case 'room':
+          return; // Don't draw room nodes here, rooms are drawn separately
       }
 
       ctx.beginPath();

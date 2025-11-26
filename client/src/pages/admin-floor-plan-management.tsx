@@ -39,6 +39,7 @@ export default function AdminFloorPlanManagement() {
   const [nodeSelectedFloorId, setNodeSelectedFloorId] = useState<string>("");
   const [nodeType, setNodeType] = useState<string>("entrance");
   const [nodeLabel, setNodeLabel] = useState("");
+  const [nodeDescription, setNodeDescription] = useState("");
   const [x, setX] = useState("");
   const [y, setY] = useState("");
   const [connectedFloorIds, setConnectedFloorIds] = useState<string[]>([]);
@@ -225,6 +226,7 @@ export default function AdminFloorPlanManagement() {
       }
       setNodeType(node.type);
       setNodeLabel(node.label || "");
+      setNodeDescription(node.description || "");
       setX(node.x.toString());
       setY(node.y.toString());
       setConnectedFloorIds(node.connectedFloorIds || []);
@@ -234,6 +236,7 @@ export default function AdminFloorPlanManagement() {
       setNodeSelectedFloorId("");
       setNodeType("entrance");
       setNodeLabel("");
+      setNodeDescription("");
       setX("");
       setY("");
       setConnectedFloorIds([]);
@@ -248,6 +251,7 @@ export default function AdminFloorPlanManagement() {
     setNodeSelectedFloorId("");
     setNodeType("entrance");
     setNodeLabel("");
+    setNodeDescription("");
     setX("");
     setY("");
     setConnectedFloorIds([]);
@@ -264,6 +268,7 @@ export default function AdminFloorPlanManagement() {
       floorId: nodeSelectedFloorId,
       type: nodeType,
       label: nodeLabel,
+      description: nodeDescription || null,
       x: parseFloat(x),
       y: parseFloat(y),
       connectedFloorIds: connectedFloorIds
@@ -538,7 +543,8 @@ export default function AdminFloorPlanManagement() {
                           options={[
                             { id: 'entrance', name: 'Entrance' },
                             { id: 'stairway', name: 'Stairway' },
-                            { id: 'elevator', name: 'Elevator' }
+                            { id: 'elevator', name: 'Elevator' },
+                            { id: 'room', name: 'Room' }
                           ]}
                           selectedId={nodeType}
                           onSelect={setNodeType}
@@ -547,16 +553,29 @@ export default function AdminFloorPlanManagement() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="label">Label</Label>
+                        <Label htmlFor="label">{nodeType === 'room' ? 'Room Name' : 'Label'}</Label>
                         <Input
                           id="label"
                           value={nodeLabel}
                           onChange={(e) => setNodeLabel(e.target.value)}
-                          placeholder="e.g., Main Entrance"
+                          placeholder={nodeType === 'room' ? "e.g., Conference Room A" : "e.g., Main Entrance"}
                           data-testid="input-node-label"
                         />
                       </div>
                     </div>
+
+                    {nodeType === 'room' && (
+                      <div>
+                        <Label htmlFor="description">Room Description</Label>
+                        <Input
+                          id="description"
+                          value={nodeDescription}
+                          onChange={(e) => setNodeDescription(e.target.value)}
+                          placeholder="e.g., Main conference room with capacity for 50 people"
+                          data-testid="input-room-description"
+                        />
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -602,7 +621,7 @@ export default function AdminFloorPlanManagement() {
                           rooms={rooms.filter(r => r.floorId === nodeSelectedFloorId)}
                           existingNodes={indoorNodes.filter(n => n.floorId === nodeSelectedFloorId && n.id !== editingNode?.id)}
                           currentFloorId={nodeSelectedFloorId}
-                          className="h-[400px] border rounded-lg"
+                          className="h-[600px] border rounded-lg"
                         />
                       </div>
                     ) : nodeSelectedFloorId ? (
