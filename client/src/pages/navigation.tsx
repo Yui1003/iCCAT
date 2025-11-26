@@ -1122,18 +1122,77 @@ export default function Navigation() {
   };
 
   const handleReachedBuilding = () => {
-    if (!selectedEnd || !destinationRoom) return;
-    
-    // Switch to indoor phase
-    setNavigationPhase('indoor');
+    if (!selectedEnd || !destinationRoom || !route) return;
     
     // Load the floor plan for the building
     const buildingFloors = floors.filter(f => f.buildingId === selectedEnd.id);
     const roomFloor = buildingFloors.find(f => f.id === destinationRoom.floorId);
     
-    if (roomFloor) {
-      setSelectedFloor(roomFloor);
+    if (!roomFloor) return;
+    setSelectedFloor(roomFloor);
+    
+    // Find entrance node for indoor pathfinding
+    const entranceNode = indoorNodes.find(n => 
+      n.type === 'entrance' && n.floorId === roomFloor.id
+    );
+    
+    if (!entranceNode) return;
+    
+    // Generate indoor turn-by-turn directions
+    const indoorSteps: RouteStep[] = [
+      {
+        instruction: `Start at ${entranceNode.label || 'Entrance'}`,
+        distance: '0 m',
+        icon: 'navigation'
+      },
+      {
+        instruction: `Walk to ${destinationRoom.label || 'Room'}`,
+        distance: '0 m',
+        icon: 'arrow-right'
+      },
+      {
+        instruction: `Arrive at ${destinationRoom.label || 'Room'}`,
+        distance: '0 m',
+        icon: 'flag'
+      }
+    ];
+    
+    // Calculate approximate distance from entrance to room
+    const dx = destinationRoom.x - entranceNode.x;
+    const dy = destinationRoom.y - entranceNode.y;
+    const pixelDistance = Math.sqrt(dx * dx + dy * dy);
+    const scale = roomFloor.pixelToMeterScale || 1;
+    const meterDistance = Math.round(pixelDistance * scale);
+    
+    if (meterDistance > 0) {
+      indoorSteps[1].distance = `${meterDistance} m`;
     }
+    
+    // Create indoor phase
+    const indoorPhase: RoutePhase = {
+      mode: 'walking',
+      polyline: [
+        { lat: entranceNode.x, lng: entranceNode.y },
+        { lat: destinationRoom.x, lng: destinationRoom.y }
+      ],
+      steps: indoorSteps,
+      distance: `${meterDistance} m`,
+      startName: entranceNode.label || 'Entrance',
+      endName: destinationRoom.label || 'Room',
+      color: '#ef4444', // Red for indoor phase
+      phaseIndex: 1,
+      startId: selectedEnd.id,
+      endId: destinationRoom.id
+    };
+    
+    // Update route with indoor phase
+    const updatedRoute: NavigationRoute = {
+      ...route,
+      phases: [...(route.phases || []), indoorPhase]
+    };
+    
+    setRoute(updatedRoute);
+    setNavigationPhase('indoor');
   };
 
   const handleDoneNavigatingIndoor = () => {
@@ -2002,21 +2061,21 @@ export default function Navigation() {
                 )}
 
                 {/* Phase-specific Navigation Buttons */}
-                {navigationPhase === 'outdoor' && destinationRoom ? (
-                  <Button
-                    className="w-full mt-6"
-                    onClick={handleReachedBuilding}
-                    data-testid="button-reached-building"
-                  >
-                    Reached the Building
-                  </Button>
-                ) : navigationPhase === 'indoor' ? (
+                {navigationPhase === 'indoor' && destinationRoom ? (
                   <Button
                     className="w-full mt-6"
                     onClick={handleDoneNavigatingIndoor}
                     data-testid="button-done-navigating-indoor"
                   >
                     Done Navigating
+                  </Button>
+                ) : navigationPhase === 'outdoor' && destinationRoom ? (
+                  <Button
+                    className="w-full mt-6"
+                    onClick={handleReachedBuilding}
+                    data-testid="button-reached-building"
+                  >
+                    Reached the Building
                   </Button>
                 ) : (
                   <Button
@@ -2051,8 +2110,7 @@ export default function Navigation() {
                 }))}
               indoorNodes={indoorNodes}
               onClose={() => {
-                setNavigationPhase(null);
-                setSelectedFloor(null);
+                // Don't close sidebar - just close the floor plan viewer
               }}
               highlightedRoomId={destinationRoom?.id}
               showPathTo={destinationRoom}
