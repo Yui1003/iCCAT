@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
 import FloorPlanDrawingCanvas from "@/components/floor-plan-drawing-canvas";
+import SearchableSelect from "@/components/searchable-select";
 import type { Building, Floor, Room, IndoorNode, RoomPath, RoomPathWaypoint } from "@shared/schema";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
@@ -191,43 +191,26 @@ export default function AdminRoomPaths() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="building">Building</Label>
-                    <Select 
-                      value={selectedBuildingId} 
-                      onValueChange={(value) => {
+                    <SearchableSelect
+                      options={buildingsWithFloorPlans.map(b => ({ id: b.id, name: b.name }))}
+                      selectedId={selectedBuildingId}
+                      onSelect={(value) => {
                         setSelectedBuildingId(value);
                         setSelectedFloorId("");
                       }}
-                    >
-                      <SelectTrigger data-testid="select-building">
-                        <SelectValue placeholder="Select building" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {buildingsWithFloorPlans.map(building => (
-                          <SelectItem key={building.id} value={building.id}>
-                            {building.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Select building"
+                      testId="select-building"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="floor">Floor</Label>
-                    <Select 
-                      value={selectedFloorId} 
-                      onValueChange={setSelectedFloorId}
-                      disabled={!selectedBuildingId}
-                    >
-                      <SelectTrigger data-testid="select-floor">
-                        <SelectValue placeholder="Select floor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {floorsForBuilding.map(floor => (
-                          <SelectItem key={floor.id} value={floor.id}>
-                            {floor.floorName || `Floor ${floor.floorNumber}`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={floorsForBuilding.map(f => ({ id: f.id, name: f.floorName || `Floor ${f.floorNumber}` }))}
+                      selectedId={selectedFloorId}
+                      onSelect={setSelectedFloorId}
+                      placeholder="Select floor"
+                      testId="select-floor"
+                    />
                   </div>
                 </div>
 
@@ -245,15 +228,16 @@ export default function AdminRoomPaths() {
                   </div>
                   <div>
                     <Label htmlFor="pathType">Path Type</Label>
-                    <Select value={pathType} onValueChange={setPathType}>
-                      <SelectTrigger data-testid="select-path-type">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="hallway">Hallway</SelectItem>
-                        <SelectItem value="corridor">Corridor</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={[
+                        { id: 'hallway', name: 'Hallway' },
+                        { id: 'corridor', name: 'Corridor' }
+                      ]}
+                      selectedId={pathType}
+                      onSelect={setPathType}
+                      placeholder="Select path type"
+                      testId="select-path-type"
+                    />
                   </div>
                 </div>
 
