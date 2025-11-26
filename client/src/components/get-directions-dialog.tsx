@@ -166,7 +166,10 @@ export default function GetDirectionsDialog({
               Get Directions
             </DialogTitle>
             <DialogDescription>
-              Plan your route to {selectedRoom ? selectedRoom.name : destination?.name}. Add stops along the way if needed.
+              {selectedRoom 
+                ? `Get directions to ${selectedRoom.name}`
+                : `Plan your route to ${destination?.name}. Add stops along the way if needed.`
+              }
             </DialogDescription>
           </DialogHeader>
 
@@ -185,8 +188,8 @@ export default function GetDirectionsDialog({
               />
             </div>
 
-            {/* Waypoints */}
-            {waypoints.length > 0 && (
+            {/* Waypoints - Only show for building navigation, not room navigation */}
+            {!selectedRoom && waypoints.length > 0 && (
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-foreground">
                   Stops ({waypoints.length})
@@ -237,16 +240,18 @@ export default function GetDirectionsDialog({
               </div>
             )}
 
-            {/* Add Waypoint Button */}
-            <Button
-              variant="outline"
-              onClick={handleAddWaypoint}
-              className="w-full"
-              data-testid="button-add-waypoint"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Stop
-            </Button>
+            {/* Add Waypoint Button - Only show for building navigation, not room navigation */}
+            {!selectedRoom && (
+              <Button
+                variant="outline"
+                onClick={handleAddWaypoint}
+                className="w-full"
+                data-testid="button-add-waypoint"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Stop
+              </Button>
+            )}
 
             {/* Destination (read-only display) */}
             <div>
