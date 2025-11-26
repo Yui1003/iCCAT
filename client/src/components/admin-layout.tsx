@@ -52,14 +52,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: Layers,
     },
     {
-      title: "Room Paths",
-      url: "/admin/room-paths",
+      title: "Floor Plan Management",
+      url: "/admin/floor-plan-management",
       icon: DoorOpen,
-    },
-    {
-      title: "Indoor Nodes",
-      url: "/admin/indoor-nodes",
-      icon: Zap,
     },
     {
       title: "Staff",
