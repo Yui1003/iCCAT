@@ -106,6 +106,48 @@ export function buildIndoorGraph(
     }
   });
 
+  // Connect nodes (rooms, entrance, etc.) to nearby waypoints in paths (proximity-based)
+  // This allows Dijkstra to route through the path network
+  const connectionThreshold = 50; // pixels - connect if within this distance
+  
+  nodes.forEach((node, nodeid) => {
+    // Don't connect virtual waypoint nodes to other waypoints
+    if (node.type === 'waypoint') return;
+    
+    // Find nearby waypoints in room paths and create edges
+    roomPaths.forEach((path, pathIndex) => {
+      const waypoints = path.waypoints as RoomPathWaypoint[];
+      if (!waypoints || waypoints.length === 0) return;
+      
+      waypoints.forEach((wp, wpIndex) => {
+        const dist = pixelDistance(node.x, node.y, wp.x, wp.y);
+        
+        if (dist <= connectionThreshold && dist > 0) {
+          // Create virtual waypoint node if needed
+          const wpKey = wp.nodeId 
+            ? nodeKey(wp.nodeId, path.floorId)
+            : `${path.floorId}:waypoint:${pathIndex}:${wpIndex}`;
+          
+          // Ensure waypoint node exists in graph
+          if (!nodes.has(wpKey) && !wp.nodeId) {
+            nodes.set(wpKey, {
+              id: wpKey,
+              x: wp.x,
+              y: wp.y,
+              type: 'waypoint',
+              floorId: path.floorId
+            });
+          }
+          
+          // Create bidirectional edge from node to waypoint
+          const edgeDist = dist * pixelToMeterScale;
+          edges.push({ from: nodeid, to: wpKey, distance: edgeDist });
+          edges.push({ from: wpKey, to: nodeid, distance: edgeDist });
+        }
+      });
+    });
+  });
+
   // Add vertical connections (stairways/elevators between floors)
   indoorNodes.forEach(node => {
     if ((node.type === 'stairway' || node.type === 'elevator') && (node.connectedFloorIds?.length ?? 0) > 0) {
