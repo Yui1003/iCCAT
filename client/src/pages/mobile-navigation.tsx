@@ -467,22 +467,36 @@ export default function MobileNavigation() {
       return undefined;
     }
 
-    // Find entrance and target nodes on current floor
-    const entranceNode = floorIndoorNodes.find(n => n.type === 'entrance');
+    // Find start node: entrance on first floor, or stairway/elevator on intermediate floors
+    let startNode: IndoorNode | undefined;
+    const isFirstFloor = currentIndoorFloor.id === floorsInRoute[0]?.id;
     
-    // Target: destination room if on same floor, otherwise stairway/elevator
+    if (isFirstFloor) {
+      startNode = floorIndoorNodes.find(n => n.type === 'entrance');
+    } else {
+      // On intermediate floors, start from the stairway/elevator we just entered from
+      startNode = floorIndoorNodes.find(n => n.type === 'stairway' || n.type === 'elevator');
+    }
+    
+    // Target: destination room if on same floor, otherwise stairway/elevator to next floor
     let targetNode: IndoorNode | undefined;
     const isDestinationFloor = currentIndoorFloor.id === destinationRoom.floorId;
     
     if (isDestinationFloor) {
       targetNode = destinationRoom;
     } else {
-      // Find stairway or elevator to go to next floor
-      targetNode = floorIndoorNodes.find(n => n.type === 'stairway' || n.type === 'elevator');
+      // Find stairway or elevator to go to next floor (and it should be different from startNode)
+      targetNode = floorIndoorNodes.find(n => 
+        (n.type === 'stairway' || n.type === 'elevator') && n.id !== startNode?.id
+      );
+      // If no different stairway found, use any stairway/elevator
+      if (!targetNode) {
+        targetNode = floorIndoorNodes.find(n => n.type === 'stairway' || n.type === 'elevator');
+      }
     }
 
-    if (!entranceNode || !targetNode) {
-      console.log('[MOBILE-PATH] Missing entrance or target node:', { entranceNode: !!entranceNode, targetNode: !!targetNode });
+    if (!startNode || !targetNode) {
+      console.log('[MOBILE-PATH] Missing start or target node:', { startNode: !!startNode, targetNode: !!targetNode, isFirstFloor });
       return undefined;
     }
 
