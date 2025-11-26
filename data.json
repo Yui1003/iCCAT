@@ -4566,58 +4566,45 @@
       "y": 459,
       "connectedFloorIds": [],
       "label": "Main Entrance"
-    }
-  ],
-  "roomPaths": [
+    },
     {
-      "id": "68cd5234-0e12-478b-90b7-687c0c7b89c6",
+      "id": "e3320f9a-0e8b-43bb-9b0f-5912640db677",
       "floorId": "f3d2d04a-b7d2-4588-9a21-e7f0feca606c",
-      "name": "HALLWAY",
-      "waypoints": [
-        {
-          "x": 248,
-          "y": 429.8984375
-        },
-        {
-          "x": 303,
-          "y": 431.8984375
-        },
-        {
-          "x": 344,
-          "y": 431.8984375
-        },
-        {
-          "x": 352,
-          "y": 390.8984375
-        },
-        {
-          "x": 352,
-          "y": 338.8984375
-        },
-        {
-          "x": 357,
-          "y": 283.8984375
-        },
-        {
-          "x": 351,
-          "y": 210.8984375
-        },
-        {
-          "x": 354,
-          "y": 180.8984375
-        },
-        {
-          "x": 290,
-          "y": 190.8984375
-        },
-        {
-          "x": 251,
-          "y": 187.8984375
-        }
-      ],
-      "pathType": "hallway"
+      "type": "room",
+      "x": 284,
+      "y": 185,
+      "connectedFloorIds": [],
+      "label": "Kitchen"
+    },
+    {
+      "id": "f2891b7f-8a62-4c1e-b3fe-1ad12746b89f",
+      "floorId": "f3d2d04a-b7d2-4588-9a21-e7f0feca606c",
+      "type": "room",
+      "x": 252,
+      "y": 388,
+      "connectedFloorIds": [],
+      "label": "Bath"
+    },
+    {
+      "id": "3f067c95-8ced-405c-b54f-b407d9e54963",
+      "floorId": "f3d2d04a-b7d2-4588-9a21-e7f0feca606c",
+      "type": "room",
+      "x": 418,
+      "y": 438,
+      "connectedFloorIds": [],
+      "label": "Bedroom"
+    },
+    {
+      "id": "b4f7bddc-78e3-49f2-b729-13b985ea0596",
+      "floorId": "f3d2d04a-b7d2-4588-9a21-e7f0feca606c",
+      "type": "entrance",
+      "x": 336,
+      "y": 129,
+      "connectedFloorIds": [],
+      "label": "123"
     }
   ],
+  "roomPaths": [],
   "analytics": [
     {
       "id": "01e90435-066d-49e6-9d4f-91f750c04674",

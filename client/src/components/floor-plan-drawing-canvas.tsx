@@ -136,7 +136,9 @@ export default function FloorPlanDrawingCanvas({
           label = 'H';
           break;
         case 'room':
-          return;
+          color = '#3B82F6';
+          label = 'R';
+          break;
       }
 
       ctx.beginPath();
