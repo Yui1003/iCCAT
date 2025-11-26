@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
-import type { Building, Floor, Room } from "@shared/schema";
+import type { Building, Floor } from "@shared/schema";
 import { poiTypes, canHaveFloorPlan, floorPlanEligibleTypes } from "@shared/schema";
 import FloorPlanViewer from "@/components/floor-plan-viewer";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -34,10 +34,6 @@ export default function AdminFloorPlans() {
     queryKey: ['/api/floors']
   });
 
-  const { data: rooms = [] } = useQuery<Room[]>({
-    queryKey: ['/api/rooms']
-  });
-
   const createFloor = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/floors', data),
     onSuccess: async () => {
@@ -59,36 +55,12 @@ export default function AdminFloorPlans() {
     },
   });
 
-  const createRoom = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', '/api/rooms', data),
-    onSuccess: async () => {
-      await invalidateEndpointCache('/api/rooms', queryClient);
-      toast({ title: "Room created successfully" });
-    },
-  });
-
-  const updateRoom = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest('PUT', `/api/rooms/${id}`, data),
-    onSuccess: async () => {
-      await invalidateEndpointCache('/api/rooms', queryClient);
-      toast({ title: "Room updated successfully" });
-    },
-  });
-
   const deleteFloor = useMutation({
     mutationFn: (id: string) => apiRequest('DELETE', `/api/floors/${id}`, null),
     onSuccess: async () => {
       await invalidateEndpointCache('/api/floors', queryClient);
       toast({ title: "Floor deleted successfully" });
       setDeletingFloor(null);
-    },
-  });
-
-  const deleteRoom = useMutation({
-    mutationFn: (id: string) => apiRequest('DELETE', `/api/rooms/${id}`, null),
-    onSuccess: async () => {
-      await invalidateEndpointCache('/api/rooms', queryClient);
-      toast({ title: "Room deleted successfully" });
     },
   });
 
@@ -101,10 +73,6 @@ export default function AdminFloorPlans() {
 
   const buildingFloors = selectedBuildingId
     ? floors.filter(f => f.buildingId === selectedBuildingId)
-    : [];
-
-  const floorRooms = selectedFloor
-    ? rooms.filter(r => r.floorId === selectedFloor.id)
     : [];
 
   const handleOpenFloorDialog = (floor?: Floor) => {
@@ -272,7 +240,7 @@ export default function AdminFloorPlans() {
                               {floor.floorName || `Floor ${floor.floorNumber}`}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              Level {floor.floorNumber} • {rooms.filter(r => r.floorId === floor.id).length} rooms
+                              Level {floor.floorNumber}
                             </p>
                           </div>
                         </div>
@@ -320,36 +288,19 @@ export default function AdminFloorPlans() {
 
           <div>
             <Card className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Floor Plan Editor</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">Floor Plan Viewer</h2>
               <div className="text-center py-8">
                 <p className="text-sm text-muted-foreground mb-2">
-                  Click on a floor plan to view and edit
+                  Click on a floor plan to view
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Add room markers using the "Add Room" button
+                  Rooms are created via Indoor Nodes in Floor Plan Management
                 </p>
               </div>
             </Card>
           </div>
         </div>
       </div>
-
-      {selectedFloor && (
-        <FloorPlanViewer
-          floor={selectedFloor}
-          rooms={floorRooms}
-          onClose={() => setSelectedFloor(null)}
-          onCreateRoom={(data) => {
-            createRoom.mutate(data);
-          }}
-          onUpdateRoom={(id, data) => {
-            updateRoom.mutate({ id, data });
-          }}
-          onDeleteRoom={(id) => {
-            deleteRoom.mutate(id);
-          }}
-        />
-      )}
 
       <AlertDialog open={!!deletingFloor} onOpenChange={(open) => !open && setDeletingFloor(null)}>
         <AlertDialogContent>

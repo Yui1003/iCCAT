@@ -47,6 +47,7 @@ function Router() {
       <Route path="/admin/paths" component={AdminPaths} />
       <Route path="/admin/floor-plans" component={AdminFloorPlans} />
       <Route path="/admin/floor-plan-management" component={AdminFloorPlanManagement} />
+      <Route path="/admin/room-paths" component={AdminFloorPlanManagement} />
       <Route path="/admin/staff" component={AdminStaff} />
       <Route path="/admin/events" component={AdminEvents} />
       <Route path="/admin/settings" component={AdminSettings} />
