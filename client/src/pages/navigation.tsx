@@ -1393,16 +1393,25 @@ export default function Navigation() {
     }
     
     try {
-      console.log('[FLOOR2-START] Finding entrance on floor:', nextFloor.floorName);
-      
-      // Find entrance node on next floor
-      const entranceNode = indoorNodes.find(n => 
-        n.type === 'entrance' && n.floorId === nextFloor.id
+      // On next floor, the stairway/elevator IS the entrance point (connecting floors)
+      const staircaseOnCurrentFloor = indoorNodes.find(n => 
+        (n.type === 'stairway' || n.type === 'elevator') && n.floorId === currentIndoorFloor.id
       );
       
-      console.log('[FLOOR2-START] Entrance node found:', !!entranceNode, entranceNode?.label);
+      console.log('[FLOOR2-START] Current floor stairway:', staircaseOnCurrentFloor?.label);
+      if (!staircaseOnCurrentFloor) {
+        console.log('[FLOOR2-ERROR] No stairway on current floor');
+        return;
+      }
+      
+      // Find the same stairway on the next floor (same ID, different coordinates)
+      const entranceNode = indoorNodes.find(n => 
+        n.id === staircaseOnCurrentFloor.id && n.floorId === nextFloor.id
+      );
+      
+      console.log('[FLOOR2-START] Entrance node on next floor found:', !!entranceNode, entranceNode?.label);
       if (!entranceNode) {
-        console.log('[FLOOR2-ERROR] No entrance on next floor');
+        console.log('[FLOOR2-ERROR] Stairway does not connect to next floor');
         return;
       }
       
