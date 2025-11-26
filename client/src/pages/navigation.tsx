@@ -2103,14 +2103,16 @@ export default function Navigation() {
         }}
       />
 
-      {/* Floor Plan Viewer from Room Finder */}
-      {roomFinderFloorPlan && (
-        <FloorPlanViewer
-          floor={roomFinderFloorPlan.floor}
-          rooms={roomFinderFloorPlan.rooms}
-          onClose={() => setRoomFinderFloorPlan(null)}
-        />
-      )}
+      {/* Floor Plan Viewer from Room Finder - Wrapped in Dialog */}
+      <Dialog open={!!roomFinderFloorPlan} onOpenChange={(isOpen) => !isOpen && setRoomFinderFloorPlan(null)}>
+        <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0" data-testid="dialog-floor-plan-from-room-finder">
+          <FloorPlanViewer
+            floor={roomFinderFloorPlan?.floor!}
+            rooms={roomFinderFloorPlan?.rooms || []}
+            onClose={() => setRoomFinderFloorPlan(null)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
