@@ -558,7 +558,7 @@ export default function Navigation() {
         });
 
         return {
-          start,
+          start: { ...start, polygon: null, polygonColor: null } as Building,
           end,
           mode: 'driving',
           vehicleType,
@@ -572,7 +572,11 @@ export default function Navigation() {
               steps,
               distance: totalDistance,
               startName: start.name,
-              endName: end.name
+              endName: end.name,
+              color: '#3B82F6',
+              phaseIndex: 0,
+              startId: (start as any).id,
+              endId: end.id
             }
           ]
         };
@@ -659,7 +663,7 @@ export default function Navigation() {
       });
 
       return {
-        start,
+        start: { ...start, polygon: null, polygonColor: null } as Building,
         end,
         mode: 'driving',
         vehicleType,
@@ -674,7 +678,11 @@ export default function Navigation() {
             steps: drivingPhase.steps,
             distance: drivingPhase.totalDistance,
             startName: start.name,
-            endName: parkingLocation.name
+            endName: parkingLocation.name,
+            color: '#3B82F6',
+            phaseIndex: 0,
+            startId: (start as any).id,
+            endId: parkingLocation.id
           },
           {
             mode: 'walking',
@@ -682,7 +690,11 @@ export default function Navigation() {
             steps: walkingPhase.steps,
             distance: walkingPhase.totalDistance,
             startName: parkingLocation.name,
-            endName: end.name
+            endName: end.name,
+            color: '#10B981',
+            phaseIndex: 1,
+            startId: parkingLocation.id,
+            endId: end.id
           }
         ]
       };
@@ -851,7 +863,7 @@ export default function Navigation() {
         );
 
         setRoute({
-          start: selectedStart,
+          start: { ...selectedStart, polygon: null, polygonColor: null } as Building,
           end: selectedEnd,
           mode: fallbackMode,
           polyline: routePolyline,
@@ -920,7 +932,7 @@ export default function Navigation() {
       );
 
       setRoute({
-        start: selectedStart,
+        start: { ...selectedStart, polygon: null, polygonColor: null } as Building,
         end: selectedEnd,
         mode,
         polyline: routePolyline,
