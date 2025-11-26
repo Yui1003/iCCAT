@@ -2149,7 +2149,7 @@ export default function Navigation() {
         />
       )}
 
-      {selectedFloor && (
+      {selectedFloor && navigationPhase !== 'indoor' && (
         <FloorPlanViewer
           floor={selectedFloor}
           rooms={indoorNodes
