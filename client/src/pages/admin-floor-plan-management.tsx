@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Route as RouteIcon, Plus, Pencil, Trash2, Zap } from "lucide-react";
+import { Route as RouteIcon, Plus, Pencil, Trash2, Zap, ChevronRight, Building2, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -26,15 +26,20 @@ export default function AdminFloorPlanManagement() {
   const [deletingPath, setDeletingPath] = useState<RoomPath | null>(null);
   const [deletingNode, setDeletingNode] = useState<IndoorNode | null>(null);
 
-  // Path states
+  // Path dialog states
   const [pathName, setPathName] = useState("");
   const [pathType, setPathType] = useState<string>("hallway");
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>("");
   const [selectedFloorId, setSelectedFloorId] = useState<string>("");
   const [waypoints, setWaypoints] = useState<RoomPathWaypoint[]>([]);
-  const [pathSearchTerm, setPathSearchTerm] = useState("");
 
-  // Node states
+  // List view navigation states
+  const [pathsSelectedBuildingId, setPathsSelectedBuildingId] = useState<string | null>(null);
+  const [pathsSelectedFloorId, setPathsSelectedFloorId] = useState<string | null>(null);
+  const [nodesSelectedBuildingId, setNodesSelectedBuildingId] = useState<string | null>(null);
+  const [nodesSelectedFloorId, setNodesSelectedFloorId] = useState<string | null>(null);
+
+  // Node dialog states
   const [nodeSelectedBuildingId, setNodeSelectedBuildingId] = useState<string>("");
   const [nodeSelectedFloorId, setNodeSelectedFloorId] = useState<string>("");
   const [nodeType, setNodeType] = useState<string>("entrance");
@@ -43,7 +48,6 @@ export default function AdminFloorPlanManagement() {
   const [x, setX] = useState("");
   const [y, setY] = useState("");
   const [connectedFloorIds, setConnectedFloorIds] = useState<string[]>([]);
-  const [nodeSearchTerm, setNodeSearchTerm] = useState("");
 
   const { toast } = useToast();
 
@@ -71,6 +75,17 @@ export default function AdminFloorPlanManagement() {
   const buildingsWithFloorPlans = buildings.filter(b => {
     const buildingFloors = floors.filter(f => f.buildingId === b.id);
     return buildingFloors.some(f => f.floorPlanImage);
+  });
+
+  // Buildings with paths/nodes for list views
+  const buildingsWithPaths = buildings.filter(b => {
+    const buildingFloors = floors.filter(f => f.buildingId === b.id);
+    return buildingFloors.some(f => roomPaths.some(p => p.floorId === f.id));
+  });
+
+  const buildingsWithNodes = buildings.filter(b => {
+    const buildingFloors = floors.filter(f => f.buildingId === b.id);
+    return buildingFloors.some(f => indoorNodes.some(n => n.floorId === f.id));
   });
 
   const floorsForBuilding = floors.filter(f => 
@@ -188,6 +203,8 @@ export default function AdminFloorPlanManagement() {
     setPathName("");
     setPathType("hallway");
     setWaypoints([]);
+    setSelectedBuildingId("");
+    setSelectedFloorId("");
   };
 
   const handlePathSubmit = (e: React.FormEvent) => {
@@ -288,19 +305,21 @@ export default function AdminFloorPlanManagement() {
     return `${building?.name || 'Unknown'} - ${floor.floorName || `Floor ${floor.floorNumber}`}`;
   };
 
-  const filteredPaths = roomPaths.filter(path => {
-    if (!pathSearchTerm) return true;
-    const searchLower = pathSearchTerm.toLowerCase();
-    return (path.name?.toLowerCase().includes(searchLower)) ||
-           (path.pathType?.toLowerCase().includes(searchLower));
-  });
+  const floorsForPathsBuilding = pathsSelectedBuildingId 
+    ? floors.filter(f => f.buildingId === pathsSelectedBuildingId)
+    : [];
 
-  const filteredNodes = indoorNodes.filter(node => {
-    if (!nodeSearchTerm) return true;
-    const searchLower = nodeSearchTerm.toLowerCase();
-    return (node.label?.toLowerCase().includes(searchLower)) ||
-           (node.type?.toLowerCase().includes(searchLower));
-  });
+  const pathsForSelectedFloor = pathsSelectedFloorId 
+    ? roomPaths.filter(p => p.floorId === pathsSelectedFloorId)
+    : [];
+
+  const floorsForNodesBuilding = nodesSelectedBuildingId 
+    ? floors.filter(f => f.buildingId === nodesSelectedBuildingId)
+    : [];
+
+  const nodesForSelectedFloor = nodesSelectedFloorId 
+    ? indoorNodes.filter(n => n.floorId === nodesSelectedFloorId)
+    : [];
 
   return (
     <AdminLayout>
@@ -316,15 +335,9 @@ export default function AdminFloorPlanManagement() {
             <TabsTrigger value="nodes">Indoor Nodes</TabsTrigger>
           </TabsList>
 
+          {/* Paths Tab */}
           <TabsContent value="paths" className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
-              <Input
-                placeholder="Search paths..."
-                value={pathSearchTerm}
-                onChange={(e) => setPathSearchTerm(e.target.value)}
-                className="max-w-sm"
-                data-testid="input-search-paths"
-              />
+            <div className="flex justify-end">
               <Dialog open={pathDialogOpen} onOpenChange={(open) => open ? handleOpenPathDialog() : handleClosePathDialog()}>
                 <DialogTrigger asChild>
                   <Button data-testid="button-add-room-path">
@@ -433,40 +446,92 @@ export default function AdminFloorPlanManagement() {
               </Dialog>
             </div>
 
-            {filteredPaths.length === 0 ? (
-              <Card className="p-8 text-center">
-                <RouteIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No Indoor Paths Yet</h3>
-                <p className="text-muted-foreground mb-4">Create paths to enable room-level navigation</p>
-              </Card>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredPaths.map(path => (
-                  <Card key={path.id} className="p-4" data-testid={`card-room-path-${path.id}`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold truncate">{path.name || 'Unnamed Path'}</h3>
-                        <p className="text-sm text-muted-foreground truncate">{getFloorName(path.floorId)}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs px-2 py-1 bg-muted rounded">{path.pathType}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {(path.waypoints as RoomPathWaypoint[])?.length || 0} waypoints
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => handleOpenPathDialog(path)} data-testid={`button-edit-path-${path.id}`}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => setDeletingPath(path)} data-testid={`button-delete-path-${path.id}`}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+            {/* Hierarchical List View for Paths */}
+            <div className="grid gap-4 lg:grid-cols-3">
+              {/* Buildings Column */}
+              <div>
+                <h3 className="font-semibold mb-3 text-sm">Buildings</h3>
+                <div className="space-y-2">
+                  {buildingsWithPaths.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No buildings with paths</p>
+                  ) : (
+                    buildingsWithPaths.map(building => (
+                      <Button
+                        key={building.id}
+                        variant={pathsSelectedBuildingId === building.id ? "default" : "outline"}
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setPathsSelectedBuildingId(building.id);
+                          setPathsSelectedFloorId(null);
+                        }}
+                        data-testid={`button-select-paths-building-${building.id}`}
+                      >
+                        <Building2 className="w-4 h-4 mr-2" />
+                        <span className="truncate">{building.name}</span>
+                        <ChevronRight className="w-4 h-4 ml-auto" />
+                      </Button>
+                    ))
+                  )}
+                </div>
               </div>
-            )}
+
+              {/* Floors Column */}
+              <div>
+                <h3 className="font-semibold mb-3 text-sm">Floors</h3>
+                <div className="space-y-2">
+                  {!pathsSelectedBuildingId ? (
+                    <p className="text-xs text-muted-foreground">Select a building</p>
+                  ) : floorsForPathsBuilding.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No floors in this building</p>
+                  ) : (
+                    floorsForPathsBuilding.map(floor => (
+                      <Button
+                        key={floor.id}
+                        variant={pathsSelectedFloorId === floor.id ? "default" : "outline"}
+                        className="w-full justify-start"
+                        onClick={() => setPathsSelectedFloorId(floor.id)}
+                        data-testid={`button-select-paths-floor-${floor.id}`}
+                      >
+                        <MapPin className="w-4 h-4 mr-2" />
+                        <span className="truncate">{floor.floorName || `Floor ${floor.floorNumber}`}</span>
+                        <ChevronRight className="w-4 h-4 ml-auto" />
+                      </Button>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Paths Column */}
+              <div>
+                <h3 className="font-semibold mb-3 text-sm">Paths</h3>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {!pathsSelectedFloorId ? (
+                    <p className="text-xs text-muted-foreground">Select a floor</p>
+                  ) : pathsForSelectedFloor.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No paths on this floor</p>
+                  ) : (
+                    pathsForSelectedFloor.map(path => (
+                      <Card key={path.id} className="p-3" data-testid={`card-room-path-${path.id}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-sm font-medium truncate">{path.name || 'Unnamed'}</h4>
+                            <p className="text-xs text-muted-foreground">{(path.waypoints as RoomPathWaypoint[])?.length || 0} waypoints</p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button size="icon" variant="ghost" onClick={() => handleOpenPathDialog(path)} className="h-7 w-7" data-testid={`button-edit-path-${path.id}`}>
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={() => setDeletingPath(path)} className="h-7 w-7" data-testid={`button-delete-path-${path.id}`}>
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
 
             <AlertDialog open={!!deletingPath} onOpenChange={() => setDeletingPath(null)}>
               <AlertDialogContent>
@@ -486,15 +551,9 @@ export default function AdminFloorPlanManagement() {
             </AlertDialog>
           </TabsContent>
 
+          {/* Nodes Tab */}
           <TabsContent value="nodes" className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
-              <Input
-                placeholder="Search nodes..."
-                value={nodeSearchTerm}
-                onChange={(e) => setNodeSearchTerm(e.target.value)}
-                className="max-w-sm"
-                data-testid="input-search-nodes"
-              />
+            <div className="flex justify-end">
               <Dialog open={nodeDialogOpen} onOpenChange={(open) => open ? handleOpenNodeDialog() : handleCloseNodeDialog()}>
                 <DialogTrigger asChild>
                   <Button data-testid="button-add-indoor-node">
@@ -669,52 +728,99 @@ export default function AdminFloorPlanManagement() {
               </Dialog>
             </div>
 
-            {filteredNodes.length === 0 ? (
-              <Card className="p-8 text-center">
-                <Zap className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No Indoor Nodes Yet</h3>
-                <p className="text-muted-foreground mb-4">Create nodes to enable multi-floor and entry point navigation</p>
-              </Card>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredNodes.map(node => (
-                  <Card key={node.id} className="p-4" data-testid={`card-indoor-node-${node.id}`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold">{node.label || node.type}</h3>
-                        <p className="text-sm text-muted-foreground">{getFloorName(node.floorId)}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs px-2 py-1 bg-muted rounded capitalize">{node.type}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({node.x}, {node.y})
-                          </span>
-                        </div>
-                        {node.connectedFloorIds && node.connectedFloorIds.length > 0 && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Connects to {node.connectedFloorIds.length} floor(s)
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => handleOpenNodeDialog(node)} data-testid={`button-edit-node-${node.id}`}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => setDeletingNode(node)} data-testid={`button-delete-node-${node.id}`}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+            {/* Hierarchical List View for Nodes */}
+            <div className="grid gap-4 lg:grid-cols-3">
+              {/* Buildings Column */}
+              <div>
+                <h3 className="font-semibold mb-3 text-sm">Buildings</h3>
+                <div className="space-y-2">
+                  {buildingsWithNodes.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No buildings with nodes</p>
+                  ) : (
+                    buildingsWithNodes.map(building => (
+                      <Button
+                        key={building.id}
+                        variant={nodesSelectedBuildingId === building.id ? "default" : "outline"}
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setNodesSelectedBuildingId(building.id);
+                          setNodesSelectedFloorId(null);
+                        }}
+                        data-testid={`button-select-nodes-building-${building.id}`}
+                      >
+                        <Building2 className="w-4 h-4 mr-2" />
+                        <span className="truncate">{building.name}</span>
+                        <ChevronRight className="w-4 h-4 ml-auto" />
+                      </Button>
+                    ))
+                  )}
+                </div>
               </div>
-            )}
+
+              {/* Floors Column */}
+              <div>
+                <h3 className="font-semibold mb-3 text-sm">Floors</h3>
+                <div className="space-y-2">
+                  {!nodesSelectedBuildingId ? (
+                    <p className="text-xs text-muted-foreground">Select a building</p>
+                  ) : floorsForNodesBuilding.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No floors in this building</p>
+                  ) : (
+                    floorsForNodesBuilding.map(floor => (
+                      <Button
+                        key={floor.id}
+                        variant={nodesSelectedFloorId === floor.id ? "default" : "outline"}
+                        className="w-full justify-start"
+                        onClick={() => setNodesSelectedFloorId(floor.id)}
+                        data-testid={`button-select-nodes-floor-${floor.id}`}
+                      >
+                        <MapPin className="w-4 h-4 mr-2" />
+                        <span className="truncate">{floor.floorName || `Floor ${floor.floorNumber}`}</span>
+                        <ChevronRight className="w-4 h-4 ml-auto" />
+                      </Button>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Nodes Column */}
+              <div>
+                <h3 className="font-semibold mb-3 text-sm">Nodes</h3>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {!nodesSelectedFloorId ? (
+                    <p className="text-xs text-muted-foreground">Select a floor</p>
+                  ) : nodesForSelectedFloor.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No nodes on this floor</p>
+                  ) : (
+                    nodesForSelectedFloor.map(node => (
+                      <Card key={node.id} className="p-3" data-testid={`card-indoor-node-${node.id}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-sm font-medium truncate">{node.label || node.type}</h4>
+                            <p className="text-xs text-muted-foreground capitalize">{node.type}</p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button size="icon" variant="ghost" onClick={() => handleOpenNodeDialog(node)} className="h-7 w-7" data-testid={`button-edit-node-${node.id}`}>
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={() => setDeletingNode(node)} className="h-7 w-7" data-testid={`button-delete-node-${node.id}`}>
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
 
             <AlertDialog open={!!deletingNode} onOpenChange={() => setDeletingNode(null)}>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Node</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete this indoor node? This action cannot be undone.
+                    Are you sure you want to delete "{deletingNode?.label || deletingNode?.type}"? This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
