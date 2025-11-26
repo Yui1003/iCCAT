@@ -14,6 +14,7 @@ The CVSU CCAT Campus Navigation App is a comprehensive web application designed 
 - `FORCE_FALLBACK_MODE = true` in `server/storage.ts` - Forces the app to use `data.json` instead of Firebase
 - Data was exported from Firebase on Nov 26, 2025 using `scripts/export-firebase-data.ts`
 - To refresh data from Firebase: run `npx tsx scripts/export-firebase-data.ts`
+- **Data Persistence**: Changes made in fallback mode ARE persisted to `data.json` via `saveFallbackData()` function
 
 ### Before Pushing Changes to Production:
 1. Set `FORCE_FALLBACK_MODE = false` in `server/storage.ts` to re-enable Firebase

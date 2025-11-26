@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import type {
   Building, InsertBuilding,
@@ -47,7 +47,19 @@ function loadFallbackData() {
     return fallbackData;
   } catch (error) {
     console.error('❌ Failed to load fallback data from data.json:', error);
-    return { buildings: [], floors: [], rooms: [], staff: [], events: [], walkpaths: [], drivepaths: [], admins: [], settings: [] };
+    return { buildings: [], floors: [], rooms: [], staff: [], events: [], walkpaths: [], drivepaths: [], admins: [], settings: [], indoorNodes: [], roomPaths: [] };
+  }
+}
+
+function saveFallbackData() {
+  if (!fallbackData) return;
+  
+  try {
+    const dataPath = join(process.cwd(), 'data.json');
+    writeFileSync(dataPath, JSON.stringify(fallbackData, null, 2), 'utf8');
+    console.log('✅ Fallback data saved to data.json');
+  } catch (error) {
+    console.error('❌ Failed to save fallback data to data.json:', error);
   }
 }
 
@@ -906,6 +918,7 @@ export class DatabaseStorage implements IStorage {
       const data = loadFallbackData();
       if (!data.indoorNodes) data.indoorNodes = [];
       data.indoorNodes.push(newNode);
+      saveFallbackData();
       return newNode;
     }
     
@@ -925,6 +938,7 @@ export class DatabaseStorage implements IStorage {
       if (index === -1) return undefined;
       const updatedNode = { id, ...node };
       data.indoorNodes[index] = updatedNode;
+      saveFallbackData();
       return updatedNode;
     }
     
@@ -946,6 +960,7 @@ export class DatabaseStorage implements IStorage {
       const index = (data.indoorNodes || []).findIndex((n: IndoorNode) => n.id === id);
       if (index === -1) return false;
       data.indoorNodes.splice(index, 1);
+      saveFallbackData();
       return true;
     }
     
@@ -1013,6 +1028,7 @@ export class DatabaseStorage implements IStorage {
       const data = loadFallbackData();
       if (!data.roomPaths) data.roomPaths = [];
       data.roomPaths.push(newPath);
+      saveFallbackData();
       return newPath;
     }
     
@@ -1032,6 +1048,7 @@ export class DatabaseStorage implements IStorage {
       if (index === -1) return undefined;
       const updatedPath = { id, ...path };
       data.roomPaths[index] = updatedPath;
+      saveFallbackData();
       return updatedPath;
     }
     
@@ -1053,6 +1070,7 @@ export class DatabaseStorage implements IStorage {
       const index = (data.roomPaths || []).findIndex((p: RoomPath) => p.id === id);
       if (index === -1) return false;
       data.roomPaths.splice(index, 1);
+      saveFallbackData();
       return true;
     }
     
