@@ -248,6 +248,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createFloor(insertFloor: InsertFloor): Promise<Floor> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      const id = randomUUID();
+      const floor = { ...insertFloor, id } as Floor;
+      if (!data.floors) data.floors = [];
+      data.floors.push(floor);
+      saveFallbackData();
+      return floor;
+    }
     try {
       const id = randomUUID();
       const floor = { ...insertFloor, id } as Floor;
@@ -255,28 +264,51 @@ export class DatabaseStorage implements IStorage {
       return floor;
     } catch (error) {
       console.error('Firestore error:', error);
-      throw new Error('Cannot create floor in fallback mode');
+      throw new Error('Cannot create floor');
     }
   }
 
   async updateFloor(id: string, insertFloor: InsertFloor): Promise<Floor | undefined> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      const floor = { ...insertFloor, id } as Floor;
+      const index = data.floors?.findIndex((f: Floor) => f.id === id);
+      if (index !== undefined && index >= 0) {
+        data.floors[index] = floor;
+      } else {
+        if (!data.floors) data.floors = [];
+        data.floors.push(floor);
+      }
+      saveFallbackData();
+      return floor;
+    }
     try {
       const floor = { ...insertFloor, id } as Floor;
       await db.collection('floors').doc(id).set(floor);
       return floor;
     } catch (error) {
       console.error('Firestore error:', error);
-      throw new Error('Cannot update floor in fallback mode');
+      throw new Error('Cannot update floor');
     }
   }
 
   async deleteFloor(id: string): Promise<boolean> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      const index = data.floors?.findIndex((f: Floor) => f.id === id);
+      if (index !== undefined && index >= 0) {
+        data.floors.splice(index, 1);
+        saveFallbackData();
+        return true;
+      }
+      return false;
+    }
     try {
       await db.collection('floors').doc(id).delete();
       return true;
     } catch (error) {
       console.error('Firestore error:', error);
-      throw new Error('Cannot delete floor in fallback mode');
+      throw new Error('Cannot delete floor');
     }
   }
 
