@@ -2105,7 +2105,7 @@ export default function Navigation() {
 
       {/* Floor Plan Viewer from Room Finder - Wrapped in Dialog */}
       {roomFinderFloorPlan && (
-        <Dialog open={!!roomFinderFloorPlan} onOpenChange={(isOpen) => !isOpen && setRoomFinderFloorPlan(null)}>
+        <Dialog open={true}>
           <DialogContent className="max-w-6xl w-[95vw] h-[95vh] flex flex-col p-0 border-0 bg-transparent shadow-none top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" data-testid="dialog-floor-plan-from-room-finder">
             <div className="flex-1 overflow-hidden">
               <FloorPlanViewer
