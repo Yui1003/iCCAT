@@ -7,9 +7,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { SavedRoute, Building, RoutePhase, RouteStep, IndoorNode, Floor, RoomPath } from "@shared/schema";
+import type { SavedRoute, Building, RoutePhase, RouteStep, IndoorNode, Floor, RoomPath, Room } from "@shared/schema";
 import { getPhaseColor } from "@shared/phase-colors";
 import FloorPlanViewer from "@/components/floor-plan-viewer";
+import { buildIndoorGraph } from "@/lib/indoor-pathfinding";
 
 declare global {
   interface Window {
@@ -60,6 +61,11 @@ export default function MobileNavigation() {
   // Fetch room paths
   const { data: roomPaths = [] } = useQuery<RoomPath[]>({
     queryKey: ['/api/room-paths'],
+  });
+
+  // Fetch rooms for indoor graph building
+  const { data: rooms = [] } = useQuery<Room[]>({
+    queryKey: ['/api/rooms'],
   });
 
   // Check if route has indoor destination
@@ -471,56 +477,188 @@ export default function MobileNavigation() {
   const currentPhase = route.phases[currentPhaseIndex];
   const phaseColor = currentPhase?.color || getPhaseColor(currentPhaseIndex);
 
-  // Calculate indoor path polyline for current floor
-  const getIndoorPathPolyline = () => {
+  // Calculate indoor path polyline for current floor using proper pathfinding
+  const indoorPathPolyline = useMemo(() => {
     if (!navigationPhase || navigationPhase !== 'indoor' || !currentIndoorFloor || !destinationRoom) {
+      console.log('[MOBILE-PATH] Skipping: not in indoor mode or missing data');
       return undefined;
     }
 
-    // Find entrance node on current floor
-    const entranceNode = indoorNodes.find(n => n.floorId === currentIndoorFloor.id && n.type === 'entrance');
-    if (!entranceNode) {
-      console.log('[MOBILE] No entrance node found on floor', currentIndoorFloor.id);
+    console.log('[MOBILE-PATH] Calculating indoor path for floor:', currentIndoorFloor.id);
+
+    // Get floor-specific data
+    const floorRoomPaths = roomPaths.filter(rp => rp.floorId === currentIndoorFloor.id);
+    const floorRooms = rooms.filter(r => r.floorId === currentIndoorFloor.id);
+    const floorIndoorNodes = indoorNodes.filter(n => n.floorId === currentIndoorFloor.id);
+
+    console.log('[MOBILE-PATH] Floor data:', {
+      roomPaths: floorRoomPaths.length,
+      rooms: floorRooms.length,
+      indoorNodes: floorIndoorNodes.length
+    });
+
+    if (floorRoomPaths.length === 0) {
+      console.log('[MOBILE-PATH] No room paths found for this floor');
       return undefined;
     }
 
-    // If already at destination floor, get waypoints from room paths
-    if (currentIndoorFloor.id === destinationRoom.floorId) {
-      const waypoints: Array<{ lat: number; lng: number }> = [];
-      
-      // Find a room path that connects entrance to destination
-      for (const path of roomPaths) {
-        if (path.floorId === currentIndoorFloor.id && path.waypoints && path.waypoints.length > 0) {
-          // Check if this path connects entrance to destination
-          const hasStart = path.waypoints.some((wp: any) => wp.nodeId === entranceNode.id || (wp.x === entranceNode.x && wp.y === entranceNode.y));
-          const hasEnd = path.waypoints.some((wp: any) => wp.nodeId === destinationRoom.id || (wp.x === destinationRoom.x && wp.y === destinationRoom.y));
-          
-          if (hasStart || hasEnd) {
-            // Convert waypoints to lat/lng format
-            (path.waypoints as Array<{x: number; y: number}>).forEach(wp => {
-              waypoints.push({ lat: wp.x, lng: wp.y });
-            });
+    // Find entrance and target nodes on current floor
+    const entranceNode = floorIndoorNodes.find(n => n.type === 'entrance');
+    
+    // Target: destination room if on same floor, otherwise stairway/elevator
+    let targetNode: IndoorNode | undefined;
+    const isDestinationFloor = currentIndoorFloor.id === destinationRoom.floorId;
+    
+    if (isDestinationFloor) {
+      targetNode = destinationRoom;
+    } else {
+      // Find stairway or elevator to go to next floor
+      targetNode = floorIndoorNodes.find(n => n.type === 'stairway' || n.type === 'elevator');
+    }
+
+    if (!entranceNode || !targetNode) {
+      console.log('[MOBILE-PATH] Missing entrance or target node:', { entranceNode: !!entranceNode, targetNode: !!targetNode });
+      return undefined;
+    }
+
+    console.log('[MOBILE-PATH] Finding path from entrance to target:', {
+      entrance: entranceNode.id,
+      target: targetNode.id,
+      isDestinationFloor
+    });
+
+    // Build indoor graph
+    const indoorGraph = buildIndoorGraph(floorRooms, floorIndoorNodes, floorRoomPaths, currentIndoorFloor.pixelToMeterScale || 0.02);
+
+    console.log('[MOBILE-PATH] Indoor graph built:', {
+      nodes: indoorGraph.nodes.size,
+      edges: indoorGraph.edges.length
+    });
+
+    // Run Dijkstra to find shortest path
+    const nodeKey = (id: string, floorId: string) => `${floorId}:${id}`;
+    const startKey = nodeKey(entranceNode.id, currentIndoorFloor.id);
+    const destKey = nodeKey(targetNode.id, currentIndoorFloor.id);
+
+    const { nodes, edges } = indoorGraph;
+
+    if (!nodes.has(startKey) || !nodes.has(destKey)) {
+      console.log('[MOBILE-PATH] Start or dest node not in graph:', { startKey, destKey });
+      return undefined;
+    }
+
+    // Dijkstra's algorithm
+    const distances = new Map<string, number>();
+    const previous = new Map<string, string | null>();
+    const unvisited = new Set<string>();
+
+    nodes.forEach((_, key) => {
+      distances.set(key, Infinity);
+      previous.set(key, null);
+      unvisited.add(key);
+    });
+
+    distances.set(startKey, 0);
+
+    while (unvisited.size > 0) {
+      let current: string | null = null;
+      let minDist = Infinity;
+
+      unvisited.forEach(key => {
+        const dist = distances.get(key) ?? Infinity;
+        if (dist < minDist) {
+          minDist = dist;
+          current = key;
+        }
+      });
+
+      if (!current) break;
+      if (current === destKey) break;
+
+      unvisited.delete(current);
+
+      edges.filter(e => e.from === current).forEach(edge => {
+        if (unvisited.has(edge.to)) {
+          const alt = (distances.get(current!) ?? Infinity) + edge.distance;
+          if (alt < (distances.get(edge.to) ?? Infinity)) {
+            distances.set(edge.to, alt);
+            previous.set(edge.to, current!);
           }
         }
-      }
-
-      if (waypoints.length > 0) {
-        console.log('[MOBILE] Found indoor path with', waypoints.length, 'waypoints');
-        return waypoints;
-      }
-
-      // Fallback: create simple path from entrance to destination
-      console.log('[MOBILE] Using fallback path from entrance to destination');
-      return [
-        { lat: entranceNode.x, lng: entranceNode.y },
-        { lat: destinationRoom.x, lng: destinationRoom.y }
-      ];
+      });
     }
 
-    return undefined;
-  };
+    // Reconstruct path
+    const shortestPath: string[] = [];
+    let current: string | null = destKey;
+    while (current !== null) {
+      shortestPath.unshift(current);
+      current = previous.get(current) || null;
+    }
 
-  const indoorPathPolyline = getIndoorPathPolyline();
+    console.log('[MOBILE-PATH] Shortest path found:', shortestPath.length, 'nodes');
+
+    if (shortestPath.length === 0 || shortestPath[0] !== startKey) {
+      console.log('[MOBILE-PATH] No valid path found');
+      return undefined;
+    }
+
+    // Extract waypoints from path edges
+    const startNode = nodes.get(startKey);
+    const endNode = nodes.get(destKey);
+    if (!startNode || !endNode) return undefined;
+
+    const polylineWaypoints: Array<{ lat: number; lng: number }> = [
+      { lat: startNode.x, lng: startNode.y }
+    ];
+
+    // Helper to check if a point is a duplicate of the last one
+    const isDuplicate = (x: number, y: number) => {
+      if (polylineWaypoints.length === 0) return false;
+      const lastWp = polylineWaypoints[polylineWaypoints.length - 1];
+      return Math.abs(lastWp.lat - x) < 1 && Math.abs(lastWp.lng - y) < 1;
+    };
+
+    // Helper to add a point if not duplicate
+    const addPoint = (x: number, y: number) => {
+      if (!isDuplicate(x, y)) {
+        polylineWaypoints.push({ lat: x, lng: y });
+      }
+    };
+
+    for (let i = 0; i < shortestPath.length - 1; i++) {
+      const fromNode = shortestPath[i];
+      const toNode = shortestPath[i + 1];
+      const edge = edges.find(e => e.from === fromNode && e.to === toNode);
+
+      console.log(`[MOBILE-PATH] Edge ${i}: ${fromNode} -> ${toNode}, hasEdge: ${!!edge}, waypoints: ${edge?.pathWaypoints?.length || 0}`);
+
+      if (edge && edge.pathWaypoints && edge.pathWaypoints.length > 0) {
+        // Add all edge waypoints, deduplicating
+        edge.pathWaypoints.forEach(wp => {
+          addPoint(wp.x, wp.y);
+        });
+      } else {
+        // Direct edge without path waypoints - add both from and to nodes to ensure connectivity
+        const fromNodeData = nodes.get(fromNode);
+        const toNodeData = nodes.get(toNode);
+        
+        if (fromNodeData) {
+          addPoint(fromNodeData.x, fromNodeData.y);
+        }
+        if (toNodeData) {
+          addPoint(toNodeData.x, toNodeData.y);
+        }
+      }
+    }
+
+    // Ensure we end at the destination
+    addPoint(endNode.x, endNode.y);
+
+    console.log('[MOBILE-PATH] Final polyline with', polylineWaypoints.length, 'waypoints');
+    console.log('[MOBILE-PATH] Start:', polylineWaypoints[0], 'End:', polylineWaypoints[polylineWaypoints.length - 1]);
+    return polylineWaypoints;
+  }, [navigationPhase, currentIndoorFloor, destinationRoom, roomPaths, rooms, indoorNodes]);
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -591,7 +729,7 @@ export default function MobileNavigation() {
                 showPathTo={isOnDestinationFloor ? destinationRoom : indoorNodes.find(n => n.floorId === currentIndoorFloor.id && (n.type === 'stairway' || n.type === 'elevator'))}
                 onClose={() => {}}
                 viewOnly={true}
-                pathPolyline={route?.phases && route.phases.length > 0 ? route.phases[route.phases.length - 1]?.polyline : undefined}
+                pathPolyline={indoorPathPolyline}
               />
             )}
           </div>
