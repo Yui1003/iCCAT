@@ -22,7 +22,7 @@ import { AnalyticsEventType } from "@shared/analytics-schema";
 
 let usingFallback = false;
 let fallbackData: any = null;
-// TEMPORARY: Force fallback mode to use data.json for this Replit session (Firebase quota exceeded)
+// Set to false to use Firebase, true to use data.json fallback
 const FORCE_FALLBACK_MODE = false;
 
 // In-memory storage for savedRoutes (used when Firebase is not available)
@@ -905,7 +905,7 @@ export class DatabaseStorage implements IStorage {
     console.log('Export to JSON skipped - Firestore is the source of truth');
   }
 
-  // Indoor Nodes
+  // Indoor Nodes (Firebase collection: indoor_nodes)
   async getIndoorNodes(): Promise<IndoorNode[]> {
     if (FORCE_FALLBACK_MODE) {
       const data = loadFallbackData();
@@ -915,7 +915,7 @@ export class DatabaseStorage implements IStorage {
       const snapshot = await db.collection('indoor_nodes').get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as IndoorNode));
     } catch (error) {
-      console.error('Firestore error for indoorNodes:', error);
+      console.error('Firestore error for indoor_nodes:', error);
       const data = loadFallbackData();
       return data.indoorNodes || [];
     }
@@ -1015,7 +1015,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Room Paths
+  // Room Paths (Firebase collection: room_paths)
   async getRoomPaths(): Promise<RoomPath[]> {
     if (FORCE_FALLBACK_MODE) {
       const data = loadFallbackData();
@@ -1025,7 +1025,7 @@ export class DatabaseStorage implements IStorage {
       const snapshot = await db.collection('room_paths').get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RoomPath));
     } catch (error) {
-      console.error('Firestore error for roomPaths:', error);
+      console.error('Firestore error for room_paths:', error);
       const data = loadFallbackData();
       return data.roomPaths || [];
     }
