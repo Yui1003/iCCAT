@@ -74,7 +74,7 @@ export default function MobileNavigation() {
   // Get floors for the destination building
   const buildingFloors = useMemo(() => {
     if (!route?.destinationBuildingId || !floors.length) return [];
-    return floors.filter(f => f.buildingId === route.destinationBuildingId).sort((a, b) => a.level - b.level);
+    return floors.filter(f => f.buildingId === route.destinationBuildingId).sort((a, b) => a.floorNumber - b.floorNumber);
   }, [route?.destinationBuildingId, floors]);
 
   // Check if all outdoor phases are completed
@@ -149,8 +149,8 @@ export default function MobileNavigation() {
     }
 
     // Find building entrance (ground floor or floor level 1)
-    const buildingFloorsForDest = floors.filter(f => f.buildingId === route.destinationBuildingId).sort((a, b) => a.level - b.level);
-    const entranceFloor = buildingFloorsForDest.find(f => f.level === 1) || buildingFloorsForDest[0];
+    const buildingFloorsForDest = floors.filter(f => f.buildingId === route.destinationBuildingId).sort((a, b) => a.floorNumber - b.floorNumber);
+    const entranceFloor = buildingFloorsForDest.find(f => f.floorNumber === 1) || buildingFloorsForDest[0];
 
     if (!entranceFloor) {
       console.error('[MOBILE] No entrance floor found');
@@ -162,15 +162,15 @@ export default function MobileNavigation() {
     if (entranceFloor.id === roomFloor.id) {
       floorRoute = [entranceFloor];
     } else {
-      const entranceLevel = entranceFloor.level;
-      const destLevel = roomFloor.level;
+      const entranceLevel = entranceFloor.floorNumber;
+      const destLevel = roomFloor.floorNumber;
       
       if (destLevel > entranceLevel) {
         // Going up
-        floorRoute = buildingFloorsForDest.filter(f => f.level >= entranceLevel && f.level <= destLevel);
+        floorRoute = buildingFloorsForDest.filter(f => f.floorNumber >= entranceLevel && f.floorNumber <= destLevel);
       } else {
         // Going down
-        floorRoute = buildingFloorsForDest.filter(f => f.level <= entranceLevel && f.level >= destLevel).reverse();
+        floorRoute = buildingFloorsForDest.filter(f => f.floorNumber <= entranceLevel && f.floorNumber >= destLevel).reverse();
       }
     }
 
@@ -865,13 +865,13 @@ export default function MobileNavigation() {
                               <Check className="w-3 h-3 text-white" />
                             ) : (
                               <span className={isCurrent ? 'text-white font-bold' : 'text-muted-foreground'}>
-                                {floor.level}
+                                {floor.floorNumber}
                               </span>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-foreground truncate">
-                              {floor.name}
+                              {floor.floorName || `Floor ${floor.floorNumber}`}
                             </p>
                             {isDestFloor && (
                               <p className="text-xs text-green-600 dark:text-green-400">
@@ -890,7 +890,7 @@ export default function MobileNavigation() {
                   <p className="text-xs text-muted-foreground">
                     {isOnDestinationFloor 
                       ? `Follow the highlighted path to reach ${destinationRoom?.label || route.destinationRoomName || 'your destination'}.`
-                      : `Navigate to the ${floorsInRoute[currentFloorIndex + 1]?.level > (currentIndoorFloor?.level || 0) ? 'stairs or elevator to go up' : 'stairs or elevator to go down'}.`
+                      : `Navigate to the ${floorsInRoute[currentFloorIndex + 1]?.floorNumber > (currentIndoorFloor?.floorNumber || 0) ? 'stairs or elevator to go up' : 'stairs or elevator to go down'}.`
                     }
                   </p>
                 </div>
