@@ -324,6 +324,11 @@ export default function FloorPlanDrawingCanvas({
               R {rooms.length} room{rooms.length !== 1 ? 's' : ''}
             </Badge>
           )}
+          {indoorNodes.filter(n => n.type === 'room').length > 0 && (
+            <Badge variant="outline" className="bg-blue-50 text-blue-700">
+              R {indoorNodes.filter(n => n.type === 'room').length} room{indoorNodes.filter(n => n.type === 'room').length !== 1 ? 's' : ''}
+            </Badge>
+          )}
           {indoorNodes.filter(n => n.type === 'entrance').length > 0 && (
             <Badge variant="outline" className="bg-orange-50 text-orange-700">
               E {indoorNodes.filter(n => n.type === 'entrance').length} entrance{indoorNodes.filter(n => n.type === 'entrance').length !== 1 ? 's' : ''}

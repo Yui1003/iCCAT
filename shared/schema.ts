@@ -402,12 +402,14 @@ export const indoorNodes = pgTable("indoor_nodes", {
   connectedBuildingNodeId: varchar("connected_building_node_id"), // For entrance nodes - connects to outdoor building node
   connectedFloorIds: text("connected_floor_ids").array().default([]), // For stairway/elevator - list of floor IDs this connects to
   label: text("label"), // Display name for the node
+  description: text("description"), // Description for room nodes
 });
 
 export const insertIndoorNodeSchema = createInsertSchema(indoorNodes).omit({ id: true }).extend({
   roomId: z.string().nullable().optional(),
   connectedBuildingNodeId: z.string().nullable().optional(),
   connectedFloorIds: z.array(z.string()).default([]),
+  description: z.string().nullable().optional(),
 });
 export type InsertIndoorNode = z.infer<typeof insertIndoorNodeSchema>;
 export type IndoorNode = typeof indoorNodes.$inferSelect;
