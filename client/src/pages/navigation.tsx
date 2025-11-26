@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Navigation as NavigationIcon, TrendingUp, MapPin, Filter, Search, Users, Car, Bike, QrCode, Plus, X, GripVertical, Clock, ChevronDown } from "lucide-react";
+import { ArrowLeft, Navigation as NavigationIcon, TrendingUp, MapPin, Filter, Search, Users, Car, Bike, QrCode, Plus, X, GripVertical, Clock, ChevronDown, DoorOpen } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import BuildingInfoModal from "@/components/building-info-modal";
 import FloorPlanViewer from "@/components/floor-plan-viewer";
 import GetDirectionsDialog from "@/components/get-directions-dialog";
 import QRCodeDialog from "@/components/qr-code-dialog";
+import RoomFinderDialog from "@/components/room-finder-dialog";
 import SearchableStartingPointSelect from "@/components/searchable-starting-point-select";
 import SearchableDestinationSelect from "@/components/searchable-destination-select";
 import SearchableWaypointSelect from "@/components/searchable-waypoint-select";
@@ -53,6 +54,8 @@ export default function Navigation() {
   const [savedRouteId, setSavedRouteId] = useState<string | null>(null);
   const [waypoints, setWaypoints] = useState<string[]>([]);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [showRoomFinder, setShowRoomFinder] = useState(false);
+  const [roomFinderFloorPlan, setRoomFinderFloorPlan] = useState<{ floor: Floor; rooms: Room[] } | null>(null);
 
   const { data: buildings = [] } = useQuery<Building[]>({
     queryKey: ['/api/buildings'],
@@ -1453,12 +1456,22 @@ export default function Navigation() {
               <p className="text-sm text-muted-foreground">Find your way around CVSU CCAT</p>
             </div>
           </div>
-          <Link href="/staff">
-            <Button variant="default" data-testid="button-staff-finder">
-              <Users className="w-4 h-4 mr-2" />
-              Staff Finder
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowRoomFinder(true)}
+              data-testid="button-room-finder"
+            >
+              <DoorOpen className="w-4 h-4 mr-2" />
+              Room Finder
             </Button>
-          </Link>
+            <Link href="/staff">
+              <Button variant="default" data-testid="button-staff-finder">
+                <Users className="w-4 h-4 mr-2" />
+                Staff Finder
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -2070,6 +2083,34 @@ export default function Navigation() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Room Finder Dialog */}
+      <RoomFinderDialog
+        open={showRoomFinder}
+        onClose={() => setShowRoomFinder(false)}
+        rooms={rooms}
+        floors={floors}
+        buildings={buildings}
+        onGetDirections={(buildingId) => {
+          const building = buildings.find(b => b.id === buildingId);
+          if (building) {
+            setDirectionsDestination(building);
+            setShowDirectionsDialog(true);
+          }
+        }}
+        onViewFloorPlan={(floor, floorRooms) => {
+          setRoomFinderFloorPlan({ floor, rooms: floorRooms });
+        }}
+      />
+
+      {/* Floor Plan Viewer from Room Finder */}
+      {roomFinderFloorPlan && (
+        <FloorPlanViewer
+          floor={roomFinderFloorPlan.floor}
+          rooms={roomFinderFloorPlan.rooms}
+          onClose={() => setRoomFinderFloorPlan(null)}
+        />
+      )}
     </div>
   );
 }
