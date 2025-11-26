@@ -4557,7 +4557,17 @@
       "avgUxItems": 5
     }
   ],
-  "indoorNodes": [],
+  "indoorNodes": [
+    {
+      "id": "1614bb99-522b-49cd-b014-292a402e7fbc",
+      "floorId": "f3d2d04a-b7d2-4588-9a21-e7f0feca606c",
+      "type": "entrance",
+      "x": 249,
+      "y": 459,
+      "connectedFloorIds": [],
+      "label": "Main Entrance"
+    }
+  ],
   "roomPaths": [
     {
       "id": "68cd5234-0e12-478b-90b7-687c0c7b89c6",
