@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
+import SearchableSelect from "@/components/searchable-select";
 import type { Building, Floor } from "@shared/schema";
 import { poiTypes, canHaveFloorPlan, floorPlanEligibleTypes } from "@shared/schema";
 import FloorPlanViewer from "@/components/floor-plan-viewer";
@@ -198,18 +199,13 @@ export default function AdminFloorPlans() {
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Select Building
                   </label>
-                  <Select value={selectedBuildingId} onValueChange={setSelectedBuildingId}>
-                    <SelectTrigger data-testid="select-building">
-                      <SelectValue placeholder="Choose a building" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredBuildings.map(building => (
-                        <SelectItem key={building.id} value={building.id}>
-                          {building.name} • {building.type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={filteredBuildings.map(b => ({ id: b.id, name: `${b.name} • ${b.type}` }))}
+                    selectedId={selectedBuildingId}
+                    onSelect={setSelectedBuildingId}
+                    placeholder="Choose a building"
+                    testId="select-building"
+                  />
                 </div>
               </div>
 

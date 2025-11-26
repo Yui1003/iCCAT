@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Route as RouteIcon, Plus, Pencil, Trash2, Zap, ChevronRight, Building2, MapPin } from "lucide-react";
+import { Route as RouteIcon, Plus, Pencil, Trash2, Zap, ChevronDown, Building2, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -34,10 +34,10 @@ export default function AdminFloorPlanManagement() {
   const [waypoints, setWaypoints] = useState<RoomPathWaypoint[]>([]);
 
   // List view navigation states
-  const [pathsSelectedBuildingId, setPathsSelectedBuildingId] = useState<string | null>(null);
-  const [pathsSelectedFloorId, setPathsSelectedFloorId] = useState<string | null>(null);
-  const [nodesSelectedBuildingId, setNodesSelectedBuildingId] = useState<string | null>(null);
-  const [nodesSelectedFloorId, setNodesSelectedFloorId] = useState<string | null>(null);
+  const [pathsExpandedBuildings, setPathsExpandedBuildings] = useState<Set<string>>(new Set());
+  const [pathsExpandedFloors, setPathsExpandedFloors] = useState<Set<string>>(new Set());
+  const [nodesExpandedBuildings, setNodesExpandedBuildings] = useState<Set<string>>(new Set());
+  const [nodesExpandedFloors, setNodesExpandedFloors] = useState<Set<string>>(new Set());
 
   // Node dialog states
   const [nodeSelectedBuildingId, setNodeSelectedBuildingId] = useState<string>("");
@@ -305,21 +305,33 @@ export default function AdminFloorPlanManagement() {
     return `${building?.name || 'Unknown'} - ${floor.floorName || `Floor ${floor.floorNumber}`}`;
   };
 
-  const floorsForPathsBuilding = pathsSelectedBuildingId 
-    ? floors.filter(f => f.buildingId === pathsSelectedBuildingId)
-    : [];
+  const togglePathBuildingExpanded = (id: string) => {
+    const newSet = new Set(pathsExpandedBuildings);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setPathsExpandedBuildings(newSet);
+  };
 
-  const pathsForSelectedFloor = pathsSelectedFloorId 
-    ? roomPaths.filter(p => p.floorId === pathsSelectedFloorId)
-    : [];
+  const togglePathFloorExpanded = (id: string) => {
+    const newSet = new Set(pathsExpandedFloors);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setPathsExpandedFloors(newSet);
+  };
 
-  const floorsForNodesBuilding = nodesSelectedBuildingId 
-    ? floors.filter(f => f.buildingId === nodesSelectedBuildingId)
-    : [];
+  const toggleNodeBuildingExpanded = (id: string) => {
+    const newSet = new Set(nodesExpandedBuildings);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setNodesExpandedBuildings(newSet);
+  };
 
-  const nodesForSelectedFloor = nodesSelectedFloorId 
-    ? indoorNodes.filter(n => n.floorId === nodesSelectedFloorId)
-    : [];
+  const toggleNodeFloorExpanded = (id: string) => {
+    const newSet = new Set(nodesExpandedFloors);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setNodesExpandedFloors(newSet);
+  };
 
   return (
     <AdminLayout>
@@ -446,91 +458,91 @@ export default function AdminFloorPlanManagement() {
               </Dialog>
             </div>
 
-            {/* Hierarchical List View for Paths */}
-            <div className="grid gap-4 lg:grid-cols-3">
-              {/* Buildings Column */}
-              <div>
-                <h3 className="font-semibold mb-3 text-sm">Buildings</h3>
-                <div className="space-y-2">
-                  {buildingsWithPaths.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No buildings with paths</p>
-                  ) : (
-                    buildingsWithPaths.map(building => (
-                      <Button
-                        key={building.id}
-                        variant={pathsSelectedBuildingId === building.id ? "default" : "outline"}
-                        className="w-full justify-start"
-                        onClick={() => {
-                          setPathsSelectedBuildingId(building.id);
-                          setPathsSelectedFloorId(null);
-                        }}
-                        data-testid={`button-select-paths-building-${building.id}`}
+            {/* Expandable List View for Paths */}
+            <div className="space-y-2">
+              {buildingsWithPaths.length === 0 ? (
+                <Card className="p-4">
+                  <p className="text-sm text-muted-foreground">No buildings with paths</p>
+                </Card>
+              ) : (
+                buildingsWithPaths.map(building => {
+                  const buildingFloors = floors.filter(f => f.buildingId === building.id);
+                  const isExpanded = pathsExpandedBuildings.has(building.id);
+                  
+                  return (
+                    <div key={building.id}>
+                      <Card 
+                        className="p-4 cursor-pointer hover-elevate"
+                        onClick={() => togglePathBuildingExpanded(building.id)}
+                        data-testid={`card-building-${building.id}`}
                       >
-                        <Building2 className="w-4 h-4 mr-2" />
-                        <span className="truncate">{building.name}</span>
-                        <ChevronRight className="w-4 h-4 ml-auto" />
-                      </Button>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Floors Column */}
-              <div>
-                <h3 className="font-semibold mb-3 text-sm">Floors</h3>
-                <div className="space-y-2">
-                  {!pathsSelectedBuildingId ? (
-                    <p className="text-xs text-muted-foreground">Select a building</p>
-                  ) : floorsForPathsBuilding.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No floors in this building</p>
-                  ) : (
-                    floorsForPathsBuilding.map(floor => (
-                      <Button
-                        key={floor.id}
-                        variant={pathsSelectedFloorId === floor.id ? "default" : "outline"}
-                        className="w-full justify-start"
-                        onClick={() => setPathsSelectedFloorId(floor.id)}
-                        data-testid={`button-select-paths-floor-${floor.id}`}
-                      >
-                        <MapPin className="w-4 h-4 mr-2" />
-                        <span className="truncate">{floor.floorName || `Floor ${floor.floorNumber}`}</span>
-                        <ChevronRight className="w-4 h-4 ml-auto" />
-                      </Button>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Paths Column */}
-              <div>
-                <h3 className="font-semibold mb-3 text-sm">Paths</h3>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {!pathsSelectedFloorId ? (
-                    <p className="text-xs text-muted-foreground">Select a floor</p>
-                  ) : pathsForSelectedFloor.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No paths on this floor</p>
-                  ) : (
-                    pathsForSelectedFloor.map(path => (
-                      <Card key={path.id} className="p-3" data-testid={`card-room-path-${path.id}`}>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-sm font-medium truncate">{path.name || 'Unnamed'}</h4>
-                            <p className="text-xs text-muted-foreground">{(path.waypoints as RoomPathWaypoint[])?.length || 0} waypoints</p>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button size="icon" variant="ghost" onClick={() => handleOpenPathDialog(path)} className="h-7 w-7" data-testid={`button-edit-path-${path.id}`}>
-                              <Pencil className="w-3 h-3" />
-                            </Button>
-                            <Button size="icon" variant="ghost" onClick={() => setDeletingPath(path)} className="h-7 w-7" data-testid={`button-delete-path-${path.id}`}>
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <ChevronDown className={`w-5 h-5 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                            <Building2 className="w-5 h-5" />
+                            <span className="font-semibold">{building.name}</span>
                           </div>
                         </div>
                       </Card>
-                    ))
-                  )}
-                </div>
-              </div>
+
+                      {isExpanded && (
+                        <div className="ml-4 mt-2 space-y-2 pl-4 border-l">
+                          {buildingFloors.map(floor => {
+                            const floorPaths = roomPaths.filter(p => p.floorId === floor.id);
+                            const floorExpanded = pathsExpandedFloors.has(floor.id);
+                            
+                            return (
+                              <div key={floor.id}>
+                                <Card
+                                  className="p-3 cursor-pointer hover-elevate"
+                                  onClick={() => togglePathFloorExpanded(floor.id)}
+                                  data-testid={`card-floor-${floor.id}`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <ChevronDown className={`w-4 h-4 transition-transform ${floorExpanded ? '' : '-rotate-90'}`} />
+                                      <MapPin className="w-4 h-4" />
+                                      <span className="font-medium text-sm">{floor.floorName || `Floor ${floor.floorNumber}`}</span>
+                                      <span className="text-xs text-muted-foreground">({floorPaths.length})</span>
+                                    </div>
+                                  </div>
+                                </Card>
+
+                                {floorExpanded && (
+                                  <div className="ml-4 mt-2 space-y-2 pl-4 border-l">
+                                    {floorPaths.length === 0 ? (
+                                      <p className="text-xs text-muted-foreground">No paths on this floor</p>
+                                    ) : (
+                                      floorPaths.map(path => (
+                                        <Card key={path.id} className="p-3" data-testid={`card-room-path-${path.id}`}>
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                              <h4 className="font-sm font-medium truncate text-sm">{path.name || 'Unnamed'}</h4>
+                                              <p className="text-xs text-muted-foreground">{(path.waypoints as RoomPathWaypoint[])?.length || 0} waypoints</p>
+                                            </div>
+                                            <div className="flex gap-1">
+                                              <Button size="icon" variant="ghost" onClick={() => handleOpenPathDialog(path)} className="h-6 w-6" data-testid={`button-edit-path-${path.id}`}>
+                                                <Pencil className="w-3 h-3" />
+                                              </Button>
+                                              <Button size="icon" variant="ghost" onClick={() => setDeletingPath(path)} className="h-6 w-6" data-testid={`button-delete-path-${path.id}`}>
+                                                <Trash2 className="w-3 h-3" />
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        </Card>
+                                      ))
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
 
             <AlertDialog open={!!deletingPath} onOpenChange={() => setDeletingPath(null)}>
@@ -728,91 +740,91 @@ export default function AdminFloorPlanManagement() {
               </Dialog>
             </div>
 
-            {/* Hierarchical List View for Nodes */}
-            <div className="grid gap-4 lg:grid-cols-3">
-              {/* Buildings Column */}
-              <div>
-                <h3 className="font-semibold mb-3 text-sm">Buildings</h3>
-                <div className="space-y-2">
-                  {buildingsWithNodes.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No buildings with nodes</p>
-                  ) : (
-                    buildingsWithNodes.map(building => (
-                      <Button
-                        key={building.id}
-                        variant={nodesSelectedBuildingId === building.id ? "default" : "outline"}
-                        className="w-full justify-start"
-                        onClick={() => {
-                          setNodesSelectedBuildingId(building.id);
-                          setNodesSelectedFloorId(null);
-                        }}
-                        data-testid={`button-select-nodes-building-${building.id}`}
+            {/* Expandable List View for Nodes */}
+            <div className="space-y-2">
+              {buildingsWithNodes.length === 0 ? (
+                <Card className="p-4">
+                  <p className="text-sm text-muted-foreground">No buildings with nodes</p>
+                </Card>
+              ) : (
+                buildingsWithNodes.map(building => {
+                  const buildingFloors = floors.filter(f => f.buildingId === building.id);
+                  const isExpanded = nodesExpandedBuildings.has(building.id);
+                  
+                  return (
+                    <div key={building.id}>
+                      <Card 
+                        className="p-4 cursor-pointer hover-elevate"
+                        onClick={() => toggleNodeBuildingExpanded(building.id)}
+                        data-testid={`card-nodes-building-${building.id}`}
                       >
-                        <Building2 className="w-4 h-4 mr-2" />
-                        <span className="truncate">{building.name}</span>
-                        <ChevronRight className="w-4 h-4 ml-auto" />
-                      </Button>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Floors Column */}
-              <div>
-                <h3 className="font-semibold mb-3 text-sm">Floors</h3>
-                <div className="space-y-2">
-                  {!nodesSelectedBuildingId ? (
-                    <p className="text-xs text-muted-foreground">Select a building</p>
-                  ) : floorsForNodesBuilding.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No floors in this building</p>
-                  ) : (
-                    floorsForNodesBuilding.map(floor => (
-                      <Button
-                        key={floor.id}
-                        variant={nodesSelectedFloorId === floor.id ? "default" : "outline"}
-                        className="w-full justify-start"
-                        onClick={() => setNodesSelectedFloorId(floor.id)}
-                        data-testid={`button-select-nodes-floor-${floor.id}`}
-                      >
-                        <MapPin className="w-4 h-4 mr-2" />
-                        <span className="truncate">{floor.floorName || `Floor ${floor.floorNumber}`}</span>
-                        <ChevronRight className="w-4 h-4 ml-auto" />
-                      </Button>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Nodes Column */}
-              <div>
-                <h3 className="font-semibold mb-3 text-sm">Nodes</h3>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {!nodesSelectedFloorId ? (
-                    <p className="text-xs text-muted-foreground">Select a floor</p>
-                  ) : nodesForSelectedFloor.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No nodes on this floor</p>
-                  ) : (
-                    nodesForSelectedFloor.map(node => (
-                      <Card key={node.id} className="p-3" data-testid={`card-indoor-node-${node.id}`}>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-sm font-medium truncate">{node.label || node.type}</h4>
-                            <p className="text-xs text-muted-foreground capitalize">{node.type}</p>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button size="icon" variant="ghost" onClick={() => handleOpenNodeDialog(node)} className="h-7 w-7" data-testid={`button-edit-node-${node.id}`}>
-                              <Pencil className="w-3 h-3" />
-                            </Button>
-                            <Button size="icon" variant="ghost" onClick={() => setDeletingNode(node)} className="h-7 w-7" data-testid={`button-delete-node-${node.id}`}>
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <ChevronDown className={`w-5 h-5 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                            <Building2 className="w-5 h-5" />
+                            <span className="font-semibold">{building.name}</span>
                           </div>
                         </div>
                       </Card>
-                    ))
-                  )}
-                </div>
-              </div>
+
+                      {isExpanded && (
+                        <div className="ml-4 mt-2 space-y-2 pl-4 border-l">
+                          {buildingFloors.map(floor => {
+                            const floorNodes = indoorNodes.filter(n => n.floorId === floor.id);
+                            const floorExpanded = nodesExpandedFloors.has(floor.id);
+                            
+                            return (
+                              <div key={floor.id}>
+                                <Card
+                                  className="p-3 cursor-pointer hover-elevate"
+                                  onClick={() => toggleNodeFloorExpanded(floor.id)}
+                                  data-testid={`card-nodes-floor-${floor.id}`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <ChevronDown className={`w-4 h-4 transition-transform ${floorExpanded ? '' : '-rotate-90'}`} />
+                                      <MapPin className="w-4 h-4" />
+                                      <span className="font-medium text-sm">{floor.floorName || `Floor ${floor.floorNumber}`}</span>
+                                      <span className="text-xs text-muted-foreground">({floorNodes.length})</span>
+                                    </div>
+                                  </div>
+                                </Card>
+
+                                {floorExpanded && (
+                                  <div className="ml-4 mt-2 space-y-2 pl-4 border-l">
+                                    {floorNodes.length === 0 ? (
+                                      <p className="text-xs text-muted-foreground">No nodes on this floor</p>
+                                    ) : (
+                                      floorNodes.map(node => (
+                                        <Card key={node.id} className="p-3" data-testid={`card-indoor-node-${node.id}`}>
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                              <h4 className="font-sm font-medium truncate text-sm">{node.label || node.type}</h4>
+                                              <p className="text-xs text-muted-foreground capitalize">{node.type}</p>
+                                            </div>
+                                            <div className="flex gap-1">
+                                              <Button size="icon" variant="ghost" onClick={() => handleOpenNodeDialog(node)} className="h-6 w-6" data-testid={`button-edit-node-${node.id}`}>
+                                                <Pencil className="w-3 h-3" />
+                                              </Button>
+                                              <Button size="icon" variant="ghost" onClick={() => setDeletingNode(node)} className="h-6 w-6" data-testid={`button-delete-node-${node.id}`}>
+                                                <Trash2 className="w-3 h-3" />
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        </Card>
+                                      ))
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
 
             <AlertDialog open={!!deletingNode} onOpenChange={() => setDeletingNode(null)}>
