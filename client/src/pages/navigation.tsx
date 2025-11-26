@@ -2104,15 +2104,19 @@ export default function Navigation() {
       />
 
       {/* Floor Plan Viewer from Room Finder - Wrapped in Dialog */}
-      <Dialog open={!!roomFinderFloorPlan} onOpenChange={(isOpen) => !isOpen && setRoomFinderFloorPlan(null)}>
-        <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0" data-testid="dialog-floor-plan-from-room-finder">
-          <FloorPlanViewer
-            floor={roomFinderFloorPlan?.floor!}
-            rooms={roomFinderFloorPlan?.rooms || []}
-            onClose={() => setRoomFinderFloorPlan(null)}
-          />
-        </DialogContent>
-      </Dialog>
+      {roomFinderFloorPlan && (
+        <Dialog open={!!roomFinderFloorPlan} onOpenChange={(isOpen) => !isOpen && setRoomFinderFloorPlan(null)}>
+          <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0 border-0 bg-transparent shadow-none" data-testid="dialog-floor-plan-from-room-finder">
+            <div className="flex-1 overflow-hidden">
+              <FloorPlanViewer
+                floor={roomFinderFloorPlan.floor}
+                rooms={roomFinderFloorPlan.rooms}
+                onClose={() => setRoomFinderFloorPlan(null)}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
