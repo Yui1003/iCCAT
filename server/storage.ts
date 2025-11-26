@@ -912,7 +912,7 @@ export class DatabaseStorage implements IStorage {
       return data.indoorNodes || [];
     }
     try {
-      const snapshot = await db.collection('indoorNodes').get();
+      const snapshot = await db.collection('indoor_nodes').get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as IndoorNode));
     } catch (error) {
       console.error('Firestore error for indoorNodes:', error);
@@ -927,7 +927,7 @@ export class DatabaseStorage implements IStorage {
       return (data.indoorNodes || []).find((n: IndoorNode) => n.id === id);
     }
     try {
-      const doc = await db.collection('indoorNodes').doc(id).get();
+      const doc = await db.collection('indoor_nodes').doc(id).get();
       if (!doc.exists) return undefined;
       return { id: doc.id, ...doc.data() } as IndoorNode;
     } catch (error) {
@@ -943,7 +943,7 @@ export class DatabaseStorage implements IStorage {
       return (data.indoorNodes || []).filter((n: IndoorNode) => n.floorId === floorId);
     }
     try {
-      const snapshot = await db.collection('indoorNodes').where('floorId', '==', floorId).get();
+      const snapshot = await db.collection('indoor_nodes').where('floorId', '==', floorId).get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as IndoorNode));
     } catch (error) {
       console.error('Firestore error:', error);
@@ -965,7 +965,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     try {
-      await db.collection('indoorNodes').doc(id).set(newNode);
+      await db.collection('indoor_nodes').doc(id).set(newNode);
       return newNode;
     } catch (error) {
       console.error('Firestore error:', error);
@@ -985,7 +985,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     try {
-      const docRef = db.collection('indoorNodes').doc(id);
+      const docRef = db.collection('indoor_nodes').doc(id);
       const doc = await docRef.get();
       if (!doc.exists) return undefined;
       await docRef.update(node as any);
@@ -1007,7 +1007,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     try {
-      await db.collection('indoorNodes').doc(id).delete();
+      await db.collection('indoor_nodes').doc(id).delete();
       return true;
     } catch (error) {
       console.error('Firestore error:', error);
@@ -1022,7 +1022,7 @@ export class DatabaseStorage implements IStorage {
       return data.roomPaths || [];
     }
     try {
-      const snapshot = await db.collection('roomPaths').get();
+      const snapshot = await db.collection('room_paths').get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RoomPath));
     } catch (error) {
       console.error('Firestore error for roomPaths:', error);
@@ -1037,7 +1037,7 @@ export class DatabaseStorage implements IStorage {
       return (data.roomPaths || []).find((p: RoomPath) => p.id === id);
     }
     try {
-      const doc = await db.collection('roomPaths').doc(id).get();
+      const doc = await db.collection('room_paths').doc(id).get();
       if (!doc.exists) return undefined;
       return { id: doc.id, ...doc.data() } as RoomPath;
     } catch (error) {
@@ -1053,7 +1053,7 @@ export class DatabaseStorage implements IStorage {
       return (data.roomPaths || []).filter((p: RoomPath) => p.floorId === floorId);
     }
     try {
-      const snapshot = await db.collection('roomPaths').where('floorId', '==', floorId).get();
+      const snapshot = await db.collection('room_paths').where('floorId', '==', floorId).get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RoomPath));
     } catch (error) {
       console.error('Firestore error:', error);
@@ -1075,7 +1075,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     try {
-      await db.collection('roomPaths').doc(id).set(newPath);
+      await db.collection('room_paths').doc(id).set(newPath);
       return newPath;
     } catch (error) {
       console.error('Firestore error:', error);
@@ -1095,7 +1095,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     try {
-      const docRef = db.collection('roomPaths').doc(id);
+      const docRef = db.collection('room_paths').doc(id);
       const doc = await docRef.get();
       if (!doc.exists) return undefined;
       await docRef.update(path as any);
@@ -1117,7 +1117,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     try {
-      await db.collection('roomPaths').doc(id).delete();
+      await db.collection('room_paths').doc(id).delete();
       return true;
     } catch (error) {
       console.error('Firestore error:', error);
