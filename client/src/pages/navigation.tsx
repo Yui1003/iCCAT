@@ -1172,8 +1172,9 @@ export default function Navigation() {
     distances.set(entranceKey, 0);
     
     console.log('[INDOOR-PATH] Starting Dijkstra from:', entranceKey);
-    console.log('[INDOOR-PATH] Total edges to explore:', edges.length);
-    console.log('[INDOOR-PATH] Edges from entrance:', edges.filter(e => e.from === entranceKey).map(e => `${e.from} -> ${e.to} (${e.distance.toFixed(2)}m)`));
+    console.log('[INDOOR-PATH] Initial unvisited size:', unvisited.size);
+    console.log('[INDOOR-PATH] Entrance in unvisited?', unvisited.has(entranceKey));
+    console.log('[INDOOR-PATH] Entrance distance:', distances.get(entranceKey));
     
     let iterations = 0;
     while (unvisited.size > 0) {
@@ -1182,12 +1183,16 @@ export default function Navigation() {
       let minDist = Infinity;
       
       unvisited.forEach(key => {
-        const dist = distances.get(key) || Infinity;
+        const dist = distances.get(key) ?? Infinity;
         if (dist < minDist) {
           minDist = dist;
           current = key;
         }
       });
+      
+      if (iterations === 1) {
+        console.log(`[INDOOR-PATH] Iteration 1: current=${current}, minDist=${minDist}, destKey=${destKey}`);
+      }
       
       if (!current) {
         console.log('[INDOOR-PATH] Dijkstra: No current node found, breaking');
@@ -1199,26 +1204,16 @@ export default function Navigation() {
         break;
       }
       
-      if (iterations === 1) {
-        console.log(`[INDOOR-PATH] Dijkstra iteration ${iterations}: current=${current} (dist=${minDist.toFixed(2)})`);
-      }
-      
       unvisited.delete(current);
       
       const outgoingEdges = edges.filter(e => e.from === current);
-      if (iterations === 1) {
-        console.log(`[INDOOR-PATH]   Found ${outgoingEdges.length} outgoing edges`);
-      }
       
       outgoingEdges.forEach(edge => {
         if (unvisited.has(edge.to)) {
-          const alt = (distances.get(current!) || Infinity) + edge.distance;
-          if (alt < (distances.get(edge.to) || Infinity)) {
+          const alt = (distances.get(current!) ?? Infinity) + edge.distance;
+          if (alt < (distances.get(edge.to) ?? Infinity)) {
             distances.set(edge.to, alt);
             previous.set(edge.to, current!);
-            if (iterations === 1) {
-              console.log(`[INDOOR-PATH]     Updated ${edge.to} to distance ${alt.toFixed(2)}`);
-            }
           }
         }
       });
