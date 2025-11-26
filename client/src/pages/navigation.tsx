@@ -60,6 +60,8 @@ export default function Navigation() {
   const [selectedRoomForNav, setSelectedRoomForNav] = useState<{ id: string; name: string; buildingName: string } | null>(null);
   const [navigationPhase, setNavigationPhase] = useState<'outdoor' | 'indoor' | null>(null);
   const [destinationRoom, setDestinationRoom] = useState<IndoorNode | null>(null);
+  const [currentIndoorFloor, setCurrentIndoorFloor] = useState<Floor | null>(null);
+  const [floorsInRoute, setFloorsInRoute] = useState<string[]>([]);
 
   const { data: buildings = [] } = useQuery<Building[]>({
     queryKey: ['/api/buildings'],
@@ -1118,29 +1120,62 @@ export default function Navigation() {
     setDestinationRoom(null);
     setSelectedRoomForNav(null);
     setSelectedFloor(null);
+    setCurrentIndoorFloor(null);
+    setFloorsInRoute([]);
   };
 
   const handleReachedBuilding = () => {
     if (!selectedEnd || !destinationRoom || !route) return;
     
     // Load the floor plan for the building
-    const buildingFloors = floors.filter(f => f.buildingId === selectedEnd.id);
+    const buildingFloors = floors.filter(f => f.buildingId === selectedEnd.id).sort((a, b) => (a.floorNumber || 0) - (b.floorNumber || 0));
+    
+    // Find entrance floor (typically lowest floor number)
+    const entranceFloor = buildingFloors[0];
     const roomFloor = buildingFloors.find(f => f.id === destinationRoom.floorId);
     
-    if (!roomFloor) return;
-    setSelectedFloor(roomFloor);
+    if (!entranceFloor || !roomFloor) return;
     
-    // Find entrance node for indoor pathfinding
+    // Build list of floors to visit if multi-floor
+    let floorsToVisit = [entranceFloor.id];
+    if (roomFloor.id !== entranceFloor.id) {
+      // Add intermediate floors if needed (via stairways)
+      const startFloorNum = entranceFloor.floorNumber || 0;
+      const endFloorNum = roomFloor.floorNumber || 0;
+      const direction = endFloorNum > startFloorNum ? 1 : -1;
+      for (let i = startFloorNum + direction; direction > 0 ? i <= endFloorNum : i >= endFloorNum; i += direction) {
+        const intermediateFloor = buildingFloors.find(f => f.floorNumber === i);
+        if (intermediateFloor) floorsToVisit.push(intermediateFloor.id);
+      }
+    }
+    
+    setFloorsInRoute(floorsToVisit);
+    setCurrentIndoorFloor(entranceFloor);
+    setSelectedFloor(entranceFloor);
+    
+    // Find entrance node on current floor
     const entranceNode = indoorNodes.find(n => 
-      n.type === 'entrance' && n.floorId === roomFloor.id
+      n.type === 'entrance' && n.floorId === entranceFloor.id
     );
     
     if (!entranceNode) return;
     
+    // Determine target for this floor: either destination room (if same floor) or nearest stairway (if multi-floor)
+    let targetNode: IndoorNode | undefined;
+    if (roomFloor.id === entranceFloor.id) {
+      // Same floor - route to destination
+      targetNode = destinationRoom;
+    } else {
+      // Multi-floor - route to nearest stairway/elevator
+      const stairways = indoorNodes.filter(n => (n.type === 'stairway' || n.type === 'elevator') && n.floorId === entranceFloor.id);
+      if (stairways.length === 0) return;
+      targetNode = stairways[0];
+    }
+    
     // Get floor-specific data
-    const floorRoomPaths = roomPaths.filter(rp => rp.floorId === roomFloor.id);
-    const floorRooms = rooms.filter(r => r.floorId === roomFloor.id);
-    const floorIndoorNodes = indoorNodes.filter(n => n.floorId === roomFloor.id);
+    const floorRoomPaths = roomPaths.filter(rp => rp.floorId === entranceFloor.id);
+    const floorRooms = rooms.filter(r => r.floorId === entranceFloor.id);
+    const floorIndoorNodes = indoorNodes.filter(n => n.floorId === entranceFloor.id);
     
     // Build indoor graph using the same pathfinding logic as outdoor navigation
     const indoorGraph = buildIndoorGraph(floorRooms, floorIndoorNodes, floorRoomPaths, roomFloor.pixelToMeterScale || 1);
@@ -1150,10 +1185,10 @@ export default function Navigation() {
     console.log('[INDOOR-PATH] Total nodes:', indoorGraph.nodes.size);
     console.log('[INDOOR-PATH] Total edges:', indoorGraph.edges.length);
     
-    // Use Dijkstra's algorithm to find shortest path from entrance to destination
+    // Use Dijkstra's algorithm to find shortest path
     const { nodes, edges } = indoorGraph;
-    const entranceKey = `${roomFloor.id}:${entranceNode.id}`;
-    const destKey = `${roomFloor.id}:${destinationRoom.id}`;
+    const entranceKey = `${entranceFloor.id}:${entranceNode.id}`;
+    const destKey = `${entranceFloor.id}:${targetNode.id}`;
     
     console.log('[INDOOR-PATH] Entrance key:', entranceKey, 'Dest key:', destKey);
     console.log('[INDOOR-PATH] Entrance exists:', nodes.has(entranceKey), 'Dest exists:', nodes.has(destKey));
@@ -1265,8 +1300,8 @@ export default function Navigation() {
     
     console.log('[INDOOR-PATH] Final polyline waypoints:', polylineWaypoints.length, polylineWaypoints);
     
-    // Add destination room
-    polylineWaypoints.push({ lat: destinationRoom.x, lng: destinationRoom.y });
+    // Add target node
+    polylineWaypoints.push({ lat: targetNode.x, lng: targetNode.y });
     
     // Remove duplicates
     const seen = new Set<string>();
@@ -1289,6 +1324,7 @@ export default function Navigation() {
     const totalMeterDistance = Math.round(totalPixelDistance * scale);
     
     // Generate indoor turn-by-turn directions
+    const isMultiFloor = roomFloor.id !== entranceFloor.id;
     const indoorSteps: RouteStep[] = [
       {
         instruction: `Start at ${entranceNode.label || 'Entrance'}`,
@@ -1296,29 +1332,29 @@ export default function Navigation() {
         icon: 'navigation'
       },
       {
-        instruction: `Walk to ${destinationRoom.label || 'Room'}`,
+        instruction: `Walk to ${targetNode.label || targetNode.type}`,
         distance: totalMeterDistance > 0 ? `${totalMeterDistance} m` : '0 m',
         icon: 'arrow-right'
       },
       {
-        instruction: `Arrive at ${destinationRoom.label || 'Room'}`,
+        instruction: `Arrive at ${targetNode.label || targetNode.type}`,
         distance: '0 m',
-        icon: 'flag'
+        icon: isMultiFloor ? 'arrow-up' : 'flag'
       }
     ];
     
-    // Create indoor phase with actual path waypoints from room paths
+    // Create indoor phase
     const indoorPhase: RoutePhase = {
       mode: 'walking',
       polyline: polylineWaypoints,
       steps: indoorSteps,
       distance: totalMeterDistance > 0 ? `${totalMeterDistance} m` : '0 m',
       startName: entranceNode.label || 'Entrance',
-      endName: destinationRoom.label || 'Room',
+      endName: targetNode.label || targetNode.type,
       color: '#ef4444',
       phaseIndex: 1,
       startId: selectedEnd.id,
-      endId: destinationRoom.id
+      endId: targetNode.id
     };
     
     // Update route with indoor phase
@@ -1329,6 +1365,164 @@ export default function Navigation() {
     
     setRoute(updatedRoute);
     setNavigationPhase('indoor');
+  };
+
+  const handleProceedToNextFloor = () => {
+    if (!selectedEnd || !destinationRoom || !route || floorsInRoute.length === 0 || !currentIndoorFloor) return;
+    
+    const currentFloorIndex = floorsInRoute.indexOf(currentIndoorFloor.id);
+    if (currentFloorIndex >= floorsInRoute.length - 1) {
+      // Already on destination floor
+      return;
+    }
+    
+    const nextFloorId = floorsInRoute[currentFloorIndex + 1];
+    const buildingFloors = floors.filter(f => f.buildingId === selectedEnd.id);
+    const nextFloor = buildingFloors.find(f => f.id === nextFloorId);
+    const roomFloor = buildingFloors.find(f => f.id === destinationRoom.floorId);
+    
+    if (!nextFloor || !roomFloor) return;
+    
+    setCurrentIndoorFloor(nextFloor);
+    setSelectedFloor(nextFloor);
+    
+    // Find entrance node on next floor
+    const entranceNode = indoorNodes.find(n => 
+      n.type === 'entrance' && n.floorId === nextFloor.id
+    );
+    
+    if (!entranceNode) return;
+    
+    // Determine target: either destination or next stairway
+    let targetNode: IndoorNode | undefined;
+    if (roomFloor.id === nextFloor.id) {
+      targetNode = destinationRoom;
+    } else {
+      const stairways = indoorNodes.filter(n => (n.type === 'stairway' || n.type === 'elevator') && n.floorId === nextFloor.id);
+      if (stairways.length === 0) return;
+      targetNode = stairways[0];
+    }
+    
+    // Build indoor path for next floor
+    const floorRoomPaths = roomPaths.filter(rp => rp.floorId === nextFloor.id);
+    const floorRooms = rooms.filter(r => r.floorId === nextFloor.id);
+    const floorIndoorNodes = indoorNodes.filter(n => n.floorId === nextFloor.id);
+    
+    const indoorGraph = buildIndoorGraph(floorRooms, floorIndoorNodes, floorRoomPaths, nextFloor.pixelToMeterScale || 1);
+    const { nodes, edges } = indoorGraph;
+    const entranceKey = `${nextFloor.id}:${entranceNode.id}`;
+    const destKey = `${nextFloor.id}:${targetNode.id}`;
+    
+    // Dijkstra
+    const distances = new Map<string, number>();
+    const previous = new Map<string, string | null>();
+    const unvisited = new Set<string>();
+    
+    nodes.forEach((_, key) => {
+      distances.set(key, Infinity);
+      previous.set(key, null);
+      unvisited.add(key);
+    });
+    
+    distances.set(entranceKey, 0);
+    
+    while (unvisited.size > 0) {
+      let current: string | null = null;
+      let minDist = Infinity;
+      
+      unvisited.forEach(key => {
+        const dist = distances.get(key) ?? Infinity;
+        if (dist < minDist) {
+          minDist = dist;
+          current = key;
+        }
+      });
+      
+      if (!current) break;
+      if (current === destKey) break;
+      
+      unvisited.delete(current);
+      
+      edges.filter(e => e.from === current).forEach(edge => {
+        if (unvisited.has(edge.to)) {
+          const alt = (distances.get(current!) ?? Infinity) + edge.distance;
+          if (alt < (distances.get(edge.to) ?? Infinity)) {
+            distances.set(edge.to, alt);
+            previous.set(edge.to, current!);
+          }
+        }
+      });
+    }
+    
+    // Reconstruct path
+    const shortestPath: string[] = [];
+    let current: string | null = destKey;
+    while (current !== null) {
+      shortestPath.unshift(current);
+      current = previous.get(current) || null;
+    }
+    
+    // Extract waypoints
+    let polylineWaypoints: Array<{ lat: number; lng: number }> = [
+      { lat: entranceNode.x, lng: entranceNode.y }
+    ];
+    
+    for (let i = 0; i < shortestPath.length - 1; i++) {
+      const fromNode = shortestPath[i];
+      const toNode = shortestPath[i + 1];
+      const edge = edges.find(e => e.from === fromNode && e.to === toNode);
+      
+      if (edge && edge.pathWaypoints && edge.pathWaypoints.length > 0) {
+        for (let j = 1; j < edge.pathWaypoints.length; j++) {
+          const wp = edge.pathWaypoints[j];
+          polylineWaypoints.push({ lat: wp.x, lng: wp.y });
+        }
+      }
+    }
+    
+    polylineWaypoints.push({ lat: targetNode.x, lng: targetNode.y });
+    
+    // Remove duplicates
+    const seen = new Set<string>();
+    polylineWaypoints = polylineWaypoints.filter(wp => {
+      const key = `${wp.lat.toFixed(2)},${wp.lng.toFixed(2)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    
+    // Update route
+    const isMultiFloor = roomFloor.id !== nextFloor.id;
+    const indoorPhase: RoutePhase = {
+      mode: 'walking',
+      polyline: polylineWaypoints,
+      steps: [
+        {
+          instruction: `Start at ${entranceNode.label || 'Floor ' + nextFloor.floorNumber}`,
+          distance: '0 m',
+          icon: 'navigation'
+        },
+        {
+          instruction: `Walk to ${targetNode.label || targetNode.type}`,
+          distance: '0 m',
+          icon: 'arrow-right'
+        }
+      ],
+      distance: '0 m',
+      startName: entranceNode.label || 'Floor ' + nextFloor.floorNumber,
+      endName: targetNode.label || targetNode.type,
+      color: '#ef4444',
+      phaseIndex: (route.phases?.length || 0),
+      startId: selectedEnd.id,
+      endId: targetNode.id
+    };
+    
+    const updatedRoute: NavigationRoute = {
+      ...route,
+      phases: [...(route.phases || []), indoorPhase]
+    };
+    
+    setRoute(updatedRoute);
   };
 
   const handleDoneNavigatingIndoor = () => {
@@ -2197,14 +2391,24 @@ export default function Navigation() {
                 )}
 
                 {/* Phase-specific Navigation Buttons */}
-                {navigationPhase === 'indoor' && destinationRoom ? (
-                  <Button
-                    className="w-full mt-6"
-                    onClick={handleDoneNavigatingIndoor}
-                    data-testid="button-done-navigating-indoor"
-                  >
-                    Done Navigating
-                  </Button>
+                {navigationPhase === 'indoor' && destinationRoom && currentIndoorFloor ? (
+                  currentIndoorFloor.id !== destinationRoom.floorId ? (
+                    <Button
+                      className="w-full mt-6"
+                      onClick={handleProceedToNextFloor}
+                      data-testid="button-proceed-next-floor"
+                    >
+                      Proceed to Next Floor
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full mt-6"
+                      onClick={handleDoneNavigatingIndoor}
+                      data-testid="button-done-navigating-indoor"
+                    >
+                      Done Navigating
+                    </Button>
+                  )
                 ) : navigationPhase === 'outdoor' && destinationRoom ? (
                   <Button
                     className="w-full mt-6"
@@ -2228,11 +2432,11 @@ export default function Navigation() {
         </aside>
 
         <main className="flex-1 overflow-hidden">
-          {navigationPhase === 'indoor' && selectedFloor ? (
+          {navigationPhase === 'indoor' && currentIndoorFloor ? (
             <FloorPlanViewer
-              floor={selectedFloor}
+              floor={currentIndoorFloor}
               rooms={indoorNodes
-                .filter(n => n.floorId === selectedFloor.id && n.type === 'room')
+                .filter(n => n.floorId === currentIndoorFloor.id && n.type === 'room')
                 .map(n => ({
                   id: n.id,
                   name: n.label || 'Unnamed Room',
@@ -2247,10 +2451,10 @@ export default function Navigation() {
               indoorNodes={indoorNodes}
               onClose={() => {
                 setNavigationPhase(null);
-                setSelectedFloor(null);
+                setCurrentIndoorFloor(null);
               }}
-              highlightedRoomId={destinationRoom?.id}
-              showPathTo={destinationRoom}
+              highlightedRoomId={currentIndoorFloor.id === destinationRoom?.floorId ? destinationRoom?.id : undefined}
+              showPathTo={currentIndoorFloor.id === destinationRoom?.floorId ? destinationRoom : indoorNodes.find(n => n.floorId === currentIndoorFloor.id && (n.type === 'stairway' || n.type === 'elevator'))}
               viewOnly={true}
               pathPolyline={route?.phases?.[route.phases.length - 1]?.polyline}
             />
