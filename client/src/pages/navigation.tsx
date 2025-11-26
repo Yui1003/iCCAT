@@ -1149,7 +1149,6 @@ export default function Navigation() {
     console.log('[INDOOR-PATH] Building graph...');
     console.log('[INDOOR-PATH] Total nodes:', indoorGraph.nodes.size);
     console.log('[INDOOR-PATH] Total edges:', indoorGraph.edges.length);
-    console.log('[INDOOR-PATH] Waypoint map entries:', indoorGraph.waypointNodeMap.size);
     
     // Use Dijkstra's algorithm to find shortest path from entrance to destination
     const { nodes, edges } = indoorGraph;
