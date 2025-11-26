@@ -91,35 +91,25 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
       
       ctx.drawImage(image, x, y, image.width * scale, image.height * scale);
 
-      // Draw path if destination room is set (from route phase polyline or direct)
-      if (showPathTo && rooms.length > 0) {
-        // Use the rooms array to trace the path through intermediate waypoints
-        // Draw a path through all room markers on the floor
-        const pathWaypoints = rooms
-          .filter(r => r.floorId === floor.id)
-          .map(r => ({ x: r.x, y: r.y }));
+      // Draw path if destination room is set using the polyline from route phase
+      if (showPathTo && pathPolyline && pathPolyline.length > 1) {
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 3 / zoom;
+        ctx.setLineDash([5 / zoom, 5 / zoom]);
+        ctx.beginPath();
         
-        if (pathWaypoints.length > 0) {
-          ctx.strokeStyle = '#10b981';
-          ctx.lineWidth = 3 / zoom;
-          ctx.setLineDash([5 / zoom, 5 / zoom]);
-          ctx.beginPath();
-          
-          // Start from first waypoint
-          if (pathWaypoints[0]) {
-            ctx.moveTo(x + pathWaypoints[0].x * scale, y + pathWaypoints[0].y * scale);
-          }
-          
-          // Draw through all waypoints
-          for (let i = 1; i < pathWaypoints.length; i++) {
-            const wx = x + pathWaypoints[i].x * scale;
-            const wy = y + pathWaypoints[i].y * scale;
-            ctx.lineTo(wx, wy);
-          }
-          
-          ctx.stroke();
-          ctx.setLineDash([]);
+        // Start from first waypoint
+        const firstWp = pathPolyline[0];
+        ctx.moveTo(x + firstWp.lat * scale, y + firstWp.lng * scale);
+        
+        // Draw through all waypoints
+        for (let i = 1; i < pathPolyline.length; i++) {
+          const wp = pathPolyline[i];
+          ctx.lineTo(x + wp.lat * scale, y + wp.lng * scale);
         }
+        
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
 
       rooms.forEach(room => {

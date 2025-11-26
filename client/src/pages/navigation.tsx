@@ -1140,43 +1140,37 @@ export default function Navigation() {
     // Get all room paths on this floor
     const floorRoomPaths = roomPaths.filter(rp => rp.floorId === roomFloor.id);
     
-    // Extract all waypoints as a polyline
+    // Find the room path that connects to the destination room
+    // A path connects to a room if it has the destination room's nodeId in its waypoints
+    const destRoomNodeId = destinationRoom.id;
+    let pathToDestination = floorRoomPaths.find(path => {
+      if (!path.waypoints || !Array.isArray(path.waypoints)) return false;
+      return path.waypoints.some((wp: any) => wp.nodeId === destRoomNodeId);
+    });
+    
+    // Extract waypoints from the room path that connects to destination
     let polylineWaypoints: Array<{ lat: number; lng: number }> = [
       { lat: entranceNode.x, lng: entranceNode.y }
     ];
     
-    // Collect waypoints from room paths - trace through all connected paths
-    const allWaypoints: Array<{x: number; y: number}> = [
-      { x: entranceNode.x, y: entranceNode.y }
-    ];
+    if (pathToDestination && pathToDestination.waypoints && Array.isArray(pathToDestination.waypoints)) {
+      // Add all waypoints from the path
+      (pathToDestination.waypoints as any[]).forEach((wp: any) => {
+        polylineWaypoints.push({ lat: wp.x, lng: wp.y });
+      });
+    } else {
+      // Fallback: add destination room directly
+      polylineWaypoints.push({ lat: destinationRoom.x, lng: destinationRoom.y });
+    }
     
-    floorRoomPaths.forEach(path => {
-      if (path.waypoints && Array.isArray(path.waypoints)) {
-        path.waypoints.forEach((wp: any) => {
-          allWaypoints.push({ x: wp.x, y: wp.y });
-        });
-      }
-    });
-    
-    // Add destination room
-    allWaypoints.push({ x: destinationRoom.x, y: destinationRoom.y });
-    
-    // Convert to polyline format (removing duplicates)
-    const uniqueWaypoints: Array<{ lat: number; lng: number }> = [];
+    // Remove duplicate endpoints
     const seen = new Set<string>();
-    
-    allWaypoints.forEach(wp => {
-      const key = `${wp.x.toFixed(2)},${wp.y.toFixed(2)}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        uniqueWaypoints.push({ lat: wp.x, lng: wp.y });
-      }
+    polylineWaypoints = polylineWaypoints.filter(wp => {
+      const key = `${wp.lat.toFixed(2)},${wp.lng.toFixed(2)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
     });
-    
-    polylineWaypoints = uniqueWaypoints.length > 0 ? uniqueWaypoints : [
-      { lat: entranceNode.x, lng: entranceNode.y },
-      { lat: destinationRoom.x, lng: destinationRoom.y }
-    ];
     
     // Calculate total distance
     let totalPixelDistance = 0;
@@ -1208,7 +1202,7 @@ export default function Navigation() {
       }
     ];
     
-    // Create indoor phase with actual path waypoints
+    // Create indoor phase with actual path waypoints from room paths
     const indoorPhase: RoutePhase = {
       mode: 'walking',
       polyline: polylineWaypoints,
