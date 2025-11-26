@@ -3,7 +3,7 @@ import type { Room, IndoorNode, RoomPath, Floor, Building } from "@shared/schema
 interface IndoorGraph {
   nodes: Map<string, { id: string; x: number; y: number; type: string; floorId: string }>;
   edges: Array<{ from: string; to: string; distance: number }>;
-  pathsByNode: Map<string, { pathId: string; waypoints: RoomPathWaypoint[] }[]>; // Track which paths contain which nodes
+  allWaypoints: Array<{ x: number; y: number; nodeId?: string; pathId: string }>;
 }
 
 interface RoomPathWaypoint {
@@ -28,7 +28,7 @@ export function buildIndoorGraph(
 ): IndoorGraph {
   const nodes = new Map<string, { id: string; x: number; y: number; type: string; floorId: string }>();
   const edges: Array<{ from: string; to: string; distance: number }> = [];
-  const pathsByNode = new Map<string, { pathId: string; waypoints: RoomPathWaypoint[] }[]>();
+  const allWaypoints: Array<{ x: number; y: number; nodeId?: string; pathId: string }> = [];
 
   // Add rooms as nodes
   rooms.forEach(room => {
@@ -54,110 +54,48 @@ export function buildIndoorGraph(
     });
   });
 
-  // Create edges from room paths (connect waypoints)
-  roomPaths.forEach((path, pathIndex) => {
+  // Create edges from room paths - EXACTLY like outdoor walkpaths/drivepaths
+  // Only connect waypoints that have nodeIds (explicit connections)
+  roomPaths.forEach(path => {
     const waypoints = path.waypoints as RoomPathWaypoint[];
     if (!waypoints || waypoints.length < 2) return;
 
-    for (let i = 0; i < waypoints.length - 1; i++) {
-      const w1 = waypoints[i];
-      const w2 = waypoints[i + 1];
-      
-      const pixelDist = pixelDistance(w1.x, w1.y, w2.x, w2.y);
-      const meterDist = pixelDist * pixelToMeterScale;
-      
-      let key1: string;
-      let key2: string;
-      
-      // If waypoints have nodeIds, use them; otherwise create virtual waypoint nodes
-      if (w1.nodeId) {
-        key1 = nodeKey(w1.nodeId, path.floorId);
-      } else {
-        // Create virtual node for waypoint
-        key1 = `${path.floorId}:waypoint:${pathIndex}:${i}`;
-        if (!nodes.has(key1)) {
-          nodes.set(key1, {
-            id: key1,
-            x: w1.x,
-            y: w1.y,
-            type: 'waypoint',
-            floorId: path.floorId
-          });
-        }
-      }
-      
-      if (w2.nodeId) {
-        key2 = nodeKey(w2.nodeId, path.floorId);
-      } else {
-        // Create virtual node for waypoint
-        key2 = `${path.floorId}:waypoint:${pathIndex}:${i + 1}`;
-        if (!nodes.has(key2)) {
-          nodes.set(key2, {
-            id: key2,
-            x: w2.x,
-            y: w2.y,
-            type: 'waypoint',
-            floorId: path.floorId
-          });
-        }
-      }
-      
-      // Track that this path contains these nodes
-      if (!pathsByNode.has(key1)) {
-        pathsByNode.set(key1, []);
-      }
-      if (!pathsByNode.has(key2)) {
-        pathsByNode.set(key2, []);
-      }
-      pathsByNode.get(key1)!.push({ pathId: path.id, waypoints });
-      pathsByNode.get(key2)!.push({ pathId: path.id, waypoints });
-      
-      // Create bidirectional edges between consecutive waypoints
-      edges.push({ from: key1, to: key2, distance: meterDist });
-      edges.push({ from: key2, to: key1, distance: meterDist });
-    }
-  });
-
-  // Connect nodes (rooms, entrance, etc.) to nearby waypoints in paths (proximity-based)
-  // This allows Dijkstra to route through the path network
-  const connectionThreshold = 50; // pixels - connect if within this distance
-  
-  nodes.forEach((node, nodeid) => {
-    // Don't connect virtual waypoint nodes to other waypoints
-    if (node.type === 'waypoint') return;
-    
-    // Find nearby waypoints in room paths and create edges
-    roomPaths.forEach((path, pathIndex) => {
-      const waypoints = path.waypoints as RoomPathWaypoint[];
-      if (!waypoints || waypoints.length === 0) return;
-      
-      waypoints.forEach((wp, wpIndex) => {
-        const dist = pixelDistance(node.x, node.y, wp.x, wp.y);
-        
-        if (dist <= connectionThreshold && dist > 0) {
-          // Create virtual waypoint node if needed
-          const wpKey = wp.nodeId 
-            ? nodeKey(wp.nodeId, path.floorId)
-            : `${path.floorId}:waypoint:${pathIndex}:${wpIndex}`;
-          
-          // Ensure waypoint node exists in graph
-          if (!nodes.has(wpKey) && !wp.nodeId) {
-            nodes.set(wpKey, {
-              id: wpKey,
-              x: wp.x,
-              y: wp.y,
-              type: 'waypoint',
-              floorId: path.floorId
-            });
-          }
-          
-          // Create bidirectional edge from node to waypoint
-          const edgeDist = dist * pixelToMeterScale;
-          edges.push({ from: nodeid, to: wpKey, distance: edgeDist });
-          edges.push({ from: wpKey, to: nodeid, distance: edgeDist });
-        }
-      });
+    // Store all waypoints for later extraction
+    waypoints.forEach(wp => {
+      allWaypoints.push({ x: wp.x, y: wp.y, nodeId: wp.nodeId, pathId: path.id });
     });
+
+    // Find waypoints with nodeIds and create edges between them
+    const waypointsWithNodeIds: Array<{ index: number; nodeId: string; x: number; y: number }> = [];
+    waypoints.forEach((wp, index) => {
+      if (wp.nodeId) {
+        waypointsWithNodeIds.push({ index, nodeId: wp.nodeId, x: wp.x, y: wp.y });
+      }
+    });
+
+    // Create edges between consecutive waypoints with nodeIds
+    for (let i = 0; i < waypointsWithNodeIds.length - 1; i++) {
+      const from = waypointsWithNodeIds[i];
+      const to = waypointsWithNodeIds[i + 1];
+
+      // Calculate distance through all intermediate waypoints
+      let totalPixelDist = 0;
+      for (let j = from.index; j < to.index; j++) {
+        const w1 = waypoints[j];
+        const w2 = waypoints[j + 1];
+        totalPixelDist += pixelDistance(w1.x, w1.y, w2.x, w2.y);
+      }
+
+      const meterDist = totalPixelDist * pixelToMeterScale;
+      const key1 = nodeKey(from.nodeId, path.floorId);
+      const key2 = nodeKey(to.nodeId, path.floorId);
+
+      // Only add edge if both nodes exist
+      if (nodes.has(key1) && nodes.has(key2)) {
+        edges.push({ from: key1, to: key2, distance: meterDist });
+        edges.push({ from: key2, to: key1, distance: meterDist });
+      }
+    }
   });
 
   // Add vertical connections (stairways/elevators between floors)
@@ -165,17 +103,16 @@ export function buildIndoorGraph(
     if ((node.type === 'stairway' || node.type === 'elevator') && (node.connectedFloorIds?.length ?? 0) > 0) {
       const currentKey = nodeKey(node.id, node.floorId);
       const connectedFloors = node.connectedFloorIds || [];
-      
-      // Connect to same node on other floors
+
       connectedFloors.forEach(connectedFloorId => {
         const connectedNode = indoorNodes.find(n => 
           n.id === node.id && n.floorId === connectedFloorId
         );
-        
+
         if (connectedNode) {
           const connectedKey = nodeKey(connectedNode.id, connectedFloorId);
-          const verticalDistance = 5; // 5 meters per floor for stairway/elevator
-          
+          const verticalDistance = 5;
+
           edges.push({ from: currentKey, to: connectedKey, distance: verticalDistance });
           edges.push({ from: connectedKey, to: currentKey, distance: verticalDistance });
         }
@@ -183,7 +120,7 @@ export function buildIndoorGraph(
     }
   });
 
-  return { nodes, edges, pathsByNode };
+  return { nodes, edges, allWaypoints };
 }
 
 export function findRoomPath(

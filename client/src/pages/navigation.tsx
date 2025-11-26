@@ -1205,30 +1205,37 @@ export default function Navigation() {
       { lat: entranceNode.x, lng: entranceNode.y }
     ];
     
-    // For each consecutive pair of nodes in the shortest path, find and add waypoints
+    // For each consecutive pair of nodes in the shortest path, find waypoints between them
     for (let i = 0; i < shortestPath.length - 1; i++) {
       const fromNodeKey = shortestPath[i];
       const toNodeKey = shortestPath[i + 1];
       
-      // Use the pathsByNode mapping to find paths that contain these nodes
-      const pathsFromNode = indoorGraph.pathsByNode.get(fromNodeKey) || [];
-      const pathsToNode = indoorGraph.pathsByNode.get(toNodeKey) || [];
+      // Extract nodeIds from the path keys (format: "floorId:nodeId")
+      const fromNodeId = fromNodeKey.split(':')[1];
+      const toNodeId = toNodeKey.split(':')[1];
       
-      // Find common paths that connect both nodes
-      const commonPathIds = new Set(pathsFromNode.map(p => p.pathId));
-      const connectingPathsData = pathsToNode.filter(p => commonPathIds.has(p.pathId));
-      
-      // If no common paths, also add paths from either node
-      const pathsToAdd = connectingPathsData.length > 0 ? connectingPathsData : [...pathsFromNode, ...pathsToNode];
-      
-      // Deduplicate and add waypoints
-      const addedPathIds = new Set<string>();
-      pathsToAdd.forEach(pathData => {
-        if (!addedPathIds.has(pathData.pathId)) {
-          addedPathIds.add(pathData.pathId);
-          pathData.waypoints.forEach((wp: any) => {
-            polylineWaypoints.push({ lat: wp.x, lng: wp.y });
-          });
+      // Find waypoints that connect these two nodes
+      floorRoomPaths.forEach(path => {
+        const pathWaypoints = path.waypoints as any[];
+        if (!pathWaypoints) return;
+        
+        // Find indices of the connecting waypoints
+        let startIdx = -1;
+        let endIdx = -1;
+        
+        for (let j = 0; j < pathWaypoints.length; j++) {
+          if (pathWaypoints[j].nodeId === fromNodeId) startIdx = j;
+          if (pathWaypoints[j].nodeId === toNodeId) endIdx = j;
+        }
+        
+        // If this path connects the two nodes, add all waypoints between them
+        if (startIdx !== -1 && endIdx !== -1) {
+          const minIdx = Math.min(startIdx, endIdx);
+          const maxIdx = Math.max(startIdx, endIdx);
+          
+          for (let j = minIdx; j <= maxIdx; j++) {
+            polylineWaypoints.push({ lat: pathWaypoints[j].x, lng: pathWaypoints[j].y });
+          }
         }
       });
     }
