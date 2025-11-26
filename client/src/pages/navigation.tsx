@@ -1404,15 +1404,26 @@ export default function Navigation() {
         return;
       }
       
-      // Find the same stairway on the next floor (same ID, different coordinates)
-      const entranceNode = indoorNodes.find(n => 
-        n.id === staircaseOnCurrentFloor.id && n.floorId === nextFloor.id
-      );
+      // Find a stairway on next floor that connects back to current floor
+      const entranceNode = indoorNodes.find(n => {
+        if ((n.type !== 'stairway' && n.type !== 'elevator') || n.floorId !== nextFloor.id) {
+          return false;
+        }
+        // Check if this stairway connects to current floor
+        const connectedFloors = (n as any).connectedFloorIds || [];
+        return connectedFloors.includes(currentIndoorFloor.id);
+      });
       
       console.log('[FLOOR2-START] Entrance node on next floor found:', !!entranceNode, entranceNode?.label);
       if (!entranceNode) {
-        console.log('[FLOOR2-ERROR] Stairway does not connect to next floor');
-        return;
+        console.log('[FLOOR2-ERROR] No stairway on Floor 2 connects back to Floor 1');
+        // Fallback: find ANY stairway on next floor
+        const anyStairway = indoorNodes.find(n => (n.type === 'stairway' || n.type === 'elevator') && n.floorId === nextFloor.id);
+        if (!anyStairway) {
+          console.log('[FLOOR2-ERROR] No stairways at all on next floor');
+          return;
+        }
+        console.log('[FLOOR2-FALLBACK] Using fallback stairway:', anyStairway.label);
       }
       
       // Determine target: either destination or next stairway
@@ -1441,9 +1452,16 @@ export default function Navigation() {
       const { nodes, edges } = indoorGraph;
       console.log('[FLOOR2-START] Graph built:', nodes.size, 'nodes,', edges.length, 'edges');
       
-      const entranceKey = `${nextFloor.id}:${entranceNode.id}`;
+      // Use fallback stairway if needed
+      const startNode = entranceNode || indoorNodes.find(n => (n.type === 'stairway' || n.type === 'elevator') && n.floorId === nextFloor.id);
+      if (!startNode) {
+        console.log('[FLOOR2-ERROR] Could not find any stairway to start from');
+        return;
+      }
+      
+      const entranceKey = `${nextFloor.id}:${startNode.id}`;
       const destKey = `${nextFloor.id}:${targetNode.id}`;
-      console.log('[FLOOR2-START] Entrance key:', entranceKey, 'Dest key:', destKey);
+      console.log('[FLOOR2-START] Starting from:', startNode.label, 'Entrance key:', entranceKey, 'Dest key:', destKey);
       
       // Dijkstra
       const distances = new Map<string, number>();
@@ -1501,7 +1519,7 @@ export default function Navigation() {
       
       // Extract waypoints
       let polylineWaypoints: Array<{ lat: number; lng: number }> = [
-        { lat: entranceNode.x, lng: entranceNode.y }
+        { lat: startNode.x, lng: startNode.y }
       ];
       
       for (let i = 0; i < shortestPath.length - 1; i++) {
@@ -1541,7 +1559,7 @@ export default function Navigation() {
         polyline: polylineWaypoints,
         steps: [
           {
-            instruction: `Start at ${entranceNode.label || 'Floor ' + nextFloor.floorNumber}`,
+            instruction: `Start at ${startNode.label || 'Floor ' + nextFloor.floorNumber}`,
             distance: '0 m',
             icon: 'navigation'
           },
@@ -1552,7 +1570,7 @@ export default function Navigation() {
           }
         ],
         distance: '0 m',
-        startName: entranceNode.label || 'Floor ' + nextFloor.floorNumber,
+        startName: startNode.label || 'Floor ' + nextFloor.floorNumber,
         endName: targetNode.label || targetNode.type,
         color: '#ef4444',
         phaseIndex: (route.phases?.length || 0),
