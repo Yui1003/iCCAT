@@ -110,6 +110,49 @@ export function buildIndoorGraph(
     }
   });
 
+  // Connect rooms and indoor nodes to the closest waypoint on any path
+  // This bridges rooms/nodes to the waypoint graph so pathfinding can route through it
+  const allRoomsAndNodes = [
+    ...rooms.map(r => ({ ...r, type: 'room', floorId: r.floorId, x: r.x, y: r.y })),
+    ...indoorNodes.map(n => ({ ...n, type: n.type, floorId: n.floorId, x: n.x, y: n.y }))
+  ];
+
+  allRoomsAndNodes.forEach((entity: any) => {
+    const entityKey = nodeKey(entity.id, entity.floorId);
+    if (!nodes.has(entityKey)) return;
+
+    // Find the closest waypoint on any path for this entity's floor
+    let closestWaypoint: { nodeKey: string; distance: number } | null = null;
+
+    roomPaths.forEach((path, pathIndex) => {
+      if (path.floorId !== entity.floorId) return;
+
+      const waypoints = path.waypoints as RoomPathWaypoint[];
+      waypoints.forEach((wp, wpIndex) => {
+        let waypointNodeKey: string;
+
+        if (wp.nodeId) {
+          waypointNodeKey = nodeKey(wp.nodeId, path.floorId);
+        } else {
+          const coordKey = `${wp.x.toFixed(1)},${wp.y.toFixed(1)}`;
+          waypointNodeKey = coordKeyToNodeId.get(coordKey) || `${path.floorId}:waypoint:${pathIndex}:${wpIndex}`;
+        }
+
+        const dist = pixelDistance(entity.x, entity.y, wp.x, wp.y);
+        if (!closestWaypoint || dist < closestWaypoint.distance) {
+          closestWaypoint = { nodeKey: waypointNodeKey, distance: dist };
+        }
+      });
+    });
+
+    // Connect the entity to the closest waypoint if one exists
+    if (closestWaypoint) {
+      const meterDist = closestWaypoint.distance * pixelToMeterScale;
+      edges.push({ from: entityKey, to: closestWaypoint.nodeKey, distance: meterDist, pathWaypoints: [] });
+      edges.push({ from: closestWaypoint.nodeKey, to: entityKey, distance: meterDist, pathWaypoints: [] });
+    }
+  });
+
   // Add vertical connections
   indoorNodes.forEach(node => {
     if ((node.type === 'stairway' || node.type === 'elevator') && (node.connectedFloorIds?.length ?? 0) > 0) {
