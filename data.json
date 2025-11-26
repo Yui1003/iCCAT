@@ -4557,6 +4557,8 @@
       "avgUxItems": 5
     }
   ],
+  "indoorNodes": [],
+  "roomPaths": [],
   "analytics": [
     {
       "id": "01e90435-066d-49e6-9d4f-91f750c04674",

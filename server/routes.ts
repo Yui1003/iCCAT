@@ -13,6 +13,8 @@ import {
   insertSettingSchema,
   insertFeedbackSchema,
   insertSavedRouteSchema,
+  insertIndoorNodeSchema,
+  insertRoomPathSchema,
   canHaveStaff,
   type POIType
 } from "@shared/schema";
@@ -655,6 +657,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete drivepath' });
+    }
+  });
+
+  // Indoor Nodes routes - for indoor navigation
+  app.get('/api/indoor-nodes', async (req, res) => {
+    try {
+      const nodes = await storage.getIndoorNodes();
+      res.json(nodes);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch indoor nodes' });
+    }
+  });
+
+  app.get('/api/indoor-nodes/:id', async (req, res) => {
+    try {
+      const node = await storage.getIndoorNode(req.params.id);
+      if (!node) {
+        return res.status(404).json({ error: 'Indoor node not found' });
+      }
+      res.json(node);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch indoor node' });
+    }
+  });
+
+  app.get('/api/indoor-nodes/floor/:floorId', async (req, res) => {
+    try {
+      const nodes = await storage.getIndoorNodesByFloor(req.params.floorId);
+      res.json(nodes);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch indoor nodes for floor' });
+    }
+  });
+
+  app.post('/api/indoor-nodes', async (req, res) => {
+    try {
+      const data = insertIndoorNodeSchema.parse(req.body);
+      const node = await storage.createIndoorNode(data);
+      res.status(201).json(node);
+    } catch (error) {
+      res.status(400).json({ error: 'Invalid indoor node data' });
+    }
+  });
+
+  app.put('/api/indoor-nodes/:id', async (req, res) => {
+    try {
+      const data = insertIndoorNodeSchema.parse(req.body);
+      const node = await storage.updateIndoorNode(req.params.id, data);
+      if (!node) {
+        return res.status(404).json({ error: 'Indoor node not found' });
+      }
+      res.json(node);
+    } catch (error) {
+      res.status(400).json({ error: 'Invalid indoor node data' });
+    }
+  });
+
+  app.delete('/api/indoor-nodes/:id', async (req, res) => {
+    try {
+      const success = await storage.deleteIndoorNode(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: 'Indoor node not found' });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete indoor node' });
+    }
+  });
+
+  // Room Paths routes - for indoor navigation paths
+  app.get('/api/room-paths', async (req, res) => {
+    try {
+      const paths = await storage.getRoomPaths();
+      res.json(paths);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch room paths' });
+    }
+  });
+
+  app.get('/api/room-paths/:id', async (req, res) => {
+    try {
+      const path = await storage.getRoomPath(req.params.id);
+      if (!path) {
+        return res.status(404).json({ error: 'Room path not found' });
+      }
+      res.json(path);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch room path' });
+    }
+  });
+
+  app.get('/api/room-paths/floor/:floorId', async (req, res) => {
+    try {
+      const paths = await storage.getRoomPathsByFloor(req.params.floorId);
+      res.json(paths);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch room paths for floor' });
+    }
+  });
+
+  app.post('/api/room-paths', async (req, res) => {
+    try {
+      const data = insertRoomPathSchema.parse(req.body);
+      const path = await storage.createRoomPath(data);
+      res.status(201).json(path);
+    } catch (error) {
+      res.status(400).json({ error: 'Invalid room path data' });
+    }
+  });
+
+  app.put('/api/room-paths/:id', async (req, res) => {
+    try {
+      const data = insertRoomPathSchema.parse(req.body);
+      const path = await storage.updateRoomPath(req.params.id, data);
+      if (!path) {
+        return res.status(404).json({ error: 'Room path not found' });
+      }
+      res.json(path);
+    } catch (error) {
+      res.status(400).json({ error: 'Invalid room path data' });
+    }
+  });
+
+  app.delete('/api/room-paths/:id', async (req, res) => {
+    try {
+      const success = await storage.deleteRoomPath(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: 'Room path not found' });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete room path' });
     }
   });
 

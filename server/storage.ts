@@ -13,7 +13,9 @@ import type {
   AdminUser, InsertAdminUser,
   Setting, InsertSetting,
   Feedback, InsertFeedback,
-  SavedRoute, InsertSavedRoute
+  SavedRoute, InsertSavedRoute,
+  IndoorNode, InsertIndoorNode,
+  RoomPath, InsertRoomPath
 } from "@shared/schema";
 import type { AnalyticsEvent, AnalyticsSummary } from "@shared/analytics-schema";
 import { AnalyticsEventType } from "@shared/analytics-schema";
@@ -114,6 +116,22 @@ export interface IStorage {
   resetAnalytics(): Promise<void>;
 
   exportToJSON(): Promise<void>;
+
+  // Indoor Nodes - for indoor navigation
+  getIndoorNodes(): Promise<IndoorNode[]>;
+  getIndoorNode(id: string): Promise<IndoorNode | undefined>;
+  getIndoorNodesByFloor(floorId: string): Promise<IndoorNode[]>;
+  createIndoorNode(node: InsertIndoorNode): Promise<IndoorNode>;
+  updateIndoorNode(id: string, node: InsertIndoorNode): Promise<IndoorNode | undefined>;
+  deleteIndoorNode(id: string): Promise<boolean>;
+
+  // Room Paths - for indoor navigation paths
+  getRoomPaths(): Promise<RoomPath[]>;
+  getRoomPath(id: string): Promise<RoomPath | undefined>;
+  getRoomPathsByFloor(floorId: string): Promise<RoomPath[]>;
+  createRoomPath(path: InsertRoomPath): Promise<RoomPath>;
+  updateRoomPath(id: string, path: InsertRoomPath): Promise<RoomPath | undefined>;
+  deleteRoomPath(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -831,6 +849,220 @@ export class DatabaseStorage implements IStorage {
 
   async exportToJSON(): Promise<void> {
     console.log('Export to JSON skipped - Firestore is the source of truth');
+  }
+
+  // Indoor Nodes
+  async getIndoorNodes(): Promise<IndoorNode[]> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return data.indoorNodes || [];
+    }
+    try {
+      const snapshot = await db.collection('indoorNodes').get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as IndoorNode));
+    } catch (error) {
+      console.error('Firestore error for indoorNodes:', error);
+      const data = loadFallbackData();
+      return data.indoorNodes || [];
+    }
+  }
+
+  async getIndoorNode(id: string): Promise<IndoorNode | undefined> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return (data.indoorNodes || []).find((n: IndoorNode) => n.id === id);
+    }
+    try {
+      const doc = await db.collection('indoorNodes').doc(id).get();
+      if (!doc.exists) return undefined;
+      return { id: doc.id, ...doc.data() } as IndoorNode;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      const data = loadFallbackData();
+      return (data.indoorNodes || []).find((n: IndoorNode) => n.id === id);
+    }
+  }
+
+  async getIndoorNodesByFloor(floorId: string): Promise<IndoorNode[]> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return (data.indoorNodes || []).filter((n: IndoorNode) => n.floorId === floorId);
+    }
+    try {
+      const snapshot = await db.collection('indoorNodes').where('floorId', '==', floorId).get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as IndoorNode));
+    } catch (error) {
+      console.error('Firestore error:', error);
+      const data = loadFallbackData();
+      return (data.indoorNodes || []).filter((n: IndoorNode) => n.floorId === floorId);
+    }
+  }
+
+  async createIndoorNode(node: InsertIndoorNode): Promise<IndoorNode> {
+    const id = randomUUID();
+    const newNode: IndoorNode = { id, ...node };
+    
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      if (!data.indoorNodes) data.indoorNodes = [];
+      data.indoorNodes.push(newNode);
+      return newNode;
+    }
+    
+    try {
+      await db.collection('indoorNodes').doc(id).set(newNode);
+      return newNode;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      throw new Error('Cannot create indoor node');
+    }
+  }
+
+  async updateIndoorNode(id: string, node: InsertIndoorNode): Promise<IndoorNode | undefined> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      const index = (data.indoorNodes || []).findIndex((n: IndoorNode) => n.id === id);
+      if (index === -1) return undefined;
+      const updatedNode = { id, ...node };
+      data.indoorNodes[index] = updatedNode;
+      return updatedNode;
+    }
+    
+    try {
+      const docRef = db.collection('indoorNodes').doc(id);
+      const doc = await docRef.get();
+      if (!doc.exists) return undefined;
+      await docRef.update(node as any);
+      return { id, ...node };
+    } catch (error) {
+      console.error('Firestore error:', error);
+      return undefined;
+    }
+  }
+
+  async deleteIndoorNode(id: string): Promise<boolean> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      const index = (data.indoorNodes || []).findIndex((n: IndoorNode) => n.id === id);
+      if (index === -1) return false;
+      data.indoorNodes.splice(index, 1);
+      return true;
+    }
+    
+    try {
+      await db.collection('indoorNodes').doc(id).delete();
+      return true;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      return false;
+    }
+  }
+
+  // Room Paths
+  async getRoomPaths(): Promise<RoomPath[]> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return data.roomPaths || [];
+    }
+    try {
+      const snapshot = await db.collection('roomPaths').get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RoomPath));
+    } catch (error) {
+      console.error('Firestore error for roomPaths:', error);
+      const data = loadFallbackData();
+      return data.roomPaths || [];
+    }
+  }
+
+  async getRoomPath(id: string): Promise<RoomPath | undefined> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return (data.roomPaths || []).find((p: RoomPath) => p.id === id);
+    }
+    try {
+      const doc = await db.collection('roomPaths').doc(id).get();
+      if (!doc.exists) return undefined;
+      return { id: doc.id, ...doc.data() } as RoomPath;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      const data = loadFallbackData();
+      return (data.roomPaths || []).find((p: RoomPath) => p.id === id);
+    }
+  }
+
+  async getRoomPathsByFloor(floorId: string): Promise<RoomPath[]> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return (data.roomPaths || []).filter((p: RoomPath) => p.floorId === floorId);
+    }
+    try {
+      const snapshot = await db.collection('roomPaths').where('floorId', '==', floorId).get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RoomPath));
+    } catch (error) {
+      console.error('Firestore error:', error);
+      const data = loadFallbackData();
+      return (data.roomPaths || []).filter((p: RoomPath) => p.floorId === floorId);
+    }
+  }
+
+  async createRoomPath(path: InsertRoomPath): Promise<RoomPath> {
+    const id = randomUUID();
+    const newPath: RoomPath = { id, ...path };
+    
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      if (!data.roomPaths) data.roomPaths = [];
+      data.roomPaths.push(newPath);
+      return newPath;
+    }
+    
+    try {
+      await db.collection('roomPaths').doc(id).set(newPath);
+      return newPath;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      throw new Error('Cannot create room path');
+    }
+  }
+
+  async updateRoomPath(id: string, path: InsertRoomPath): Promise<RoomPath | undefined> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      const index = (data.roomPaths || []).findIndex((p: RoomPath) => p.id === id);
+      if (index === -1) return undefined;
+      const updatedPath = { id, ...path };
+      data.roomPaths[index] = updatedPath;
+      return updatedPath;
+    }
+    
+    try {
+      const docRef = db.collection('roomPaths').doc(id);
+      const doc = await docRef.get();
+      if (!doc.exists) return undefined;
+      await docRef.update(path as any);
+      return { id, ...path };
+    } catch (error) {
+      console.error('Firestore error:', error);
+      return undefined;
+    }
+  }
+
+  async deleteRoomPath(id: string): Promise<boolean> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      const index = (data.roomPaths || []).findIndex((p: RoomPath) => p.id === id);
+      if (index === -1) return false;
+      data.roomPaths.splice(index, 1);
+      return true;
+    }
+    
+    try {
+      await db.collection('roomPaths').doc(id).delete();
+      return true;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      return false;
+    }
   }
 
   // Feedback

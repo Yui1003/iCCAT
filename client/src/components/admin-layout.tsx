@@ -9,7 +9,8 @@ import {
   LogOut,
   Map,
   Settings,
-  BarChart3
+  BarChart3,
+  DoorOpen
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "./ui/sidebar";
@@ -48,6 +49,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       title: "Floor Plans",
       url: "/admin/floor-plans",
       icon: Layers,
+    },
+    {
+      title: "Room Paths",
+      url: "/admin/room-paths",
+      icon: DoorOpen,
     },
     {
       title: "Staff",

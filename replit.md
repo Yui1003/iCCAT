@@ -81,6 +81,24 @@ The pathfinding system now operates on a **purely manual connection model**:
 - **Pathfinding Purity**: Zero automatic node merging; routes reflect user's manual path creation exactly.
 
 ## Recent Changes
+- **Indoor Navigation System (Nov 26, 2025)**:
+  - **Schema Additions**:
+    - IndoorNode: Represents nodes within buildings (room, entrance, stairway, elevator, hallway types)
+    - RoomPath: Paths drawn on floor plans connecting indoor nodes
+    - Room positioning: x, y coordinates for room locations on floor plans
+    - Floor pixelToMeterScale: Conversion factor for distance calculations
+  - **Admin Features**:
+    - FloorPlanDrawingCanvas: Component for drawing paths on floor plan images
+    - AdminRoomPaths page: Manage indoor paths with building/floor selection
+    - Visual node types: Room (blue), Entrance (orange), Stairway (purple), Elevator (pink), Hallway (gray)
+  - **API Endpoints**:
+    - /api/indoor-nodes: CRUD operations for indoor navigation nodes
+    - /api/room-paths: CRUD operations for indoor paths
+  - **Pathfinding Design**:
+    - Outdoor-to-indoor: Building nodes connect to entrance nodes
+    - Inter-floor: Stairway/elevator nodes connect across floors via connectedFloorIds
+    - Indoor routing: Path waypoints form corridors/hallways within buildings
+
 - **Pathfinding - Automatic Node Merging Disabled (Nov 25, 2025)**:
   - Issue: Routes were skipping path waypoints due to 10-meter automatic node merging creating false shortcuts
   - Root Cause: Auto-merging was connecting nodes from different paths that users never explicitly connected

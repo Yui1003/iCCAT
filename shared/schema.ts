@@ -127,6 +127,9 @@ export const floors = pgTable("floors", {
   floorNumber: integer("floor_number").notNull(),
   floorName: text("floor_name"),
   floorPlanImage: text("floor_plan_image"),
+  pixelToMeterScale: real("pixel_to_meter_scale").default(0.05), // Conversion factor: meters per pixel (default: 1 pixel = 0.05 meters)
+  floorPlanWidth: integer("floor_plan_width"), // Width of floor plan image in pixels
+  floorPlanHeight: integer("floor_plan_height"), // Height of floor plan image in pixels
 });
 
 export const insertFloorSchema = createInsertSchema(floors).omit({ id: true });
@@ -376,3 +379,55 @@ export const insertFeedbackSchema = createInsertSchema(feedbacks).omit({
 });
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 export type Feedback = typeof feedbacks.$inferSelect;
+
+// Indoor Node types for indoor navigation
+export const indoorNodeTypes = [
+  "room",
+  "entrance", 
+  "stairway",
+  "elevator",
+  "hallway"
+] as const;
+
+export type IndoorNodeType = typeof indoorNodeTypes[number];
+
+// Indoor Nodes table - nodes placed on floor plans for indoor navigation
+export const indoorNodes = pgTable("indoor_nodes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  floorId: varchar("floor_id").notNull(), // Which floor this node belongs to
+  type: text("type").notNull(), // room, entrance, stairway, elevator, hallway
+  x: real("x").notNull(), // X position on floor plan (pixels)
+  y: real("y").notNull(), // Y position on floor plan (pixels)
+  roomId: varchar("room_id"), // Reference to room (required for room nodes, null for hallway/stairway/elevator)
+  connectedBuildingNodeId: varchar("connected_building_node_id"), // For entrance nodes - connects to outdoor building node
+  connectedFloorIds: text("connected_floor_ids").array().default([]), // For stairway/elevator - list of floor IDs this connects to
+  label: text("label"), // Display name for the node
+});
+
+export const insertIndoorNodeSchema = createInsertSchema(indoorNodes).omit({ id: true }).extend({
+  roomId: z.string().nullable().optional(),
+  connectedBuildingNodeId: z.string().nullable().optional(),
+  connectedFloorIds: z.array(z.string()).default([]),
+});
+export type InsertIndoorNode = z.infer<typeof insertIndoorNodeSchema>;
+export type IndoorNode = typeof indoorNodes.$inferSelect;
+
+// Room Paths table - paths connecting nodes on floor plans for indoor navigation
+export const roomPaths = pgTable("room_paths", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  floorId: varchar("floor_id").notNull(), // Which floor this path belongs to
+  name: text("name"), // Path name for admin reference
+  waypoints: jsonb("waypoints").notNull(), // Array of {x, y, nodeId?} - pixel coordinates on floor plan
+  pathType: text("path_type").notNull().default("hallway"), // hallway, corridor
+});
+
+export const insertRoomPathSchema = createInsertSchema(roomPaths).omit({ id: true });
+export type InsertRoomPath = z.infer<typeof insertRoomPathSchema>;
+export type RoomPath = typeof roomPaths.$inferSelect;
+
+// TypeScript interface for room path waypoints
+export interface RoomPathWaypoint {
+  x: number;
+  y: number;
+  nodeId?: string; // Optional reference to an IndoorNode if this waypoint connects to a node
+}
