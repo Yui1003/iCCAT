@@ -1392,166 +1392,181 @@ export default function Navigation() {
       return;
     }
     
-    console.log('[FLOOR2-START] Setting current floor to:', nextFloor.floorName);
-    setCurrentIndoorFloor(nextFloor);
-    setSelectedFloor(nextFloor);
-    
-    // Find entrance node on next floor
-    const entranceNode = indoorNodes.find(n => 
-      n.type === 'entrance' && n.floorId === nextFloor.id
-    );
-    
-    console.log('[FLOOR2-START] Entrance node:', entranceNode?.label);
-    if (!entranceNode) {
-      console.log('[FLOOR2-ERROR] No entrance on next floor');
-      return;
-    }
-    
-    // Determine target: either destination or next stairway
-    let targetNode: IndoorNode | undefined;
-    if (roomFloor.id === nextFloor.id) {
-      targetNode = destinationRoom;
-    } else {
-      const stairways = indoorNodes.filter(n => (n.type === 'stairway' || n.type === 'elevator') && n.floorId === nextFloor.id);
-      if (stairways.length === 0) return;
-      targetNode = stairways[0];
-    }
-    
-    // Build indoor path for next floor
-    const floorRoomPaths = roomPaths.filter(rp => rp.floorId === nextFloor.id);
-    const floorRooms = rooms.filter(r => r.floorId === nextFloor.id);
-    const floorIndoorNodes = indoorNodes.filter(n => n.floorId === nextFloor.id);
-    
-    const indoorGraph = buildIndoorGraph(floorRooms, floorIndoorNodes, floorRoomPaths, nextFloor.pixelToMeterScale || 1);
-    const { nodes, edges } = indoorGraph;
-    const entranceKey = `${nextFloor.id}:${entranceNode.id}`;
-    const destKey = `${nextFloor.id}:${targetNode.id}`;
-    
-    // Dijkstra
-    const distances = new Map<string, number>();
-    const previous = new Map<string, string | null>();
-    const unvisited = new Set<string>();
-    
-    nodes.forEach((_, key) => {
-      distances.set(key, Infinity);
-      previous.set(key, null);
-      unvisited.add(key);
-    });
-    
-    distances.set(entranceKey, 0);
-    
-    while (unvisited.size > 0) {
-      let current: string | null = null;
-      let minDist = Infinity;
+    try {
+      console.log('[FLOOR2-START] Finding entrance on floor:', nextFloor.floorName);
       
-      unvisited.forEach(key => {
-        const dist = distances.get(key) ?? Infinity;
-        if (dist < minDist) {
-          minDist = dist;
-          current = key;
+      // Find entrance node on next floor
+      const entranceNode = indoorNodes.find(n => 
+        n.type === 'entrance' && n.floorId === nextFloor.id
+      );
+      
+      console.log('[FLOOR2-START] Entrance node found:', !!entranceNode, entranceNode?.label);
+      if (!entranceNode) {
+        console.log('[FLOOR2-ERROR] No entrance on next floor');
+        return;
+      }
+      
+      // Determine target: either destination or next stairway
+      let targetNode: IndoorNode | undefined;
+      if (roomFloor.id === nextFloor.id) {
+        targetNode = destinationRoom;
+        console.log('[FLOOR2-START] Target is destination room:', targetNode?.label);
+      } else {
+        const stairways = indoorNodes.filter(n => (n.type === 'stairway' || n.type === 'elevator') && n.floorId === nextFloor.id);
+        console.log('[FLOOR2-START] Found', stairways.length, 'stairways on floor');
+        if (stairways.length === 0) {
+          console.log('[FLOOR2-ERROR] No stairways on floor');
+          return;
         }
+        targetNode = stairways[0];
+        console.log('[FLOOR2-START] Target is stairway:', targetNode?.label);
+      }
+      
+      // Build indoor path for next floor
+      const floorRoomPaths = roomPaths.filter(rp => rp.floorId === nextFloor.id);
+      const floorRooms = rooms.filter(r => r.floorId === nextFloor.id);
+      const floorIndoorNodes = indoorNodes.filter(n => n.floorId === nextFloor.id);
+      
+      console.log('[FLOOR2-START] Building graph with', floorIndoorNodes.length, 'nodes,', floorRoomPaths.length, 'paths');
+      const indoorGraph = buildIndoorGraph(floorRooms, floorIndoorNodes, floorRoomPaths, nextFloor.pixelToMeterScale || 1);
+      const { nodes, edges } = indoorGraph;
+      console.log('[FLOOR2-START] Graph built:', nodes.size, 'nodes,', edges.length, 'edges');
+      
+      const entranceKey = `${nextFloor.id}:${entranceNode.id}`;
+      const destKey = `${nextFloor.id}:${targetNode.id}`;
+      console.log('[FLOOR2-START] Entrance key:', entranceKey, 'Dest key:', destKey);
+      
+      // Dijkstra
+      const distances = new Map<string, number>();
+      const previous = new Map<string, string | null>();
+      const unvisited = new Set<string>();
+      
+      nodes.forEach((_, key) => {
+        distances.set(key, Infinity);
+        previous.set(key, null);
+        unvisited.add(key);
       });
       
-      if (!current) break;
-      if (current === destKey) break;
+      distances.set(entranceKey, 0);
       
-      unvisited.delete(current);
+      while (unvisited.size > 0) {
+        let current: string | null = null;
+        let minDist = Infinity;
+        
+        unvisited.forEach(key => {
+          const dist = distances.get(key) ?? Infinity;
+          if (dist < minDist) {
+            minDist = dist;
+            current = key;
+          }
+        });
+        
+        if (!current) break;
+        if (current === destKey) break;
+        
+        unvisited.delete(current);
+        
+        edges.filter(e => e.from === current).forEach(edge => {
+          if (unvisited.has(edge.to)) {
+            const alt = (distances.get(current!) ?? Infinity) + edge.distance;
+            if (alt < (distances.get(edge.to) ?? Infinity)) {
+              distances.set(edge.to, alt);
+              previous.set(edge.to, current!);
+            }
+          }
+        });
+      }
       
-      edges.filter(e => e.from === current).forEach(edge => {
-        if (unvisited.has(edge.to)) {
-          const alt = (distances.get(current!) ?? Infinity) + edge.distance;
-          if (alt < (distances.get(edge.to) ?? Infinity)) {
-            distances.set(edge.to, alt);
-            previous.set(edge.to, current!);
+      // Reconstruct path
+      const shortestPath: string[] = [];
+      let current: string | null = destKey;
+      while (current !== null) {
+        shortestPath.unshift(current);
+        current = previous.get(current) || null;
+      }
+      
+      console.log('[FLOOR2-DIJKSTRA] Shortest path found:', shortestPath.length, shortestPath);
+      if (shortestPath.length === 0) {
+        console.log('[FLOOR2-ERROR] Dijkstra returned empty path - no route between entrance and target');
+      }
+      
+      // Extract waypoints
+      let polylineWaypoints: Array<{ lat: number; lng: number }> = [
+        { lat: entranceNode.x, lng: entranceNode.y }
+      ];
+      
+      for (let i = 0; i < shortestPath.length - 1; i++) {
+        const fromNode = shortestPath[i];
+        const toNode = shortestPath[i + 1];
+        const edge = edges.find(e => e.from === fromNode && e.to === toNode);
+        
+        console.log(`[FLOOR2] Edge ${i}: ${fromNode} -> ${toNode}, has edge: ${!!edge}, waypoints: ${edge?.pathWaypoints?.length || 0}`);
+        
+        if (edge && edge.pathWaypoints && edge.pathWaypoints.length > 0) {
+          for (let j = 1; j < edge.pathWaypoints.length; j++) {
+            const wp = edge.pathWaypoints[j];
+            polylineWaypoints.push({ lat: wp.x, lng: wp.y });
           }
         }
-      });
-    }
-    
-    // Reconstruct path
-    const shortestPath: string[] = [];
-    let current: string | null = destKey;
-    while (current !== null) {
-      shortestPath.unshift(current);
-      current = previous.get(current) || null;
-    }
-    
-    console.log('[FLOOR2-DIJKSTRA] Shortest path found:', shortestPath.length, shortestPath);
-    if (shortestPath.length === 0) {
-      console.log('[FLOOR2-ERROR] Dijkstra returned empty path - no route between entrance and target');
-    }
-    
-    // Extract waypoints
-    let polylineWaypoints: Array<{ lat: number; lng: number }> = [
-      { lat: entranceNode.x, lng: entranceNode.y }
-    ];
-    
-    for (let i = 0; i < shortestPath.length - 1; i++) {
-      const fromNode = shortestPath[i];
-      const toNode = shortestPath[i + 1];
-      const edge = edges.find(e => e.from === fromNode && e.to === toNode);
-      
-      console.log(`[FLOOR2] Edge ${i}: ${fromNode} -> ${toNode}, has edge: ${!!edge}, waypoints: ${edge?.pathWaypoints?.length || 0}`);
-      
-      if (edge && edge.pathWaypoints && edge.pathWaypoints.length > 0) {
-        for (let j = 1; j < edge.pathWaypoints.length; j++) {
-          const wp = edge.pathWaypoints[j];
-          polylineWaypoints.push({ lat: wp.x, lng: wp.y });
-        }
       }
+      
+      polylineWaypoints.push({ lat: targetNode.x, lng: targetNode.y });
+      
+      console.log('[FLOOR2-DIJKSTRA] Polyline waypoints before dedup:', polylineWaypoints.length);
+      
+      // Remove duplicates
+      const seen = new Set<string>();
+      polylineWaypoints = polylineWaypoints.filter(wp => {
+        const key = `${wp.lat.toFixed(2)},${wp.lng.toFixed(2)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      
+      console.log('[FLOOR2-DIJKSTRA] Final polyline waypoints:', polylineWaypoints.length, polylineWaypoints);
+      
+      // Update route
+      const isMultiFloor = roomFloor.id !== nextFloor.id;
+      const indoorPhase: RoutePhase = {
+        mode: 'walking',
+        polyline: polylineWaypoints,
+        steps: [
+          {
+            instruction: `Start at ${entranceNode.label || 'Floor ' + nextFloor.floorNumber}`,
+            distance: '0 m',
+            icon: 'navigation'
+          },
+          {
+            instruction: `Walk to ${targetNode.label || targetNode.type}`,
+            distance: '0 m',
+            icon: 'arrow-right'
+          }
+        ],
+        distance: '0 m',
+        startName: entranceNode.label || 'Floor ' + nextFloor.floorNumber,
+        endName: targetNode.label || targetNode.type,
+        color: '#ef4444',
+        phaseIndex: (route.phases?.length || 0),
+        startId: selectedEnd.id,
+        endId: targetNode.id
+      };
+      
+      const updatedRoute: NavigationRoute = {
+        ...route,
+        phases: [...(route.phases || []), indoorPhase]
+      };
+      
+      console.log('[FLOOR2] Updated route phases count:', updatedRoute.phases?.length);
+      console.log('[FLOOR2] Last phase polyline:', indoorPhase.polyline?.length);
+      
+      // NOW update state after all calculations are done
+      setRoute(updatedRoute);
+      setCurrentIndoorFloor(nextFloor);
+      setSelectedFloor(nextFloor);
+      console.log('[FLOOR2-END] State updated successfully');
+    } catch (err) {
+      console.error('[FLOOR2-ERROR] Exception in handleProceedToNextFloor:', err);
     }
-    
-    polylineWaypoints.push({ lat: targetNode.x, lng: targetNode.y });
-    
-    console.log('[FLOOR2-DIJKSTRA] Polyline waypoints before dedup:', polylineWaypoints.length);
-    
-    // Remove duplicates
-    const seen = new Set<string>();
-    polylineWaypoints = polylineWaypoints.filter(wp => {
-      const key = `${wp.lat.toFixed(2)},${wp.lng.toFixed(2)}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-    
-    console.log('[FLOOR2-DIJKSTRA] Final polyline waypoints:', polylineWaypoints.length, polylineWaypoints);
-    console.log('[FLOOR2-END] Updated route with Floor 2 phase, phases now:', updatedRoute.phases?.length);
-    
-    // Update route
-    const isMultiFloor = roomFloor.id !== nextFloor.id;
-    const indoorPhase: RoutePhase = {
-      mode: 'walking',
-      polyline: polylineWaypoints,
-      steps: [
-        {
-          instruction: `Start at ${entranceNode.label || 'Floor ' + nextFloor.floorNumber}`,
-          distance: '0 m',
-          icon: 'navigation'
-        },
-        {
-          instruction: `Walk to ${targetNode.label || targetNode.type}`,
-          distance: '0 m',
-          icon: 'arrow-right'
-        }
-      ],
-      distance: '0 m',
-      startName: entranceNode.label || 'Floor ' + nextFloor.floorNumber,
-      endName: targetNode.label || targetNode.type,
-      color: '#ef4444',
-      phaseIndex: (route.phases?.length || 0),
-      startId: selectedEnd.id,
-      endId: targetNode.id
-    };
-    
-    const updatedRoute: NavigationRoute = {
-      ...route,
-      phases: [...(route.phases || []), indoorPhase]
-    };
-    
-    console.log('[FLOOR2] Updated route phases count:', updatedRoute.phases?.length);
-    console.log('[FLOOR2] Last phase polyline:', indoorPhase.polyline?.length);
-    
-    setRoute(updatedRoute);
   };
 
   const handleDoneNavigatingIndoor = () => {
