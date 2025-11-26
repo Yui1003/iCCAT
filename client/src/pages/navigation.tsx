@@ -1137,34 +1137,102 @@ export default function Navigation() {
     
     if (!entranceNode) return;
     
-    // Get all room paths on this floor - we'll collect ALL waypoints to show the full path network
+    // Get floor-specific data
     const floorRoomPaths = roomPaths.filter(rp => rp.floorId === roomFloor.id);
+    const floorRooms = rooms.filter(r => r.floorId === roomFloor.id);
+    const floorIndoorNodes = indoorNodes.filter(n => n.floorId === roomFloor.id);
     
-    // Collect waypoints from all room paths on this floor
-    // This creates a connected path showing the entire navigation network from entrance
-    let allPathWaypoints: Array<{ x: number; y: number }> = [];
-    floorRoomPaths.forEach(path => {
-      if (path.waypoints && Array.isArray(path.waypoints)) {
-        (path.waypoints as any[]).forEach((wp: any) => {
-          allPathWaypoints.push({ x: wp.x, y: wp.y });
-        });
-      }
+    // Build indoor graph using the same pathfinding logic as outdoor navigation
+    const indoorGraph = buildIndoorGraph(floorRooms, floorIndoorNodes, floorRoomPaths, roomFloor.pixelToMeterScale || 1);
+    
+    // Use Dijkstra's algorithm to find shortest path from entrance to destination
+    const { nodes, edges } = indoorGraph;
+    const entranceKey = `${roomFloor.id}:${entranceNode.id}`;
+    const destKey = `${roomFloor.id}:${destinationRoom.id}`;
+    
+    // Dijkstra's algorithm
+    const distances = new Map<string, number>();
+    const previous = new Map<string, string | null>();
+    const unvisited = new Set<string>();
+    
+    nodes.forEach((_, key) => {
+      distances.set(key, Infinity);
+      previous.set(key, null);
+      unvisited.add(key);
     });
     
-    // Build polyline starting from entrance, including all waypoints, ending at destination
+    distances.set(entranceKey, 0);
+    
+    while (unvisited.size > 0) {
+      let current: string | null = null;
+      let minDist = Infinity;
+      
+      unvisited.forEach(key => {
+        const dist = distances.get(key) || Infinity;
+        if (dist < minDist) {
+          minDist = dist;
+          current = key;
+        }
+      });
+      
+      if (!current || current === destKey) break;
+      unvisited.delete(current);
+      
+      edges
+        .filter(e => e.from === current)
+        .forEach(edge => {
+          if (unvisited.has(edge.to)) {
+            const alt = (distances.get(current!) || Infinity) + edge.distance;
+            if (alt < (distances.get(edge.to) || Infinity)) {
+              distances.set(edge.to, alt);
+              previous.set(edge.to, current!);
+            }
+          }
+        });
+    }
+    
+    // Reconstruct shortest path
+    const shortestPath: string[] = [];
+    let current: string | null = destKey;
+    
+    while (current !== null) {
+      shortestPath.unshift(current);
+      current = previous.get(current) || null;
+    }
+    
+    // Extract waypoints from room paths used in the shortest path
     let polylineWaypoints: Array<{ lat: number; lng: number }> = [
       { lat: entranceNode.x, lng: entranceNode.y }
     ];
     
-    // Add all collected waypoints from the paths
-    allPathWaypoints.forEach(wp => {
-      polylineWaypoints.push({ lat: wp.x, lng: wp.y });
-    });
+    // For each consecutive pair of nodes in the shortest path, find and add waypoints
+    for (let i = 0; i < shortestPath.length - 1; i++) {
+      const fromNodeKey = shortestPath[i];
+      const toNodeKey = shortestPath[i + 1];
+      
+      // Find room paths that connect these two nodes
+      const connectingPaths = floorRoomPaths.filter(path => {
+        if (!path.waypoints || !Array.isArray(path.waypoints)) return false;
+        const waypoints = path.waypoints as any[];
+        const hasFrom = waypoints.some((wp: any) => wp.nodeId && wp.nodeId === fromNodeKey.split(':')[1]);
+        const hasTo = waypoints.some((wp: any) => wp.nodeId && wp.nodeId === toNodeKey.split(':')[1]);
+        return hasFrom || hasTo;
+      });
+      
+      // Add waypoints from connecting paths
+      connectingPaths.forEach(path => {
+        if (path.waypoints && Array.isArray(path.waypoints)) {
+          (path.waypoints as any[]).forEach((wp: any) => {
+            polylineWaypoints.push({ lat: wp.x, lng: wp.y });
+          });
+        }
+      });
+    }
     
-    // Add destination room at the end
+    // Add destination room
     polylineWaypoints.push({ lat: destinationRoom.x, lng: destinationRoom.y });
     
-    // Remove duplicate consecutive waypoints to clean up the path
+    // Remove duplicates
     const seen = new Set<string>();
     polylineWaypoints = polylineWaypoints.filter(wp => {
       const key = `${wp.lat.toFixed(2)},${wp.lng.toFixed(2)}`;
