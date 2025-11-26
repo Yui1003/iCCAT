@@ -1171,7 +1171,13 @@ export default function Navigation() {
     
     distances.set(entranceKey, 0);
     
+    console.log('[INDOOR-PATH] Starting Dijkstra from:', entranceKey);
+    console.log('[INDOOR-PATH] Total edges to explore:', edges.length);
+    console.log('[INDOOR-PATH] Edges from entrance:', edges.filter(e => e.from === entranceKey).map(e => `${e.from} -> ${e.to} (${e.distance.toFixed(2)}m)`));
+    
+    let iterations = 0;
     while (unvisited.size > 0) {
+      iterations++;
       let current: string | null = null;
       let minDist = Infinity;
       
@@ -1183,21 +1189,48 @@ export default function Navigation() {
         }
       });
       
-      if (!current || current === destKey) break;
+      if (!current) {
+        console.log('[INDOOR-PATH] Dijkstra: No current node found, breaking');
+        break;
+      }
+      
+      if (current === destKey) {
+        console.log('[INDOOR-PATH] Dijkstra: Reached destination at iteration', iterations);
+        break;
+      }
+      
+      if (iterations === 1) {
+        console.log(`[INDOOR-PATH] Dijkstra iteration ${iterations}: current=${current} (dist=${minDist.toFixed(2)})`);
+      }
+      
       unvisited.delete(current);
       
-      edges
-        .filter(e => e.from === current)
-        .forEach(edge => {
-          if (unvisited.has(edge.to)) {
-            const alt = (distances.get(current!) || Infinity) + edge.distance;
-            if (alt < (distances.get(edge.to) || Infinity)) {
-              distances.set(edge.to, alt);
-              previous.set(edge.to, current!);
+      const outgoingEdges = edges.filter(e => e.from === current);
+      if (iterations === 1) {
+        console.log(`[INDOOR-PATH]   Found ${outgoingEdges.length} outgoing edges`);
+      }
+      
+      outgoingEdges.forEach(edge => {
+        if (unvisited.has(edge.to)) {
+          const alt = (distances.get(current!) || Infinity) + edge.distance;
+          if (alt < (distances.get(edge.to) || Infinity)) {
+            distances.set(edge.to, alt);
+            previous.set(edge.to, current!);
+            if (iterations === 1) {
+              console.log(`[INDOOR-PATH]     Updated ${edge.to} to distance ${alt.toFixed(2)}`);
             }
           }
-        });
+        }
+      });
+      
+      if (iterations > 100) {
+        console.log('[INDOOR-PATH] Dijkstra: Too many iterations, breaking');
+        break;
+      }
     }
+    
+    console.log('[INDOOR-PATH] Dijkstra completed in', iterations, 'iterations');
+    console.log('[INDOOR-PATH] Distance to destination:', distances.get(destKey));
     
     // Reconstruct shortest path
     const shortestPath: string[] = [];
