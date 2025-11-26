@@ -33,9 +33,11 @@ interface FloorPlanViewerProps {
   onCreateRoom?: (data: any) => void;
   onUpdateRoom?: (id: string, data: any) => void;
   onDeleteRoom?: (id: string) => void;
+  highlightedRoomId?: string;
+  showPathTo?: IndoorNode | null;
 }
 
-export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], onClose, onPlaceRoom, onCreateRoom, onUpdateRoom, onDeleteRoom }: FloorPlanViewerProps) {
+export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], onClose, onPlaceRoom, onCreateRoom, onUpdateRoom, onDeleteRoom, highlightedRoomId, showPathTo }: FloorPlanViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -88,6 +90,31 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
       
       ctx.drawImage(image, x, y, image.width * scale, image.height * scale);
 
+      // Draw path if destination room is set
+      if (showPathTo) {
+        // Find entrance node for this floor
+        const entranceNode = indoorNodes.find(n => 
+          n.type === 'entrance' && n.floorId === floor.id
+        );
+        
+        if (entranceNode) {
+          const entranceX = x + entranceNode.x * scale;
+          const entranceY = y + entranceNode.y * scale;
+          const destX = x + showPathTo.x * scale;
+          const destY = y + showPathTo.y * scale;
+          
+          // Draw path line from entrance to destination
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 3 / zoom;
+          ctx.setLineDash([5 / zoom, 5 / zoom]);
+          ctx.beginPath();
+          ctx.moveTo(entranceX, entranceY);
+          ctx.lineTo(destX, destY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+
       rooms.forEach(room => {
         // room.x and room.y are now absolute pixel coordinates on the floor plan image
         const roomX = x + room.x * scale;
@@ -95,7 +122,12 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
 
         // Draw pin/marker icon (teardrop shape)
         const pinSize = 20 / zoom;
-        const roomColor = getRoomColor(room.type);
+        let roomColor = getRoomColor(room.type);
+        
+        // Highlight the destination room
+        if (highlightedRoomId && room.id === highlightedRoomId) {
+          roomColor = '#ef4444'; // Red for highlighted
+        }
         
         // Draw the pin shape
         ctx.beginPath();
@@ -129,7 +161,7 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
     }
 
     ctx.restore();
-  }, [image, zoom, rooms]);
+  }, [image, zoom, rooms, highlightedRoomId, showPathTo, indoorNodes, floor.id]);
 
   const getRoomColor = (type: string) => {
     const colors: Record<string, string> = {
