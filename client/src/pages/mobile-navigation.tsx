@@ -513,19 +513,28 @@ export default function MobileNavigation() {
             }}
           />
         ) : (
-          <div className="flex-1 overflow-hidden" data-testid="indoor-navigation-container">
+          <div className="flex-1 overflow-hidden bg-background border-r border-card-border" data-testid="indoor-navigation-container">
             {currentIndoorFloor && (
-              <FloorPlanViewer
-                floor={currentIndoorFloor}
-                indoorNodes={indoorNodes.filter(n => n.floorId === currentIndoorFloor.id)}
-                roomPaths={roomPaths.filter(p => {
-                  const node1 = indoorNodes.find(n => n.id === p.nodeId1);
-                  const node2 = indoorNodes.find(n => n.id === p.nodeId2);
-                  return node1?.floorId === currentIndoorFloor.id || node2?.floorId === currentIndoorFloor.id;
-                })}
-                highlightedRoomId={isOnDestinationFloor ? destinationRoom?.id : undefined}
-                showPathTo={isOnDestinationFloor ? destinationRoom : indoorNodes.find(n => n.floorId === currentIndoorFloor.id && (n.type === 'stairway' || n.type === 'elevator'))}
-              />
+              <div className="w-full h-full flex flex-col">
+                <div className="flex-shrink-0 p-3 border-b border-card-border bg-card">
+                  <h3 className="font-semibold text-sm text-foreground">{currentIndoorFloor.floorName || `Floor ${currentIndoorFloor.floorNumber}`}</h3>
+                </div>
+                <div className="flex-1 overflow-auto">
+                  <FloorPlanViewer
+                    floor={currentIndoorFloor}
+                    indoorNodes={indoorNodes.filter(n => n.floorId === currentIndoorFloor.id)}
+                    roomPaths={roomPaths.filter(p => {
+                      const node1 = indoorNodes.find(n => n.id === p.nodeId1);
+                      const node2 = indoorNodes.find(n => n.id === p.nodeId2);
+                      return node1?.floorId === currentIndoorFloor.id || node2?.floorId === currentIndoorFloor.id;
+                    })}
+                    highlightedRoomId={isOnDestinationFloor ? destinationRoom?.id : undefined}
+                    showPathTo={isOnDestinationFloor ? destinationRoom : indoorNodes.find(n => n.floorId === currentIndoorFloor.id && (n.type === 'stairway' || n.type === 'elevator'))}
+                    onClose={() => {}}
+                    viewOnly={true}
+                  />
+                </div>
+              </div>
             )}
           </div>
         )}
