@@ -2004,6 +2004,7 @@ export default function Navigation() {
         <FloorPlanViewer
           floor={selectedFloor}
           rooms={floorRooms}
+          indoorNodes={indoorNodes}
           onClose={() => setSelectedFloor(null)}
         />
       )}
@@ -2121,6 +2122,7 @@ export default function Navigation() {
         rooms={rooms}
         floors={floors}
         buildings={buildings}
+        indoorNodes={indoorNodes}
         onGetDirections={(buildingId) => {
           const building = buildings.find(b => b.id === buildingId);
           if (building) {
@@ -2141,6 +2143,7 @@ export default function Navigation() {
               <FloorPlanViewer
                 floor={roomFinderFloorPlan.floor}
                 rooms={roomFinderFloorPlan.rooms}
+                indoorNodes={indoorNodes}
                 onClose={() => setRoomFinderFloorPlan(null)}
               />
             </div>

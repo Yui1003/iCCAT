@@ -8,13 +8,24 @@ import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ScrollArea } from "./ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import type { Floor, Room } from "@shared/schema";
+import type { Floor, Room, IndoorNode } from "@shared/schema";
 import { trackEvent } from "@/lib/analytics-tracker";
 import { AnalyticsEventType } from "@shared/analytics-schema";
 
+interface CombinedRoom {
+  id: string;
+  name: string;
+  type: string;
+  description?: string | null;
+  x: number;
+  y: number;
+  isIndoorNode?: boolean;
+}
+
 interface FloorPlanViewerProps {
   floor: Floor;
-  rooms?: Room[];
+  rooms?: (Room | CombinedRoom)[];
+  indoorNodes?: IndoorNode[];
   onClose: () => void;
   onPlaceRoom?: (x: number, y: number) => void;
   onCreateRoom?: (data: any) => void;

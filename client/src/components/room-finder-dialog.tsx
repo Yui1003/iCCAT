@@ -6,9 +6,21 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import type { Room, Floor, Building } from "@shared/schema";
+import type { Room, Floor, Building, IndoorNode } from "@shared/schema";
 import { trackEvent } from "@/lib/analytics-tracker";
 import { AnalyticsEventType } from "@shared/analytics-schema";
+
+interface CombinedRoom {
+  id: string;
+  name: string;
+  type: string;
+  description?: string | null;
+  floorId: string;
+  buildingId: string;
+  x?: number;
+  y?: number;
+  isIndoorNode?: boolean;
+}
 
 interface RoomFinderDialogProps {
   open: boolean;
@@ -16,8 +28,9 @@ interface RoomFinderDialogProps {
   rooms: Room[];
   floors: Floor[];
   buildings: Building[];
+  indoorNodes?: IndoorNode[];
   onGetDirections: (buildingId: string) => void;
-  onViewFloorPlan: (floor: Floor, rooms: Room[]) => void;
+  onViewFloorPlan: (floor: Floor, rooms: CombinedRoom[]) => void;
 }
 
 export default function RoomFinderDialog({
@@ -26,20 +39,42 @@ export default function RoomFinderDialog({
   rooms,
   floors,
   buildings,
+  indoorNodes = [],
   onGetDirections,
   onViewFloorPlan
 }: RoomFinderDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<CombinedRoom | null>(null);
+
+  // Combine regular rooms and indoor node rooms
+  const allRooms = useMemo(() => {
+    const combined: CombinedRoom[] = [
+      ...rooms.map(r => ({ ...r, isIndoorNode: false })),
+      ...indoorNodes
+        .filter(n => n.type === 'room')
+        .map(n => ({
+          id: n.id,
+          name: n.label || 'Unnamed Room',
+          type: 'room',
+          description: n.description,
+          floorId: n.floorId,
+          buildingId: floors.find(f => f.id === n.floorId)?.buildingId || '',
+          x: n.x,
+          y: n.y,
+          isIndoorNode: true
+        }))
+    ];
+    return combined;
+  }, [rooms, indoorNodes, floors]);
 
   useEffect(() => {
     if (open) {
       trackEvent(AnalyticsEventType.INTERFACE_ACTION, 1, {
         action: 'room_finder_opened',
-        totalRooms: rooms.length
+        totalRooms: allRooms.length
       });
     }
-  }, [open, rooms.length]);
+  }, [open, allRooms.length]);
 
   const getBuildingName = (buildingId: string) => {
     const building = buildings.find(b => b.id === buildingId);
@@ -56,7 +91,7 @@ export default function RoomFinderDialog({
   };
 
   const getRoomsForFloor = (floorId: string) => {
-    return rooms.filter(r => r.floorId === floorId);
+    return allRooms.filter(r => r.floorId === floorId);
   };
 
   const getRoomTypeColor = (type: string) => {
@@ -71,20 +106,20 @@ export default function RoomFinderDialog({
   };
 
   const filteredRooms = useMemo(() => {
-    if (!searchQuery.trim()) return rooms;
+    if (!searchQuery.trim()) return allRooms;
     
     const query = searchQuery.toLowerCase();
-    return rooms.filter(room => 
+    return allRooms.filter(room => 
       room.name.toLowerCase().includes(query) ||
       room.type.toLowerCase().includes(query) ||
       room.description?.toLowerCase().includes(query) ||
       getBuildingName(room.buildingId).toLowerCase().includes(query) ||
       getFloorName(room.floorId).toLowerCase().includes(query)
     );
-  }, [rooms, searchQuery, buildings, floors]);
+  }, [allRooms, searchQuery, buildings, floors]);
 
   const roomsByBuilding = useMemo(() => {
-    const grouped: Record<string, { building: Building; floors: Record<string, { floor: Floor; rooms: Room[] }> }> = {};
+    const grouped: Record<string, { building: Building; floors: Record<string, { floor: Floor; rooms: CombinedRoom[] }> }> = {};
     
     filteredRooms.forEach(room => {
       const building = buildings.find(b => b.id === room.buildingId);
@@ -106,13 +141,14 @@ export default function RoomFinderDialog({
     return grouped;
   }, [filteredRooms, buildings, floors]);
 
-  const handleRoomSelect = (room: Room) => {
+  const handleRoomSelect = (room: CombinedRoom) => {
     setSelectedRoom(room);
     trackEvent(AnalyticsEventType.INTERFACE_ACTION, 1, {
       action: 'room_selected',
       roomId: room.id,
       roomName: room.name,
-      buildingId: room.buildingId
+      buildingId: room.buildingId,
+      isIndoorNode: room.isIndoorNode
     });
   };
 
@@ -122,7 +158,8 @@ export default function RoomFinderDialog({
         action: 'room_get_directions',
         roomId: selectedRoom.id,
         roomName: selectedRoom.name,
-        buildingId: selectedRoom.buildingId
+        buildingId: selectedRoom.buildingId,
+        isIndoorNode: selectedRoom.isIndoorNode
       });
       const buildingId = selectedRoom.buildingId;
       setSearchQuery("");
@@ -140,7 +177,8 @@ export default function RoomFinderDialog({
         trackEvent(AnalyticsEventType.INTERFACE_ACTION, 1, {
           action: 'room_view_floor_plan',
           roomId: selectedRoom.id,
-          floorId: floor.id
+          floorId: floor.id,
+          isIndoorNode: selectedRoom.isIndoorNode
         });
         onViewFloorPlan(floor, floorRooms);
       }
@@ -222,6 +260,11 @@ export default function RoomFinderDialog({
                                       <Badge variant="secondary" className="text-xs capitalize">
                                         {room.type}
                                       </Badge>
+                                      {room.isIndoorNode && (
+                                        <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                                          Indoor
+                                        </Badge>
+                                      )}
                                     </div>
                                     {room.description && (
                                       <p className="text-xs text-muted-foreground mt-1 truncate">
@@ -253,9 +296,16 @@ export default function RoomFinderDialog({
               </div>
               <div className="flex-1">
                 <h3 className="text-xl font-semibold text-foreground" data-testid="text-selected-room-name">{selectedRoom.name}</h3>
-                <Badge variant="secondary" className="mt-1 capitalize" data-testid="badge-room-type">
-                  {selectedRoom.type}
-                </Badge>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="secondary" className="capitalize" data-testid="badge-room-type">
+                    {selectedRoom.type}
+                  </Badge>
+                  {selectedRoom.isIndoorNode && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                      Indoor Node
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
 
