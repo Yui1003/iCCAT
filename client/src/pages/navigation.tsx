@@ -1229,11 +1229,61 @@ export default function Navigation() {
           return;
         }
 
+        // Check if routing to a specific room (outdoor-to-indoor navigation)
+        const selectedRoomData = (window as any).__selectedRoomForNavigation;
+        let endpointName = directionsDestination.name;
+        let endpointId = directionsDestination.id;
+
+        if (selectedRoomData?.roomId) {
+          const selectedRoom = indoorNodes.find(n => n.id === selectedRoomData.roomId && n.type === 'room');
+          if (selectedRoom) {
+            endpointName = selectedRoomData.roomName || selectedRoom.label || 'Room';
+            endpointId = selectedRoom.id;
+            
+            // Build indoor graph for pathfinding within the building
+            const indoorGraph = buildIndoorGraph(rooms, indoorNodes, roomPaths);
+            
+            // Find entrance nodes for this building
+            const entranceNodes = indoorNodes.filter(n => 
+              n.type === 'entrance' && 
+              floors.find(f => f.id === n.floorId)?.buildingId === directionsDestination.id
+            );
+            
+            // Find path from an entrance to the selected room using indoor graph
+            if (entranceNodes.length > 0) {
+              const entrance = entranceNodes[0];
+              const roomFloor = floors.find(f => f.id === selectedRoom.floorId);
+              
+              // If on same floor, we can route from entrance to room
+              if (entrance.floorId === selectedRoom.floorId) {
+                const indoorPathWaypoints: Array<{x: number; y: number}> = [];
+                
+                // Add entrance point
+                indoorPathWaypoints.push({ x: entrance.x, y: entrance.y });
+                
+                // Add selected room point
+                indoorPathWaypoints.push({ x: selectedRoom.x, y: selectedRoom.y });
+                
+                // Store indoor route info for display (could be enhanced with actual path visualization)
+                (window as any).__indoorRouteInfo = {
+                  entrance: entrance.label || 'Entrance',
+                  room: endpointName,
+                  waypoints: indoorPathWaypoints,
+                  floorId: selectedRoom.floorId
+                };
+              }
+            }
+          }
+          
+          // Clear the selected room after storing it
+          delete (window as any).__selectedRoomForNavigation;
+        }
+
         const { steps, totalDistance } = generateSmartSteps(
           routePolyline,
           travelMode,
           start.name,
-          directionsDestination.name
+          endpointName
         );
 
         setRoute({
@@ -1249,7 +1299,7 @@ export default function Navigation() {
         try {
           const routeData = {
             startId: start.id,
-            endId: directionsDestination.id,
+            endId: endpointId,
             waypoints: [],
             mode: travelMode,
             vehicleType: selectedVehicle || null,
@@ -1259,11 +1309,11 @@ export default function Navigation() {
               steps,
               distance: totalDistance,
               startName: start.name,
-              endName: directionsDestination.name,
+              endName: endpointName,
               color: '#3B82F6',
               phaseIndex: 0,
               startId: start.id,
-              endId: directionsDestination.id
+              endId: endpointId
             }],
             expiresAt: null
           };
