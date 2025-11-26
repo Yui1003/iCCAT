@@ -142,10 +142,7 @@ export default function RoomFinderDialog({
           roomId: selectedRoom.id,
           floorId: floor.id
         });
-        setSearchQuery("");
-        setSelectedRoom(null);
         onViewFloorPlan(floor, floorRooms);
-        onClose();
       }
     }
   };
