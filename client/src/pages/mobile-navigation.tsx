@@ -540,7 +540,7 @@ export default function MobileNavigation() {
                 showPathTo={isOnDestinationFloor ? destinationRoom : indoorNodes.find(n => n.floorId === currentIndoorFloor.id && (n.type === 'stairway' || n.type === 'elevator'))}
                 onClose={() => {}}
                 viewOnly={true}
-                pathPolyline={isOnDestinationFloor && destinationRoom ? [{ lat: indoorNodes.find(n => n.floorId === currentIndoorFloor.id && n.type === 'entrance')?.x || 0, lng: indoorNodes.find(n => n.floorId === currentIndoorFloor.id && n.type === 'entrance')?.y || 0 }, { lat: destinationRoom.x, lng: destinationRoom.y }] : undefined}
+                pathPolyline={route?.phases && route.phases.length > 0 ? route.phases[route.phases.length - 1]?.polyline : undefined}
               />
             )}
           </div>
