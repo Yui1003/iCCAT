@@ -1200,43 +1200,18 @@ export default function Navigation() {
       current = previous.get(current) || null;
     }
     
-    // Extract waypoints from room paths used in the shortest path
+    // Extract waypoints from the nodes used in the shortest path
     let polylineWaypoints: Array<{ lat: number; lng: number }> = [
       { lat: entranceNode.x, lng: entranceNode.y }
     ];
     
-    // For each consecutive pair of nodes in the shortest path, find waypoints between them
-    for (let i = 0; i < shortestPath.length - 1; i++) {
-      const fromNodeKey = shortestPath[i];
-      const toNodeKey = shortestPath[i + 1];
+    // For each node in the shortest path (except first which is entrance), add its waypoints
+    for (let i = 1; i < shortestPath.length; i++) {
+      const nodeKey_str = shortestPath[i];
+      const waypoints = indoorGraph.waypointNodeMap.get(nodeKey_str) || [];
       
-      // Extract nodeIds from the path keys (format: "floorId:nodeId")
-      const fromNodeId = fromNodeKey.split(':')[1];
-      const toNodeId = toNodeKey.split(':')[1];
-      
-      // Find waypoints that connect these two nodes
-      floorRoomPaths.forEach(path => {
-        const pathWaypoints = path.waypoints as any[];
-        if (!pathWaypoints) return;
-        
-        // Find indices of the connecting waypoints
-        let startIdx = -1;
-        let endIdx = -1;
-        
-        for (let j = 0; j < pathWaypoints.length; j++) {
-          if (pathWaypoints[j].nodeId === fromNodeId) startIdx = j;
-          if (pathWaypoints[j].nodeId === toNodeId) endIdx = j;
-        }
-        
-        // If this path connects the two nodes, add all waypoints between them
-        if (startIdx !== -1 && endIdx !== -1) {
-          const minIdx = Math.min(startIdx, endIdx);
-          const maxIdx = Math.max(startIdx, endIdx);
-          
-          for (let j = minIdx; j <= maxIdx; j++) {
-            polylineWaypoints.push({ lat: pathWaypoints[j].x, lng: pathWaypoints[j].y });
-          }
-        }
+      waypoints.forEach(wp => {
+        polylineWaypoints.push({ lat: wp.x, lng: wp.y });
       });
     }
     
