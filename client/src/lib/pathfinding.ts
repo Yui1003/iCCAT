@@ -318,7 +318,7 @@ export function findShortestPath(
     }
   });
 
-  if (closestStartNode === null || closestEndNode === null) {
+  if (!closestStartNode || !closestEndNode) {
     console.warn(`[CLIENT] Could not find path nodes: start=${closestStartNode !== null}, end=${closestEndNode !== null}`);
     return null;
   }
