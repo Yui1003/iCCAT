@@ -1368,11 +1368,16 @@ export default function Navigation() {
   };
 
   const handleProceedToNextFloor = () => {
-    if (!selectedEnd || !destinationRoom || !route || floorsInRoute.length === 0 || !currentIndoorFloor) return;
+    console.log('[FLOOR2-START] handleProceedToNextFloor called');
+    if (!selectedEnd || !destinationRoom || !route || floorsInRoute.length === 0 || !currentIndoorFloor) {
+      console.log('[FLOOR2-ERROR] Missing required state:', { selectedEnd: !!selectedEnd, destinationRoom: !!destinationRoom, route: !!route, floorsInRoute: floorsInRoute.length, currentIndoorFloor: !!currentIndoorFloor });
+      return;
+    }
     
     const currentFloorIndex = floorsInRoute.indexOf(currentIndoorFloor.id);
+    console.log('[FLOOR2-START] currentFloorIndex:', currentFloorIndex, 'floorsInRoute:', floorsInRoute);
     if (currentFloorIndex >= floorsInRoute.length - 1) {
-      // Already on destination floor
+      console.log('[FLOOR2-ERROR] Already on last floor');
       return;
     }
     
@@ -1381,8 +1386,13 @@ export default function Navigation() {
     const nextFloor = buildingFloors.find(f => f.id === nextFloorId);
     const roomFloor = buildingFloors.find(f => f.id === destinationRoom.floorId);
     
-    if (!nextFloor || !roomFloor) return;
+    console.log('[FLOOR2-START] nextFloor:', nextFloor?.floorName, 'roomFloor:', roomFloor?.floorName);
+    if (!nextFloor || !roomFloor) {
+      console.log('[FLOOR2-ERROR] Floor not found');
+      return;
+    }
     
+    console.log('[FLOOR2-START] Setting current floor to:', nextFloor.floorName);
     setCurrentIndoorFloor(nextFloor);
     setSelectedFloor(nextFloor);
     
@@ -1391,7 +1401,11 @@ export default function Navigation() {
       n.type === 'entrance' && n.floorId === nextFloor.id
     );
     
-    if (!entranceNode) return;
+    console.log('[FLOOR2-START] Entrance node:', entranceNode?.label);
+    if (!entranceNode) {
+      console.log('[FLOOR2-ERROR] No entrance on next floor');
+      return;
+    }
     
     // Determine target: either destination or next stairway
     let targetNode: IndoorNode | undefined;
@@ -1462,7 +1476,10 @@ export default function Navigation() {
       current = previous.get(current) || null;
     }
     
-    console.log('[FLOOR2] Shortest path found:', shortestPath.length, shortestPath);
+    console.log('[FLOOR2-DIJKSTRA] Shortest path found:', shortestPath.length, shortestPath);
+    if (shortestPath.length === 0) {
+      console.log('[FLOOR2-ERROR] Dijkstra returned empty path - no route between entrance and target');
+    }
     
     // Extract waypoints
     let polylineWaypoints: Array<{ lat: number; lng: number }> = [
@@ -1486,7 +1503,7 @@ export default function Navigation() {
     
     polylineWaypoints.push({ lat: targetNode.x, lng: targetNode.y });
     
-    console.log('[FLOOR2] Polyline waypoints before dedup:', polylineWaypoints.length, polylineWaypoints);
+    console.log('[FLOOR2-DIJKSTRA] Polyline waypoints before dedup:', polylineWaypoints.length);
     
     // Remove duplicates
     const seen = new Set<string>();
@@ -1497,7 +1514,8 @@ export default function Navigation() {
       return true;
     });
     
-    console.log('[FLOOR2] Final polyline waypoints:', polylineWaypoints.length, polylineWaypoints);
+    console.log('[FLOOR2-DIJKSTRA] Final polyline waypoints:', polylineWaypoints.length, polylineWaypoints);
+    console.log('[FLOOR2-END] Updated route with Floor 2 phase, phases now:', updatedRoute.phases?.length);
     
     // Update route
     const isMultiFloor = roomFloor.id !== nextFloor.id;
