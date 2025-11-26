@@ -200,7 +200,7 @@ export default function MobileNavigation() {
       setCurrentIndoorFloor(nextFloor);
       toast({
         title: "Floor Change",
-        description: `Now on ${nextFloor.name}`,
+        description: `Now on ${nextFloor.floorName}`,
       });
     }
   };
@@ -215,7 +215,7 @@ export default function MobileNavigation() {
       setCurrentIndoorFloor(prevFloor);
       toast({
         title: "Floor Change",
-        description: `Now on ${prevFloor.name}`,
+        description: `Now on ${prevFloor.floorName}`,
       });
     }
   };
@@ -500,8 +500,8 @@ export default function MobileNavigation() {
       return undefined;
     }
 
-    console.log('[MOBILE-PATH] Finding path from entrance to target:', {
-      entrance: entranceNode.id,
+    console.log('[MOBILE-PATH] Finding path from start to target:', {
+      start: startNode.id,
       target: targetNode.id,
       isDestinationFloor
     });
@@ -516,7 +516,7 @@ export default function MobileNavigation() {
 
     // Run Dijkstra to find shortest path
     const nodeKey = (id: string, floorId: string) => `${floorId}:${id}`;
-    const startKey = nodeKey(entranceNode.id, currentIndoorFloor.id);
+    const startKey = nodeKey(startNode.id, currentIndoorFloor.id);
     const destKey = nodeKey(targetNode.id, currentIndoorFloor.id);
 
     const { nodes, edges } = indoorGraph;
@@ -583,12 +583,12 @@ export default function MobileNavigation() {
     }
 
     // Extract waypoints from path edges
-    const startNode = nodes.get(startKey);
-    const endNode = nodes.get(destKey);
-    if (!startNode || !endNode) return undefined;
+    const startNodeData = nodes.get(startKey);
+    const endNodeData = nodes.get(destKey);
+    if (!startNodeData || !endNodeData) return undefined;
 
     const polylineWaypoints: Array<{ lat: number; lng: number }> = [
-      { lat: startNode.x, lng: startNode.y }
+      { lat: startNodeData.x, lng: startNodeData.y }
     ];
 
     // Helper to check if a point is a duplicate of the last one
@@ -632,7 +632,7 @@ export default function MobileNavigation() {
     }
 
     // Ensure we end at the destination
-    addPoint(endNode.x, endNode.y);
+    addPoint(endNodeData.x, endNodeData.y);
 
     console.log('[MOBILE-PATH] Final polyline with', polylineWaypoints.length, 'waypoints');
     console.log('[MOBILE-PATH] Start:', polylineWaypoints[0], 'End:', polylineWaypoints[polylineWaypoints.length - 1]);
@@ -841,7 +841,7 @@ export default function MobileNavigation() {
                   <div className="flex items-center gap-2">
                     <Building2 className="w-3 h-3 text-muted-foreground" />
                     <span className="text-xs font-medium text-foreground truncate">
-                      {currentIndoorFloor?.name || 'Floor'}
+                      {currentIndoorFloor?.floorName || 'Floor'}
                     </span>
                   </div>
                   <NavigationIcon className="w-3 h-3 text-muted-foreground flex-shrink-0" />
@@ -1008,7 +1008,7 @@ export default function MobileNavigation() {
                       Indoor Navigation
                     </h2>
                     <Badge variant="secondary" className="text-xs">
-                      {currentIndoorFloor?.name || 'Floor'}
+                      {currentIndoorFloor?.floorName || 'Floor'}
                     </Badge>
                   </div>
 
