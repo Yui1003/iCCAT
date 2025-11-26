@@ -441,43 +441,8 @@ export default function MobileNavigation() {
     return () => clearTimeout(timer);
   }, [route, currentPhaseIndex, completedPhases, navigationPhase]);
 
-  // Handle loading state
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading route...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle error state
-  if (error || !route) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background p-4">
-        <Card className="p-6 max-w-md w-full text-center">
-          <MapPin className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-xl font-semibold text-foreground mb-2">Route Not Found</h2>
-          <p className="text-muted-foreground mb-4">
-            This route may have expired or doesn't exist.
-          </p>
-          <Button 
-            className="w-full"
-            onClick={() => navigate('/')}
-          >
-            Return to Kiosk
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  const currentPhase = route.phases[currentPhaseIndex];
-  const phaseColor = currentPhase?.color || getPhaseColor(currentPhaseIndex);
-
   // Calculate indoor path polyline for current floor using proper pathfinding
+  // NOTE: This useMemo MUST be before any early returns to satisfy React hooks rules
   const indoorPathPolyline = useMemo(() => {
     if (!navigationPhase || navigationPhase !== 'indoor' || !currentIndoorFloor || !destinationRoom) {
       console.log('[MOBILE-PATH] Skipping: not in indoor mode or missing data');
@@ -659,6 +624,42 @@ export default function MobileNavigation() {
     console.log('[MOBILE-PATH] Start:', polylineWaypoints[0], 'End:', polylineWaypoints[polylineWaypoints.length - 1]);
     return polylineWaypoints;
   }, [navigationPhase, currentIndoorFloor, destinationRoom, roomPaths, rooms, indoorNodes]);
+
+  // Handle loading state (after all hooks)
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading route...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle error state (after all hooks)
+  if (error || !route) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background p-4">
+        <Card className="p-6 max-w-md w-full text-center">
+          <MapPin className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">Route Not Found</h2>
+          <p className="text-muted-foreground mb-4">
+            This route may have expired or doesn't exist.
+          </p>
+          <Button 
+            className="w-full"
+            onClick={() => navigate('/')}
+          >
+            Return to Kiosk
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const currentPhase = route.phases[currentPhaseIndex];
+  const phaseColor = currentPhase?.color || getPhaseColor(currentPhaseIndex);
 
   return (
     <div className="h-screen flex flex-col bg-background">
