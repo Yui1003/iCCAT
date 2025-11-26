@@ -1137,33 +1137,34 @@ export default function Navigation() {
     
     if (!entranceNode) return;
     
-    // Get all room paths on this floor
+    // Get all room paths on this floor - we'll collect ALL waypoints to show the full path network
     const floorRoomPaths = roomPaths.filter(rp => rp.floorId === roomFloor.id);
     
-    // Find the room path that connects to the destination room
-    // A path connects to a room if it has the destination room's nodeId in its waypoints
-    const destRoomNodeId = destinationRoom.id;
-    let pathToDestination = floorRoomPaths.find(path => {
-      if (!path.waypoints || !Array.isArray(path.waypoints)) return false;
-      return path.waypoints.some((wp: any) => wp.nodeId === destRoomNodeId);
+    // Collect waypoints from all room paths on this floor
+    // This creates a connected path showing the entire navigation network from entrance
+    let allPathWaypoints: Array<{ x: number; y: number }> = [];
+    floorRoomPaths.forEach(path => {
+      if (path.waypoints && Array.isArray(path.waypoints)) {
+        (path.waypoints as any[]).forEach((wp: any) => {
+          allPathWaypoints.push({ x: wp.x, y: wp.y });
+        });
+      }
     });
     
-    // Extract waypoints from the room path that connects to destination
+    // Build polyline starting from entrance, including all waypoints, ending at destination
     let polylineWaypoints: Array<{ lat: number; lng: number }> = [
       { lat: entranceNode.x, lng: entranceNode.y }
     ];
     
-    if (pathToDestination && pathToDestination.waypoints && Array.isArray(pathToDestination.waypoints)) {
-      // Add all waypoints from the path
-      (pathToDestination.waypoints as any[]).forEach((wp: any) => {
-        polylineWaypoints.push({ lat: wp.x, lng: wp.y });
-      });
-    } else {
-      // Fallback: add destination room directly
-      polylineWaypoints.push({ lat: destinationRoom.x, lng: destinationRoom.y });
-    }
+    // Add all collected waypoints from the paths
+    allPathWaypoints.forEach(wp => {
+      polylineWaypoints.push({ lat: wp.x, lng: wp.y });
+    });
     
-    // Remove duplicate endpoints
+    // Add destination room at the end
+    polylineWaypoints.push({ lat: destinationRoom.x, lng: destinationRoom.y });
+    
+    // Remove duplicate consecutive waypoints to clean up the path
     const seen = new Set<string>();
     polylineWaypoints = polylineWaypoints.filter(wp => {
       const key = `${wp.lat.toFixed(2)},${wp.lng.toFixed(2)}`;
