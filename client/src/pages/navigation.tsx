@@ -2467,7 +2467,7 @@ export default function Navigation() {
               highlightedRoomId={currentIndoorFloor.id === destinationRoom?.floorId ? destinationRoom?.id : undefined}
               showPathTo={currentIndoorFloor.id === destinationRoom?.floorId ? destinationRoom : indoorNodes.find(n => n.floorId === currentIndoorFloor.id && (n.type === 'stairway' || n.type === 'elevator'))}
               viewOnly={true}
-              pathPolyline={route?.phases?.[route.phases.length - 1]?.polyline}
+              pathPolyline={route?.phases?.[route.phases.length - 1]?.polyline && route.phases[route.phases.length - 1].polyline.length > 0 ? route.phases[route.phases.length - 1].polyline : undefined}
             />
           ) : (
             <CampusMap

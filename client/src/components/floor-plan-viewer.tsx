@@ -98,7 +98,8 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
       ctx.drawImage(image, x, y, image.width * scale, image.height * scale);
 
       // Draw path if destination room is set using the polyline from route phase
-      if (pathPolyline && pathPolyline.length > 1) {
+      if (pathPolyline && pathPolyline.length > 0) {
+        console.log('[FLOOR-PLAN] Drawing path with', pathPolyline.length, 'waypoints');
         ctx.strokeStyle = '#10b981';
         ctx.lineWidth = 3 / zoom;
         ctx.setLineDash([5 / zoom, 5 / zoom]);
@@ -106,6 +107,7 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
         
         // Start from first waypoint
         const firstWp = pathPolyline[0];
+        console.log('[FLOOR-PLAN] First waypoint:', firstWp, 'scaled:', { x: x + firstWp.lat * scale, y: y + firstWp.lng * scale });
         ctx.moveTo(x + firstWp.lat * scale, y + firstWp.lng * scale);
         
         // Draw through all waypoints
@@ -116,6 +118,9 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
         
         ctx.stroke();
         ctx.setLineDash([]);
+        console.log('[FLOOR-PLAN] Path drawn successfully');
+      } else {
+        console.log('[FLOOR-PLAN] No polyline or empty polyline, pathPolyline:', pathPolyline);
       }
 
       rooms.forEach(room => {
@@ -164,7 +169,7 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
     }
 
     ctx.restore();
-  }, [image, zoom, rooms, highlightedRoomId, showPathTo, indoorNodes, floor.id]);
+  }, [image, zoom, rooms, highlightedRoomId, showPathTo, indoorNodes, floor.id, pathPolyline]);
 
   const getRoomColor = (type: string) => {
     const colors: Record<string, string> = {
