@@ -59,6 +59,8 @@ export default function Navigation() {
   const [showRoomFinder, setShowRoomFinder] = useState(false);
   const [roomFinderFloorPlan, setRoomFinderFloorPlan] = useState<{ floor: Floor; rooms: Room[] } | null>(null);
   const [selectedRoomForNav, setSelectedRoomForNav] = useState<{ id: string; name: string; buildingName: string } | null>(null);
+  const [navigationPhase, setNavigationPhase] = useState<'outdoor' | 'indoor' | null>(null);
+  const [destinationRoom, setDestinationRoom] = useState<IndoorNode | null>(null);
 
   const { data: buildings = [] } = useQuery<Building[]>({
     queryKey: ['/api/buildings'],
