@@ -24,8 +24,7 @@ import AdminStaff from "@/pages/admin-staff";
 import AdminEvents from "@/pages/admin-events";
 import AdminSettings from "@/pages/admin-settings";
 import AdminAnalytics from "@/pages/admin-analytics";
-import AdminRoomPaths from "@/pages/admin-room-paths";
-import AdminIndoorNodes from "@/pages/admin-indoor-nodes";
+import AdminFloorPlanManagement from "@/pages/admin-floor-plan-management";
 
 import NotFound from "@/pages/not-found";
 
@@ -47,12 +46,11 @@ function Router() {
       <Route path="/admin/buildings" component={AdminBuildings} />
       <Route path="/admin/paths" component={AdminPaths} />
       <Route path="/admin/floor-plans" component={AdminFloorPlans} />
+      <Route path="/admin/floor-plan-management" component={AdminFloorPlanManagement} />
       <Route path="/admin/staff" component={AdminStaff} />
       <Route path="/admin/events" component={AdminEvents} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/analytics" component={AdminAnalytics} />
-      <Route path="/admin/room-paths" component={AdminRoomPaths} />
-      <Route path="/admin/indoor-nodes" component={AdminIndoorNodes} />
       
       <Route component={NotFound} />
     </Switch>

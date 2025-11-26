@@ -16,12 +16,6 @@ import type { Building, Floor, Room, IndoorNode, RoomPath, RoomPathWaypoint } fr
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface RoomPathWaypoint {
-  x: number;
-  y: number;
-  nodeId?: string;
-}
-
 export default function AdminFloorPlanManagement() {
   const [tab, setTab] = useState<"paths" | "nodes">("paths");
   const [pathDialogOpen, setPathDialogOpen] = useState(false);

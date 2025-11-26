@@ -36,13 +36,13 @@ export default function SearchableStartingPointSelect({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen]);
 
-  const locations = [
-    { id: 'kiosk' as const, name: KIOSK_LOCATION.name }
+  const locations: Array<{ id: string; name: string }> = [
+    { id: 'kiosk', name: KIOSK_LOCATION.name }
   ].concat(
     buildings
       .filter(b => b.id !== excludeBuildingId)
       .map(b => ({ id: b.id, name: b.name }))
-  ) as Array<{ id: string; name: string }>;
+  );
 
   const filteredLocations = locations.filter(loc =>
     loc.name.toLowerCase().includes(searchQuery.toLowerCase())
