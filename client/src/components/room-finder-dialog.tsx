@@ -46,26 +46,23 @@ export default function RoomFinderDialog({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoom, setSelectedRoom] = useState<CombinedRoom | null>(null);
 
-  // Combine regular rooms and indoor node rooms
+  // Show ONLY indoor node rooms (not old rooms table)
   const allRooms = useMemo(() => {
-    const combined: CombinedRoom[] = [
-      ...rooms.map(r => ({ ...r, isIndoorNode: false })),
-      ...indoorNodes
-        .filter(n => n.type === 'room')
-        .map(n => ({
-          id: n.id,
-          name: n.label || 'Unnamed Room',
-          type: 'room',
-          description: n.description || null,
-          floorId: n.floorId,
-          buildingId: floors.find(f => f.id === n.floorId)?.buildingId || '',
-          x: n.x || 0,
-          y: n.y || 0,
-          isIndoorNode: true
-        }))
-    ];
+    const combined: CombinedRoom[] = indoorNodes
+      .filter(n => n.type === 'room')
+      .map(n => ({
+        id: n.id,
+        name: n.label || 'Unnamed Room',
+        type: 'room',
+        description: n.description || null,
+        floorId: n.floorId,
+        buildingId: floors.find(f => f.id === n.floorId)?.buildingId || '',
+        x: n.x || 0,
+        y: n.y || 0,
+        isIndoorNode: true
+      }));
     return combined;
-  }, [rooms, indoorNodes, floors]);
+  }, [indoorNodes, floors]);
 
   useEffect(() => {
     if (open) {
@@ -260,11 +257,6 @@ export default function RoomFinderDialog({
                                       <Badge variant="secondary" className="text-xs capitalize">
                                         {room.type}
                                       </Badge>
-                                      {room.isIndoorNode && (
-                                        <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
-                                          Indoor
-                                        </Badge>
-                                      )}
                                     </div>
                                     {room.description && (
                                       <p className="text-xs text-muted-foreground mt-1 truncate">
@@ -296,16 +288,9 @@ export default function RoomFinderDialog({
               </div>
               <div className="flex-1">
                 <h3 className="text-xl font-semibold text-foreground" data-testid="text-selected-room-name">{selectedRoom.name}</h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary" className="capitalize" data-testid="badge-room-type">
-                    {selectedRoom.type}
-                  </Badge>
-                  {selectedRoom.isIndoorNode && (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
-                      Indoor Node
-                    </Badge>
-                  )}
-                </div>
+                <Badge variant="secondary" className="capitalize" data-testid="badge-room-type">
+                  {selectedRoom.type}
+                </Badge>
               </div>
             </div>
 

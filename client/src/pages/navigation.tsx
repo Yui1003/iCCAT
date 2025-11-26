@@ -2003,7 +2003,19 @@ export default function Navigation() {
       {selectedFloor && (
         <FloorPlanViewer
           floor={selectedFloor}
-          rooms={floorRooms}
+          rooms={indoorNodes
+            .filter(n => n.floorId === selectedFloor.id && n.type === 'room')
+            .map(n => ({
+              id: n.id,
+              name: n.label || 'Unnamed Room',
+              type: 'room',
+              description: n.description || null,
+              floorId: n.floorId,
+              buildingId: selectedBuilding?.id || '',
+              x: n.x,
+              y: n.y,
+              isIndoorNode: true
+            }))}
           indoorNodes={indoorNodes}
           onClose={() => setSelectedFloor(null)}
         />
