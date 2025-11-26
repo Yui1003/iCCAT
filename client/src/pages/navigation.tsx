@@ -1145,10 +1145,19 @@ export default function Navigation() {
     // Build indoor graph using the same pathfinding logic as outdoor navigation
     const indoorGraph = buildIndoorGraph(floorRooms, floorIndoorNodes, floorRoomPaths, roomFloor.pixelToMeterScale || 1);
     
+    // DEBUG: Log graph structure
+    console.log('[INDOOR-PATH] Building graph...');
+    console.log('[INDOOR-PATH] Total nodes:', indoorGraph.nodes.size);
+    console.log('[INDOOR-PATH] Total edges:', indoorGraph.edges.length);
+    console.log('[INDOOR-PATH] Waypoint map entries:', indoorGraph.waypointNodeMap.size);
+    
     // Use Dijkstra's algorithm to find shortest path from entrance to destination
     const { nodes, edges } = indoorGraph;
     const entranceKey = `${roomFloor.id}:${entranceNode.id}`;
     const destKey = `${roomFloor.id}:${destinationRoom.id}`;
+    
+    console.log('[INDOOR-PATH] Entrance key:', entranceKey, 'Dest key:', destKey);
+    console.log('[INDOOR-PATH] Entrance exists:', nodes.has(entranceKey), 'Dest exists:', nodes.has(destKey));
     
     // Dijkstra's algorithm
     const distances = new Map<string, number>();
@@ -1200,6 +1209,9 @@ export default function Navigation() {
       current = previous.get(current) || null;
     }
     
+    console.log('[INDOOR-PATH] Shortest path:', shortestPath);
+    console.log('[INDOOR-PATH] Path length:', shortestPath.length);
+    
     // Extract waypoints from the nodes used in the shortest path
     let polylineWaypoints: Array<{ lat: number; lng: number }> = [
       { lat: entranceNode.x, lng: entranceNode.y }
@@ -1210,10 +1222,14 @@ export default function Navigation() {
       const nodeKey_str = shortestPath[i];
       const waypoints = indoorGraph.waypointNodeMap.get(nodeKey_str) || [];
       
+      console.log(`[INDOOR-PATH] Node ${i} (${nodeKey_str}):`, waypoints.length, 'waypoints');
+      
       waypoints.forEach(wp => {
         polylineWaypoints.push({ lat: wp.x, lng: wp.y });
       });
     }
+    
+    console.log('[INDOOR-PATH] Final polyline waypoints:', polylineWaypoints.length, polylineWaypoints);
     
     // Add destination room
     polylineWaypoints.push({ lat: destinationRoom.x, lng: destinationRoom.y });
