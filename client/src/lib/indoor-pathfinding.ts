@@ -79,11 +79,12 @@ export function buildIndoorGraph(
 
   // Add vertical connections (stairways/elevators between floors)
   indoorNodes.forEach(node => {
-    if ((node.type === 'stairway' || node.type === 'elevator') && node.connectedFloorIds?.length > 0) {
+    if ((node.type === 'stairway' || node.type === 'elevator') && (node.connectedFloorIds?.length ?? 0) > 0) {
       const currentKey = nodeKey(node.id, node.floorId);
+      const connectedFloors = node.connectedFloorIds || [];
       
       // Connect to same node on other floors
-      node.connectedFloorIds.forEach(connectedFloorId => {
+      connectedFloors.forEach(connectedFloorId => {
         const connectedNode = indoorNodes.find(n => 
           n.id === node.id && n.floorId === connectedFloorId
         );
@@ -192,18 +193,22 @@ export function connectOutdoorToIndoor(
   // Find rooms in the building
   const buildingRooms = rooms.filter(r => r.buildingId === buildingId);
 
-  return entrances.map(entrance => {
-    const closestRoom = buildingRooms.reduce((closest, room) => {
-      if (room.floorId !== entrance.floorId) return closest;
-      
-      const dist = Math.sqrt(Math.pow(room.x - entrance.x, 2) + Math.pow(room.y - entrance.y, 2));
-      if (!closest) return { room, distance: dist };
-      
-      return dist < closest.distance ? { room, distance: dist } : closest;
-    }, null as { room: Room; distance: number } | null);
+  const connections = entrances
+    .map(entrance => {
+      const closestRoom = buildingRooms.reduce<{ room: Room; distance: number } | null>((closest, room) => {
+        if (room.floorId !== entrance.floorId) return closest;
+        
+        const dist = Math.sqrt(Math.pow(room.x - entrance.x, 2) + Math.pow(room.y - entrance.y, 2));
+        if (!closest) return { room, distance: dist };
+        
+        return dist < closest.distance ? { room, distance: dist } : closest;
+      }, null);
 
-    return closestRoom 
-      ? { outdoor: building, indoor: closestRoom.room, distance: closestRoom.distance }
-      : null;
-  }).filter((conn): conn is typeof conn => conn !== null);
+      return closestRoom 
+        ? { outdoor: building, indoor: closestRoom.room, distance: closestRoom.distance }
+        : null;
+    })
+    .filter((conn): conn is { outdoor: Building; indoor: Room; distance: number } => conn !== null);
+    
+  return connections;
 }

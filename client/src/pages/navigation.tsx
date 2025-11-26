@@ -26,11 +26,13 @@ import type { Building, NavigationRoute, Staff, Floor, Room, VehicleType } from 
 import { poiTypes, KIOSK_LOCATION } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
 import { findShortestPath } from "@/lib/pathfinding";
+import { buildIndoorGraph, findRoomPath, connectOutdoorToIndoor } from "@/lib/indoor-pathfinding";
 import { getWalkpaths, getDrivepaths, getBuildings, getStaff, getFloors, getRooms } from "@/lib/offline-data";
 import { calculateMultiPhaseRoute, multiPhaseToNavigationRoute } from "@/lib/multi-phase-routes";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { calculateETA, parseDistance } from "@/lib/eta-calculator";
 import { useLocation } from "wouter";
+import type { IndoorNode, RoomPath } from "@shared/schema";
 
 export default function Navigation() {
   // Return to home after 3 minutes of inactivity
@@ -75,6 +77,22 @@ export default function Navigation() {
   const { data: rooms = [] } = useQuery<Room[]>({
     queryKey: ['/api/rooms'],
     queryFn: getRooms
+  });
+
+  const { data: indoorNodes = [] } = useQuery<IndoorNode[]>({
+    queryKey: ['/api/indoor-nodes'],
+    queryFn: async () => {
+      const res = await fetch('/api/indoor-nodes');
+      return res.json();
+    }
+  });
+
+  const { data: roomPaths = [] } = useQuery<RoomPath[]>({
+    queryKey: ['/api/room-paths'],
+    queryFn: async () => {
+      const res = await fetch('/api/room-paths');
+      return res.json();
+    }
   });
 
   useEffect(() => {
