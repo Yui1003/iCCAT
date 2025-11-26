@@ -2,8 +2,8 @@ import type { Room, IndoorNode, RoomPath, Floor, Building } from "@shared/schema
 
 interface IndoorGraph {
   nodes: Map<string, { id: string; x: number; y: number; type: string; floorId: string }>;
-  edges: Array<{ from: string; to: string; distance: number }>;
-  waypointNodeMap: Map<string, Array<{ x: number; y: number }>>; // Maps node keys to their waypoints for extraction
+  edges: Array<{ from: string; to: string; distance: number; pathWaypoints: Array<{ x: number; y: number }> }>;
+  roomPaths: RoomPath[];
 }
 
 interface RoomPathWaypoint {
@@ -27,9 +27,8 @@ export function buildIndoorGraph(
   pixelToMeterScale: number = 0.02
 ): IndoorGraph {
   const nodes = new Map<string, { id: string; x: number; y: number; type: string; floorId: string }>();
-  const edges: Array<{ from: string; to: string; distance: number }> = [];
-  const waypointNodeMap = new Map<string, Array<{ x: number; y: number }>>();
-  const wpNodeMapping = new Map<string, string>(); // Maps waypoint coordinate key to node key
+  const edges: Array<{ from: string; to: string; distance: number; pathWaypoints: Array<{ x: number; y: number }> }> = [];
+  const coordKeyToNodeId = new Map<string, string>(); // Maps "x,y" to final node key
 
   // Add rooms as nodes
   rooms.forEach(room => {
@@ -55,37 +54,29 @@ export function buildIndoorGraph(
     });
   });
 
-  // First pass: find all unique waypoint coordinates to merge them
-  const coordKeyToNodeId = new Map<string, string>(); // Maps "x,y" to final node key
-  
   // Create COMPLETE waypoint graph from all room paths
-  // This connects EVERY waypoint, not just those with nodeIds
   roomPaths.forEach((path, pathIndex) => {
     const waypoints = path.waypoints as RoomPathWaypoint[];
     if (!waypoints || waypoints.length < 1) return;
 
-    // Create nodes for each waypoint (with or without nodeId)
+    // Create nodes for each waypoint
     const waypointNodes: string[] = [];
     
     waypoints.forEach((wp, wpIndex) => {
       let nodeId: string;
       
       if (wp.nodeId) {
-        // Waypoint already has a nodeId (clicking on an indoor node)
         nodeId = nodeKey(wp.nodeId, path.floorId);
       } else {
-        // Check if we already have a node at this coordinate
+        // Merge waypoints at same coordinates
         const coordKey = `${wp.x.toFixed(1)},${wp.y.toFixed(1)}`;
         
         if (coordKeyToNodeId.has(coordKey)) {
-          // Reuse existing waypoint node at same coordinate
           nodeId = coordKeyToNodeId.get(coordKey)!;
         } else {
-          // Create new virtual node for this waypoint coordinate
           nodeId = `${path.floorId}:waypoint:${pathIndex}:${wpIndex}`;
           coordKeyToNodeId.set(coordKey, nodeId);
           
-          // Create the virtual node if it doesn't exist
           if (!nodes.has(nodeId)) {
             nodes.set(nodeId, {
               id: nodeId,
@@ -101,31 +92,25 @@ export function buildIndoorGraph(
       waypointNodes.push(nodeId);
     });
 
-    // Create edges between consecutive waypoints
+    // Create edges with full waypoint lists
     for (let i = 0; i < waypointNodes.length - 1; i++) {
       const fromKey = waypointNodes[i];
       const toKey = waypointNodes[i + 1];
+      
+      // Extract waypoints from start to end index
+      const edgeWaypoints = waypoints.slice(i, i + 2);
       
       const w1 = waypoints[i];
       const w2 = waypoints[i + 1];
       const pixelDist = pixelDistance(w1.x, w1.y, w2.x, w2.y);
       const meterDist = pixelDist * pixelToMeterScale;
       
-      edges.push({ from: fromKey, to: toKey, distance: meterDist });
-      edges.push({ from: toKey, to: fromKey, distance: meterDist });
-    }
-
-    // Map waypoints to their node keys for extraction later
-    for (let i = 0; i < waypointNodes.length; i++) {
-      const nodeKey_str = waypointNodes[i];
-      if (!waypointNodeMap.has(nodeKey_str)) {
-        waypointNodeMap.set(nodeKey_str, []);
-      }
-      waypointNodeMap.get(nodeKey_str)!.push(waypoints[i]);
+      edges.push({ from: fromKey, to: toKey, distance: meterDist, pathWaypoints: edgeWaypoints });
+      edges.push({ from: toKey, to: fromKey, distance: meterDist, pathWaypoints: [...edgeWaypoints].reverse() });
     }
   });
 
-  // Add vertical connections (stairways/elevators between floors)
+  // Add vertical connections
   indoorNodes.forEach(node => {
     if ((node.type === 'stairway' || node.type === 'elevator') && (node.connectedFloorIds?.length ?? 0) > 0) {
       const currentKey = nodeKey(node.id, node.floorId);
@@ -138,16 +123,14 @@ export function buildIndoorGraph(
 
         if (connectedNode) {
           const connectedKey = nodeKey(connectedNode.id, connectedFloorId);
-          const verticalDistance = 5;
-
-          edges.push({ from: currentKey, to: connectedKey, distance: verticalDistance });
-          edges.push({ from: connectedKey, to: currentKey, distance: verticalDistance });
+          edges.push({ from: currentKey, to: connectedKey, distance: 5, pathWaypoints: [] });
+          edges.push({ from: connectedKey, to: currentKey, distance: 5, pathWaypoints: [] });
         }
       });
     }
   });
 
-  return { nodes, edges, waypointNodeMap };
+  return { nodes, edges, roomPaths };
 }
 
 export function findRoomPath(

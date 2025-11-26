@@ -1212,21 +1212,28 @@ export default function Navigation() {
     console.log('[INDOOR-PATH] Shortest path:', shortestPath);
     console.log('[INDOOR-PATH] Path length:', shortestPath.length);
     
-    // Extract waypoints from the nodes used in the shortest path
+    // Extract waypoints by following the edges in the shortest path
     let polylineWaypoints: Array<{ lat: number; lng: number }> = [
       { lat: entranceNode.x, lng: entranceNode.y }
     ];
     
-    // For each node in the shortest path (except first which is entrance), add its waypoints
-    for (let i = 1; i < shortestPath.length; i++) {
-      const nodeKey_str = shortestPath[i];
-      const waypoints = indoorGraph.waypointNodeMap.get(nodeKey_str) || [];
+    // For each consecutive pair of nodes in the shortest path, find the edge and get its waypoints
+    for (let i = 0; i < shortestPath.length - 1; i++) {
+      const fromNode = shortestPath[i];
+      const toNode = shortestPath[i + 1];
       
-      console.log(`[INDOOR-PATH] Node ${i} (${nodeKey_str}):`, waypoints.length, 'waypoints');
+      // Find the edge from -> to
+      const edge = edges.find(e => e.from === fromNode && e.to === toNode);
       
-      waypoints.forEach(wp => {
-        polylineWaypoints.push({ lat: wp.x, lng: wp.y });
-      });
+      if (edge && edge.pathWaypoints && edge.pathWaypoints.length > 0) {
+        console.log(`[INDOOR-PATH] Edge ${fromNode} -> ${toNode} has ${edge.pathWaypoints.length} waypoints`);
+        
+        // Add all waypoints from this edge, but skip the first one (it's the start node)
+        for (let j = 1; j < edge.pathWaypoints.length; j++) {
+          const wp = edge.pathWaypoints[j];
+          polylineWaypoints.push({ lat: wp.x, lng: wp.y });
+        }
+      }
     }
     
     console.log('[INDOOR-PATH] Final polyline waypoints:', polylineWaypoints.length, polylineWaypoints);
