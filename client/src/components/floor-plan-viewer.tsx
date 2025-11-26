@@ -29,7 +29,7 @@ export default function FloorPlanViewer({ floor, rooms = [], onClose, onPlaceRoo
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
-  const [roomFormData, setRoomFormData] = useState({ name: "", type: "classroom", description: "", x: 0.5, y: 0.5 });
+  const [roomFormData, setRoomFormData] = useState({ name: "", type: "classroom", description: "", x: 0, y: 0 });
   const [viewingRoomInfo, setViewingRoomInfo] = useState<Room | null>(null);
   
   const isAdminMode = !!(onCreateRoom || onUpdateRoom || onDeleteRoom);
@@ -45,12 +45,12 @@ export default function FloorPlanViewer({ floor, rooms = [], onClose, onPlaceRoo
         trackEvent(AnalyticsEventType.IMAGE_LOAD, Math.max(1, Math.round(imageLoadDuration)), {
           action: 'floor_plan_image_loaded',
           floorId: floor.id,
-          floorName: floor.name,
+          floorName: floor.floorName,
           imageSize: img.width + 'x' + img.height
         });
       };
     }
-  }, [floor.floorPlanImage, floor.id, floor.name]);
+  }, [floor.floorPlanImage, floor.id, floor.floorName]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -76,8 +76,9 @@ export default function FloorPlanViewer({ floor, rooms = [], onClose, onPlaceRoo
       ctx.drawImage(image, x, y, image.width * scale, image.height * scale);
 
       rooms.forEach(room => {
-        const roomX = x + room.x * image.width * scale;
-        const roomY = y + room.y * image.height * scale;
+        // room.x and room.y are now absolute pixel coordinates on the floor plan image
+        const roomX = x + room.x * scale;
+        const roomY = y + room.y * scale;
 
         // Draw pin/marker icon (teardrop shape)
         const pinSize = 20 / zoom;
@@ -157,8 +158,9 @@ export default function FloorPlanViewer({ floor, rooms = [], onClose, onPlaceRoo
     const offsetY = (canvas.height / zoom - image.height * scale) / 2;
 
     const clickedRoom = rooms.find(room => {
-      const roomX = offsetX + room.x * image.width * scale;
-      const roomY = offsetY + room.y * image.height * scale;
+      // room.x and room.y are now absolute pixel coordinates on the floor plan image
+      const roomX = offsetX + room.x * scale;
+      const roomY = offsetY + room.y * scale;
       const pinSize = 20 / zoom;
       
       // Check if click is within the pin shape (circle at top + triangle at bottom)
@@ -196,13 +198,17 @@ export default function FloorPlanViewer({ floor, rooms = [], onClose, onPlaceRoo
         setViewingRoomInfo(clickedRoom);
       }
     } else if (isAdminMode) {
-      // Admin mode: place new room marker
-      const relativeX = Math.max(0, Math.min(1, (x - offsetX) / (image.width * scale)));
-      const relativeY = Math.max(0, Math.min(1, (y - offsetY) / (image.height * scale)));
+      // Admin mode: place new room marker with absolute pixel coordinates
+      const absoluteX = (x - offsetX) / scale;
+      const absoluteY = (y - offsetY) / scale;
       
-      if (relativeX >= 0 && relativeX <= 1 && relativeY >= 0 && relativeY <= 1) {
+      // Clamp to image bounds
+      const clampedX = Math.max(0, Math.min(image.width, absoluteX));
+      const clampedY = Math.max(0, Math.min(image.height, absoluteY));
+      
+      if (clampedX >= 0 && clampedX <= image.width && clampedY >= 0 && clampedY <= image.height) {
         setEditingRoom(null);
-        setRoomFormData({ name: "", type: "classroom", description: "", x: relativeX, y: relativeY });
+        setRoomFormData({ name: "", type: "classroom", description: "", x: clampedX, y: clampedY });
       }
     }
   };
@@ -231,12 +237,12 @@ export default function FloorPlanViewer({ floor, rooms = [], onClose, onPlaceRoo
     }
 
     setEditingRoom(null);
-    setRoomFormData({ name: "", type: "classroom", description: "", x: 0.5, y: 0.5 });
+    setRoomFormData({ name: "", type: "classroom", description: "", x: 0, y: 0 });
   };
 
   const handleCancelEdit = () => {
     setEditingRoom(null);
-    setRoomFormData({ name: "", type: "classroom", description: "", x: 0.5, y: 0.5 });
+    setRoomFormData({ name: "", type: "classroom", description: "", x: 0, y: 0 });
   };
 
   const handleDeleteRoom = (room: Room) => {
