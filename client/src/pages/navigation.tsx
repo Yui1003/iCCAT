@@ -2091,60 +2091,51 @@ export default function Navigation() {
         </aside>
 
         <main className="flex-1 overflow-hidden">
-          <CampusMap
-            buildings={filteredBuildings}
-            onBuildingClick={setSelectedBuilding}
-            selectedBuilding={selectedBuilding}
-            routePolyline={route?.polyline}
-            routeMode={route?.mode}
-            routePhases={route?.phases}
-            hidePolygonsInNavigation={!!route}
-            waypointsData={
-              route && waypoints.length > 0
-                ? waypoints
-                    .map(id => buildings.find(b => b.id === id))
-                    .filter((b): b is Building => !!b)
-                    .map(b => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng }))
-                : []
-            }
-          />
+          {navigationPhase === 'indoor' && selectedFloor ? (
+            <FloorPlanViewer
+              floor={selectedFloor}
+              rooms={indoorNodes
+                .filter(n => n.floorId === selectedFloor.id && n.type === 'room')
+                .map(n => ({
+                  id: n.id,
+                  name: n.label || 'Unnamed Room',
+                  type: 'room',
+                  description: n.description || null,
+                  floorId: n.floorId,
+                  buildingId: selectedEnd?.id || '',
+                  x: n.x,
+                  y: n.y,
+                  isIndoorNode: true
+                }))}
+              indoorNodes={indoorNodes}
+              onClose={() => {
+                setNavigationPhase(null);
+                setSelectedFloor(null);
+              }}
+              highlightedRoomId={destinationRoom?.id}
+              showPathTo={destinationRoom}
+              viewOnly={true}
+            />
+          ) : (
+            <CampusMap
+              buildings={filteredBuildings}
+              onBuildingClick={setSelectedBuilding}
+              selectedBuilding={selectedBuilding}
+              routePolyline={route?.polyline}
+              routeMode={route?.mode}
+              routePhases={route?.phases}
+              hidePolygonsInNavigation={!!route}
+              waypointsData={
+                route && waypoints.length > 0
+                  ? waypoints
+                      .map(id => buildings.find(b => b.id === id))
+                      .filter((b): b is Building => !!b)
+                      .map(b => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng }))
+                  : []
+              }
+            />
+          )}
         </main>
-
-        {/* Indoor Navigation Floor Plan Dialog */}
-        <Dialog open={navigationPhase === 'indoor' && !!selectedFloor} onOpenChange={(open) => {
-          if (!open) {
-            setNavigationPhase(null);
-            setSelectedFloor(null);
-          }
-        }}>
-          <DialogContent className="max-w-4xl h-[90vh] p-0">
-            {selectedFloor && (
-              <FloorPlanViewer
-                floor={selectedFloor}
-                rooms={indoorNodes
-                  .filter(n => n.floorId === selectedFloor.id && n.type === 'room')
-                  .map(n => ({
-                    id: n.id,
-                    name: n.label || 'Unnamed Room',
-                    type: 'room',
-                    description: n.description || null,
-                    floorId: n.floorId,
-                    buildingId: selectedEnd?.id || '',
-                    x: n.x,
-                    y: n.y,
-                    isIndoorNode: true
-                  }))}
-                indoorNodes={indoorNodes}
-                onClose={() => {
-                  setNavigationPhase(null);
-                  setSelectedFloor(null);
-                }}
-                highlightedRoomId={destinationRoom?.id}
-                showPathTo={destinationRoom}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
 
       {selectedBuilding && (

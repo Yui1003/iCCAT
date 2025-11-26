@@ -35,9 +35,10 @@ interface FloorPlanViewerProps {
   onDeleteRoom?: (id: string) => void;
   highlightedRoomId?: string;
   showPathTo?: IndoorNode | null;
+  viewOnly?: boolean;
 }
 
-export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], onClose, onPlaceRoom, onCreateRoom, onUpdateRoom, onDeleteRoom, highlightedRoomId, showPathTo }: FloorPlanViewerProps) {
+export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], onClose, onPlaceRoom, onCreateRoom, onUpdateRoom, onDeleteRoom, highlightedRoomId, showPathTo, viewOnly = false }: FloorPlanViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -300,6 +301,55 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
       }
     }
   };
+
+  if (viewOnly) {
+    // View-only mode for navigation (no overlay, no admin controls)
+    return (
+      <div className="h-full flex flex-col bg-background">
+        <div className="bg-card border-b border-card-border p-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">
+              {floor.floorName || `Floor ${floor.floorNumber}`}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleZoomOut}
+              data-testid="button-zoom-out"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleZoomIn}
+              data-testid="button-zoom-in"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleReset}
+              data-testid="button-reset-view"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden" ref={containerRef}>
+          <canvas
+            ref={canvasRef}
+            onClick={handleCanvasClick}
+            className="w-full h-full cursor-pointer"
+            data-testid="floor-plan-canvas"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[1100] bg-black/50 backdrop-blur-sm">
