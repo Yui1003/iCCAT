@@ -1,20 +1,23 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Check, MapPin, Navigation as NavigationIcon, Menu, X } from "lucide-react";
+import { ArrowLeft, Check, MapPin, Navigation as NavigationIcon, Menu, X, Building2, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { SavedRoute, Building, RoutePhase, RouteStep } from "@shared/schema";
+import type { SavedRoute, Building, RoutePhase, RouteStep, IndoorNode, Floor, RoomPath } from "@shared/schema";
 import { getPhaseColor } from "@shared/phase-colors";
+import FloorPlanViewer from "@/components/floor-plan-viewer";
 
 declare global {
   interface Window {
     L: any;
   }
 }
+
+type NavigationPhase = 'outdoor' | 'indoor';
 
 export default function MobileNavigation() {
   const [, params] = useRoute("/navigate/:routeId");
@@ -28,13 +31,59 @@ export default function MobileNavigation() {
   const mapInstanceRef = useRef<any>(null);
   const touchHandlerRef = useRef<((e: TouchEvent) => void) | null>(null);
 
+  // Indoor navigation states
+  const [navigationPhase, setNavigationPhase] = useState<NavigationPhase>('outdoor');
+  const [destinationRoom, setDestinationRoom] = useState<IndoorNode | null>(null);
+  const [currentIndoorFloor, setCurrentIndoorFloor] = useState<Floor | null>(null);
+  const [floorsInRoute, setFloorsInRoute] = useState<Floor[]>([]);
+
   const { data: route, isLoading, error } = useQuery<SavedRoute>({
     queryKey: ['/api/routes', params?.routeId],
     enabled: !!params?.routeId,
   });
 
-  // Check if all phases are completed
-  const allPhasesCompleted = route && completedPhases.length === route.phases.length;
+  // Fetch buildings for indoor navigation
+  const { data: buildings = [] } = useQuery<Building[]>({
+    queryKey: ['/api/buildings'],
+  });
+
+  // Fetch floors for indoor navigation
+  const { data: floors = [] } = useQuery<Floor[]>({
+    queryKey: ['/api/floors'],
+  });
+
+  // Fetch indoor nodes
+  const { data: indoorNodes = [] } = useQuery<IndoorNode[]>({
+    queryKey: ['/api/indoor-nodes'],
+  });
+
+  // Fetch room paths
+  const { data: roomPaths = [] } = useQuery<RoomPath[]>({
+    queryKey: ['/api/room-paths'],
+  });
+
+  // Check if route has indoor destination
+  const hasIndoorDestination = route?.destinationRoomId && route?.destinationBuildingId;
+
+  // Get the destination building for indoor navigation
+  const destinationBuilding = useMemo(() => {
+    if (!route?.destinationBuildingId || !buildings.length) return null;
+    return buildings.find(b => b.id === route.destinationBuildingId) || null;
+  }, [route?.destinationBuildingId, buildings]);
+
+  // Get floors for the destination building
+  const buildingFloors = useMemo(() => {
+    if (!route?.destinationBuildingId || !floors.length) return [];
+    return floors.filter(f => f.buildingId === route.destinationBuildingId).sort((a, b) => a.level - b.level);
+  }, [route?.destinationBuildingId, floors]);
+
+  // Check if all outdoor phases are completed
+  const allOutdoorPhasesCompleted = route && completedPhases.length === route.phases.length;
+
+  // Check if navigation is fully complete (outdoor + indoor if applicable)
+  const isNavigationComplete = hasIndoorDestination 
+    ? navigationPhase === 'indoor' && currentIndoorFloor?.id === destinationRoom?.floorId && floorsInRoute.length > 0 && floorsInRoute[floorsInRoute.length - 1]?.id === currentIndoorFloor?.id
+    : allOutdoorPhasesCompleted;
 
   const handleAdvancePhase = () => {
     if (!route) return;
@@ -53,13 +102,132 @@ export default function MobileNavigation() {
         description: `Navigating to ${route.phases[nextPhaseIndex].endName}`,
       });
     } else {
-      // All phases completed - show feedback dialog
-      setShowFeedbackDialog(true);
+      // All outdoor phases completed
+      if (hasIndoorDestination) {
+        // Don't show feedback yet - will transition to indoor mode when user clicks "Reached the Building"
+        toast({
+          title: "Outdoor Navigation Complete",
+          description: "Tap 'Reached the Building' to continue inside.",
+        });
+      } else {
+        // No indoor destination - show feedback dialog
+        setShowFeedbackDialog(true);
+        toast({
+          title: "Destination Reached!",
+          description: "You have completed your journey.",
+        });
+      }
+    }
+  };
+
+  // Handle reaching the building - transition to indoor navigation
+  const handleReachedBuilding = () => {
+    if (!route || !route.destinationRoomId || !route.destinationBuildingId || !route.destinationFloorId) {
+      console.warn('[MOBILE] Missing indoor navigation data');
+      return;
+    }
+
+    // Find the destination room node
+    const roomNode = indoorNodes.find(n => n.id === route.destinationRoomId && n.type === 'room');
+    if (!roomNode) {
+      console.error('[MOBILE] Destination room not found:', route.destinationRoomId);
       toast({
-        title: "Destination Reached!",
-        description: "You have completed your journey.",
+        title: "Error",
+        description: "Could not find indoor navigation data.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setDestinationRoom(roomNode);
+
+    // Calculate the indoor path and floors involved
+    const roomFloor = floors.find(f => f.id === route.destinationFloorId);
+    if (!roomFloor) {
+      console.error('[MOBILE] Destination floor not found:', route.destinationFloorId);
+      return;
+    }
+
+    // Find building entrance (ground floor or floor level 1)
+    const buildingFloorsForDest = floors.filter(f => f.buildingId === route.destinationBuildingId).sort((a, b) => a.level - b.level);
+    const entranceFloor = buildingFloorsForDest.find(f => f.level === 1) || buildingFloorsForDest[0];
+
+    if (!entranceFloor) {
+      console.error('[MOBILE] No entrance floor found');
+      return;
+    }
+
+    // Calculate floors in route (from entrance to destination floor)
+    let floorRoute: Floor[] = [];
+    if (entranceFloor.id === roomFloor.id) {
+      floorRoute = [entranceFloor];
+    } else {
+      const entranceLevel = entranceFloor.level;
+      const destLevel = roomFloor.level;
+      
+      if (destLevel > entranceLevel) {
+        // Going up
+        floorRoute = buildingFloorsForDest.filter(f => f.level >= entranceLevel && f.level <= destLevel);
+      } else {
+        // Going down
+        floorRoute = buildingFloorsForDest.filter(f => f.level <= entranceLevel && f.level >= destLevel).reverse();
+      }
+    }
+
+    setFloorsInRoute(floorRoute);
+    setCurrentIndoorFloor(entranceFloor);
+    setNavigationPhase('indoor');
+
+    toast({
+      title: "Indoor Navigation",
+      description: `Follow the path to ${roomNode.label || route.destinationRoomName || 'your destination'}`,
+    });
+  };
+
+  // Handle advancing to next floor
+  const handleNextFloor = () => {
+    if (!currentIndoorFloor || floorsInRoute.length === 0) return;
+
+    const currentIndex = floorsInRoute.findIndex(f => f.id === currentIndoorFloor.id);
+    if (currentIndex < floorsInRoute.length - 1) {
+      const nextFloor = floorsInRoute[currentIndex + 1];
+      setCurrentIndoorFloor(nextFloor);
+      toast({
+        title: "Floor Change",
+        description: `Now on ${nextFloor.name}`,
       });
     }
+  };
+
+  // Handle going to previous floor
+  const handlePrevFloor = () => {
+    if (!currentIndoorFloor || floorsInRoute.length === 0) return;
+
+    const currentIndex = floorsInRoute.findIndex(f => f.id === currentIndoorFloor.id);
+    if (currentIndex > 0) {
+      const prevFloor = floorsInRoute[currentIndex - 1];
+      setCurrentIndoorFloor(prevFloor);
+      toast({
+        title: "Floor Change",
+        description: `Now on ${prevFloor.name}`,
+      });
+    }
+  };
+
+  // Check if we're on the destination floor
+  const isOnDestinationFloor = currentIndoorFloor?.id === destinationRoom?.floorId;
+  
+  // Get current floor index in route
+  const currentFloorIndex = floorsInRoute.findIndex(f => f.id === currentIndoorFloor?.id);
+  const isLastFloor = currentFloorIndex === floorsInRoute.length - 1;
+
+  // Handle completing indoor navigation
+  const handleCompleteIndoorNavigation = () => {
+    setShowFeedbackDialog(true);
+    toast({
+      title: "Destination Reached!",
+      description: "You have completed your journey.",
+    });
   };
 
   const handleFeedbackDecision = (giveFeedback: boolean) => {
@@ -310,9 +478,14 @@ export default function MobileNavigation() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-lg font-semibold text-foreground">Navigation</h1>
+          <h1 className="text-lg font-semibold text-foreground">
+            {navigationPhase === 'indoor' ? 'Indoor Navigation' : 'Navigation'}
+          </h1>
           <p className="text-xs text-muted-foreground">
-            Phase {currentPhaseIndex + 1} of {route.phases.length}
+            {navigationPhase === 'indoor' 
+              ? `${currentIndoorFloor?.name || 'Floor'} - ${destinationRoom?.label || route.destinationRoomName || 'Destination'}`
+              : `Phase ${currentPhaseIndex + 1} of ${route.phases.length}`
+            }
           </p>
         </div>
         <Button
@@ -325,19 +498,37 @@ export default function MobileNavigation() {
         </Button>
       </header>
 
-      {/* Main Layout: Map + Navigation Panel */}
-      <main className="flex-1 flex w-full h-full">
-        {/* Map Area - Leaflet Interactive Map */}
-        <div
-          ref={mapRef}
-          id="map"
-          className="flex-1 z-0"
-          data-testid="map-container"
-          style={{
-            width: '100%',
-            height: '100%',
-          }}
-        />
+      {/* Main Layout: Map/FloorPlan + Navigation Panel */}
+      <main className="flex-1 flex w-full h-full overflow-hidden">
+        {/* Map/FloorPlan Area */}
+        {navigationPhase === 'outdoor' ? (
+          <div
+            ref={mapRef}
+            id="map"
+            className="flex-1 z-0"
+            data-testid="map-container"
+            style={{
+              width: '100%',
+              height: '100%',
+            }}
+          />
+        ) : (
+          <div className="flex-1 overflow-hidden" data-testid="indoor-navigation-container">
+            {currentIndoorFloor && (
+              <FloorPlanViewer
+                floor={currentIndoorFloor}
+                indoorNodes={indoorNodes.filter(n => n.floorId === currentIndoorFloor.id)}
+                roomPaths={roomPaths.filter(p => {
+                  const node1 = indoorNodes.find(n => n.id === p.nodeId1);
+                  const node2 = indoorNodes.find(n => n.id === p.nodeId2);
+                  return node1?.floorId === currentIndoorFloor.id || node2?.floorId === currentIndoorFloor.id;
+                })}
+                highlightedRoomId={isOnDestinationFloor ? destinationRoom?.id : undefined}
+                showPathTo={isOnDestinationFloor ? destinationRoom : indoorNodes.find(n => n.floorId === currentIndoorFloor.id && (n.type === 'stairway' || n.type === 'elevator'))}
+              />
+            )}
+          </div>
+        )}
 
         {/* Navigation Panel - Slides in/out */}
         <div
@@ -347,210 +538,430 @@ export default function MobileNavigation() {
         >
           {/* Progress Indicator */}
           <div className="p-4 border-b border-card-border flex-shrink-0">
-            <div className="flex items-center gap-2 mb-3">
-              {route.phases.map((phase: RoutePhase, index: number) => {
-                const isCompleted = completedPhases.includes(index);
-                const isCurrent = index === currentPhaseIndex;
-                const phaseColor = phase.color || getPhaseColor(index);
+            {navigationPhase === 'outdoor' ? (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  {route.phases.map((phase: RoutePhase, index: number) => {
+                    const isCompleted = completedPhases.includes(index);
+                    const isCurrent = index === currentPhaseIndex;
+                    const phaseColor = phase.color || getPhaseColor(index);
 
-                return (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 flex-1"
-                  >
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 flex-1"
+                      >
+                        <div
+                          className={`flex-1 h-2 rounded-full transition-all ${
+                            isCompleted
+                              ? 'opacity-100'
+                              : isCurrent
+                              ? 'opacity-75'
+                              : 'opacity-25'
+                          }`}
+                          style={{
+                            backgroundColor: phaseColor,
+                          }}
+                        />
+                        {index < route.phases.length - 1 && (
+                          <div className="w-1 h-1 rounded-full bg-border" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
                     <div
-                      className={`flex-1 h-2 rounded-full transition-all ${
-                        isCompleted
-                          ? 'opacity-100'
-                          : isCurrent
-                          ? 'opacity-75'
-                          : 'opacity-25'
-                      }`}
-                      style={{
-                        backgroundColor: phaseColor,
-                      }}
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: phaseColor }}
                     />
-                    {index < route.phases.length - 1 && (
-                      <div className="w-1 h-1 rounded-full bg-border" />
-                    )}
+                    <span className="text-xs font-medium text-foreground truncate">
+                      {currentPhase.startName}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
+                  <NavigationIcon className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                  <span className="text-xs font-medium text-foreground truncate">
+                    {currentPhase.endName}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Indoor floor progress */}
+                <div className="flex items-center gap-2 mb-3">
+                  {floorsInRoute.map((floor, index) => {
+                    const isCompleted = currentFloorIndex > index;
+                    const isCurrent = floor.id === currentIndoorFloor?.id;
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: phaseColor }}
-                />
-                <span className="text-xs font-medium text-foreground truncate">
-                  {currentPhase.startName}
-                </span>
-              </div>
-              <NavigationIcon className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-              <span className="text-xs font-medium text-foreground truncate">
-                {currentPhase.endName}
-              </span>
-            </div>
+                    return (
+                      <div
+                        key={floor.id}
+                        className="flex items-center gap-2 flex-1"
+                      >
+                        <div
+                          className={`flex-1 h-2 rounded-full transition-all ${
+                            isCompleted
+                              ? 'bg-green-500'
+                              : isCurrent
+                              ? 'bg-blue-500'
+                              : 'bg-muted'
+                          }`}
+                        />
+                        {index < floorsInRoute.length - 1 && (
+                          <div className="w-1 h-1 rounded-full bg-border" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-xs font-medium text-foreground truncate">
+                      {currentIndoorFloor?.name || 'Floor'}
+                    </span>
+                  </div>
+                  <NavigationIcon className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                  <span className="text-xs font-medium text-foreground truncate">
+                    {destinationRoom?.label || route.destinationRoomName || 'Destination'}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Navigation Content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Current Phase Info */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-foreground">
-                  Current Phase
-                </h2>
-                <Badge
-                  variant="secondary"
-                  style={{
-                    backgroundColor: `${phaseColor}20`,
-                    color: phaseColor,
-                    borderColor: phaseColor,
-                  }}
-                  className="text-xs"
-                  data-testid="badge-current-phase"
-                >
-                  Phase {currentPhaseIndex + 1}
-                </Badge>
-              </div>
+            {navigationPhase === 'outdoor' ? (
+              <>
+                {/* Current Phase Info */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold text-foreground">
+                      Current Phase
+                    </h2>
+                    <Badge
+                      variant="secondary"
+                      style={{
+                        backgroundColor: `${phaseColor}20`,
+                        color: phaseColor,
+                        borderColor: phaseColor,
+                      }}
+                      className="text-xs"
+                      data-testid="badge-current-phase"
+                    >
+                      Phase {currentPhaseIndex + 1}
+                    </Badge>
+                  </div>
 
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Distance:</span>
-                  <span className="font-medium text-foreground">{currentPhase.distance}</span>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Distance:</span>
+                      <span className="font-medium text-foreground">{currentPhase.distance}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">ETA:</span>
+                      <span 
+                        className="font-medium text-foreground"
+                        data-testid={`mobile-eta-${currentPhaseIndex}`}
+                      >
+                        {(() => {
+                          const parseDistance = (distStr: string): number => {
+                            const match = distStr.match(/(\d+(?:\.\d+)?)\s*m/);
+                            return match ? parseFloat(match[1]) : 0;
+                          };
+                          const distanceMeters = parseDistance(currentPhase.distance);
+                          const speed = currentPhase.mode === 'walking' ? 1.4 : 10;
+                          const seconds = distanceMeters / speed;
+                          const minutes = Math.ceil(seconds / 60);
+                          return minutes > 0 ? `${minutes} min` : '< 1 min';
+                        })()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Mode:</span>
+                      <span className="font-medium text-foreground capitalize">{currentPhase.mode}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">ETA:</span>
-                  <span 
-                    className="font-medium text-foreground"
-                    data-testid={`mobile-eta-${currentPhaseIndex}`}
-                  >
-                    {(() => {
+
+                {/* Directions */}
+                <div>
+                  <h3 className="text-sm font-medium text-foreground mb-2">Directions</h3>
+                  <div className="space-y-2">
+                    {currentPhase.steps.map((step: RouteStep, stepIndex: number) => (
+                      <div
+                        key={stepIndex}
+                        className="flex gap-2 text-xs"
+                        data-testid={`mobile-step-${stepIndex}`}
+                      >
+                        <div className="flex-shrink-0 w-5 h-5 bg-card border border-border rounded-full flex items-center justify-center text-xs font-medium text-muted-foreground">
+                          {stepIndex + 1}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-foreground">{step.instruction}</p>
+                          <p className="text-muted-foreground text-xs">{step.distance}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* All Phases */}
+                <div>
+                  <h3 className="text-sm font-medium text-foreground mb-2">All Phases</h3>
+                  <div className="space-y-1">
+                    {route.phases.map((phase: RoutePhase, index: number) => {
+                      const isCompleted = completedPhases.includes(index);
+                      const isCurrent = index === currentPhaseIndex;
+                      const color = phase.color || getPhaseColor(index);
+
+                      // Calculate ETA for this phase
                       const parseDistance = (distStr: string): number => {
                         const match = distStr.match(/(\d+(?:\.\d+)?)\s*m/);
                         return match ? parseFloat(match[1]) : 0;
                       };
-                      const distanceMeters = parseDistance(currentPhase.distance);
-                      const speed = currentPhase.mode === 'walking' ? 1.4 : 10;
+                      const distanceMeters = parseDistance(phase.distance);
+                      const speed = phase.mode === 'walking' ? 1.4 : 10;
                       const seconds = distanceMeters / speed;
                       const minutes = Math.ceil(seconds / 60);
-                      return minutes > 0 ? `${minutes} min` : '< 1 min';
-                    })()}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Mode:</span>
-                  <span className="font-medium text-foreground capitalize">{currentPhase.mode}</span>
-                </div>
-              </div>
-            </div>
+                      const eta = minutes > 0 ? `${minutes}m` : '<1m';
 
-            {/* Directions */}
-            <div>
-              <h3 className="text-sm font-medium text-foreground mb-2">Directions</h3>
-              <div className="space-y-2">
-                {currentPhase.steps.map((step: RouteStep, stepIndex: number) => (
-                  <div
-                    key={stepIndex}
-                    className="flex gap-2 text-xs"
-                    data-testid={`mobile-step-${stepIndex}`}
-                  >
-                    <div className="flex-shrink-0 w-5 h-5 bg-card border border-border rounded-full flex items-center justify-center text-xs font-medium text-muted-foreground">
-                      {stepIndex + 1}
+                      return (
+                        <div
+                          key={index}
+                          className={`flex items-center gap-2 p-1.5 rounded-sm text-xs ${
+                            isCurrent ? 'bg-accent' : ''
+                          }`}
+                          data-testid={`phase-overview-${index}`}
+                        >
+                          <div
+                            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs"
+                            style={{
+                              backgroundColor: isCompleted ? color : `${color}20`,
+                            }}
+                          >
+                            {isCompleted ? (
+                              <Check className="w-3 h-3 text-white" />
+                            ) : (
+                              <span style={{ color: color }} className="font-bold">
+                                {index + 1}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground truncate">
+                              {phase.startName}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              {phase.distance} • {eta}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Indoor destination info */}
+                {hasIndoorDestination && (
+                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Indoor Destination</span>
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">{step.instruction}</p>
-                      <p className="text-muted-foreground text-xs">{step.distance}</p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      After reaching the building, you'll continue to {route.destinationRoomName || 'the destination room'}.
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Indoor Navigation Info */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold text-foreground">
+                      Indoor Navigation
+                    </h2>
+                    <Badge variant="secondary" className="text-xs">
+                      {currentIndoorFloor?.name || 'Floor'}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Building:</span>
+                      <span className="font-medium text-foreground">{destinationBuilding?.name || 'Building'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Destination:</span>
+                      <span className="font-medium text-foreground">{destinationRoom?.label || route.destinationRoomName || 'Room'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Floor:</span>
+                      <span className="font-medium text-foreground">
+                        {currentFloorIndex + 1} of {floorsInRoute.length}
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
 
-            {/* All Phases */}
-            <div>
-              <h3 className="text-sm font-medium text-foreground mb-2">All Phases</h3>
-              <div className="space-y-1">
-                {route.phases.map((phase: RoutePhase, index: number) => {
-                  const isCompleted = completedPhases.includes(index);
-                  const isCurrent = index === currentPhaseIndex;
-                  const color = phase.color || getPhaseColor(index);
-
-                  // Calculate ETA for this phase
-                  const parseDistance = (distStr: string): number => {
-                    const match = distStr.match(/(\d+(?:\.\d+)?)\s*m/);
-                    return match ? parseFloat(match[1]) : 0;
-                  };
-                  const distanceMeters = parseDistance(phase.distance);
-                  const speed = phase.mode === 'walking' ? 1.4 : 10;
-                  const seconds = distanceMeters / speed;
-                  const minutes = Math.ceil(seconds / 60);
-                  const eta = minutes > 0 ? `${minutes}m` : '<1m';
-
-                  return (
-                    <div
-                      key={index}
-                      className={`flex items-center gap-2 p-1.5 rounded-sm text-xs ${
-                        isCurrent ? 'bg-accent' : ''
-                      }`}
-                      data-testid={`phase-overview-${index}`}
+                {/* Floor Navigation Controls */}
+                <div>
+                  <h3 className="text-sm font-medium text-foreground mb-2">Floor Navigation</h3>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={handlePrevFloor}
+                      disabled={currentFloorIndex <= 0}
+                      data-testid="button-prev-floor"
                     >
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs"
-                        style={{
-                          backgroundColor: isCompleted ? color : `${color}20`,
-                        }}
-                      >
-                        {isCompleted ? (
-                          <Check className="w-3 h-3 text-white" />
-                        ) : (
-                          <span style={{ color: color }} className="font-bold">
-                            {index + 1}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">
-                          {phase.startName}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          {phase.distance} • {eta}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                      <ChevronDown className="w-4 h-4 mr-1" />
+                      Down
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleNextFloor}
+                      disabled={isLastFloor}
+                      data-testid="button-next-floor"
+                    >
+                      Up
+                      <ChevronUp className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Floor List */}
+                <div>
+                  <h3 className="text-sm font-medium text-foreground mb-2">All Floors</h3>
+                  <div className="space-y-1">
+                    {floorsInRoute.map((floor, index) => {
+                      const isCompleted = currentFloorIndex > index;
+                      const isCurrent = floor.id === currentIndoorFloor?.id;
+                      const isDestFloor = floor.id === destinationRoom?.floorId;
+
+                      return (
+                        <div
+                          key={floor.id}
+                          className={`flex items-center gap-2 p-1.5 rounded-sm text-xs ${
+                            isCurrent ? 'bg-accent' : ''
+                          }`}
+                          data-testid={`floor-overview-${index}`}
+                        >
+                          <div
+                            className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs ${
+                              isCompleted ? 'bg-green-500' : isCurrent ? 'bg-blue-500' : 'bg-muted'
+                            }`}
+                          >
+                            {isCompleted ? (
+                              <Check className="w-3 h-3 text-white" />
+                            ) : (
+                              <span className={isCurrent ? 'text-white font-bold' : 'text-muted-foreground'}>
+                                {floor.level}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground truncate">
+                              {floor.name}
+                            </p>
+                            {isDestFloor && (
+                              <p className="text-xs text-green-600 dark:text-green-400">
+                                Destination floor
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Instructions for current floor */}
+                <div className="bg-muted/50 rounded-md p-3">
+                  <p className="text-xs text-muted-foreground">
+                    {isOnDestinationFloor 
+                      ? `Follow the highlighted path to reach ${destinationRoom?.label || route.destinationRoomName || 'your destination'}.`
+                      : `Navigate to the ${floorsInRoute[currentFloorIndex + 1]?.level > (currentIndoorFloor?.level || 0) ? 'stairs or elevator to go up' : 'stairs or elevator to go down'}.`
+                    }
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Action Buttons */}
           <div className="border-t border-card-border p-4 flex-shrink-0 space-y-3">
-            {!allPhasesCompleted && (
-              <Button
-                className="w-full text-sm"
-                size="sm"
-                onClick={handleAdvancePhase}
-                data-testid="button-advance-phase"
-                style={{
-                  backgroundColor: phaseColor,
-                  color: 'white',
-                }}
-              >
-                {currentPhaseIndex < route.phases.length - 1
-                  ? `Reached ${currentPhase.endName}`
-                  : 'Complete'}
-              </Button>
-            )}
+            {navigationPhase === 'outdoor' ? (
+              <>
+                {!allOutdoorPhasesCompleted && (
+                  <Button
+                    className="w-full text-sm"
+                    size="sm"
+                    onClick={handleAdvancePhase}
+                    data-testid="button-advance-phase"
+                    style={{
+                      backgroundColor: phaseColor,
+                      color: 'white',
+                    }}
+                  >
+                    {currentPhaseIndex < route.phases.length - 1
+                      ? `Reached ${currentPhase.endName}`
+                      : 'Complete'}
+                  </Button>
+                )}
 
-            {allPhasesCompleted && (
-              <div className="text-center py-2">
-                <Check className="w-8 h-8 mx-auto mb-1 text-green-500" />
-                <p className="text-sm font-semibold text-foreground">Journey Complete!</p>
-              </div>
+                {allOutdoorPhasesCompleted && hasIndoorDestination && (
+                  <Button
+                    className="w-full text-sm"
+                    size="sm"
+                    onClick={handleReachedBuilding}
+                    data-testid="button-reached-building"
+                  >
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Reached the Building
+                  </Button>
+                )}
+
+                {allOutdoorPhasesCompleted && !hasIndoorDestination && (
+                  <div className="text-center py-2">
+                    <Check className="w-8 h-8 mx-auto mb-1 text-green-500" />
+                    <p className="text-sm font-semibold text-foreground">Journey Complete!</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {isOnDestinationFloor ? (
+                  <Button
+                    className="w-full text-sm"
+                    size="sm"
+                    onClick={handleCompleteIndoorNavigation}
+                    data-testid="button-complete-indoor"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Complete
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full text-sm"
+                    size="sm"
+                    onClick={handleNextFloor}
+                    disabled={isLastFloor}
+                    data-testid="button-continue-floor"
+                  >
+                    Continue to Next Floor
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>

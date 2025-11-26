@@ -45,8 +45,12 @@ export default function GetDirectionsDialog({
       setShowVehicleSelector(false);
       setSelectedStart("kiosk");
       setWaypoints([]);
+      // Force walking mode for room navigation (indoor navigation)
+      if (selectedRoom) {
+        setMode('walking');
+      }
     }
-  }, [open, destination]);
+  }, [open, destination, selectedRoom]);
 
   const handleAddWaypoint = () => {
     setWaypoints([...waypoints, '']);
@@ -260,30 +264,51 @@ export default function GetDirectionsDialog({
               </div>
             </div>
 
-            {/* Travel Mode */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Travel Mode
-              </label>
-              <Tabs value={mode} onValueChange={(v) => setMode(v as 'walking' | 'driving')}>
-                <TabsList className="w-full">
-                  <TabsTrigger value="walking" className="flex-1" data-testid="dialog-tab-walking">
-                    Walking
-                  </TabsTrigger>
-                  <TabsTrigger value="driving" className="flex-1" data-testid="dialog-tab-driving">
-                    Driving
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-              
-              {/* Estimated Time */}
-              {estimatedTime && (
-                <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-2 rounded">
-                  <Clock className="w-4 h-4" />
-                  <span>Estimated time: <span className="font-semibold text-foreground">{estimatedTime}</span></span>
+            {/* Travel Mode - Only show walking for room navigation */}
+            {!selectedRoom ? (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Travel Mode
+                </label>
+                <Tabs value={mode} onValueChange={(v) => setMode(v as 'walking' | 'driving')}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="walking" className="flex-1" data-testid="dialog-tab-walking">
+                      Walking
+                    </TabsTrigger>
+                    <TabsTrigger value="driving" className="flex-1" data-testid="dialog-tab-driving">
+                      Driving
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                
+                {/* Estimated Time */}
+                {estimatedTime && (
+                  <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                    <Clock className="w-4 h-4" />
+                    <span>Estimated time: <span className="font-semibold text-foreground">{estimatedTime}</span></span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Travel Mode
+                </label>
+                <div className="flex items-center gap-2 px-3 py-2 border rounded-md bg-muted text-foreground">
+                  <Navigation className="w-4 h-4 text-muted-foreground" />
+                  <span>Walking</span>
+                  <span className="text-xs text-muted-foreground ml-auto">(Indoor navigation requires walking)</span>
                 </div>
-              )}
-            </div>
+                
+                {/* Estimated Time */}
+                {estimatedTime && (
+                  <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                    <Clock className="w-4 h-4" />
+                    <span>Estimated time: <span className="font-semibold text-foreground">{estimatedTime}</span></span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-2 pt-2">

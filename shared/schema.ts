@@ -259,6 +259,11 @@ export const savedRoutes = pgTable("saved_routes", {
   phases: jsonb("phases").$type<RoutePhase[]>().notNull(), // Array of RoutePhase objects
   createdAt: timestamp("created_at").notNull().defaultNow(),
   expiresAt: timestamp("expires_at"), // optional expiration
+  // Indoor navigation fields - for room finder QR codes
+  destinationRoomId: varchar("destination_room_id"), // IndoorNode ID of the destination room
+  destinationBuildingId: varchar("destination_building_id"), // Building ID containing the room
+  destinationFloorId: varchar("destination_floor_id"), // Floor ID where the room is located
+  destinationRoomName: text("destination_room_name"), // Human-readable room name
 });
 
 export const insertSavedRouteSchema = createInsertSchema(savedRoutes).omit({ id: true, createdAt: true });

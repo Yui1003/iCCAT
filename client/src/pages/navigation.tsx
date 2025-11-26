@@ -1753,7 +1753,7 @@ export default function Navigation() {
 
         // Save single-destination route for QR code generation
         try {
-          const routeData = {
+          const routeData: any = {
             startId: start.id,
             endId: endpointId,
             waypoints: [],
@@ -1773,6 +1773,14 @@ export default function Navigation() {
             }],
             expiresAt: null
           };
+
+          // Include destination room info for indoor navigation on mobile
+          if (destinationRoomData) {
+            routeData.destinationRoomId = destinationRoomData.id;
+            routeData.destinationBuildingId = directionsDestination.id;
+            routeData.destinationFloorId = destinationRoomData.floorId;
+            routeData.destinationRoomName = destinationRoomData.label || selectedRoomForNav?.name || 'Room';
+          }
 
           const res = await apiRequest('POST', '/api/routes', routeData);
           const response = await res.json();

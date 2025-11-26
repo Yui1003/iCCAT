@@ -764,7 +764,12 @@ export class DatabaseStorage implements IStorage {
         vehicleType: route.vehicleType ?? null,
         phases: route.phases,
         createdAt: new Date(),
-        expiresAt: route.expiresAt ?? null
+        expiresAt: route.expiresAt ?? null,
+        // Indoor navigation fields
+        destinationRoomId: route.destinationRoomId ?? null,
+        destinationBuildingId: route.destinationBuildingId ?? null,
+        destinationFloorId: route.destinationFloorId ?? null,
+        destinationRoomName: route.destinationRoomName ?? null
       };
       await db.collection('savedRoutes').doc(id).set(savedRoute);
       return savedRoute;
@@ -781,7 +786,12 @@ export class DatabaseStorage implements IStorage {
         vehicleType: route.vehicleType ?? null,
         phases: route.phases,
         createdAt: new Date(),
-        expiresAt: route.expiresAt ?? null
+        expiresAt: route.expiresAt ?? null,
+        // Indoor navigation fields
+        destinationRoomId: route.destinationRoomId ?? null,
+        destinationBuildingId: route.destinationBuildingId ?? null,
+        destinationFloorId: route.destinationFloorId ?? null,
+        destinationRoomName: route.destinationRoomName ?? null
       };
       savedRoutesMemory.set(id, savedRoute);
       console.log('Route saved to in-memory storage with ID:', id);
