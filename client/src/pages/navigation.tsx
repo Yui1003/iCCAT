@@ -2135,11 +2135,30 @@ export default function Navigation() {
         floors={floors}
         buildings={buildings}
         indoorNodes={indoorNodes}
-        onGetDirections={(buildingId) => {
+        onGetDirections={(buildingId, roomId) => {
           const building = buildings.find(b => b.id === buildingId);
           if (building) {
-            setDirectionsDestination(building);
-            setShowDirectionsDialog(true);
+            // If roomId provided, route to the room; otherwise route to building
+            if (roomId) {
+              // Store room destination for indoor routing
+              const room = indoorNodes.find(n => n.id === roomId && n.type === 'room');
+              if (room) {
+                const floor = floors.find(f => f.id === room.floorId);
+                // Set building as destination and mark that we want to route to a specific room
+                setDirectionsDestination(building);
+                // Store the room info in state for use during route calculation
+                (window as any).__selectedRoomForNavigation = {
+                  roomId,
+                  roomName: room.label,
+                  floorId: floor?.id,
+                  building
+                };
+                setShowDirectionsDialog(true);
+              }
+            } else {
+              setDirectionsDestination(building);
+              setShowDirectionsDialog(true);
+            }
           }
         }}
         onViewFloorPlan={(floor, floorRooms) => {
