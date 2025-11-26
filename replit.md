@@ -3,6 +3,23 @@
 ## Overview
 The CVSU CCAT Campus Navigation App is a comprehensive web application designed for campus wayfinding and navigation. It features interactive maps, multi-phase route navigation with color-coded paths and ETA calculations, and tools for administrators to manage content, collect feedback, and track analytics. The application supports both kiosk and mobile QR-code versions, aims to provide an intuitive user experience, and includes offline capabilities. It is deployed on Render with a Firebase backend.
 
+## Testing Environment Setup (Replit)
+**IMPORTANT**: This Replit workspace is used for TESTING changes before pushing to the production app on Render.
+
+### How It Works:
+1. **Production Environment**: Deployed on Render, uses Firebase Firestore database
+2. **Testing Environment (This Replit)**: Uses `data.json` as a local data source
+
+### Current Configuration:
+- `FORCE_FALLBACK_MODE = true` in `server/storage.ts` - Forces the app to use `data.json` instead of Firebase
+- Data was exported from Firebase on Nov 26, 2025 using `scripts/export-firebase-data.ts`
+- To refresh data from Firebase: run `npx tsx scripts/export-firebase-data.ts`
+
+### Before Pushing Changes to Production:
+1. Set `FORCE_FALLBACK_MODE = false` in `server/storage.ts` to re-enable Firebase
+2. Test with Firebase connection to ensure production compatibility
+3. Push changes to your Git repository for Render deployment
+
 ## User Preferences
 - Touchscreen optimized (48px+ touch targets)
 - Firebase/Render deployment ready

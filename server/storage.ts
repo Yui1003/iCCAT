@@ -21,7 +21,7 @@ import { AnalyticsEventType } from "@shared/analytics-schema";
 let usingFallback = false;
 let fallbackData: any = null;
 // TEMPORARY: Force fallback mode to use data.json for this Replit session (Firebase quota exceeded)
-const FORCE_FALLBACK_MODE = false;
+const FORCE_FALLBACK_MODE = true;
 
 // In-memory storage for savedRoutes (used when Firebase is not available)
 const savedRoutesMemory = new Map<string, SavedRoute>();
