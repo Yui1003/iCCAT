@@ -22,7 +22,7 @@ import RoomFinderDialog from "@/components/room-finder-dialog";
 import SearchableStartingPointSelect from "@/components/searchable-starting-point-select";
 import SearchableDestinationSelect from "@/components/searchable-destination-select";
 import SearchableWaypointSelect from "@/components/searchable-waypoint-select";
-import type { Building, NavigationRoute, Staff, Floor, Room, VehicleType } from "@shared/schema";
+import type { Building, NavigationRoute, Staff, Floor, Room, VehicleType, RouteStep, RoutePhase, IndoorNode, RoomPath } from "@shared/schema";
 import { poiTypes, KIOSK_LOCATION } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
 import { findShortestPath } from "@/lib/pathfinding";
@@ -32,7 +32,6 @@ import { calculateMultiPhaseRoute, multiPhaseToNavigationRoute } from "@/lib/mul
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { calculateETA, parseDistance } from "@/lib/eta-calculator";
 import { useLocation } from "wouter";
-import type { IndoorNode, RoomPath } from "@shared/schema";
 
 export default function Navigation() {
   // Return to home after 3 minutes of inactivity
@@ -2092,49 +2091,60 @@ export default function Navigation() {
         </aside>
 
         <main className="flex-1 overflow-hidden">
-          {navigationPhase === 'indoor' && selectedFloor ? (
-            <FloorPlanViewer
-              floor={selectedFloor}
-              rooms={indoorNodes
-                .filter(n => n.floorId === selectedFloor.id && n.type === 'room')
-                .map(n => ({
-                  id: n.id,
-                  name: n.label || 'Unnamed Room',
-                  type: 'room',
-                  description: n.description || null,
-                  floorId: n.floorId,
-                  buildingId: selectedEnd?.id || '',
-                  x: n.x,
-                  y: n.y,
-                  isIndoorNode: true
-                }))}
-              indoorNodes={indoorNodes}
-              onClose={() => {
-                // Don't close sidebar - just close the floor plan viewer
-              }}
-              highlightedRoomId={destinationRoom?.id}
-              showPathTo={destinationRoom}
-            />
-          ) : (
-            <CampusMap
-              buildings={filteredBuildings}
-              onBuildingClick={setSelectedBuilding}
-              selectedBuilding={selectedBuilding}
-              routePolyline={route?.polyline}
-              routeMode={route?.mode}
-              routePhases={route?.phases}
-              hidePolygonsInNavigation={!!route}
-              waypointsData={
-                route && waypoints.length > 0
-                  ? waypoints
-                      .map(id => buildings.find(b => b.id === id))
-                      .filter((b): b is Building => !!b)
-                      .map(b => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng }))
-                  : []
-              }
-            />
-          )}
+          <CampusMap
+            buildings={filteredBuildings}
+            onBuildingClick={setSelectedBuilding}
+            selectedBuilding={selectedBuilding}
+            routePolyline={route?.polyline}
+            routeMode={route?.mode}
+            routePhases={route?.phases}
+            hidePolygonsInNavigation={!!route}
+            waypointsData={
+              route && waypoints.length > 0
+                ? waypoints
+                    .map(id => buildings.find(b => b.id === id))
+                    .filter((b): b is Building => !!b)
+                    .map(b => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng }))
+                : []
+            }
+          />
         </main>
+
+        {/* Indoor Navigation Floor Plan Dialog */}
+        <Dialog open={navigationPhase === 'indoor' && !!selectedFloor} onOpenChange={(open) => {
+          if (!open) {
+            setNavigationPhase(null);
+            setSelectedFloor(null);
+          }
+        }}>
+          <DialogContent className="max-w-4xl h-[90vh] p-0">
+            {selectedFloor && (
+              <FloorPlanViewer
+                floor={selectedFloor}
+                rooms={indoorNodes
+                  .filter(n => n.floorId === selectedFloor.id && n.type === 'room')
+                  .map(n => ({
+                    id: n.id,
+                    name: n.label || 'Unnamed Room',
+                    type: 'room',
+                    description: n.description || null,
+                    floorId: n.floorId,
+                    buildingId: selectedEnd?.id || '',
+                    x: n.x,
+                    y: n.y,
+                    isIndoorNode: true
+                  }))}
+                indoorNodes={indoorNodes}
+                onClose={() => {
+                  setNavigationPhase(null);
+                  setSelectedFloor(null);
+                }}
+                highlightedRoomId={destinationRoom?.id}
+                showPathTo={destinationRoom}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
 
       {selectedBuilding && (
