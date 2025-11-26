@@ -53,7 +53,7 @@ export function buildIndoorGraph(
   });
 
   // Create edges from room paths (connect waypoints)
-  roomPaths.forEach(path => {
+  roomPaths.forEach((path, pathIndex) => {
     const waypoints = path.waypoints as RoomPathWaypoint[];
     if (!waypoints || waypoints.length < 2) return;
 
@@ -64,16 +64,45 @@ export function buildIndoorGraph(
       const pixelDist = pixelDistance(w1.x, w1.y, w2.x, w2.y);
       const meterDist = pixelDist * pixelToMeterScale;
       
-      // If waypoints have nodeIds, connect them; otherwise create virtual intermediate nodes
-      if (w1.nodeId && w2.nodeId) {
-        const key1 = nodeKey(w1.nodeId, path.floorId);
-        const key2 = nodeKey(w2.nodeId, path.floorId);
-        
-        if (nodes.has(key1) && nodes.has(key2)) {
-          edges.push({ from: key1, to: key2, distance: meterDist });
-          edges.push({ from: key2, to: key1, distance: meterDist });
+      let key1: string;
+      let key2: string;
+      
+      // If waypoints have nodeIds, use them; otherwise create virtual waypoint nodes
+      if (w1.nodeId) {
+        key1 = nodeKey(w1.nodeId, path.floorId);
+      } else {
+        // Create virtual node for waypoint
+        key1 = `${path.floorId}:waypoint:${pathIndex}:${i}`;
+        if (!nodes.has(key1)) {
+          nodes.set(key1, {
+            id: key1,
+            x: w1.x,
+            y: w1.y,
+            type: 'waypoint',
+            floorId: path.floorId
+          });
         }
       }
+      
+      if (w2.nodeId) {
+        key2 = nodeKey(w2.nodeId, path.floorId);
+      } else {
+        // Create virtual node for waypoint
+        key2 = `${path.floorId}:waypoint:${pathIndex}:${i + 1}`;
+        if (!nodes.has(key2)) {
+          nodes.set(key2, {
+            id: key2,
+            x: w2.x,
+            y: w2.y,
+            type: 'waypoint',
+            floorId: path.floorId
+          });
+        }
+      }
+      
+      // Create bidirectional edges between consecutive waypoints
+      edges.push({ from: key1, to: key2, distance: meterDist });
+      edges.push({ from: key2, to: key1, distance: meterDist });
     }
   });
 
