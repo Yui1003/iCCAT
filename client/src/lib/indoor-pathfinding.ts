@@ -3,6 +3,7 @@ import type { Room, IndoorNode, RoomPath, Floor, Building } from "@shared/schema
 interface IndoorGraph {
   nodes: Map<string, { id: string; x: number; y: number; type: string; floorId: string }>;
   edges: Array<{ from: string; to: string; distance: number }>;
+  pathsByNode: Map<string, { pathId: string; waypoints: RoomPathWaypoint[] }[]>; // Track which paths contain which nodes
 }
 
 interface RoomPathWaypoint {
@@ -27,6 +28,7 @@ export function buildIndoorGraph(
 ): IndoorGraph {
   const nodes = new Map<string, { id: string; x: number; y: number; type: string; floorId: string }>();
   const edges: Array<{ from: string; to: string; distance: number }> = [];
+  const pathsByNode = new Map<string, { pathId: string; waypoints: RoomPathWaypoint[] }[]>();
 
   // Add rooms as nodes
   rooms.forEach(room => {
@@ -100,6 +102,16 @@ export function buildIndoorGraph(
         }
       }
       
+      // Track that this path contains these nodes
+      if (!pathsByNode.has(key1)) {
+        pathsByNode.set(key1, []);
+      }
+      if (!pathsByNode.has(key2)) {
+        pathsByNode.set(key2, []);
+      }
+      pathsByNode.get(key1)!.push({ pathId: path.id, waypoints });
+      pathsByNode.get(key2)!.push({ pathId: path.id, waypoints });
+      
       // Create bidirectional edges between consecutive waypoints
       edges.push({ from: key1, to: key2, distance: meterDist });
       edges.push({ from: key2, to: key1, distance: meterDist });
@@ -171,7 +183,7 @@ export function buildIndoorGraph(
     }
   });
 
-  return { nodes, edges };
+  return { nodes, edges, pathsByNode };
 }
 
 export function findRoomPath(

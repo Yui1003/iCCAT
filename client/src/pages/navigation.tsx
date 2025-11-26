@@ -1210,19 +1210,23 @@ export default function Navigation() {
       const fromNodeKey = shortestPath[i];
       const toNodeKey = shortestPath[i + 1];
       
-      // Find room paths that connect these two nodes
-      const connectingPaths = floorRoomPaths.filter(path => {
-        if (!path.waypoints || !Array.isArray(path.waypoints)) return false;
-        const waypoints = path.waypoints as any[];
-        const hasFrom = waypoints.some((wp: any) => wp.nodeId && wp.nodeId === fromNodeKey.split(':')[1]);
-        const hasTo = waypoints.some((wp: any) => wp.nodeId && wp.nodeId === toNodeKey.split(':')[1]);
-        return hasFrom || hasTo;
-      });
+      // Use the pathsByNode mapping to find paths that contain these nodes
+      const pathsFromNode = indoorGraph.pathsByNode.get(fromNodeKey) || [];
+      const pathsToNode = indoorGraph.pathsByNode.get(toNodeKey) || [];
       
-      // Add waypoints from connecting paths
-      connectingPaths.forEach(path => {
-        if (path.waypoints && Array.isArray(path.waypoints)) {
-          (path.waypoints as any[]).forEach((wp: any) => {
+      // Find common paths that connect both nodes
+      const commonPathIds = new Set(pathsFromNode.map(p => p.pathId));
+      const connectingPathsData = pathsToNode.filter(p => commonPathIds.has(p.pathId));
+      
+      // If no common paths, also add paths from either node
+      const pathsToAdd = connectingPathsData.length > 0 ? connectingPathsData : [...pathsFromNode, ...pathsToNode];
+      
+      // Deduplicate and add waypoints
+      const addedPathIds = new Set<string>();
+      pathsToAdd.forEach(pathData => {
+        if (!addedPathIds.has(pathData.pathId)) {
+          addedPathIds.add(pathData.pathId);
+          pathData.waypoints.forEach((wp: any) => {
             polylineWaypoints.push({ lat: wp.x, lng: wp.y });
           });
         }
