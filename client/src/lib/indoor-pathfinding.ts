@@ -146,6 +146,12 @@ export function buildIndoorGraph(
           waypointNodeKey = coordKeyToNodeId.get(coordKey) || `${path.floorId}:waypoint:${pathIndex}:${wpIndex}`;
         }
 
+        // IMPORTANT: Skip connecting nodes to themselves - find DIFFERENT waypoints
+        if (waypointNodeKey === entityKey) {
+          console.log(`[INDOOR-GRAPH]   Waypoint ${wpIndex}: SKIPPING self-reference for ${entity.type}`);
+          return;
+        }
+
         const dist = pixelDistance(entity.x, entity.y, wp.x, wp.y);
         if (!closestWaypoint || dist < closestWaypoint.distance) {
           closestWaypoint = { nodeKey: waypointNodeKey, distance: dist };
