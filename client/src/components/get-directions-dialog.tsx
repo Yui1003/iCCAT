@@ -217,7 +217,6 @@ export default function GetDirectionsDialog({
                         onSelect={(id) => handleWaypointChange(index, id)}
                         buildings={buildings}
                         excludeBuildingId={getExcludedIds(index)[0] || ''}
-                        placeholder={`Stop ${index + 1}`}
                         testId={`select-waypoint-${index}`}
                       />
                     </div>

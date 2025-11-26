@@ -1115,6 +1115,29 @@ export default function Navigation() {
     setPendingNavigationData(null);
     setSavedRouteId(null);
     setWaypoints([]);
+    setNavigationPhase(null);
+    setDestinationRoom(null);
+    setSelectedRoomForNav(null);
+    setSelectedFloor(null);
+  };
+
+  const handleReachedBuilding = () => {
+    if (!selectedEnd || !destinationRoom) return;
+    
+    // Switch to indoor phase
+    setNavigationPhase('indoor');
+    
+    // Load the floor plan for the building
+    const buildingFloors = floors.filter(f => f.buildingId === selectedEnd.id);
+    const roomFloor = buildingFloors.find(f => f.id === destinationRoom.floorId);
+    
+    if (roomFloor) {
+      setSelectedFloor(roomFloor);
+    }
+  };
+
+  const handleDoneNavigatingIndoor = () => {
+    resetNavigation();
   };
 
   const handleAddWaypoint = () => {
@@ -1235,45 +1258,20 @@ export default function Navigation() {
         // Check if routing to a specific room (outdoor-to-indoor navigation)
         let endpointName = directionsDestination.name;
         let endpointId = directionsDestination.id;
+        let destinationRoomData: IndoorNode | null = null;
 
         if (selectedRoomForNav?.id) {
           const selectedRoom = indoorNodes.find(n => n.id === selectedRoomForNav.id && n.type === 'room');
           if (selectedRoom) {
-            endpointName = selectedRoomForNav.name;
-            endpointId = selectedRoom.id;
+            // For two-phase navigation: outdoor phase only goes to building
+            // Store the room info to use later when user reaches the building
+            destinationRoomData = selectedRoom;
+            setDestinationRoom(selectedRoom);
+            setNavigationPhase('outdoor');
             
-            // Build indoor graph for pathfinding within the building
-            const indoorGraph = buildIndoorGraph(rooms, indoorNodes, roomPaths);
-            
-            // Find entrance nodes for this building
-            const entranceNodes = indoorNodes.filter(n => 
-              n.type === 'entrance' && 
-              floors.find(f => f.id === n.floorId)?.buildingId === directionsDestination.id
-            );
-            
-            // Find path from an entrance to the selected room using indoor graph
-            if (entranceNodes.length > 0) {
-              const entrance = entranceNodes[0];
-              
-              // If on same floor, we can route from entrance to room
-              if (entrance.floorId === selectedRoom.floorId) {
-                const indoorPathWaypoints: Array<{x: number; y: number}> = [];
-                
-                // Add entrance point
-                indoorPathWaypoints.push({ x: entrance.x, y: entrance.y });
-                
-                // Add selected room point
-                indoorPathWaypoints.push({ x: selectedRoom.x, y: selectedRoom.y });
-                
-                // Store indoor route info for display (could be enhanced with actual path visualization)
-                (window as any).__indoorRouteInfo = {
-                  entrance: entrance.label || 'Entrance',
-                  room: endpointName,
-                  waypoints: indoorPathWaypoints,
-                  floorId: selectedRoom.floorId
-                };
-              }
-            }
+            // Outdoor phase endpoint is the building (not the room)
+            endpointName = directionsDestination.name;
+            endpointId = directionsDestination.id;
           }
         }
 
@@ -2003,37 +2001,81 @@ export default function Navigation() {
                   </>
                 )}
 
-                {/* Done Navigating Button */}
-                <Button
-                  className="w-full mt-6"
-                  onClick={handleDoneNavigating}
-                  data-testid="button-done-navigating"
-                >
-                  Done Navigating
-                </Button>
+                {/* Phase-specific Navigation Buttons */}
+                {navigationPhase === 'outdoor' && destinationRoom ? (
+                  <Button
+                    className="w-full mt-6"
+                    onClick={handleReachedBuilding}
+                    data-testid="button-reached-building"
+                  >
+                    Reached the Building
+                  </Button>
+                ) : navigationPhase === 'indoor' ? (
+                  <Button
+                    className="w-full mt-6"
+                    onClick={handleDoneNavigatingIndoor}
+                    data-testid="button-done-navigating-indoor"
+                  >
+                    Done Navigating
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full mt-6"
+                    onClick={handleDoneNavigating}
+                    data-testid="button-done-navigating"
+                  >
+                    Done Navigating
+                  </Button>
+                )}
               </div>
             </div>
           )}
         </aside>
 
         <main className="flex-1 overflow-hidden">
-          <CampusMap
-            buildings={filteredBuildings}
-            onBuildingClick={setSelectedBuilding}
-            selectedBuilding={selectedBuilding}
-            routePolyline={route?.polyline}
-            routeMode={route?.mode}
-            routePhases={route?.phases}
-            hidePolygonsInNavigation={!!route}
-            waypointsData={
-              route && waypoints.length > 0
-                ? waypoints
-                    .map(id => buildings.find(b => b.id === id))
-                    .filter((b): b is Building => !!b)
-                    .map(b => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng }))
-                : []
-            }
-          />
+          {navigationPhase === 'indoor' && selectedFloor ? (
+            <FloorPlanViewer
+              floor={selectedFloor}
+              rooms={indoorNodes
+                .filter(n => n.floorId === selectedFloor.id && n.type === 'room')
+                .map(n => ({
+                  id: n.id,
+                  name: n.label || 'Unnamed Room',
+                  type: 'room',
+                  description: n.description || null,
+                  floorId: n.floorId,
+                  buildingId: selectedEnd?.id || '',
+                  x: n.x,
+                  y: n.y,
+                  isIndoorNode: true
+                }))}
+              indoorNodes={indoorNodes}
+              onClose={() => {
+                setNavigationPhase(null);
+                setSelectedFloor(null);
+              }}
+              highlightedRoomId={destinationRoom?.id}
+              showPathTo={destinationRoom}
+            />
+          ) : (
+            <CampusMap
+              buildings={filteredBuildings}
+              onBuildingClick={setSelectedBuilding}
+              selectedBuilding={selectedBuilding}
+              routePolyline={route?.polyline}
+              routeMode={route?.mode}
+              routePhases={route?.phases}
+              hidePolygonsInNavigation={!!route}
+              waypointsData={
+                route && waypoints.length > 0
+                  ? waypoints
+                      .map(id => buildings.find(b => b.id === id))
+                      .filter((b): b is Building => !!b)
+                      .map(b => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng }))
+                  : []
+              }
+            />
+          )}
         </main>
       </div>
 
