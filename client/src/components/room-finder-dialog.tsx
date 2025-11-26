@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Search, MapPin, Navigation, DoorOpen, Building2, Layers } from "lucide-react";
+import { Search, MapPin, Navigation, DoorOpen, Building2, Layers, ChevronDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,22 @@ export default function RoomFinderDialog({
 }: RoomFinderDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRoom, setSelectedRoom] = useState<CombinedRoom | null>(null);
+  const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set());
+  const [expandedFloors, setExpandedFloors] = useState<Set<string>>(new Set());
+
+  const toggleBuildingExpanded = (id: string) => {
+    const newSet = new Set(expandedBuildings);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setExpandedBuildings(newSet);
+  };
+
+  const toggleFloorExpanded = (id: string) => {
+    const newSet = new Set(expandedFloors);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setExpandedFloors(newSet);
+  };
 
   // Show ONLY indoor node rooms (not old rooms table)
   const allRooms = useMemo(() => {
@@ -227,52 +243,87 @@ export default function RoomFinderDialog({
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4 pr-4">
-                  {Object.values(roomsByBuilding).map(({ building, floors: buildingFloors }) => (
-                    <div key={building.id} className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium text-foreground sticky top-0 bg-background py-1">
-                        <Building2 className="w-4 h-4 text-primary" />
-                        {building.name}
-                      </div>
-                      
-                      {Object.values(buildingFloors).map(({ floor, rooms: floorRooms }) => (
-                        <div key={floor.id} className="ml-4 space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Layers className="w-3 h-3" />
-                            {floor.floorName || `Floor ${floor.floorNumber}`}
+                <div className="space-y-2 pr-4">
+                  {Object.values(roomsByBuilding).map(({ building, floors: buildingFloors }) => {
+                    const buildingExpanded = expandedBuildings.has(building.id);
+                    const buildingRoomCount = Object.values(buildingFloors).reduce((sum, f) => sum + f.rooms.length, 0);
+                    
+                    return (
+                      <div key={building.id}>
+                        <Card 
+                          className="p-3 cursor-pointer hover-elevate"
+                          onClick={() => toggleBuildingExpanded(building.id)}
+                          data-testid={`card-building-${building.id}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <ChevronDown className={`w-4 h-4 transition-transform ${buildingExpanded ? '' : '-rotate-90'}`} />
+                              <Building2 className="w-4 h-4 text-primary" />
+                              <span className="font-medium">{building.name}</span>
+                              <span className="text-xs text-muted-foreground">({buildingRoomCount})</span>
+                            </div>
                           </div>
-                          
-                          <div className="grid gap-2 ml-4">
-                            {floorRooms.map(room => (
-                              <Card
-                                key={room.id}
-                                className="p-3 cursor-pointer hover-elevate active-elevate-2"
-                                onClick={() => handleRoomSelect(room)}
-                                data-testid={`room-card-${room.id}`}
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div className={`w-3 h-3 rounded-full mt-1.5 ${getRoomTypeColor(room.type)}`} />
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="font-medium text-foreground truncate">{room.name}</h4>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <Badge variant="secondary" className="text-xs capitalize">
-                                        {room.type}
-                                      </Badge>
+                        </Card>
+
+                        {buildingExpanded && (
+                          <div className="ml-4 mt-2 space-y-2 pl-4 border-l">
+                            {Object.values(buildingFloors).map(({ floor, rooms: floorRooms }) => {
+                              const floorExpanded = expandedFloors.has(floor.id);
+                              
+                              return (
+                                <div key={floor.id}>
+                                  <Card
+                                    className="p-2 cursor-pointer hover-elevate"
+                                    onClick={() => toggleFloorExpanded(floor.id)}
+                                    data-testid={`card-floor-${floor.id}`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <ChevronDown className={`w-4 h-4 transition-transform ${floorExpanded ? '' : '-rotate-90'}`} />
+                                        <Layers className="w-4 h-4" />
+                                        <span className="text-sm font-medium">{floor.floorName || `Floor ${floor.floorNumber}`}</span>
+                                        <span className="text-xs text-muted-foreground">({floorRooms.length})</span>
+                                      </div>
                                     </div>
-                                    {room.description && (
-                                      <p className="text-xs text-muted-foreground mt-1 truncate">
-                                        {room.description}
-                                      </p>
-                                    )}
-                                  </div>
+                                  </Card>
+
+                                  {floorExpanded && (
+                                    <div className="ml-4 mt-2 space-y-2 pl-4 border-l">
+                                      {floorRooms.map(room => (
+                                        <Card
+                                          key={room.id}
+                                          className="p-3 cursor-pointer hover-elevate active-elevate-2"
+                                          onClick={() => handleRoomSelect(room)}
+                                          data-testid={`room-card-${room.id}`}
+                                        >
+                                          <div className="flex items-start gap-3">
+                                            <div className={`w-3 h-3 rounded-full mt-1.5 ${getRoomTypeColor(room.type)}`} />
+                                            <div className="flex-1 min-w-0">
+                                              <h4 className="font-medium text-foreground truncate">{room.name}</h4>
+                                              <div className="flex items-center gap-2 mt-1">
+                                                <Badge variant="secondary" className="text-xs capitalize">
+                                                  {room.type}
+                                                </Badge>
+                                              </div>
+                                              {room.description && (
+                                                <p className="text-xs text-muted-foreground mt-1 truncate">
+                                                  {room.description}
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </Card>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                              </Card>
-                            ))}
+                              );
+                            })}
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </ScrollArea>
