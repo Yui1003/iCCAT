@@ -16,9 +16,11 @@ interface CombinedRoom {
   id: string;
   name: string;
   type: string;
-  description?: string | null;
+  description: string | null;
   x: number;
   y: number;
+  buildingId: string;
+  floorId: string;
   isIndoorNode?: boolean;
 }
 
@@ -33,15 +35,15 @@ interface FloorPlanViewerProps {
   onDeleteRoom?: (id: string) => void;
 }
 
-export default function FloorPlanViewer({ floor, rooms = [], onClose, onPlaceRoom, onCreateRoom, onUpdateRoom, onDeleteRoom }: FloorPlanViewerProps) {
+export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], onClose, onPlaceRoom, onCreateRoom, onUpdateRoom, onDeleteRoom }: FloorPlanViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
-  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<Room | CombinedRoom | null>(null);
+  const [editingRoom, setEditingRoom] = useState<Room | CombinedRoom | null>(null);
   const [roomFormData, setRoomFormData] = useState({ name: "", type: "classroom", description: "", x: 0, y: 0 });
-  const [viewingRoomInfo, setViewingRoomInfo] = useState<Room | null>(null);
+  const [viewingRoomInfo, setViewingRoomInfo] = useState<Room | CombinedRoom | null>(null);
   
   const isAdminMode = !!(onCreateRoom || onUpdateRoom || onDeleteRoom);
 

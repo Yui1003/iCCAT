@@ -14,11 +14,11 @@ interface CombinedRoom {
   id: string;
   name: string;
   type: string;
-  description?: string | null;
+  description: string | null;
   floorId: string;
   buildingId: string;
-  x?: number;
-  y?: number;
+  x: number;
+  y: number;
   isIndoorNode?: boolean;
 }
 
@@ -56,11 +56,11 @@ export default function RoomFinderDialog({
           id: n.id,
           name: n.label || 'Unnamed Room',
           type: 'room',
-          description: n.description,
+          description: n.description || null,
           floorId: n.floorId,
           buildingId: floors.find(f => f.id === n.floorId)?.buildingId || '',
-          x: n.x,
-          y: n.y,
+          x: n.x || 0,
+          y: n.y || 0,
           isIndoorNode: true
         }))
     ];
