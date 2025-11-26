@@ -502,14 +502,14 @@ export default function AdminFloorPlanManagement() {
                     Add Node
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{editingNode ? 'Edit' : 'Add'} Indoor Node</DialogTitle>
                     <p className="text-sm text-muted-foreground">
                       Create entrance, stairway, or elevator nodes to connect indoor paths
                     </p>
                   </DialogHeader>
-                  <form onSubmit={handleNodeSubmit} className="space-y-4">
+                  <form onSubmit={handleNodeSubmit} className="space-y-4 pb-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label>Building</Label>
@@ -621,7 +621,7 @@ export default function AdminFloorPlanManagement() {
                           rooms={rooms.filter(r => r.floorId === nodeSelectedFloorId)}
                           existingNodes={indoorNodes.filter(n => n.floorId === nodeSelectedFloorId && n.id !== editingNode?.id)}
                           currentFloorId={nodeSelectedFloorId}
-                          className="h-[600px] border rounded-lg"
+                          className="h-[350px] border rounded-lg"
                         />
                       </div>
                     ) : nodeSelectedFloorId ? (
