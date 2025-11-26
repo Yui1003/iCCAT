@@ -2056,6 +2056,13 @@
       "floorNumber": 1,
       "floorName": "Ground Floor",
       "floorPlanImage": "https://wpmedia.roomsketcher.com/content/uploads/2025/05/14133303/floor-plan-letterhead-measurements-1.jpg"
+    },
+    {
+      "buildingId": "550e8400-e29b-41d4-a716-446655440002",
+      "floorNumber": 2,
+      "floorName": "Second Floor",
+      "floorPlanImage": "https://balancedarchitecture.com/wp-content/uploads/2021/11/EXISTING-FIRST-FLOOR-PRES-scaled-e1635965923983.jpg",
+      "id": "8c850ddb-ed23-4395-ae9b-9736cccb86a0"
     }
   ],
   "rooms": [
@@ -4603,6 +4610,38 @@
       "connectedFloorIds": [],
       "label": "Stairway to Floor 2",
       "description": null
+    },
+    {
+      "id": "0b5813a1-81ce-4cbe-b5f7-665bb2fe1ca6",
+      "floorId": "8c850ddb-ed23-4395-ae9b-9736cccb86a0",
+      "type": "stairway",
+      "x": 742,
+      "y": 1642,
+      "connectedFloorIds": [
+        "f3d2d04a-b7d2-4588-9a21-e7f0feca606c"
+      ],
+      "label": "Stairway to Floor 1",
+      "description": null
+    },
+    {
+      "id": "9f7cf510-6ad1-42cc-9906-04b3fcfca30d",
+      "floorId": "8c850ddb-ed23-4395-ae9b-9736cccb86a0",
+      "type": "room",
+      "x": 647,
+      "y": 234,
+      "connectedFloorIds": [],
+      "label": "cr 2",
+      "description": null
+    },
+    {
+      "id": "ef633a50-d975-4d44-8ef9-62dae8d1f3c5",
+      "floorId": "8c850ddb-ed23-4395-ae9b-9736cccb86a0",
+      "type": "room",
+      "x": 850,
+      "y": 521,
+      "connectedFloorIds": [],
+      "label": "bdroom",
+      "description": null
     }
   ],
   "roomPaths": [
@@ -4727,6 +4766,113 @@
           "x": 284,
           "y": 185,
           "nodeId": "e3320f9a-0e8b-43bb-9b0f-5912640db677"
+        }
+      ],
+      "pathType": "hallway"
+    },
+    {
+      "id": "d7064c7a-47ef-43c4-b466-fcfb34618aa9",
+      "floorId": "8c850ddb-ed23-4395-ae9b-9736cccb86a0",
+      "name": "2nd floor straight",
+      "waypoints": [
+        {
+          "x": 742,
+          "y": 1642,
+          "nodeId": "0b5813a1-81ce-4cbe-b5f7-665bb2fe1ca6"
+        },
+        {
+          "x": 744.0076799999998,
+          "y": 1559.9239199999995
+        },
+        {
+          "x": 744.0076799999998,
+          "y": 1472.8327199999997
+        },
+        {
+          "x": 741.5193599999998,
+          "y": 1333.4867999999997
+        },
+        {
+          "x": 741.5193599999998,
+          "y": 1226.4890399999997
+        },
+        {
+          "x": 739.0310399999998,
+          "y": 1102.0730399999998
+        },
+        {
+          "x": 734.0543999999998,
+          "y": 932.8672799999997
+        },
+        {
+          "x": 739.0310399999998,
+          "y": 833.3344799999998
+        },
+        {
+          "x": 744.0076799999998,
+          "y": 711.4067999999997
+        },
+        {
+          "x": 744.0076799999998,
+          "y": 619.3389599999998
+        },
+        {
+          "x": 744.0076799999998,
+          "y": 497.41127999999986
+        },
+        {
+          "x": 746.4959999999998,
+          "y": 382.9485599999999
+        },
+        {
+          "x": 746.4959999999998,
+          "y": 280.92743999999993
+        },
+        {
+          "x": 744.0076799999998,
+          "y": 154.02311999999995
+        }
+      ],
+      "pathType": "hallway"
+    },
+    {
+      "id": "43f0281c-8eed-49a0-a5c0-50d4c342a57f",
+      "floorId": "8c850ddb-ed23-4395-ae9b-9736cccb86a0",
+      "name": "2nd to bath",
+      "waypoints": [
+        {
+          "x": 746.4959999999998,
+          "y": 280.92743999999993
+        },
+        {
+          "x": 697,
+          "y": 261.8984375
+        },
+        {
+          "x": 647,
+          "y": 234,
+          "nodeId": "9f7cf510-6ad1-42cc-9906-04b3fcfca30d"
+        }
+      ],
+      "pathType": "hallway"
+    },
+    {
+      "id": "b881a49f-d1b5-4d56-8866-744a249f1b6a",
+      "floorId": "8c850ddb-ed23-4395-ae9b-9736cccb86a0",
+      "name": "2nd to bdroom",
+      "waypoints": [
+        {
+          "x": 744.0076799999998,
+          "y": 497.41127999999986
+        },
+        {
+          "x": 795,
+          "y": 515.8984375
+        },
+        {
+          "x": 850,
+          "y": 521,
+          "nodeId": "ef633a50-d975-4d44-8ef9-62dae8d1f3c5"
         }
       ],
       "pathType": "hallway"
