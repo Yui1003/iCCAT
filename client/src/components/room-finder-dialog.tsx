@@ -29,7 +29,7 @@ interface RoomFinderDialogProps {
   floors: Floor[];
   buildings: Building[];
   indoorNodes?: IndoorNode[];
-  onGetDirections: (buildingId: string) => void;
+  onGetDirections: (buildingId: string, roomId?: string) => void;
   onViewFloorPlan: (floor: Floor, rooms: CombinedRoom[]) => void;
 }
 
@@ -159,9 +159,10 @@ export default function RoomFinderDialog({
         isIndoorNode: selectedRoom.isIndoorNode
       });
       const buildingId = selectedRoom.buildingId;
+      const roomId = selectedRoom.id;
       setSearchQuery("");
       setSelectedRoom(null);
-      onGetDirections(buildingId);
+      onGetDirections(buildingId, roomId);
       onClose();
     }
   };
@@ -332,7 +333,7 @@ export default function RoomFinderDialog({
                 data-testid="button-room-get-directions"
               >
                 <Navigation className="w-4 h-4 mr-2" />
-                Get Directions to Building
+                Get Directions to Room
               </Button>
             </div>
 

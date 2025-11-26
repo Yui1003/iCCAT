@@ -4597,11 +4597,12 @@
     {
       "id": "b4f7bddc-78e3-49f2-b729-13b985ea0596",
       "floorId": "f3d2d04a-b7d2-4588-9a21-e7f0feca606c",
-      "type": "entrance",
+      "type": "stairway",
       "x": 336,
       "y": 129,
       "connectedFloorIds": [],
-      "label": "123"
+      "label": "Stairway to Floor 2",
+      "description": null
     }
   ],
   "roomPaths": [
