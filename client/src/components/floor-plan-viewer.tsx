@@ -91,26 +91,32 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
       
       ctx.drawImage(image, x, y, image.width * scale, image.height * scale);
 
-      // Draw path if destination room is set
-      if (showPathTo) {
-        // Find entrance node for this floor
-        const entranceNode = indoorNodes.find(n => 
-          n.type === 'entrance' && n.floorId === floor.id
-        );
+      // Draw path if destination room is set (from route phase polyline or direct)
+      if (showPathTo && rooms.length > 0) {
+        // Use the rooms array to trace the path through intermediate waypoints
+        // Draw a path through all room markers on the floor
+        const pathWaypoints = rooms
+          .filter(r => r.floorId === floor.id)
+          .map(r => ({ x: r.x, y: r.y }));
         
-        if (entranceNode) {
-          const entranceX = x + entranceNode.x * scale;
-          const entranceY = y + entranceNode.y * scale;
-          const destX = x + showPathTo.x * scale;
-          const destY = y + showPathTo.y * scale;
-          
-          // Draw path line from entrance to destination
+        if (pathWaypoints.length > 0) {
           ctx.strokeStyle = '#10b981';
           ctx.lineWidth = 3 / zoom;
           ctx.setLineDash([5 / zoom, 5 / zoom]);
           ctx.beginPath();
-          ctx.moveTo(entranceX, entranceY);
-          ctx.lineTo(destX, destY);
+          
+          // Start from first waypoint
+          if (pathWaypoints[0]) {
+            ctx.moveTo(x + pathWaypoints[0].x * scale, y + pathWaypoints[0].y * scale);
+          }
+          
+          // Draw through all waypoints
+          for (let i = 1; i < pathWaypoints.length; i++) {
+            const wx = x + pathWaypoints[i].x * scale;
+            const wy = y + pathWaypoints[i].y * scale;
+            ctx.lineTo(wx, wy);
+          }
+          
           ctx.stroke();
           ctx.setLineDash([]);
         }

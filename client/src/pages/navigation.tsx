@@ -1137,6 +1137,58 @@ export default function Navigation() {
     
     if (!entranceNode) return;
     
+    // Get all room paths on this floor
+    const floorRoomPaths = roomPaths.filter(rp => rp.floorId === roomFloor.id);
+    
+    // Extract all waypoints as a polyline
+    let polylineWaypoints: Array<{ lat: number; lng: number }> = [
+      { lat: entranceNode.x, lng: entranceNode.y }
+    ];
+    
+    // Collect waypoints from room paths - trace through all connected paths
+    const allWaypoints: Array<{x: number; y: number}> = [
+      { x: entranceNode.x, y: entranceNode.y }
+    ];
+    
+    floorRoomPaths.forEach(path => {
+      if (path.waypoints && Array.isArray(path.waypoints)) {
+        path.waypoints.forEach((wp: any) => {
+          allWaypoints.push({ x: wp.x, y: wp.y });
+        });
+      }
+    });
+    
+    // Add destination room
+    allWaypoints.push({ x: destinationRoom.x, y: destinationRoom.y });
+    
+    // Convert to polyline format (removing duplicates)
+    const uniqueWaypoints: Array<{ lat: number; lng: number }> = [];
+    const seen = new Set<string>();
+    
+    allWaypoints.forEach(wp => {
+      const key = `${wp.x.toFixed(2)},${wp.y.toFixed(2)}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueWaypoints.push({ lat: wp.x, lng: wp.y });
+      }
+    });
+    
+    polylineWaypoints = uniqueWaypoints.length > 0 ? uniqueWaypoints : [
+      { lat: entranceNode.x, lng: entranceNode.y },
+      { lat: destinationRoom.x, lng: destinationRoom.y }
+    ];
+    
+    // Calculate total distance
+    let totalPixelDistance = 0;
+    for (let i = 0; i < polylineWaypoints.length - 1; i++) {
+      const dx = polylineWaypoints[i + 1].lat - polylineWaypoints[i].lat;
+      const dy = polylineWaypoints[i + 1].lng - polylineWaypoints[i].lng;
+      totalPixelDistance += Math.sqrt(dx * dx + dy * dy);
+    }
+    
+    const scale = roomFloor.pixelToMeterScale || 1;
+    const totalMeterDistance = Math.round(totalPixelDistance * scale);
+    
     // Generate indoor turn-by-turn directions
     const indoorSteps: RouteStep[] = [
       {
@@ -1146,7 +1198,7 @@ export default function Navigation() {
       },
       {
         instruction: `Walk to ${destinationRoom.label || 'Room'}`,
-        distance: '0 m',
+        distance: totalMeterDistance > 0 ? `${totalMeterDistance} m` : '0 m',
         icon: 'arrow-right'
       },
       {
@@ -1156,29 +1208,15 @@ export default function Navigation() {
       }
     ];
     
-    // Calculate approximate distance from entrance to room
-    const dx = destinationRoom.x - entranceNode.x;
-    const dy = destinationRoom.y - entranceNode.y;
-    const pixelDistance = Math.sqrt(dx * dx + dy * dy);
-    const scale = roomFloor.pixelToMeterScale || 1;
-    const meterDistance = Math.round(pixelDistance * scale);
-    
-    if (meterDistance > 0) {
-      indoorSteps[1].distance = `${meterDistance} m`;
-    }
-    
-    // Create indoor phase
+    // Create indoor phase with actual path waypoints
     const indoorPhase: RoutePhase = {
       mode: 'walking',
-      polyline: [
-        { lat: entranceNode.x, lng: entranceNode.y },
-        { lat: destinationRoom.x, lng: destinationRoom.y }
-      ],
+      polyline: polylineWaypoints,
       steps: indoorSteps,
-      distance: `${meterDistance} m`,
+      distance: totalMeterDistance > 0 ? `${totalMeterDistance} m` : '0 m',
       startName: entranceNode.label || 'Entrance',
       endName: destinationRoom.label || 'Room',
-      color: '#ef4444', // Red for indoor phase
+      color: '#ef4444',
       phaseIndex: 1,
       startId: selectedEnd.id,
       endId: destinationRoom.id
