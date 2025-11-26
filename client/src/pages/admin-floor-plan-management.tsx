@@ -12,6 +12,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
 import FloorPlanDrawingCanvas from "@/components/floor-plan-drawing-canvas";
 import SearchableSelect from "@/components/searchable-select";
+import FloorPlanNodePlacer from "@/components/floor-plan-node-placer";
 import type { Building, Floor, Room, IndoorNode, RoomPath, RoomPathWaypoint } from "@shared/schema";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -583,6 +584,36 @@ export default function AdminFloorPlanManagement() {
                         />
                       </div>
                     </div>
+
+                    {nodeSelectedFloorId && selectedNodeFloor?.floorPlanImage ? (
+                      <div>
+                        <Label>Place Node on Floor Plan</Label>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Click on the floor plan to place the node. Rooms (blue R) and existing nodes are shown.
+                        </p>
+                        <FloorPlanNodePlacer
+                          floorPlanImage={selectedNodeFloor.floorPlanImage}
+                          x={x ? parseFloat(x) : null}
+                          y={y ? parseFloat(y) : null}
+                          onCoordinatesChange={(coordX, coordY) => {
+                            setX(coordX.toString());
+                            setY(coordY.toString());
+                          }}
+                          rooms={rooms.filter(r => r.floorId === nodeSelectedFloorId)}
+                          existingNodes={indoorNodes.filter(n => n.floorId === nodeSelectedFloorId && n.id !== editingNode?.id)}
+                          currentFloorId={nodeSelectedFloorId}
+                          className="h-[400px] border rounded-lg"
+                        />
+                      </div>
+                    ) : nodeSelectedFloorId ? (
+                      <div className="h-[200px] flex items-center justify-center bg-muted rounded-lg border">
+                        <p className="text-muted-foreground">No floor plan available for this floor</p>
+                      </div>
+                    ) : (
+                      <div className="h-[200px] flex items-center justify-center bg-muted rounded-lg border">
+                        <p className="text-muted-foreground">Select a floor to see the floor plan</p>
+                      </div>
+                    )}
 
                     {(nodeType === 'stairway' || nodeType === 'elevator') && (
                       <div>
