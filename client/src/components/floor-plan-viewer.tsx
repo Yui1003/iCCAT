@@ -24,6 +24,11 @@ interface CombinedRoom {
   isIndoorNode?: boolean;
 }
 
+interface LatLng {
+  lat: number;
+  lng: number;
+}
+
 interface FloorPlanViewerProps {
   floor: Floor;
   rooms?: (Room | CombinedRoom)[];
@@ -36,9 +41,10 @@ interface FloorPlanViewerProps {
   highlightedRoomId?: string;
   showPathTo?: IndoorNode | null;
   viewOnly?: boolean;
+  pathPolyline?: LatLng[];
 }
 
-export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], onClose, onPlaceRoom, onCreateRoom, onUpdateRoom, onDeleteRoom, highlightedRoomId, showPathTo, viewOnly = false }: FloorPlanViewerProps) {
+export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], onClose, onPlaceRoom, onCreateRoom, onUpdateRoom, onDeleteRoom, highlightedRoomId, showPathTo, viewOnly = false, pathPolyline }: FloorPlanViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -92,7 +98,7 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
       ctx.drawImage(image, x, y, image.width * scale, image.height * scale);
 
       // Draw path if destination room is set using the polyline from route phase
-      if (showPathTo && pathPolyline && pathPolyline.length > 1) {
+      if (pathPolyline && pathPolyline.length > 1) {
         ctx.strokeStyle = '#10b981';
         ctx.lineWidth = 3 / zoom;
         ctx.setLineDash([5 / zoom, 5 / zoom]);

@@ -2147,6 +2147,7 @@ export default function Navigation() {
               highlightedRoomId={destinationRoom?.id}
               showPathTo={destinationRoom}
               viewOnly={true}
+              pathPolyline={route?.phases?.[route.phases.length - 1]?.polyline}
             />
           ) : (
             <CampusMap
