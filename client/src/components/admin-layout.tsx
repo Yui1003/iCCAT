@@ -10,7 +10,8 @@ import {
   Map,
   Settings,
   BarChart3,
-  DoorOpen
+  DoorOpen,
+  Zap
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "./ui/sidebar";
@@ -54,6 +55,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       title: "Room Paths",
       url: "/admin/room-paths",
       icon: DoorOpen,
+    },
+    {
+      title: "Indoor Nodes",
+      url: "/admin/indoor-nodes",
+      icon: Zap,
     },
     {
       title: "Staff",
