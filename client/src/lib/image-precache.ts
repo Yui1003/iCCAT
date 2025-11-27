@@ -102,11 +102,15 @@ export async function precacheApiImages(): Promise<ImagePrecacheStatus> {
     const imageArray = Array.from(imageUrls);
 
     // Batch fetch with Promise.allSettled to handle failures gracefully
-    const fetchPromises = imageArray.map(url =>
-      fetch(url, { 
-        cache: 'no-store',
-        mode: 'cors'
-      })
+    const fetchPromises = imageArray.map(url => {
+      // Use no-cors mode for Firebase Storage URLs to bypass CORS restrictions
+      const isFirebaseUrl = url.includes('firebasestorage.googleapis.com') || url.includes('storage.googleapis.com');
+      const fetchOptions = {
+        cache: 'no-store' as const,
+        mode: (isFirebaseUrl ? 'no-cors' : 'cors') as RequestMode
+      };
+      
+      return fetch(url, fetchOptions)
         .then(response => {
           if (response.ok) {
             // Cache successful responses
@@ -123,6 +127,7 @@ export async function precacheApiImages(): Promise<ImagePrecacheStatus> {
           status.failed++;
           return { success: false, url, error: err.message };
         })
+    }
     );
 
     const results = await Promise.allSettled(fetchPromises);
@@ -159,11 +164,15 @@ export async function cacheNewImages(data: any): Promise<void> {
     const imageArray = Array.from(imageUrls);
 
     // Batch fetch new images
-    const fetchPromises = imageArray.map(url =>
-      fetch(url, { 
-        cache: 'no-store',
-        mode: 'cors'
-      })
+    const fetchPromises = imageArray.map(url => {
+      // Use no-cors mode for Firebase Storage URLs to bypass CORS restrictions
+      const isFirebaseUrl = url.includes('firebasestorage.googleapis.com') || url.includes('storage.googleapis.com');
+      const fetchOptions = {
+        cache: 'no-store' as const,
+        mode: (isFirebaseUrl ? 'no-cors' : 'cors') as RequestMode
+      };
+      
+      return fetch(url, fetchOptions)
         .then(response => {
           if (response.ok) {
             return cache.put(url, response.clone()).then(() => {
@@ -179,7 +188,7 @@ export async function cacheNewImages(data: any): Promise<void> {
           console.warn(`[IMAGE-PRECACHE] ✗ Failed to fetch image: ${url}`, err.message);
           return false;
         })
-    );
+    });
 
     await Promise.allSettled(fetchPromises);
   } catch (err) {
