@@ -53,6 +53,19 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
   useEffect(() => {
     const verifyCache = async () => {
       try {
+        // Check if this is a HARD REFRESH (localStorage cleared) or NORMAL REFRESH (caches exist)
+        const isHardRefresh = !localStorage.getItem('sw_install_complete');
+        
+        if (!isHardRefresh) {
+          // NORMAL REFRESH: Caches already exist and are valid
+          console.log('[CACHE-LOADER] Normal refresh detected - using cached data (cache-first)');
+          setIsComplete(true);
+          return;
+        }
+        
+        // HARD REFRESH: Fetch all fresh data from network, then cache it
+        console.log('[CACHE-LOADER] Hard refresh detected - fetching fresh data from network (network-first)');
+        
         // QUICK CHECK: If on normal refresh, caches should already be valid
         const cachesValid = await quickCacheCheck();
         if (cachesValid) {

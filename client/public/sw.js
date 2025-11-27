@@ -504,15 +504,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Default: Network-first for other resources, cache as fallback
-  event.respondWith(
-    caches.match(request)
-      .then((response) => {
-        if (response) {
-          return response;
-        }
-
-        return fetch(request).then((response) => {
+  // HARD REFRESH strategy: Network-first (fetch fresh, cache it, then serve)
+  // NORMAL REFRESH strategy: Cache-first (serve cache, update in background)
+  const isHardRefresh = !globalThis.localStorage || localStorage.getItem('sw_install_complete') !== 'true';
+  
+  if (isHardRefresh) {
+    // HARD REFRESH: Network-first - Always fetch fresh data and cache it
+    console.log(`[SW] Hard refresh detected: Network-first strategy for ${url.pathname}`);
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
           if (!response || response.status !== 200) {
             return response;
           }
@@ -534,13 +535,74 @@ self.addEventListener('fetch', (event) => {
           }
 
           return response;
-        });
-      })
-      .catch(() => {
-        // If network fails and no cache, return cached version if available
-        return caches.match(request);
-      })
-  );
+        })
+        .catch(() => {
+          // Network failed, fall back to cache if available
+          return caches.match(request);
+        })
+    );
+  } else {
+    // NORMAL REFRESH: Cache-first (serve cache immediately, update in background)
+    console.log(`[SW] Normal refresh detected: Cache-first strategy for ${url.pathname}`);
+    event.respondWith(
+      caches.match(request)
+        .then((response) => {
+          if (response) {
+            // Serve from cache immediately, but update in background
+            fetch(request).then((freshResponse) => {
+              if (freshResponse && freshResponse.status === 200) {
+                try {
+                  const url = new URL(request.url);
+                  if (url.protocol === 'http:' || url.protocol === 'https:') {
+                    caches.open(CACHE_NAME).then((cache) => {
+                      try {
+                        cache.put(request, freshResponse.clone());
+                      } catch (cacheError) {
+                        console.warn(`[SW] Failed to update cache: ${request.url}`, cacheError.message);
+                      }
+                    });
+                  }
+                } catch (e) {
+                  console.warn(`[SW] Invalid URL for updating cache: ${request.url}`, e.message);
+                }
+              }
+            }).catch(() => {
+              // Network failed, that's ok - user has cached version
+            });
+            return response;
+          }
+
+          // No cache, fetch from network
+          return fetch(request).then((response) => {
+            if (!response || response.status !== 200) {
+              return response;
+            }
+
+            try {
+              const url = new URL(request.url);
+              if (url.protocol === 'http:' || url.protocol === 'https:') {
+                const responseToCache = response.clone();
+                caches.open(CACHE_NAME).then((cache) => {
+                  try {
+                    cache.put(request, responseToCache);
+                  } catch (cacheError) {
+                    console.warn(`[SW] Failed to cache response: ${request.url}`, cacheError.message);
+                  }
+                });
+              }
+            } catch (e) {
+              console.warn(`[SW] Invalid URL for caching: ${request.url}`, e.message);
+            }
+
+            return response;
+          });
+        })
+        .catch(() => {
+          // Both cache and network failed
+          return new Response('Offline - resource not available', { status: 503 });
+        })
+    );
+  }
 });
 
 self.addEventListener('activate', (event) => {
