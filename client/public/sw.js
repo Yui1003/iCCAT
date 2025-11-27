@@ -17,7 +17,11 @@ const apiEndpointsToCache = [
   '/api/events',
   '/api/staff',
   '/api/floors',
-  '/api/rooms'
+  '/api/rooms',
+  '/api/indoor-nodes',
+  '/api/room-paths',
+  '/api/settings/home_inactivity_timeout',
+  '/api/settings/global_inactivity_timeout'
 ];
 
 // Function to convert lat/lng to tile coordinates
