@@ -138,6 +138,62 @@ The pathfinding system now operates on a **purely manual connection model**:
     - **Increased max zoom from 20.5 to 21** for precise polygon drawing
   - **Result**: All maps now load tiles smoothly on initial render without delays; max zoom 21 provides enhanced detail for all map types
 
+## Planned Features - PWD (Persons with Disabilities) Accessibility Navigation
+
+### Feature Overview
+Add a third navigation mode alongside Walk and Drive specifically for PWD users. PWD paths are wheelchair-accessible routes (ramps, elevators, accessible corridors) that can connect to existing walkpaths at accessible building entrances. This creates a hybrid network where PWD users get optimal accessible routes.
+
+### Implementation Specification
+
+**Schema Changes Required:**
+```typescript
+// Add field to walkpaths table
+export const walkpaths = pgTable("walkpaths", {
+  // ... existing fields
+  isPwdFriendly: boolean("is_pwd_friendly").default(true), // Mark muddy/inaccessible segments
+});
+
+// Create new accessiblePaths table OR add pathType to paths
+export const accessiblePaths = pgTable("accessible_paths", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name"),
+  nodes: jsonb("nodes").notNull(), // Array of {lat, lng}
+  connectedWalkpathNodeId: varchar("connected_walkpath_node_id"), // Ramp entry point
+});
+```
+
+**Pathfinding Logic for PWD Mode:**
+1. User selects "Accessible/PWD" mode in navigation
+2. Dijkstra graph includes: PWD paths + PWD nodes + accessible walkpath segments only
+3. PWD nodes connect to walkpath nodes at accessible building entrances (ramps)
+4. Algorithm automatically finds optimal hybrid route avoiding inaccessible walkpath segments
+
+**Navigation Flow Example:**
+```
+Gate 1 
+  → [Walkpath A - accessible/paved] ✅
+  → [PWD Node - ramp entrance]
+  → [PWD Path - accessible corridor into building]
+  → Technovation Building
+  
+(Muddy walkpaths marked isPwdFriendly: false are automatically excluded)
+```
+
+**Admin Interface Changes Needed:**
+1. **Navigation Page** - Add mode selector dropdown: Walk | Drive | Accessible
+2. **Path Management** - When adding/editing walkpaths: checkbox "PWD Friendly?"
+3. **Accessible Path Admin** - New interface to add PWD-specific paths with connections to existing walkpath nodes
+4. **Path Visualization** - Show PWD paths in different color (e.g., orange dashed) on admin map
+
+**Key Features:**
+- PWD users see mode-appropriate routes only
+- Reuses existing walkpath infrastructure where accessible
+- Muddy/inaccessible walkpath segments automatically excluded for PWD mode
+- Regular users unaffected - can still use all walkpaths
+- Flexible - PWD connections added incrementally as campus accessibility improves
+
+**To Implement This Feature:** Ask to "Implement PWD accessibility navigation with hybrid network topology" and reference this specification.
+
 ## External Dependencies
 - **Frontend Framework**: React 18
 - **Styling**: Tailwind CSS
