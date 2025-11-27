@@ -140,6 +140,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update existing
         setting = await storage.updateSetting(req.params.key, value);
       }
+      const settings = await storage.getSettings();
+      notifySettingsChange(settings);
       res.json(setting);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -679,6 +681,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertDrivepathSchema.parse(req.body);
       const drivepath = await storage.createDrivepath(data);
+      const drivepaths = await storage.getDrivepaths();
+      notifyDrivepathsChange(drivepaths);
       res.status(201).json(drivepath);
     } catch (error) {
       res.status(400).json({ error: 'Invalid drivepath data' });
@@ -692,6 +696,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!drivepath) {
         return res.status(404).json({ error: 'Drivepath not found' });
       }
+      const drivepaths = await storage.getDrivepaths();
+      notifyDrivepathsChange(drivepaths);
       res.json(drivepath);
     } catch (error) {
       res.status(400).json({ error: 'Invalid drivepath data' });
@@ -704,6 +710,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ error: 'Drivepath not found' });
       }
+      const drivepaths = await storage.getDrivepaths();
+      notifyDrivepathsChange(drivepaths);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete drivepath' });
@@ -745,6 +753,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertIndoorNodeSchema.parse(req.body);
       const node = await storage.createIndoorNode(data);
+      const indoorNodes = await storage.getIndoorNodes();
+      notifyIndoorNodesChange(indoorNodes);
       res.status(201).json(node);
     } catch (error) {
       res.status(400).json({ error: 'Invalid indoor node data' });
@@ -758,6 +768,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!node) {
         return res.status(404).json({ error: 'Indoor node not found' });
       }
+      const indoorNodes = await storage.getIndoorNodes();
+      notifyIndoorNodesChange(indoorNodes);
       res.json(node);
     } catch (error) {
       res.status(400).json({ error: 'Invalid indoor node data' });
@@ -770,6 +782,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ error: 'Indoor node not found' });
       }
+      const indoorNodes = await storage.getIndoorNodes();
+      notifyIndoorNodesChange(indoorNodes);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete indoor node' });
@@ -811,6 +825,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertRoomPathSchema.parse(req.body);
       const path = await storage.createRoomPath(data);
+      const roomPaths = await storage.getRoomPaths();
+      notifyRoomPathsChange(roomPaths);
       res.status(201).json(path);
     } catch (error) {
       res.status(400).json({ error: 'Invalid room path data' });
@@ -824,6 +840,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!path) {
         return res.status(404).json({ error: 'Room path not found' });
       }
+      const roomPaths = await storage.getRoomPaths();
+      notifyRoomPathsChange(roomPaths);
       res.json(path);
     } catch (error) {
       res.status(400).json({ error: 'Invalid room path data' });
@@ -836,6 +854,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ error: 'Room path not found' });
       }
+      const roomPaths = await storage.getRoomPaths();
+      notifyRoomPathsChange(roomPaths);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete room path' });
