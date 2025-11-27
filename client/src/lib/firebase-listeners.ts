@@ -115,22 +115,36 @@ export function initializeFirebaseListeners() {
 
 /**
  * Helper: Updates React Query cache when data changes
- * Also automatically pre-caches any images in the data
+ * Also automatically caches ALL data (buildings, events, staff, etc.) for offline use
  */
 function updateCache(endpoint: string, data: any) {
   // Extract collection name from endpoint (e.g., '/api/staff' -> 'staff')
   const collection = endpoint.split('/').pop() || 'unknown';
-  console.log(`[LISTENERS] ✅ Real-time update: ${collection}`);
+  const itemCount = Array.isArray(data) ? data.length : 1;
+  
+  console.log(`[LISTENERS] 📡 Real-time update: ${collection} (${itemCount} items)`);
+  
+  // Update React Query cache (for immediate UI updates)
   queryClient.setQueryData([endpoint], data);
   
-  // Update CacheStorage for offline
+  // AUTO-CACHE ALL DATA to CacheStorage for offline use (non-blocking)
   if (window.caches) {
-    caches.open('iccat-data-v6').then(cache => {
-      const response = new Response(JSON.stringify(data), {
-        headers: { 'Content-Type': 'application/json' }
+    caches.open('iccat-data-v6')
+      .then(cache => {
+        const response = new Response(JSON.stringify(data), {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        return cache.put(endpoint, response)
+          .then(() => {
+            console.log(`[LISTENERS] 💾 Cached offline: ${collection} (${itemCount} items)`);
+          });
+      })
+      .catch(err => {
+        console.warn(`[LISTENERS] ⚠️ Failed to cache ${collection}:`, err.message);
       });
-      cache.put(endpoint, response);
-    });
   }
 
   // AUTO-PRECACHE any images from this data in background (non-blocking)
