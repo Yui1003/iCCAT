@@ -1,5 +1,6 @@
 const CACHE_NAME = 'iccat-v5';
 const DATA_CACHE_NAME = 'iccat-data-v5';
+const IMAGE_CACHE_NAME = 'iccat-images-v5';
 
 const urlsToCache = [
   '/',
@@ -30,6 +31,65 @@ function latLngToTile(lat, lng, zoom) {
   const xtile = Math.floor((lng + 180) / 360 * n);
   const ytile = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n);
   return { x: xtile, y: ytile };
+}
+
+// Extract all image URLs from API responses
+async function extractAllImageUrls() {
+  const imageUrls = new Set();
+  const apiEndpoints = [
+    '/api/buildings',
+    '/api/staff',
+    '/api/events',
+    '/api/floors',
+    '/api/rooms'
+  ];
+
+  console.log('[SW] Extracting image URLs from API responses...');
+
+  for (const endpoint of apiEndpoints) {
+    try {
+      const response = await fetch(endpoint);
+      if (response.ok) {
+        const data = await response.json();
+        extractImageUrlsFromData(data, imageUrls);
+      }
+    } catch (err) {
+      console.warn(`[SW] Failed to fetch ${endpoint}:`, err.message);
+    }
+  }
+
+  return imageUrls;
+}
+
+// Recursively extract image URLs from API data
+function extractImageUrlsFromData(data, urls = new Set()) {
+  if (!data) return urls;
+
+  if (Array.isArray(data)) {
+    data.forEach(item => extractImageUrlsFromData(item, urls));
+  } else if (typeof data === 'object') {
+    // Common image field names
+    const imageFields = ['image', 'photo', 'floorPlanImage', 'imageUrl', 'photoUrl', 'picture', 'icon'];
+    
+    for (const field of imageFields) {
+      if (field in data && typeof data[field] === 'string' && data[field]) {
+        const url = data[field].trim();
+        // Cache actual URLs (http/https, //, or /)
+        if (url.startsWith('http') || url.startsWith('//') || url.startsWith('/')) {
+          urls.add(url);
+        }
+      }
+    }
+    
+    // Recursively check nested objects
+    for (const key in data) {
+      if (typeof data[key] === 'object' && data[key] !== null) {
+        extractImageUrlsFromData(data[key], urls);
+      }
+    }
+  }
+
+  return urls;
 }
 
 // Generate all tile URLs for the campus area
