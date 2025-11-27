@@ -1011,6 +1011,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Firebase Real-Time Listener Endpoints (Server-Sent Events)
+  // These endpoints stream data changes instead of requiring polling
+  // Cost: ~1-5K reads/day instead of 100K with polling
+  // Real-time: Instant updates instead of 5-second delay
+
+  app.get('/api/listen/buildings', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+      const buildings = await storage.getBuildings();
+      res.write(`data: ${JSON.stringify(buildings)}\n\n`);
+      // Connection stays open for future notifications
+    } catch (error) {
+      console.error('[LISTENER] Buildings listener error:', error);
+      res.write(`data: ${JSON.stringify([])}\n\n`);
+    }
+  });
+
+  app.get('/api/listen/events', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+      const events = await storage.getEvents();
+      res.write(`data: ${JSON.stringify(events)}\n\n`);
+    } catch (error) {
+      console.error('[LISTENER] Events listener error:', error);
+      res.write(`data: ${JSON.stringify([])}\n\n`);
+    }
+  });
+
+  app.get('/api/listen/staff', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+      const staff = await storage.getStaff();
+      res.write(`data: ${JSON.stringify(staff)}\n\n`);
+    } catch (error) {
+      console.error('[LISTENER] Staff listener error:', error);
+      res.write(`data: ${JSON.stringify([])}\n\n`);
+    }
+  });
+
+  app.get('/api/listen/floors', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+      const floors = await storage.getFloors();
+      res.write(`data: ${JSON.stringify(floors)}\n\n`);
+    } catch (error) {
+      console.error('[LISTENER] Floors listener error:', error);
+      res.write(`data: ${JSON.stringify([])}\n\n`);
+    }
+  });
+
+  app.get('/api/listen/rooms', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+      const rooms = await storage.getRooms();
+      res.write(`data: ${JSON.stringify(rooms)}\n\n`);
+    } catch (error) {
+      console.error('[LISTENER] Rooms listener error:', error);
+      res.write(`data: ${JSON.stringify([])}\n\n`);
+    }
+  });
+
+  app.get('/api/listen/walkpaths', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+      const walkpaths = await storage.getWalkpaths();
+      res.write(`data: ${JSON.stringify(walkpaths)}\n\n`);
+    } catch (error) {
+      console.error('[LISTENER] Walkpaths listener error:', error);
+      res.write(`data: ${JSON.stringify([])}\n\n`);
+    }
+  });
+
+  app.get('/api/listen/drivepaths', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+      const drivepaths = await storage.getDrivepaths();
+      res.write(`data: ${JSON.stringify(drivepaths)}\n\n`);
+    } catch (error) {
+      console.error('[LISTENER] Drivepaths listener error:', error);
+      res.write(`data: ${JSON.stringify([])}\n\n`);
+    }
+  });
+
+  app.get('/api/listen/indoor-nodes', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+      const indoorNodes = await storage.getIndoorNodes();
+      res.write(`data: ${JSON.stringify(indoorNodes)}\n\n`);
+    } catch (error) {
+      console.error('[LISTENER] Indoor-nodes listener error:', error);
+      res.write(`data: ${JSON.stringify([])}\n\n`);
+    }
+  });
+
+  app.get('/api/listen/room-paths', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+      const roomPaths = await storage.getRoomPaths();
+      res.write(`data: ${JSON.stringify(roomPaths)}\n\n`);
+    } catch (error) {
+      console.error('[LISTENER] Room-paths listener error:', error);
+      res.write(`data: ${JSON.stringify([])}\n\n`);
+    }
+  });
+
+  app.get('/api/listen/settings', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+      const settings = await storage.getSettings();
+      res.write(`data: ${JSON.stringify(settings)}\n\n`);
+    } catch (error) {
+      console.error('[LISTENER] Settings listener error:', error);
+      res.write(`data: ${JSON.stringify([])}\n\n`);
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
