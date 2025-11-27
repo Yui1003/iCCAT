@@ -60,12 +60,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = req.body.id || 'unknown';
 
       const url = await uploadImageToFirebase(req.file, type, id);
-      res.json({ url });
+      return res.json({ url });
     } catch (error) {
       console.error('[UPLOAD] Error:', error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : 'Upload failed' 
-      });
+      if (!res.headersSent) {
+        return res.status(500).json({ 
+          error: error instanceof Error ? error.message : 'Upload failed' 
+        });
+      }
     }
   });
 
@@ -175,9 +177,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error('[PROXY] Error:', error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : 'Proxy failed' 
-      });
+      if (!res.headersSent) {
+        return res.status(500).json({ 
+          error: error instanceof Error ? error.message : 'Proxy failed' 
+        });
+      }
     }
   });
 
@@ -190,9 +194,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
       
-      res.json({ success: true, username: admin.username });
+      return res.json({ success: true, username: admin.username });
     } catch (error) {
-      res.status(400).json({ error: 'Invalid request' });
+      if (!res.headersSent) {
+        return res.status(400).json({ error: 'Invalid request' });
+      }
     }
   });
 
@@ -235,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Send immediate response before shutdown completes
-      res.json({ 
+      return res.json({ 
         success: true, 
         message: 'System shutdown initiated' 
       });
@@ -243,10 +249,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('[SHUTDOWN] Shutdown command executed successfully');
     } catch (error) {
       console.error('[SHUTDOWN] Failed to initiate shutdown:', error);
-      res.status(500).json({ 
-        error: 'Failed to initiate system shutdown',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
+      if (!res.headersSent) {
+        return res.status(500).json({ 
+          error: 'Failed to initiate system shutdown',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
     }
   });
 
@@ -257,9 +265,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!setting) {
         return res.status(404).json({ error: 'Setting not found' });
       }
-      res.json(setting);
+      return res.json(setting);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch setting' });
+      if (!res.headersSent) {
+        return res.status(500).json({ error: 'Failed to fetch setting' });
+      }
     }
   });
 
@@ -277,12 +287,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const settings = await storage.getSettings();
       notifySettingsChange(settings);
-      res.json(setting);
+      return res.json(setting);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: 'Invalid request body', details: error.errors });
       }
-      res.status(400).json({ error: 'Failed to update setting' });
+      if (!res.headersSent) {
+        return res.status(400).json({ error: 'Failed to update setting' });
+      }
     }
   });
 
