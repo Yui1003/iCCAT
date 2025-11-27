@@ -213,6 +213,58 @@ self.addEventListener('install', (event) => {
           console.warn(`[SW] ${failed} tiles failed to cache. The app may not work fully offline.`);
         }
       });
+    }).then(() => {
+      // Pre-cache ALL images from API responses
+      console.log('[SW] Starting image pre-caching from API responses...');
+      return extractAllImageUrls();
+    }).then((imageUrls) => {
+      if (imageUrls.size === 0) {
+        console.log('[SW] No images found in API responses');
+        return Promise.resolve();
+      }
+
+      console.log(`[SW] Extracted ${imageUrls.size} image URLs - caching now...`);
+      
+      return caches.open(IMAGE_CACHE_NAME).then((cache) => {
+        const imageArray = Array.from(imageUrls);
+        
+        return Promise.allSettled(
+          imageArray.map((url, index) =>
+            fetch(url, { 
+              cache: 'no-store',
+              mode: 'cors',
+              credentials: 'omit'
+            })
+              .then(response => {
+                if (response.ok) {
+                  if (index < 5 || index % 10 === 0) {
+                    console.log(`[SW] ✓ Cached image ${index + 1}/${imageArray.length}: ${url}`);
+                  }
+                  return cache.put(url, response);
+                } else {
+                  console.warn(`[SW] ✗ Failed to cache image ${url}: HTTP ${response.status}`);
+                  return Promise.reject(new Error(`HTTP ${response.status}`));
+                }
+              })
+              .catch(err => {
+                console.warn(`[SW] ✗ Failed to fetch image ${url}:`, err.message);
+                return Promise.reject(err);
+              })
+          )
+        ).then(results => {
+          const successful = results.filter(r => r.status === 'fulfilled').length;
+          const failed = results.filter(r => r.status === 'rejected').length;
+          console.log(`[SW] ========================================`);
+          console.log(`[SW] Image pre-caching complete!`);
+          console.log(`[SW] Success: ${successful}/${imageArray.length} images`);
+          console.log(`[SW] Failed: ${failed}/${imageArray.length} images`);
+          console.log(`[SW] ========================================`);
+          
+          if (failed > 0) {
+            console.warn(`[SW] ${failed} images failed to cache. They will be cached on-demand.`);
+          }
+        });
+      });
     })
   );
   self.skipWaiting();
@@ -321,20 +373,23 @@ self.addEventListener('fetch', (event) => {
   // Cache-first strategy for images (staff photos, building images, floor plans, etc.)
   if (isImageUrl(url.pathname) || isImageUrl(url.href)) {
     event.respondWith(
-      caches.open(CACHE_NAME).then((cache) => {
+      caches.open(IMAGE_CACHE_NAME).then((cache) => {
         return cache.match(request).then((response) => {
           if (response) {
-            console.log(`[SW] Image served from cache: ${url.pathname}`);
+            console.log(`[SW] Image served from pre-cached: ${url.pathname}`);
             return response;
           }
           
-          // Not in cache, try network
-          return fetch(request)
+          // Not in image cache, try network and cache it
+          return fetch(request, { 
+            cache: 'no-store',
+            mode: 'cors'
+          })
             .then((response) => {
               if (response && response.status === 200) {
                 const responseToCache = response.clone();
                 cache.put(request, responseToCache);
-                console.log(`[SW] Image cached: ${url.pathname}`);
+                console.log(`[SW] Image cached on-demand: ${url.pathname}`);
               }
               return response;
             })
@@ -385,7 +440,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME, DATA_CACHE_NAME];
+  const cacheWhitelist = [CACHE_NAME, DATA_CACHE_NAME, IMAGE_CACHE_NAME];
   
   console.log('[SW] Activating new Service Worker...');
   console.log(`[SW] Current caches: ${cacheWhitelist.join(', ')}`);
