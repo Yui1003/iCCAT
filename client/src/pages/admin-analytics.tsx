@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, AlertCircle, BarChart3, RotateCcw, Wifi, WifiOff, Download } from "lucide-react";
+import { ArrowLeft, AlertCircle, BarChart3, RotateCcw, Wifi, WifiOff, Download, Cpu, Clock } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { AnalyticsEventType } from "@shared/analytics-schema";
 import { isAnalyticsAvailable } from "@/lib/analytics-tracker";
 import { useToast } from "@/hooks/use-toast";
+import { getDeviceId } from "@/lib/device-id";
+import type { KioskUptime } from "@shared/schema";
 import {
   BarChart,
   Bar,
@@ -39,6 +42,7 @@ export default function AdminAnalytics() {
   const [isOnline, setIsOnline] = useState(isAnalyticsAvailable());
   const [resetConfirm, setResetConfirm] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [currentDeviceId] = useState(() => getDeviceId() || '');
   const { toast } = useToast();
 
   // Listen for online/offline status
@@ -54,6 +58,11 @@ export default function AdminAnalytics() {
 
   const { data: analytics = [], isLoading, refetch } = useQuery<AnalyticsSummary[]>({
     queryKey: ['/api/admin/analytics']
+  });
+
+  const { data: kioskUptimes = [] } = useQuery<KioskUptime[]>({
+    queryKey: ['/api/analytics/kiosk-uptime'],
+    refetchInterval: 30000
   });
 
   const handleReset = async () => {
@@ -123,6 +132,19 @@ export default function AdminAnalytics() {
     if (ms < 1000) return `${Math.round(ms)}ms`;
     return `${(ms / 1000).toFixed(2)}s`;
   };
+
+  const formatDuration = (startTime: Date | string, endTime?: Date | string): string => {
+    const start = new Date(startTime);
+    const end = endTime ? new Date(endTime) : new Date();
+    const diffMs = end.getTime() - start.getTime();
+    const hours = Math.floor(diffMs / 3600000);
+    const minutes = Math.floor((diffMs % 3600000) / 60000);
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
+  const currentDeviceUptime = kioskUptimes.find(k => k.deviceId === currentDeviceId);
+  const otherDevices = kioskUptimes.filter(k => k.deviceId !== currentDeviceId);
 
   const eventTypeLabels: Record<AnalyticsEventType, string> = {
     [AnalyticsEventType.INTERFACE_ACTION]: "Interface Actions",
@@ -384,11 +406,96 @@ export default function AdminAnalytics() {
               </div>
             </div>
 
+            {/* Kiosk Uptime Section */}
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                <Cpu className="w-5 h-5" />
+                Kiosk Uptime Monitor
+              </h2>
+              
+              <div className="grid gap-6">
+                {/* Current Device */}
+                {currentDeviceUptime ? (
+                  <Card className="p-6 border-2 border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-950/30">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                          <Badge variant="outline" className="bg-blue-500 text-white dark:text-white">Current Device</Badge>
+                          This Kiosk
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">{currentDeviceId}</p>
+                      </div>
+                      <Badge variant={currentDeviceUptime.isActive ? "default" : "secondary"}>
+                        {currentDeviceUptime.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Uptime %</p>
+                        <p className="text-2xl font-bold text-foreground">{currentDeviceUptime.uptimePercentage.toFixed(1)}%</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Total Requests</p>
+                        <p className="text-2xl font-bold text-foreground">{currentDeviceUptime.totalRequests}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Successful</p>
+                        <p className="text-2xl font-bold text-green-600">{currentDeviceUptime.successfulRequests}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Session Duration</p>
+                        <p className="text-lg font-bold text-foreground flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {formatDuration(currentDeviceUptime.sessionStart, currentDeviceUptime.sessionEnd)}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card className="p-6 border-2 border-dashed text-center">
+                    <Cpu className="w-12 h-12 text-muted-foreground mx-auto mb-2 opacity-50" />
+                    <p className="text-muted-foreground">No uptime data for this device yet</p>
+                  </Card>
+                )}
+
+                {/* Other Devices */}
+                {otherDevices.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-4">Other Kiosk Devices ({otherDevices.length})</h4>
+                    <div className="grid gap-3">
+                      {otherDevices.map((device) => (
+                        <Card key={device.id} className="p-4 hover-elevate active-elevate-2">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate">{device.deviceId}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {formatDuration(device.sessionStart, device.sessionEnd)} • Started: {new Date(device.sessionStart).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-6">
+                              <div className="text-right">
+                                <p className="text-sm font-semibold text-foreground">{device.uptimePercentage.toFixed(1)}%</p>
+                                <p className="text-xs text-muted-foreground">{device.totalRequests} req</p>
+                              </div>
+                              <Badge variant={device.isActive ? "default" : "secondary"} className="shrink-0">
+                                {device.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Info Box */}
-            <Alert>
+            <Alert className="mt-8">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Metrics Tracked:</strong> Response times for interface actions, map loading, image loading, menu rendering, and route generation. All metrics are automatically collected when the kiosk is online. Charts above are visual only and not included in exports.
+                <strong>Metrics Tracked:</strong> Response times for interface actions, map loading, image loading, menu rendering, and route generation. All metrics are automatically collected when the kiosk is online. Charts above are visual only and not included in exports. Kiosk uptime shows per-device session metrics with request success rates.
               </AlertDescription>
             </Alert>
           </>
