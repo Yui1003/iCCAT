@@ -39,6 +39,13 @@ The pathfinding system uses a purely manual connection model. Admins manually co
 - **Modularity**: Codebase structured with clear separation of concerns (client, server, shared).
 - **Pathfinding Purity**: Zero automatic node merging; routes reflect user's manual path creation exactly.
 
+### Caching and Image Handling
+- **Service Worker Optimization**: Essential map tiles (zoom 17-18) cached upfront, extra zoom levels (16, 19) cached in background for faster initial load.
+- **Image Proxy System**: All external images (Firebase Storage, third-party URLs) routed through `/api/proxy-image` endpoint to bypass CORS restrictions.
+- **ProxiedImage Component**: Reusable component (`client/src/components/proxied-image.tsx`) automatically handles image proxying for consistent offline caching.
+- **Precaching Strategy**: Images detected from API responses are pre-fetched through the proxy and cached for offline availability.
+- **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
+
 ## External Dependencies
 - **Frontend Framework**: React 18
 - **Styling**: Tailwind CSS
