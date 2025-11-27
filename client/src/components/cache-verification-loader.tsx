@@ -23,6 +23,16 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
   useEffect(() => {
     const verifyCache = async () => {
       try {
+        // Detect mobile users - skip caching for mobile since it requires internet anyway
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                         window.innerWidth < 768;
+        
+        if (isMobile) {
+          console.log('[CACHE-LOADER] Mobile device detected - skipping cache verification (requires internet)');
+          setIsComplete(true);
+          return;
+        }
+        
         const isHardRefresh = !localStorage.getItem('sw_install_complete');
         
         if (!isHardRefresh) {

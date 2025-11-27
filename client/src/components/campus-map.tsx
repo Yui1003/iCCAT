@@ -49,6 +49,7 @@ interface CampusMapProps {
   routePolyline?: Array<{ lat: number; lng: number }>;
   routeMode?: 'walking' | 'driving';
   routePhases?: RoutePhase[];
+  parkingLocation?: Building | null;
   className?: string;
   onMapClick?: (lat: number, lng: number) => void;
   centerLat?: number;
@@ -119,6 +120,7 @@ export default function CampusMap({
   routePolyline,
   routeMode,
   routePhases,
+  parkingLocation,
   className = "h-full w-full",
   onMapClick,
   centerLat,
@@ -540,6 +542,32 @@ export default function CampusMap({
         
         routeMarkersRef.current.push(startMarker, endMarker);
 
+        // Render parking marker for driving modes (Car, Motorcycle, Bike)
+        // The parking marker shows where to park before walking to destination
+        if (parkingLocation && parkingLocation.lat && parkingLocation.lng) {
+          const parkingIcon = L.divIcon({
+            html: `
+              <div class="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M13 3H6v18h4v-6h3c3.31 0 6-2.69 6-6s-2.69-6-6-6zm.2 8H10V7h3.2c1.1 0 2 .9 2 2s-.9 2-2 2z"/>
+                </svg>
+              </div>
+            `,
+            className: 'parking-marker',
+            iconSize: [48, 48],
+            iconAnchor: [24, 48],
+          });
+          const parkingMarker = L.marker([parkingLocation.lat, parkingLocation.lng], { icon: parkingIcon })
+            .addTo(mapInstanceRef.current)
+            .bindTooltip(parkingLocation.name || 'Parking Area', {
+              permanent: false,
+              direction: 'top',
+              offset: [0, -24],
+              className: 'bg-amber-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
+            });
+          routeMarkersRef.current.push(parkingMarker);
+        }
+
         // Render waypoint markers (blue)
         if (waypointsData && waypointsData.length > 0) {
           waypointsData.forEach((waypoint) => {
@@ -637,7 +665,7 @@ export default function CampusMap({
       
       mapInstanceRef.current.setView([lat, lng], 17.5);
     }
-  }, [routePolyline, routeMode, routePhases, centerLat, centerLng]);
+  }, [routePolyline, routeMode, routePhases, parkingLocation, centerLat, centerLng]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;

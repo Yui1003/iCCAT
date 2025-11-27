@@ -2632,6 +2632,7 @@ export default function Navigation() {
               routePolyline={route?.polyline}
               routeMode={route?.mode}
               routePhases={route?.phases}
+              parkingLocation={route?.parkingLocation}
               hidePolygonsInNavigation={!!route}
               waypointsData={
                 route && waypoints.length > 0

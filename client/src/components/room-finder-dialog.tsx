@@ -233,7 +233,7 @@ export default function RoomFinderDialog({
               />
             </div>
 
-            <ScrollArea className="flex-1 max-h-[50vh]" data-testid="scroll-room-list">
+            <ScrollArea className="flex-1 h-[50vh] overflow-y-auto" data-testid="scroll-room-list">
               {filteredRooms.length === 0 ? (
                 <div className="text-center py-12">
                   <DoorOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -243,7 +243,7 @@ export default function RoomFinderDialog({
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2 pr-4">
+                <div className="space-y-2 pr-4 pb-4">
                   {Object.values(roomsByBuilding).map(({ building, floors: buildingFloors }) => {
                     const buildingExpanded = expandedBuildings.has(building.id);
                     const buildingRoomCount = Object.values(buildingFloors).reduce((sum, f) => sum + f.rooms.length, 0);
