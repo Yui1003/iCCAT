@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, X, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ProxiedImage } from "@/components/proxied-image";
 import useEmblaCarousel from "embla-carousel-react";
 import type { Event } from "@shared/schema";
 
@@ -215,7 +216,7 @@ export function CalendarView({ events, onEventSelect }: CalendarViewProps) {
                             <Card className="w-full h-full flex flex-col overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all">
                               {event.image ? (
                                 <div className="w-full h-48 bg-muted overflow-hidden">
-                                  <img
+                                  <ProxiedImage
                                     src={event.image}
                                     alt={event.title}
                                     className="w-full h-full object-cover"

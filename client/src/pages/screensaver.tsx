@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { Hand, Clock } from "lucide-react";
+import { ProxiedImage } from "@/components/proxied-image";
 
 interface Event {
   id: string;
@@ -311,7 +312,7 @@ export default function Screensaver() {
                     {/* Image */}
                     {item.image && (
                       <div className="h-48 overflow-hidden bg-black/20">
-                        <img
+                        <ProxiedImage
                           src={item.image}
                           alt={item.title}
                           className="w-full h-full object-contain"

@@ -5,10 +5,11 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ProxiedImage } from "@/components/proxied-image";
 import GetDirectionsDialog from "@/components/get-directions-dialog";
 import type { Staff, Building } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
@@ -263,10 +264,17 @@ export default function StaffDirectory() {
                   >
                     <div className="flex items-start gap-4 mb-4">
                       <Avatar className="w-16 h-16">
-                        <AvatarImage src={member.photo || undefined} alt={member.name} />
-                        <AvatarFallback className="bg-primary text-primary-foreground text-lg">
-                          {member.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                        </AvatarFallback>
+                        {member.photo ? (
+                          <ProxiedImage
+                            src={member.photo}
+                            alt={member.name}
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        ) : (
+                          <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                            {member.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          </AvatarFallback>
+                        )}
                       </Avatar>
                       <div className="flex-1">
                         <h3 className="text-lg font-semibold text-foreground">{member.name}</h3>
@@ -330,10 +338,17 @@ export default function StaffDirectory() {
             <div className="space-y-6">
               <div className="flex items-start gap-4">
                 <Avatar className="w-20 h-20">
-                  <AvatarImage src={selectedStaff.photo || undefined} alt={selectedStaff.name} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                    {selectedStaff.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </AvatarFallback>
+                  {selectedStaff.photo ? (
+                    <ProxiedImage
+                      src={selectedStaff.photo}
+                      alt={selectedStaff.name}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xl">
+                      {selectedStaff.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold text-foreground mb-1">{selectedStaff.name}</h3>

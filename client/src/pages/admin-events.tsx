@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
 import ImageUploadInput from "@/components/image-upload-input";
+import { ProxiedImage } from "@/components/proxied-image";
 import type { Event, InsertEvent, Building } from "@shared/schema";
 import { eventClassifications } from "@shared/schema";
 import { invalidateEndpointCache } from "@/lib/offline-data";
@@ -373,7 +374,7 @@ export default function AdminEvents() {
                 <Card key={event.id} className="flex flex-col overflow-hidden" data-testid={`event-item-${event.id}`}>
                   {event.image ? (
                     <div className="w-full aspect-[4/3] bg-muted">
-                      <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+                      <ProxiedImage src={event.image} alt={event.title} className="w-full h-full object-cover" />
                     </div>
                   ) : (
                     <div className="w-full aspect-[4/3] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">

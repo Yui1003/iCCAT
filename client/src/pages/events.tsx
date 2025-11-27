@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProxiedImage } from "@/components/proxied-image";
 import GetDirectionsDialog from "@/components/get-directions-dialog";
 import { CalendarView } from "@/components/calendar-view";
 import type { Event, Building } from "@shared/schema";
@@ -381,7 +382,7 @@ export default function Events() {
             <div className="p-6">
               {selectedEvent.image && (
                 <div className="w-full mb-6 rounded-lg bg-muted flex items-center justify-center">
-                  <img
+                  <ProxiedImage
                     src={selectedEvent.image}
                     alt={selectedEvent.title}
                     className="w-full h-auto object-contain max-h-[min(60vh,500px)]"
@@ -510,7 +511,7 @@ function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event)
     >
       {event.image ? (
         <div className="w-full aspect-[4/3] bg-muted">
-          <img
+          <ProxiedImage
             src={event.image}
             alt={event.title}
             className="w-full h-full object-cover"

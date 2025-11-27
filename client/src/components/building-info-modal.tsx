@@ -2,8 +2,9 @@ import { X, MapPin, Users as UsersIcon, Layers, Navigation } from "lucide-react"
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
+import { ProxiedImage } from "./proxied-image";
 import type { Building, Staff, Floor } from "@shared/schema";
 import { canHaveDepartments, canHaveFloorPlan, isDescriptionOnly } from "@shared/schema";
 import { useState, useRef, useEffect } from "react";
@@ -137,7 +138,7 @@ export default function BuildingInfoModal({
           <TabsContent value="overview" className="p-6">
             {building.image && (
               <div className="w-full mb-4 rounded-lg bg-muted flex items-center justify-center">
-                <img
+                <ProxiedImage
                   src={building.image}
                   alt={building.name}
                   className="w-full h-auto object-contain max-h-[min(60vh,400px)]"
@@ -207,10 +208,17 @@ export default function BuildingInfoModal({
                       data-testid={`staff-card-${member.id}`}
                     >
                       <Avatar className="w-12 h-12">
-                        <AvatarImage src={member.photo || undefined} alt={member.name} />
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {member.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                        </AvatarFallback>
+                        {member.photo ? (
+                          <ProxiedImage
+                            src={member.photo}
+                            alt={member.name}
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        ) : (
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {member.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          </AvatarFallback>
+                        )}
                       </Avatar>
                       <div className="flex-1">
                         <p className="font-medium text-foreground">{member.name}</p>

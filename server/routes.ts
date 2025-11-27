@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { exec } from "child_process";
+import https from "https";
+import http from "http";
 import { storage } from "./storage";
 import { upload, uploadImageToFirebase } from "./upload";
 import { 
@@ -63,6 +65,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('[UPLOAD] Error:', error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Upload failed' 
+      });
+    }
+  });
+
+  // Image proxy endpoint - fetches external images to bypass CORS
+  // This allows all images (Firebase, external URLs) to be cached by the Service Worker
+  app.get('/api/proxy-image', async (req, res) => {
+    const imageUrl = req.query.url as string;
+    
+    if (!imageUrl) {
+      return res.status(400).json({ error: 'Missing url parameter' });
+    }
+
+    try {
+      const decodedUrl = decodeURIComponent(imageUrl);
+      
+      // Validate URL
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(decodedUrl);
+      } catch {
+        return res.status(400).json({ error: 'Invalid URL' });
+      }
+
+      // Only allow http and https protocols
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        return res.status(400).json({ error: 'Invalid protocol' });
+      }
+
+      const httpModule = parsedUrl.protocol === 'https:' ? https : http;
+      
+      const proxyRequest = httpModule.get(decodedUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; ImageProxy/1.0)',
+          'Accept': 'image/*,*/*',
+        },
+        timeout: 15000
+      }, (proxyResponse) => {
+        // Handle redirects
+        if (proxyResponse.statusCode && proxyResponse.statusCode >= 300 && proxyResponse.statusCode < 400 && proxyResponse.headers.location) {
+          const redirectUrl = proxyResponse.headers.location;
+          // Make a new request to the redirect URL
+          const redirectParsedUrl = new URL(redirectUrl, decodedUrl);
+          const redirectHttpModule = redirectParsedUrl.protocol === 'https:' ? https : http;
+          
+          const redirectRequest = redirectHttpModule.get(redirectParsedUrl.href, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; ImageProxy/1.0)',
+              'Accept': 'image/*,*/*',
+            },
+            timeout: 15000
+          }, (redirectResponse) => {
+            if (redirectResponse.statusCode !== 200) {
+              return res.status(redirectResponse.statusCode || 502).json({ error: 'Failed to fetch image after redirect' });
+            }
+            
+            // Set appropriate headers
+            res.setHeader('Content-Type', redirectResponse.headers['content-type'] || 'image/png');
+            res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            
+            redirectResponse.pipe(res);
+          });
+          
+          redirectRequest.on('error', (err) => {
+            console.error('[PROXY] Redirect request error:', err.message);
+            res.status(502).json({ error: 'Failed to fetch redirected image' });
+          });
+          
+          redirectRequest.on('timeout', () => {
+            redirectRequest.destroy();
+            res.status(504).json({ error: 'Redirect request timeout' });
+          });
+          
+          return;
+        }
+        
+        if (proxyResponse.statusCode !== 200) {
+          return res.status(proxyResponse.statusCode || 502).json({ error: 'Failed to fetch image' });
+        }
+
+        // Set appropriate headers
+        res.setHeader('Content-Type', proxyResponse.headers['content-type'] || 'image/png');
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        
+        // Pipe the image data directly to the response
+        proxyResponse.pipe(res);
+      });
+
+      proxyRequest.on('error', (err) => {
+        console.error('[PROXY] Request error:', err.message);
+        res.status(502).json({ error: 'Failed to fetch image' });
+      });
+
+      proxyRequest.on('timeout', () => {
+        proxyRequest.destroy();
+        res.status(504).json({ error: 'Request timeout' });
+      });
+
+    } catch (error) {
+      console.error('[PROXY] Error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Proxy failed' 
       });
     }
   });

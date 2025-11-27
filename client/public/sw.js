@@ -1,6 +1,6 @@
-const CACHE_NAME = 'iccat-v6';
-const DATA_CACHE_NAME = 'iccat-data-v6';
-const IMAGE_CACHE_NAME = 'iccat-images-v6';
+const CACHE_NAME = 'iccat-v7';
+const DATA_CACHE_NAME = 'iccat-data-v7';
+const IMAGE_CACHE_NAME = 'iccat-images-v7';
 
 const urlsToCache = [
   '/',
@@ -25,7 +25,6 @@ const apiEndpointsToCache = [
   '/api/settings/global_inactivity_timeout'
 ];
 
-// Function to convert lat/lng to tile coordinates
 function latLngToTile(lat, lng, zoom) {
   const n = Math.pow(2, zoom);
   const xtile = Math.floor((lng + 180) / 360 * n);
@@ -33,96 +32,28 @@ function latLngToTile(lat, lng, zoom) {
   return { x: xtile, y: ytile };
 }
 
-// Extract all image URLs from API responses
-async function extractAllImageUrls() {
-  const imageUrls = new Set();
-  const apiEndpoints = [
-    '/api/buildings',
-    '/api/staff',
-    '/api/events',
-    '/api/floors',
-    '/api/rooms'
-  ];
-
-  console.log('[SW] Extracting image URLs from API responses...');
-
-  for (const endpoint of apiEndpoints) {
-    try {
-      const response = await fetch(endpoint);
-      if (response.ok) {
-        const data = await response.json();
-        extractImageUrlsFromData(data, imageUrls);
-      }
-    } catch (err) {
-      console.warn(`[SW] Failed to fetch ${endpoint}:`, err.message);
-    }
-  }
-
-  return imageUrls;
-}
-
-// Recursively extract image URLs from API data
-function extractImageUrlsFromData(data, urls = new Set()) {
-  if (!data) return urls;
-
-  if (Array.isArray(data)) {
-    data.forEach(item => extractImageUrlsFromData(item, urls));
-  } else if (typeof data === 'object') {
-    // Common image field names
-    const imageFields = ['image', 'photo', 'floorPlanImage', 'imageUrl', 'photoUrl', 'picture', 'icon'];
-    
-    for (const field of imageFields) {
-      if (field in data && typeof data[field] === 'string' && data[field]) {
-        const url = data[field].trim();
-        // Cache actual URLs (http/https, //, or /)
-        if (url.startsWith('http') || url.startsWith('//') || url.startsWith('/')) {
-          urls.add(url);
-        }
-      }
-    }
-    
-    // Recursively check nested objects
-    for (const key in data) {
-      if (typeof data[key] === 'object' && data[key] !== null) {
-        extractImageUrlsFromData(data[key], urls);
-      }
-    }
-  }
-
-  return urls;
-}
-
-// Generate all tile URLs for the campus area
-function generateCampusTileUrls() {
+function generateEssentialTileUrls() {
   const tiles = [];
   
-  // Campus bounds - expanded significantly to ensure full coverage at all zoom levels
   const bounds = {
-    north: 14.407,   // Expanded north
-    south: 14.398,   // Expanded south
-    east: 120.870,   // Expanded east
-    west: 120.862    // Expanded west
+    north: 14.407,
+    south: 14.398,
+    east: 120.870,
+    west: 120.862
   };
   
-  // Generate tiles for zoom levels 16, 17, 18, and 19
-  // This ensures smooth zooming and panning while offline
-  const zooms = [16, 17, 18, 19];
+  const essentialZooms = [17, 18];
   
-  console.log('[SW] Generating tile URLs for campus area...');
-  console.log(`[SW] Bounds: N=${bounds.north}, S=${bounds.south}, E=${bounds.east}, W=${bounds.west}`);
+  console.log('[SW] Generating ESSENTIAL tile URLs (zoom 17-18 only)...');
   
-  zooms.forEach(zoom => {
-    // Get tile coordinates for corners
+  essentialZooms.forEach(zoom => {
     const topLeft = latLngToTile(bounds.north, bounds.west, zoom);
     const bottomRight = latLngToTile(bounds.south, bounds.east, zoom);
     
     console.log(`[SW] Zoom ${zoom}: tiles from (${topLeft.x},${topLeft.y}) to (${bottomRight.x},${bottomRight.y})`);
     
-    // Generate all tiles in the bounding box
     for (let x = topLeft.x; x <= bottomRight.x; x++) {
       for (let y = topLeft.y; y <= bottomRight.y; y++) {
-        // Match Leaflet's subdomain selection exactly
-        // Leaflet uses Math.abs for consistent subdomain mapping
         const subdomains = ['a', 'b', 'c'];
         const index = Math.abs(x + y) % subdomains.length;
         const subdomain = subdomains[index];
@@ -131,14 +62,80 @@ function generateCampusTileUrls() {
     }
   });
   
-  console.log(`[SW] Generated ${tiles.length} map tile URLs for pre-caching`);
+  console.log(`[SW] Generated ${tiles.length} ESSENTIAL map tile URLs for pre-caching`);
   return tiles;
 }
 
+function generateBackgroundTileUrls() {
+  const tiles = [];
+  
+  const bounds = {
+    north: 14.407,
+    south: 14.398,
+    east: 120.870,
+    west: 120.862
+  };
+  
+  const backgroundZooms = [16, 19];
+  
+  backgroundZooms.forEach(zoom => {
+    const topLeft = latLngToTile(bounds.north, bounds.west, zoom);
+    const bottomRight = latLngToTile(bounds.south, bounds.east, zoom);
+    
+    for (let x = topLeft.x; x <= bottomRight.x; x++) {
+      for (let y = topLeft.y; y <= bottomRight.y; y++) {
+        const subdomains = ['a', 'b', 'c'];
+        const index = Math.abs(x + y) % subdomains.length;
+        const subdomain = subdomains[index];
+        tiles.push(`https://${subdomain}.tile.openstreetmap.org/${zoom}/${x}/${y}.png`);
+      }
+    }
+  });
+  
+  return tiles;
+}
+
+async function cacheBackgroundTiles() {
+  const tileUrls = generateBackgroundTileUrls();
+  console.log(`[SW-BG] Starting background caching of ${tileUrls.length} extra tiles (zoom 16, 19)...`);
+  
+  const cache = await caches.open(CACHE_NAME);
+  let successCount = 0;
+  let failCount = 0;
+  
+  for (const url of tileUrls) {
+    try {
+      const existingResponse = await cache.match(url);
+      if (existingResponse) {
+        successCount++;
+        continue;
+      }
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        await cache.put(url, response);
+        successCount++;
+      } else {
+        failCount++;
+      }
+    } catch (err) {
+      failCount++;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  
+  console.log(`[SW-BG] Background tile caching complete: ${successCount} succeeded, ${failCount} failed`);
+}
+
 self.addEventListener('install', (event) => {
+  console.log('[SW] ========================================');
+  console.log('[SW] OPTIMIZED INSTALL - Fast loading enabled');
+  console.log('[SW] ========================================');
+  
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching static assets');
+      console.log('[SW] Step 1/3: Caching static assets...');
       return cache.addAll(urlsToCache).catch(err => {
         console.warn('[SW] Some static assets failed to cache:', err);
         return Promise.resolve();
@@ -146,140 +143,84 @@ self.addEventListener('install', (event) => {
     }).then(() => {
       return caches.open(DATA_CACHE_NAME);
     }).then((cache) => {
-      console.log('[SW] Pre-caching API endpoints for offline use');
+      console.log('[SW] Step 2/3: Fetching fresh API data...');
       return Promise.allSettled(
         apiEndpointsToCache.map(url =>
           fetch(url)
             .then(response => {
               if (response.ok) {
-                console.log(`[SW] Cached ${url}`);
+                console.log(`[SW] ✓ Cached API: ${url}`);
                 return cache.put(url, response);
               } else {
-                console.warn(`[SW] Failed to cache ${url}: HTTP ${response.status}`);
+                console.warn(`[SW] ✗ Failed to cache ${url}: HTTP ${response.status}`);
               }
             })
             .catch(err => {
-              console.warn(`[SW] Failed to fetch ${url} (offline or error):`, err.message);
+              console.warn(`[SW] ✗ Failed to fetch ${url}:`, err.message);
             })
         )
       ).then(results => {
         const successful = results.filter(r => r.status === 'fulfilled').length;
-        const failed = results.filter(r => r.status === 'rejected').length;
-        console.log(`[SW] API pre-caching complete: ${successful} succeeded, ${failed} failed`);
+        console.log(`[SW] API data cached: ${successful}/${apiEndpointsToCache.length} endpoints`);
       });
     }).then(() => {
-      // Pre-cache map tiles
       return caches.open(CACHE_NAME);
     }).then((cache) => {
-      console.log('[SW] Starting map tile pre-caching for offline use...');
-      const tileUrls = generateCampusTileUrls();
-      console.log(`[SW] Will attempt to cache ${tileUrls.length} tiles`);
-      
-      let successCount = 0;
-      let failCount = 0;
+      console.log('[SW] Step 3/3: Caching essential map tiles (zoom 17-18)...');
+      const tileUrls = generateEssentialTileUrls();
       
       return Promise.allSettled(
-        tileUrls.map((url, index) =>
+        tileUrls.map(url =>
           fetch(url)
             .then(response => {
               if (response.ok) {
-                successCount++;
-                if (index < 5 || index % 20 === 0) {
-                  console.log(`[SW] ✓ Cached tile ${index + 1}/${tileUrls.length}: ${url}`);
-                }
                 return cache.put(url, response);
-              } else {
-                failCount++;
-                console.error(`[SW] ✗ Failed to cache tile ${url}: HTTP ${response.status}`);
-                return Promise.reject(new Error(`HTTP ${response.status}`));
               }
             })
-            .catch(err => {
-              failCount++;
-              console.error(`[SW] ✗ Failed to fetch tile ${url}:`, err.message);
-              return Promise.reject(err);
-            })
+            .catch(() => {})
         )
       ).then(results => {
         const successful = results.filter(r => r.status === 'fulfilled').length;
-        const failed = results.filter(r => r.status === 'rejected').length;
-        console.log(`[SW] ========================================`);
-        console.log(`[SW] Map tile pre-caching complete!`);
-        console.log(`[SW] Success: ${successful}/${tileUrls.length} tiles`);
-        console.log(`[SW] Failed: ${failed}/${tileUrls.length} tiles`);
-        console.log(`[SW] ========================================`);
-        
-        if (failed > 0) {
-          console.warn(`[SW] ${failed} tiles failed to cache. The app may not work fully offline.`);
-        }
+        console.log(`[SW] Essential tiles cached: ${successful}/${tileUrls.length}`);
       });
     }).then(() => {
-      // Pre-cache ALL images from API responses
-      console.log('[SW] Starting image pre-caching from API responses...');
-      return extractAllImageUrls();
-    }).then((imageUrls) => {
-      if (imageUrls.size === 0) {
-        console.log('[SW] No images found in API responses');
-        return Promise.resolve();
-      }
-
-      console.log(`[SW] Extracted ${imageUrls.size} image URLs - caching now...`);
+      console.log('[SW] ========================================');
+      console.log('[SW] ✅ INSTALL COMPLETE - App ready to use!');
+      console.log('[SW] ========================================');
+      console.log('[SW] Background: Will cache extra tiles (zoom 16, 19) after activation');
       
-      return caches.open(IMAGE_CACHE_NAME).then((cache) => {
-        const imageArray = Array.from(imageUrls);
-        
-        return Promise.allSettled(
-          imageArray.map((url, index) =>
-            fetch(url, { 
-              cache: 'no-store',
-              mode: 'cors',
-              credentials: 'omit'
-            })
-              .then(response => {
-                if (response.ok) {
-                  if (index < 5 || index % 10 === 0) {
-                    console.log(`[SW] ✓ Cached image ${index + 1}/${imageArray.length}: ${url}`);
-                  }
-                  return cache.put(url, response);
-                } else {
-                  console.warn(`[SW] ✗ Failed to cache image ${url}: HTTP ${response.status}`);
-                  return Promise.reject(new Error(`HTTP ${response.status}`));
-                }
-              })
-              .catch(err => {
-                console.warn(`[SW] ✗ Failed to fetch image ${url}:`, err.message);
-                return Promise.reject(err);
-              })
-          )
-        ).then(results => {
-          const successful = results.filter(r => r.status === 'fulfilled').length;
-          const failed = results.filter(r => r.status === 'rejected').length;
-          console.log(`[SW] ========================================`);
-          console.log(`[SW] Image pre-caching complete!`);
-          console.log(`[SW] Success: ${successful}/${imageArray.length} images`);
-          console.log(`[SW] Failed: ${failed}/${imageArray.length} images`);
-          console.log(`[SW] ========================================`);
-          
-          if (failed > 0) {
-            console.warn(`[SW] ${failed} images failed to cache. They will be cached on-demand.`);
-          }
-          
-          // ✅ SIGNAL TO CLIENT: All caching complete!
-          console.log('[SW] ✅ All SW install caching complete! Signaling client...');
-          console.log('[SW] ✅ SW INSTALL COMPLETE - Setting localStorage flag for client');
-          if (typeof localStorage !== 'undefined') {
-            try {
-              localStorage.setItem('sw_install_complete', 'true');
-              console.log('[SW] ✅ localStorage.sw_install_complete set to true - client can now proceed');
-            } catch (e) {
-              console.warn('[SW] Cannot access localStorage:', e);
-            }
-          }
-        });
-      });
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem('sw_install_complete', 'true');
+          console.log('[SW] ✅ Client notified - app can proceed');
+        } catch (e) {
+          console.warn('[SW] Cannot access localStorage:', e);
+        }
+      }
     })
   );
   self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('[SW] Activating and cleaning old caches...');
+  
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME && cacheName !== DATA_CACHE_NAME && cacheName !== IMAGE_CACHE_NAME) {
+            console.log('[SW] Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => {
+      console.log('[SW] Starting background tile caching...');
+      cacheBackgroundTiles();
+      return self.clients.claim();
+    })
+  );
 });
 
 self.addEventListener('fetch', (event) => {
@@ -290,10 +231,50 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // NEVER cache admin routes - always fetch fresh from network
   if (url.pathname.startsWith('/admin/')) {
-    console.log(`[SW] ⛔ Admin route detected: ${url.pathname} - bypassing cache`);
     event.respondWith(fetch(request));
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/proxy-image')) {
+    event.respondWith(
+      caches.open(IMAGE_CACHE_NAME).then((cache) => {
+        const originalUrl = url.searchParams.get('url');
+        if (!originalUrl) {
+          return fetch(request);
+        }
+        
+        const cacheKey = `/api/proxy-image?url=${encodeURIComponent(originalUrl)}`;
+        
+        return cache.match(cacheKey).then((cachedResponse) => {
+          if (cachedResponse) {
+            console.log(`[SW] Proxied image served from cache: ${originalUrl.substring(0, 50)}...`);
+            return cachedResponse;
+          }
+          
+          return fetch(request)
+            .then((response) => {
+              if (response && response.status === 200) {
+                const responseToCache = response.clone();
+                cache.put(cacheKey, responseToCache);
+                console.log(`[SW] Proxied image cached: ${originalUrl.substring(0, 50)}...`);
+              }
+              return response;
+            })
+            .catch((error) => {
+              console.warn(`[SW] Proxied image fetch failed:`, error.message);
+              return new Response(
+                new Blob([new Uint8Array([
+                  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
+                  0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0,
+                  0, 10, 73, 68, 65, 84, 8, 29, 1, 0, 0, 255, 255, 0, 0, 0, 0, 0, 1,
+                  0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130
+                ])], { type: 'image/png' })
+              );
+            });
+        });
+      })
+    );
     return;
   }
 
@@ -303,7 +284,6 @@ self.addEventListener('fetch', (event) => {
         return fetch(request)
           .then((response) => {
             if (response.status === 200) {
-              console.log(`[SW] Network-first: Fetched fresh ${url.pathname} from server`);
               try {
                 cache.put(request, response.clone());
               } catch (cacheError) {
@@ -316,10 +296,8 @@ self.addEventListener('fetch', (event) => {
             console.log(`[SW] Network failed for ${url.pathname}, falling back to cache`);
             return cache.match(request).then((cachedResponse) => {
               if (cachedResponse) {
-                console.log(`[SW] Serving ${url.pathname} from cache (offline)`);
                 return cachedResponse;
               }
-              console.error(`[SW] No cache available for ${url.pathname}:`, error);
               throw error;
             });
           });
@@ -328,7 +306,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first strategy for map tiles
   if (url.origin.includes('tile.openstreetmap.org')) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
@@ -348,9 +325,6 @@ self.addEventListener('fetch', (event) => {
               return response;
             })
             .catch((error) => {
-              console.error('[SW] Map tile fetch failed (offline):', error.message);
-              // Return a transparent 256x256 PNG as fallback
-              // This prevents broken tile images while offline
               return new Response(
                 new Blob([new Uint8Array([
                   137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
@@ -371,57 +345,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Helper function to check if URL is an image
-  function isImageUrl(urlString) {
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico'];
-    const imageKeywords = ['image', 'photo', 'picture', 'floor', 'plan', 'avatar'];
-    const urlLower = urlString.toLowerCase();
-    
-    // Check for Firebase Storage URLs (includes all image types)
-    if (urlLower.includes('firebasestorage.googleapis.com') || urlLower.includes('storage.googleapis.com')) {
-      return true;
-    }
-    
-    // Check file extensions
-    if (imageExtensions.some(ext => urlLower.includes(ext))) {
-      return true;
-    }
-    
-    // Check URL keywords that typically indicate images
-    if (imageKeywords.some(keyword => urlLower.includes(keyword))) {
-      return true;
-    }
-    
-    return false;
-  }
-
-  // Cache-first strategy for HTML documents (root and index.html)
-  // This ensures offline hard refresh works
   if (url.pathname === '/' || url.pathname === '/index.html') {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
-        // Try to match the exact request first
         return cache.match(request).then((response) => {
           if (response) {
-            console.log(`[SW] HTML served from cache: ${url.pathname}`);
             return response;
           }
           
-          // If exact match not found, try to match /index.html or /
           const alternateRequest = url.pathname === '/' ? '/index.html' : '/';
           return cache.match(alternateRequest).then((altResponse) => {
             if (altResponse) {
-              console.log(`[SW] HTML served from alternate cache: ${alternateRequest}`);
               return altResponse;
             }
             
-            // No cache found, try network
             return fetch(request)
               .then((response) => {
                 if (response.status === 200) {
                   try {
                     cache.put(request, response.clone());
-                    console.log(`[SW] HTML cached: ${url.pathname}`);
                   } catch (cacheError) {
                     console.warn(`[SW] Failed to cache HTML: ${url.pathname}`, cacheError.message);
                   }
@@ -429,14 +371,11 @@ self.addEventListener('fetch', (event) => {
                 return response;
               })
               .catch((error) => {
-                console.error(`[SW] HTML fetch failed (offline): ${url.pathname}`, error.message);
-                // If network fails, try to serve any cached HTML we have
                 return cache.match('/').then((rootResponse) => {
                   if (rootResponse) return rootResponse;
                   return cache.match('/index.html');
                 }).then((fallbackResponse) => {
                   if (fallbackResponse) {
-                    console.log(`[SW] Serving fallback HTML from cache`);
                     return fallbackResponse;
                   }
                   throw error;
@@ -449,68 +388,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first strategy for images (staff photos, building images, floor plans, etc.)
-  if (isImageUrl(url.pathname) || isImageUrl(url.href)) {
-    event.respondWith(
-      caches.open(IMAGE_CACHE_NAME).then((cache) => {
-        // For Firebase URLs with tokens, strip query params for cache matching
-        let cacheKey = request;
-        const isFirebaseUrl = url.href.includes('firebasestorage.googleapis.com') || url.href.includes('storage.googleapis.com');
-        
-        if (isFirebaseUrl && url.search) {
-          const baseUrl = url.href.split('?')[0];
-          cacheKey = new Request(baseUrl, { method: 'GET' });
-        }
-        
-        return cache.match(cacheKey).then((response) => {
-          if (response) {
-            console.log(`[SW] Image served from pre-cached: ${url.pathname}`);
-            return response;
-          }
-          
-          // Not in image cache, try network and cache it
-          return fetch(request, { 
-            cache: 'no-store',
-            mode: 'cors',
-            credentials: 'omit'
-          })
-            .then((response) => {
-              if (response && response.status === 200 && (url.protocol === 'http:' || url.protocol === 'https:')) {
-                try {
-                  const responseToCache = response.clone();
-                  cache.put(cacheKey, responseToCache);
-                  console.log(`[SW] Image cached on-demand: ${url.pathname}`);
-                } catch (cacheError) {
-                  console.warn(`[SW] Failed to cache image: ${url.pathname}`, cacheError.message);
-                }
-              }
-              return response;
-            })
-            .catch((error) => {
-              console.warn(`[SW] Image fetch failed (offline): ${url.pathname}`, error.message);
-              // Return transparent 1x1 PNG placeholder for images that fail offline
-              return new Response(
-                new Blob([new Uint8Array([
-                  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
-                  0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0,
-                  0, 10, 73, 68, 65, 84, 8, 29, 1, 0, 0, 255, 255, 0, 0, 0, 0, 0, 1,
-                  0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130
-                ])], { type: 'image/png' })
-              );
-            });
-        });
-      })
-    );
-    return;
-  }
-
-  // HARD REFRESH strategy: Network-first (fetch fresh, cache it, then serve)
-  // NORMAL REFRESH strategy: Cache-first (serve cache, update in background)
   const isHardRefresh = !globalThis.localStorage || localStorage.getItem('sw_install_complete') !== 'true';
   
   if (isHardRefresh) {
-    // HARD REFRESH: Network-first - Always fetch fresh data and cache it
-    console.log(`[SW] Hard refresh detected: Network-first strategy for ${url.pathname}`);
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -537,18 +417,14 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // Network failed, fall back to cache if available
           return caches.match(request);
         })
     );
   } else {
-    // NORMAL REFRESH: Cache-first (serve cache immediately, update in background)
-    console.log(`[SW] Normal refresh detected: Cache-first strategy for ${url.pathname}`);
     event.respondWith(
       caches.match(request)
         .then((response) => {
           if (response) {
-            // Serve from cache immediately, but update in background
             fetch(request).then((freshResponse) => {
               if (freshResponse && freshResponse.status === 200) {
                 try {
@@ -566,13 +442,10 @@ self.addEventListener('fetch', (event) => {
                   console.warn(`[SW] Invalid URL for updating cache: ${request.url}`, e.message);
                 }
               }
-            }).catch(() => {
-              // Network failed, that's ok - user has cached version
-            });
+            }).catch(() => {});
             return response;
           }
 
-          // No cache, fetch from network
           return fetch(request).then((response) => {
             if (!response || response.status !== 200) {
               return response;
@@ -598,33 +471,30 @@ self.addEventListener('fetch', (event) => {
           });
         })
         .catch(() => {
-          // Both cache and network failed
           return new Response('Offline - resource not available', { status: 503 });
         })
     );
   }
 });
 
-self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME, DATA_CACHE_NAME, IMAGE_CACHE_NAME];
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
   
-  console.log('[SW] Activating new Service Worker...');
-  console.log(`[SW] Current caches: ${cacheWhitelist.join(', ')}`);
-  
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      console.log(`[SW] Found existing caches: ${cacheNames.join(', ')}`);
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log(`[SW] Deleting old cache: ${cacheName}`);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => {
-      console.log('[SW] Service Worker activated successfully!');
-      return self.clients.claim();
-    })
-  );
+  if (event.data && event.data.type === 'CACHE_IMAGE') {
+    const imageUrl = event.data.url;
+    if (imageUrl) {
+      caches.open(IMAGE_CACHE_NAME).then((cache) => {
+        fetch(imageUrl, { mode: 'cors', credentials: 'omit' })
+          .then((response) => {
+            if (response.ok) {
+              cache.put(imageUrl, response);
+              console.log(`[SW] Image cached via message: ${imageUrl.substring(0, 50)}...`);
+            }
+          })
+          .catch(() => {});
+      });
+    }
+  }
 });
