@@ -3,6 +3,23 @@ import baselineData from "./baseline-data.json";
 
 const DATA_CACHE_NAME = 'iccat-data-v5';
 
+// Global request counter for kiosk uptime tracking
+export const requestCounter = {
+  total: 0,
+  successful: 0,
+  recordSuccess: () => {
+    requestCounter.total++;
+    requestCounter.successful++;
+  },
+  recordFailure: () => {
+    requestCounter.total++;
+  },
+  reset: () => {
+    requestCounter.total = 0;
+    requestCounter.successful = 0;
+  }
+};
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -39,6 +56,7 @@ const networkFirstQueryFn: QueryFunction = async ({ queryKey }) => {
     if (res.ok) {
       const data = await res.json();
       console.log(`[QUERY] Network-first: Fetched fresh ${url} from server`);
+      requestCounter.recordSuccess();
       
       // Update CacheStorage with fresh data when network fetch succeeds
       if (window.caches) {
@@ -65,6 +83,7 @@ const networkFirstQueryFn: QueryFunction = async ({ queryKey }) => {
       const cachedResponse = await cache.match(url);
       if (cachedResponse) {
         console.log(`[QUERY] Retrieved ${url} from CacheStorage (offline)`);
+        requestCounter.recordSuccess();
         return await cachedResponse.json();
       }
     } catch (cacheError) {
@@ -75,9 +94,11 @@ const networkFirstQueryFn: QueryFunction = async ({ queryKey }) => {
   const dataKey = url.replace('/api/', '') as keyof typeof baselineData;
   if (dataKey in baselineData) {
     console.log(`[QUERY] Using embedded baseline data for ${dataKey}`);
+    requestCounter.recordSuccess();
     return baselineData[dataKey];
   }
 
+  requestCounter.recordFailure();
   throw new Error(`No offline data available for ${url}`);
 };
 

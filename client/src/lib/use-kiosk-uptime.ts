@@ -1,12 +1,11 @@
 // Hook for tracking kiosk uptime
 import { useEffect, useRef } from 'react';
 import { getOrCreateDeviceId } from './device-id';
-import { apiRequest } from './queryClient';
+import { apiRequest, requestCounter } from './queryClient';
 
 export function useKioskUptime() {
   const deviceIdRef = useRef<string | null>(null);
   const sessionStartRef = useRef<number>(Date.now());
-  const requestCountRef = useRef({ total: 0, successful: 0 });
 
   useEffect(() => {
     // Initialize device ID and start session
@@ -35,14 +34,20 @@ export function useKioskUptime() {
 
       try {
         const uptimePercentage =
-          requestCountRef.current.total > 0
-            ? (requestCountRef.current.successful / requestCountRef.current.total) * 100
+          requestCounter.total > 0
+            ? (requestCounter.successful / requestCounter.total) * 100
             : 100;
+
+        console.log('[UPTIME] Heartbeat:', {
+          total: requestCounter.total,
+          successful: requestCounter.successful,
+          uptime: uptimePercentage.toFixed(1) + '%'
+        });
 
         await apiRequest('POST', '/api/analytics/kiosk-uptime/heartbeat', {
           deviceId: deviceIdRef.current,
-          totalRequests: requestCountRef.current.total,
-          successfulRequests: requestCountRef.current.successful,
+          totalRequests: requestCounter.total,
+          successfulRequests: requestCounter.successful,
           uptimePercentage,
         });
       } catch (err) {
@@ -56,14 +61,14 @@ export function useKioskUptime() {
 
       try {
         const uptimePercentage =
-          requestCountRef.current.total > 0
-            ? (requestCountRef.current.successful / requestCountRef.current.total) * 100
+          requestCounter.total > 0
+            ? (requestCounter.successful / requestCounter.total) * 100
             : 100;
 
         await apiRequest('POST', '/api/analytics/kiosk-uptime/end', {
           deviceId: deviceIdRef.current,
-          totalRequests: requestCountRef.current.total,
-          successfulRequests: requestCountRef.current.successful,
+          totalRequests: requestCounter.total,
+          successfulRequests: requestCounter.successful,
           uptimePercentage,
         });
         console.log('[UPTIME] Session ended on server');
@@ -79,14 +84,4 @@ export function useKioskUptime() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
-
-  // Hook to track requests globally
-  return {
-    recordRequest: (successful: boolean) => {
-      requestCountRef.current.total++;
-      if (successful) {
-        requestCountRef.current.successful++;
-      }
-    },
-  };
 }
