@@ -65,14 +65,10 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
         
         // HARD REFRESH: Fetch all fresh data from network, then cache it
         console.log('[CACHE-LOADER] Hard refresh detected - fetching fresh data from network (network-first)');
+        console.log('[CACHE-LOADER] IMPORTANT: On hard refresh, we IGNORE old caches and fetch everything fresh from network');
         
-        // QUICK CHECK: If on normal refresh, caches should already be valid
-        const cachesValid = await quickCacheCheck();
-        if (cachesValid) {
-          console.log('[CACHE-LOADER] Caches already valid (normal refresh) - skipping loader');
-          setIsComplete(true);
-          return;
-        }
+        // On hard refresh, we MUST do full verification (no quick exit)
+        // We'll do the complete cache verification and wait for everything to be cached
 
         // 0. WAIT for Service Worker install to complete
         // SW sets localStorage when install finishes
