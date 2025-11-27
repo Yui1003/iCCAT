@@ -4,8 +4,9 @@
  * during the loading phase to ensure offline image availability
  */
 
-const CACHE_NAME = 'iccat-v5';
-const DATA_CACHE_NAME = 'iccat-data-v5';
+const CACHE_NAME = 'iccat-v6';
+const DATA_CACHE_NAME = 'iccat-data-v6';
+const IMAGE_CACHE_NAME = 'iccat-images-v6';
 
 export interface ImagePrecacheStatus {
   extracted: number;
@@ -97,7 +98,7 @@ export async function precacheApiImages(): Promise<ImagePrecacheStatus> {
     // Batch fetch and cache all images
     console.log('[IMAGE-PRECACHE] Pre-caching images...');
     
-    const cache = await caches.open(CACHE_NAME);
+    const cache = await caches.open(IMAGE_CACHE_NAME);
     const imageArray = Array.from(imageUrls);
 
     // Batch fetch with Promise.allSettled to handle failures gracefully
@@ -140,9 +141,55 @@ export async function precacheApiImages(): Promise<ImagePrecacheStatus> {
 /**
  * Get statistics about cached images
  */
+/**
+ * Dynamically cache new images when they're added via real-time updates
+ * Called when Firebase listeners receive new/updated data with image URLs
+ */
+export async function cacheNewImages(data: any): Promise<void> {
+  try {
+    const imageUrls = extractImageUrls(data);
+    
+    if (imageUrls.size === 0) {
+      return;
+    }
+
+    console.log(`[IMAGE-PRECACHE] Caching ${imageUrls.size} new images from real-time update...`);
+    
+    const cache = await caches.open(IMAGE_CACHE_NAME);
+    const imageArray = Array.from(imageUrls);
+
+    // Batch fetch new images
+    const fetchPromises = imageArray.map(url =>
+      fetch(url, { 
+        cache: 'no-store',
+        mode: 'cors'
+      })
+        .then(response => {
+          if (response.ok) {
+            return cache.put(url, response.clone()).then(() => {
+              console.log(`[IMAGE-PRECACHE] ✓ Cached image: ${url}`);
+              return true;
+            });
+          } else {
+            console.warn(`[IMAGE-PRECACHE] ✗ Failed to cache image (HTTP ${response.status}): ${url}`);
+            return false;
+          }
+        })
+        .catch(err => {
+          console.warn(`[IMAGE-PRECACHE] ✗ Failed to fetch image: ${url}`, err.message);
+          return false;
+        })
+    );
+
+    await Promise.allSettled(fetchPromises);
+  } catch (err) {
+    console.error('[IMAGE-PRECACHE] Error caching new images:', err);
+  }
+}
+
 export async function getImageCacheStats(): Promise<{ count: number; size: number }> {
   try {
-    const cache = await caches.open(CACHE_NAME);
+    const cache = await caches.open(IMAGE_CACHE_NAME);
     const requests = await cache.keys();
     
     // Filter to image requests (rough heuristic)

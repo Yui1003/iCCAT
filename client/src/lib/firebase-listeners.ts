@@ -6,6 +6,7 @@
  */
 
 import { queryClient } from './queryClient';
+import { cacheNewImages } from './image-precache';
 
 // Track active listeners so we can unsubscribe
 const activeListeners: (() => void)[] = [];
@@ -34,6 +35,7 @@ export function initializeFirebaseListeners() {
 
 /**
  * Helper: Updates React Query cache when data changes
+ * Also automatically caches any new images from the update
  */
 function updateCache(endpoint: string, data: any) {
   console.log(`[LISTENERS] Firebase change detected: ${endpoint}`);
@@ -46,6 +48,12 @@ function updateCache(endpoint: string, data: any) {
         headers: { 'Content-Type': 'application/json' }
       });
       cache.put(endpoint, response);
+    });
+    
+    // Automatically cache any new images in this update
+    // Don't await - let it cache in the background
+    cacheNewImages(data).catch(err => {
+      console.warn('[LISTENERS] Error caching new images:', err);
     });
   }
 }
