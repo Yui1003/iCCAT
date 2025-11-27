@@ -1,9 +1,11 @@
+import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { OfflineIndicator } from "@/components/offline-indicator";
+import { CacheVerificationLoader } from "@/components/cache-verification-loader";
 
 import Landing from "@/pages/landing";
 import Navigation from "@/pages/navigation";
@@ -59,12 +61,25 @@ function Router() {
 }
 
 function App() {
+  const [cacheReady, setCacheReady] = useState(false);
+
+  useEffect(() => {
+    const initApp = async () => {
+      // Give cache verification time to complete
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setCacheReady(true);
+    };
+
+    initApp();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <OfflineIndicator />
-        <Router />
+        {!cacheReady && <CacheVerificationLoader />}
+        {cacheReady && <Router />}
       </TooltipProvider>
     </QueryClientProvider>
   );
