@@ -1,8 +1,13 @@
 /**
- * Firebase Real-Time Listeners
+ * Firebase Real-Time Listeners with Auto-Reconnection
  * Replaces polling with Firebase change notifications
  * Cost: ~1-5K reads/day instead of 100K
  * Real-time: Instant updates instead of 5-second delay
+ * 
+ * Features:
+ * - Auto-reconnection with exponential backoff
+ * - Network online/offline detection
+ * - Graceful error handling
  */
 
 import { queryClient } from './queryClient';
@@ -11,26 +16,190 @@ import { cacheNewImages } from './image-precache';
 // Track active listeners so we can unsubscribe
 const activeListeners: (() => void)[] = [];
 
+// Track listener states for reconnection
+interface ListenerState {
+  endpoint: string;
+  apiEndpoint: string;
+  eventSource: EventSource | null;
+  retryCount: number;
+  retryTimeout: NodeJS.Timeout | null;
+  isActive: boolean;
+}
+
+const listenerStates: Map<string, ListenerState> = new Map();
+
+// Configuration
+const MAX_RETRIES = 10;
+const BASE_RETRY_DELAY = 1000; // 1 second
+const MAX_RETRY_DELAY = 30000; // 30 seconds
+
 /**
  * Sets up Firebase listeners for all collections
  * Called once on app initialization
  */
 export function initializeFirebaseListeners() {
-  console.log('[LISTENERS] Initializing Firebase real-time listeners');
+  console.log('[LISTENERS] Initializing Firebase real-time listeners with auto-reconnection');
   
-  // Only works if backend is connected to Firebase
-  // If using fallback mode, listeners won't fire but app still works
+  // Set up network online/offline detection for reconnection
+  window.addEventListener('online', handleNetworkOnline);
+  window.addEventListener('offline', handleNetworkOffline);
   
-  setupBuildingsListener();
-  setupEventsListener();
-  setupStaffListener();
-  setupFloorsListener();
-  setupRoomsListener();
-  setupWalkpathsListener();
-  setupDrivepathsListener();
-  setupIndoorNodesListener();
-  setupRoomPathsListener();
-  setupSettingsListener();
+  // Set up all listeners
+  createReconnectingListener('/api/listen/buildings', '/api/buildings');
+  createReconnectingListener('/api/listen/events', '/api/events');
+  createReconnectingListener('/api/listen/staff', '/api/staff');
+  createReconnectingListener('/api/listen/floors', '/api/floors');
+  createReconnectingListener('/api/listen/rooms', '/api/rooms');
+  createReconnectingListener('/api/listen/walkpaths', '/api/walkpaths');
+  createReconnectingListener('/api/listen/drivepaths', '/api/drivepaths');
+  createReconnectingListener('/api/listen/indoor-nodes', '/api/indoor-nodes');
+  createReconnectingListener('/api/listen/room-paths', '/api/room-paths');
+  createReconnectingListener('/api/listen/settings', '/api/settings');
+}
+
+/**
+ * Handle network coming back online - reconnect all listeners
+ */
+function handleNetworkOnline() {
+  console.log('[LISTENERS] Network online - reconnecting all listeners...');
+  listenerStates.forEach((state, key) => {
+    if (state.isActive && !state.eventSource) {
+      state.retryCount = 0; // Reset retry count on network recovery
+      reconnectListener(key);
+    }
+  });
+}
+
+/**
+ * Handle network going offline
+ */
+function handleNetworkOffline() {
+  console.log('[LISTENERS] Network offline - listeners will reconnect when online');
+}
+
+/**
+ * Creates a listener with auto-reconnection capability
+ */
+function createReconnectingListener(listenEndpoint: string, apiEndpoint: string) {
+  const key = listenEndpoint;
+  
+  // Initialize state
+  listenerStates.set(key, {
+    endpoint: listenEndpoint,
+    apiEndpoint: apiEndpoint,
+    eventSource: null,
+    retryCount: 0,
+    retryTimeout: null,
+    isActive: true
+  });
+  
+  // Connect
+  connectListener(key);
+  
+  // Add cleanup function
+  activeListeners.push(() => {
+    const state = listenerStates.get(key);
+    if (state) {
+      state.isActive = false;
+      if (state.retryTimeout) {
+        clearTimeout(state.retryTimeout);
+      }
+      if (state.eventSource) {
+        state.eventSource.close();
+      }
+    }
+  });
+}
+
+/**
+ * Connect a listener
+ */
+function connectListener(key: string) {
+  const state = listenerStates.get(key);
+  if (!state || !state.isActive) return;
+  
+  try {
+    const eventSource = new EventSource(state.endpoint);
+    state.eventSource = eventSource;
+    
+    eventSource.onopen = () => {
+      console.log(`[LISTENERS] Connected: ${state.apiEndpoint}`);
+      state.retryCount = 0; // Reset retry count on successful connection
+    };
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        updateCache(state.apiEndpoint, data);
+      } catch (err) {
+        console.error(`[LISTENERS] Failed to parse data for ${state.apiEndpoint}:`, err);
+      }
+    };
+    
+    eventSource.onerror = (error) => {
+      console.warn(`[LISTENERS] Error on ${state.apiEndpoint}:`, error);
+      eventSource.close();
+      state.eventSource = null;
+      
+      // Only retry if still active and online
+      if (state.isActive && navigator.onLine) {
+        scheduleReconnect(key);
+      }
+    };
+  } catch (err) {
+    console.warn(`[LISTENERS] Could not connect ${state.endpoint}:`, err);
+    if (state.isActive && navigator.onLine) {
+      scheduleReconnect(key);
+    }
+  }
+}
+
+/**
+ * Schedule a reconnection with exponential backoff
+ */
+function scheduleReconnect(key: string) {
+  const state = listenerStates.get(key);
+  if (!state || !state.isActive) return;
+  
+  if (state.retryCount >= MAX_RETRIES) {
+    console.warn(`[LISTENERS] Max retries reached for ${state.apiEndpoint}, giving up`);
+    return;
+  }
+  
+  // Exponential backoff with jitter
+  const delay = Math.min(
+    BASE_RETRY_DELAY * Math.pow(2, state.retryCount) + Math.random() * 1000,
+    MAX_RETRY_DELAY
+  );
+  
+  console.log(`[LISTENERS] Reconnecting ${state.apiEndpoint} in ${Math.round(delay/1000)}s (attempt ${state.retryCount + 1}/${MAX_RETRIES})`);
+  
+  state.retryTimeout = setTimeout(() => {
+    state.retryCount++;
+    reconnectListener(key);
+  }, delay);
+}
+
+/**
+ * Reconnect a listener
+ */
+function reconnectListener(key: string) {
+  const state = listenerStates.get(key);
+  if (!state || !state.isActive) return;
+  
+  // Close existing connection if any
+  if (state.eventSource) {
+    state.eventSource.close();
+    state.eventSource = null;
+  }
+  
+  // Clear any pending retry
+  if (state.retryTimeout) {
+    clearTimeout(state.retryTimeout);
+    state.retryTimeout = null;
+  }
+  
+  connectListener(key);
 }
 
 /**
@@ -59,239 +228,16 @@ function updateCache(endpoint: string, data: any) {
 }
 
 /**
- * Buildings listener
+ * Force reconnect all listeners (useful after app comes back to foreground)
  */
-function setupBuildingsListener() {
-  try {
-    // Call backend endpoint that watches Firebase and streams changes
-    const eventSource = new EventSource('/api/listen/buildings');
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        updateCache('/api/buildings', data);
-      } catch (err) {
-        console.error('[LISTENERS] Failed to parse buildings data:', err);
-      }
-    };
-    
-    eventSource.onerror = (error) => {
-      console.warn('[LISTENERS] Buildings listener error:', error);
-      eventSource.close();
-      // Fall back to polling on error
-    };
-    
-    activeListeners.push(() => eventSource.close());
-  } catch (err) {
-    console.warn('[LISTENERS] Could not set up buildings listener:', err);
-  }
-}
-
-/**
- * Events listener - Used by screensaver and events page
- */
-function setupEventsListener() {
-  try {
-    const eventSource = new EventSource('/api/listen/events');
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        updateCache('/api/events', data);
-      } catch (err) {
-        console.error('[LISTENERS] Failed to parse events data:', err);
-      }
-    };
-    
-    eventSource.onerror = () => eventSource.close();
-    activeListeners.push(() => eventSource.close());
-  } catch (err) {
-    console.warn('[LISTENERS] Could not set up events listener:', err);
-  }
-}
-
-/**
- * Staff listener
- */
-function setupStaffListener() {
-  try {
-    const eventSource = new EventSource('/api/listen/staff');
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        updateCache('/api/staff', data);
-      } catch (err) {
-        console.error('[LISTENERS] Failed to parse staff data:', err);
-      }
-    };
-    
-    eventSource.onerror = () => eventSource.close();
-    activeListeners.push(() => eventSource.close());
-  } catch (err) {
-    console.warn('[LISTENERS] Could not set up staff listener:', err);
-  }
-}
-
-/**
- * Floors listener
- */
-function setupFloorsListener() {
-  try {
-    const eventSource = new EventSource('/api/listen/floors');
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        updateCache('/api/floors', data);
-      } catch (err) {
-        console.error('[LISTENERS] Failed to parse floors data:', err);
-      }
-    };
-    
-    eventSource.onerror = () => eventSource.close();
-    activeListeners.push(() => eventSource.close());
-  } catch (err) {
-    console.warn('[LISTENERS] Could not set up floors listener:', err);
-  }
-}
-
-/**
- * Rooms listener
- */
-function setupRoomsListener() {
-  try {
-    const eventSource = new EventSource('/api/listen/rooms');
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        updateCache('/api/rooms', data);
-      } catch (err) {
-        console.error('[LISTENERS] Failed to parse rooms data:', err);
-      }
-    };
-    
-    eventSource.onerror = () => eventSource.close();
-    activeListeners.push(() => eventSource.close());
-  } catch (err) {
-    console.warn('[LISTENERS] Could not set up rooms listener:', err);
-  }
-}
-
-/**
- * Walkpaths listener
- */
-function setupWalkpathsListener() {
-  try {
-    const eventSource = new EventSource('/api/listen/walkpaths');
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        updateCache('/api/walkpaths', data);
-      } catch (err) {
-        console.error('[LISTENERS] Failed to parse walkpaths data:', err);
-      }
-    };
-    
-    eventSource.onerror = () => eventSource.close();
-    activeListeners.push(() => eventSource.close());
-  } catch (err) {
-    console.warn('[LISTENERS] Could not set up walkpaths listener:', err);
-  }
-}
-
-/**
- * Drivepaths listener
- */
-function setupDrivepathsListener() {
-  try {
-    const eventSource = new EventSource('/api/listen/drivepaths');
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        updateCache('/api/drivepaths', data);
-      } catch (err) {
-        console.error('[LISTENERS] Failed to parse drivepaths data:', err);
-      }
-    };
-    
-    eventSource.onerror = () => eventSource.close();
-    activeListeners.push(() => eventSource.close());
-  } catch (err) {
-    console.warn('[LISTENERS] Could not set up drivepaths listener:', err);
-  }
-}
-
-/**
- * Indoor nodes listener
- */
-function setupIndoorNodesListener() {
-  try {
-    const eventSource = new EventSource('/api/listen/indoor-nodes');
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        updateCache('/api/indoor-nodes', data);
-      } catch (err) {
-        console.error('[LISTENERS] Failed to parse indoor-nodes data:', err);
-      }
-    };
-    
-    eventSource.onerror = () => eventSource.close();
-    activeListeners.push(() => eventSource.close());
-  } catch (err) {
-    console.warn('[LISTENERS] Could not set up indoor-nodes listener:', err);
-  }
-}
-
-/**
- * Room paths listener
- */
-function setupRoomPathsListener() {
-  try {
-    const eventSource = new EventSource('/api/listen/room-paths');
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        updateCache('/api/room-paths', data);
-      } catch (err) {
-        console.error('[LISTENERS] Failed to parse room-paths data:', err);
-      }
-    };
-    
-    eventSource.onerror = () => eventSource.close();
-    activeListeners.push(() => eventSource.close());
-  } catch (err) {
-    console.warn('[LISTENERS] Could not set up room-paths listener:', err);
-  }
-}
-
-/**
- * Settings listener
- */
-function setupSettingsListener() {
-  try {
-    const eventSource = new EventSource('/api/listen/settings');
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        updateCache('/api/settings', data);
-      } catch (err) {
-        console.error('[LISTENERS] Failed to parse settings data:', err);
-      }
-    };
-    
-    eventSource.onerror = () => eventSource.close();
-    activeListeners.push(() => eventSource.close());
-  } catch (err) {
-    console.warn('[LISTENERS] Could not set up settings listener:', err);
-  }
+export function reconnectAllListeners() {
+  console.log('[LISTENERS] Force reconnecting all listeners...');
+  listenerStates.forEach((state, key) => {
+    if (state.isActive) {
+      state.retryCount = 0;
+      reconnectListener(key);
+    }
+  });
 }
 
 /**
@@ -299,6 +245,13 @@ function setupSettingsListener() {
  */
 export function cleanupFirebaseListeners() {
   console.log('[LISTENERS] Cleaning up Firebase listeners');
+  
+  // Remove network listeners
+  window.removeEventListener('online', handleNetworkOnline);
+  window.removeEventListener('offline', handleNetworkOffline);
+  
+  // Clean up all active listeners
   activeListeners.forEach(unsubscribe => unsubscribe());
   activeListeners.length = 0;
+  listenerStates.clear();
 }
