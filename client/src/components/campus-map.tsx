@@ -656,10 +656,11 @@ export default function CampusMap({
       if (building.polygon && Array.isArray(building.polygon) && building.polygon.length > 2) {
         const latlngs = building.polygon.map((p: any) => [p.lat, p.lng]);
         const polygonColor = (building as any).polygonColor || '#FACC15';
+        const polygonOpacity = (building as any).polygonOpacity || 0.3;
         const polygon = L.polygon(latlngs, {
           color: polygonColor,
           fillColor: polygonColor,
-          fillOpacity: 0.3,
+          fillOpacity: polygonOpacity,
           weight: 2
         }).addTo(mapInstanceRef.current);
 

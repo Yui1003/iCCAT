@@ -31,6 +31,7 @@ export default function AdminBuildings() {
     markerIcon: "building",
     polygon: null,
     polygonColor: "#FACC15",
+    polygonOpacity: 0.3,
   });
   const [departmentInput, setDepartmentInput] = useState("");
   const [mapClickEnabled, setMapClickEnabled] = useState(false);
@@ -88,6 +89,7 @@ export default function AdminBuildings() {
         markerIcon: building.markerIcon || "building",
         polygon: building.polygon || null,
         polygonColor: (building as any).polygonColor || "#FACC15",
+        polygonOpacity: (building as any).polygonOpacity || 0.3,
       });
     } else {
       setEditingBuilding(null);
@@ -102,6 +104,7 @@ export default function AdminBuildings() {
         markerIcon: "building",
         polygon: null,
         polygonColor: "#FACC15",
+        polygonOpacity: 0.3,
       });
     }
     setMapClickEnabled(false);
@@ -328,18 +331,39 @@ export default function AdminBuildings() {
                     Draw a polygon or rectangle to highlight the building's area on the map. This helps users identify the building's footprint.
                   </p>
                   
-                  <div className="mb-4">
-                    <Label htmlFor="polygonColor" className="text-sm">Polygon Color</Label>
-                    <div className="flex items-center gap-3 mt-2">
-                      <Input
-                        id="polygonColor"
-                        type="color"
-                        value={formData.polygonColor || "#FACC15"}
-                        onChange={(e) => setFormData({ ...formData, polygonColor: e.target.value })}
-                        data-testid="input-polygon-color"
-                        className="w-16 h-10 cursor-pointer"
-                      />
-                      <span className="text-sm text-muted-foreground">{formData.polygonColor || "#FACC15"}</span>
+                  <div className="mb-4 space-y-4">
+                    <div>
+                      <Label htmlFor="polygonColor" className="text-sm">Polygon Color</Label>
+                      <div className="flex items-center gap-3 mt-2">
+                        <Input
+                          id="polygonColor"
+                          type="color"
+                          value={formData.polygonColor || "#FACC15"}
+                          onChange={(e) => setFormData({ ...formData, polygonColor: e.target.value })}
+                          data-testid="input-polygon-color"
+                          className="w-16 h-10 cursor-pointer"
+                        />
+                        <span className="text-sm text-muted-foreground">{formData.polygonColor || "#FACC15"}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="polygonOpacity" className="text-sm">Polygon Opacity</Label>
+                      <div className="flex items-center gap-3 mt-2">
+                        <input
+                          id="polygonOpacity"
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={formData.polygonOpacity || 0.3}
+                          onChange={(e) => setFormData({ ...formData, polygonOpacity: parseFloat(e.target.value) })}
+                          data-testid="input-polygon-opacity"
+                          className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="text-sm text-muted-foreground w-12 text-right">{((formData.polygonOpacity || 0.3) * 100).toFixed(0)}%</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">0% = transparent, 100% = solid (fully opaque)</p>
                     </div>
                   </div>
 
