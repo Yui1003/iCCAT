@@ -1093,10 +1093,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const buildings = await storage.getBuildings();
       res.write(`data: ${JSON.stringify(buildings)}\n\n`);
-      // Connection stays open for future notifications
+      
+      const clientId = `buildings-${Date.now()}-${Math.random()}`;
+      listenerManager.registerClient('buildings', res, clientId);
     } catch (error) {
       console.error('[LISTENER] Buildings listener error:', error);
       res.write(`data: ${JSON.stringify([])}\n\n`);
+      res.end();
     }
   });
 
@@ -1108,9 +1111,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const events = await storage.getEvents();
       res.write(`data: ${JSON.stringify(events)}\n\n`);
+      
+      const clientId = `events-${Date.now()}-${Math.random()}`;
+      listenerManager.registerClient('events', res, clientId);
     } catch (error) {
       console.error('[LISTENER] Events listener error:', error);
       res.write(`data: ${JSON.stringify([])}\n\n`);
+      res.end();
     }
   });
 
@@ -1122,9 +1129,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const staff = await storage.getStaff();
       res.write(`data: ${JSON.stringify(staff)}\n\n`);
+      
+      const clientId = `staff-${Date.now()}-${Math.random()}`;
+      listenerManager.registerClient('staff', res, clientId);
     } catch (error) {
       console.error('[LISTENER] Staff listener error:', error);
       res.write(`data: ${JSON.stringify([])}\n\n`);
+      res.end();
     }
   });
 
@@ -1136,9 +1147,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const floors = await storage.getFloors();
       res.write(`data: ${JSON.stringify(floors)}\n\n`);
+      
+      const clientId = `floors-${Date.now()}-${Math.random()}`;
+      listenerManager.registerClient('floors', res, clientId);
     } catch (error) {
       console.error('[LISTENER] Floors listener error:', error);
       res.write(`data: ${JSON.stringify([])}\n\n`);
+      res.end();
     }
   });
 
@@ -1150,9 +1165,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const rooms = await storage.getRooms();
       res.write(`data: ${JSON.stringify(rooms)}\n\n`);
+      
+      const clientId = `rooms-${Date.now()}-${Math.random()}`;
+      listenerManager.registerClient('rooms', res, clientId);
     } catch (error) {
       console.error('[LISTENER] Rooms listener error:', error);
       res.write(`data: ${JSON.stringify([])}\n\n`);
+      res.end();
     }
   });
 
@@ -1164,9 +1183,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const walkpaths = await storage.getWalkpaths();
       res.write(`data: ${JSON.stringify(walkpaths)}\n\n`);
+      
+      const clientId = `walkpaths-${Date.now()}-${Math.random()}`;
+      listenerManager.registerClient('walkpaths', res, clientId);
     } catch (error) {
       console.error('[LISTENER] Walkpaths listener error:', error);
       res.write(`data: ${JSON.stringify([])}\n\n`);
+      res.end();
     }
   });
 
@@ -1178,9 +1201,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const drivepaths = await storage.getDrivepaths();
       res.write(`data: ${JSON.stringify(drivepaths)}\n\n`);
+      
+      const clientId = `drivepaths-${Date.now()}-${Math.random()}`;
+      listenerManager.registerClient('drivepaths', res, clientId);
     } catch (error) {
       console.error('[LISTENER] Drivepaths listener error:', error);
       res.write(`data: ${JSON.stringify([])}\n\n`);
+      res.end();
     }
   });
 
@@ -1192,9 +1219,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const indoorNodes = await storage.getIndoorNodes();
       res.write(`data: ${JSON.stringify(indoorNodes)}\n\n`);
+      
+      const clientId = `indoor-nodes-${Date.now()}-${Math.random()}`;
+      listenerManager.registerClient('indoor-nodes', res, clientId);
     } catch (error) {
       console.error('[LISTENER] Indoor-nodes listener error:', error);
       res.write(`data: ${JSON.stringify([])}\n\n`);
+      res.end();
     }
   });
 
@@ -1206,9 +1237,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const roomPaths = await storage.getRoomPaths();
       res.write(`data: ${JSON.stringify(roomPaths)}\n\n`);
+      
+      const clientId = `room-paths-${Date.now()}-${Math.random()}`;
+      listenerManager.registerClient('room-paths', res, clientId);
     } catch (error) {
       console.error('[LISTENER] Room-paths listener error:', error);
       res.write(`data: ${JSON.stringify([])}\n\n`);
+      res.end();
     }
   });
 
@@ -1220,9 +1255,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const settings = await storage.getSettings();
       res.write(`data: ${JSON.stringify(settings)}\n\n`);
+      
+      const clientId = `settings-${Date.now()}-${Math.random()}`;
+      listenerManager.registerClient('settings', res, clientId);
     } catch (error) {
       console.error('[LISTENER] Settings listener error:', error);
       res.write(`data: ${JSON.stringify([])}\n\n`);
+      res.end();
     }
   });
 
