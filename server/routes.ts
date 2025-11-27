@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { exec } from "child_process";
 import { storage } from "./storage";
+import { upload, uploadImageToFirebase } from "./upload";
 import { 
   listenerManager, 
   notifyBuildingsChange, 
@@ -46,6 +47,26 @@ const updateSettingSchema = z.object({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Image upload endpoint
+  app.post('/api/upload-image', upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
+      }
+
+      const type = req.body.type || 'general';
+      const id = req.body.id || 'unknown';
+
+      const url = await uploadImageToFirebase(req.file, type, id);
+      res.json({ url });
+    } catch (error) {
+      console.error('[UPLOAD] Error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Upload failed' 
+      });
+    }
+  });
+
   app.post('/api/admin/login', async (req, res) => {
     try {
       const { username, password } = loginSchema.parse(req.body);

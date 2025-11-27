@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
+import ImageUploadInput from "@/components/image-upload-input";
 import type { Event, InsertEvent, Building } from "@shared/schema";
 import { eventClassifications } from "@shared/schema";
 import { invalidateEndpointCache } from "@/lib/offline-data";
@@ -275,16 +276,14 @@ export default function AdminEvents() {
                   </p>
                 </div>
 
-                <div>
-                  <Label htmlFor="image">Image URL</Label>
-                  <Input
-                    id="image"
-                    value={formData.image || ""}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                    data-testid="input-event-image"
-                  />
-                </div>
+                <ImageUploadInput
+                  label="Event Photo"
+                  value={formData.image}
+                  onChange={(url) => setFormData({ ...formData, image: url })}
+                  type="event"
+                  id={editingEvent?.id || 'new'}
+                  testId="event-image"
+                />
 
                 <div className="flex gap-3 justify-end">
                   <Button

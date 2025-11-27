@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
 import SearchableSelect from "@/components/searchable-select";
+import ImageUploadInput from "@/components/image-upload-input";
 import type { Building, Floor } from "@shared/schema";
 import { poiTypes, canHaveFloorPlan, floorPlanEligibleTypes } from "@shared/schema";
 import FloorPlanViewer from "@/components/floor-plan-viewer";
@@ -156,15 +157,14 @@ export default function AdminFloorPlans() {
                       onChange={(e) => setFloorData({ ...floorData, floorName: e.target.value })}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="image">Floor Plan Image URL</Label>
-                    <Input
-                      id="image"
-                      value={floorData.image}
-                      onChange={(e) => setFloorData({ ...floorData, image: e.target.value })}
-                      placeholder="https://example.com/floorplan.png"
-                    />
-                  </div>
+                  <ImageUploadInput
+                    label="Floor Plan Image"
+                    value={floorData.image}
+                    onChange={(url) => setFloorData({ ...floorData, image: url })}
+                    type="floor"
+                    id={editingFloor?.id || 'new'}
+                    testId="floor-plan-image"
+                  />
                   <Button type="submit" className="w-full">{editingFloor ? 'Update Floor' : 'Create Floor'}</Button>
                 </form>
               </DialogContent>

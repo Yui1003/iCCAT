@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
+import ImageUploadInput from "@/components/image-upload-input";
 import type { Staff, InsertStaff, Building } from "@shared/schema";
 import { canHaveDepartments, canHaveStaff } from "@shared/schema";
 import { invalidateEndpointCache } from "@/lib/offline-data";
@@ -254,16 +255,14 @@ export default function AdminStaff() {
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="photo">Photo URL</Label>
-                  <Input
-                    id="photo"
-                    value={formData.photo || ""}
-                    onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
-                    placeholder="https://example.com/photo.jpg"
-                    data-testid="input-staff-photo"
-                  />
-                </div>
+                <ImageUploadInput
+                  label="Staff Photo"
+                  value={formData.photo}
+                  onChange={(url) => setFormData({ ...formData, photo: url })}
+                  type="staff"
+                  id={editingStaff?.id || 'new'}
+                  testId="staff-photo"
+                />
 
                 <div className="flex gap-3 justify-end">
                   <Button

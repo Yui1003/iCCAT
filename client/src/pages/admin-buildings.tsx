@@ -13,6 +13,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
 import CampusMap from "@/components/campus-map";
 import PolygonDrawingMap from "@/components/polygon-drawing-map";
+import ImageUploadInput from "@/components/image-upload-input";
 import type { Building, InsertBuilding, LatLng } from "@shared/schema";
 import { poiTypes, canHaveDepartments } from "@shared/schema";
 import { invalidateEndpointCache } from "@/lib/offline-data";
@@ -311,16 +312,14 @@ export default function AdminBuildings() {
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="image">Image URL</Label>
-                  <Input
-                    id="image"
-                    value={formData.image || ""}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                    data-testid="input-building-image"
-                  />
-                </div>
+                <ImageUploadInput
+                  label="Building Photo"
+                  value={formData.image}
+                  onChange={(url) => setFormData({ ...formData, image: url })}
+                  type="building"
+                  id={editingBuilding?.id || 'new'}
+                  testId="building-image"
+                />
 
                 <div>
                   <Label>
