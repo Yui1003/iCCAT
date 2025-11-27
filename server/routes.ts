@@ -341,6 +341,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertFloorSchema.parse(req.body);
       const floor = await storage.createFloor(data);
+      const floors = await storage.getFloors();
+      notifyFloorsChange(floors);
       res.status(201).json(floor);
     } catch (error) {
       res.status(400).json({ error: 'Invalid floor data' });
@@ -354,6 +356,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!floor) {
         return res.status(404).json({ error: 'Floor not found' });
       }
+      const floors = await storage.getFloors();
+      notifyFloorsChange(floors);
       res.json(floor);
     } catch (error) {
       res.status(400).json({ error: 'Invalid floor data' });
@@ -366,6 +370,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ error: 'Floor not found' });
       }
+      const floors = await storage.getFloors();
+      notifyFloorsChange(floors);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete floor' });
@@ -397,6 +403,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertRoomSchema.parse(req.body);
       const room = await storage.createRoom(data);
+      const rooms = await storage.getRooms();
+      notifyRoomsChange(rooms);
       res.status(201).json(room);
     } catch (error) {
       res.status(400).json({ error: 'Invalid room data' });
@@ -410,6 +418,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!room) {
         return res.status(404).json({ error: 'Room not found' });
       }
+      const rooms = await storage.getRooms();
+      notifyRoomsChange(rooms);
       res.json(room);
     } catch (error) {
       res.status(400).json({ error: 'Invalid room data' });
@@ -422,6 +432,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ error: 'Room not found' });
       }
+      const rooms = await storage.getRooms();
+      notifyRoomsChange(rooms);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete room' });
@@ -467,6 +479,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const staff = await storage.createStaff(data);
+      const staffList = await storage.getStaff();
+      notifyStaffChange(staffList);
       res.status(201).json(staff);
     } catch (error) {
       res.status(400).json({ error: 'Invalid staff data' });
@@ -494,6 +508,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!staff) {
         return res.status(404).json({ error: 'Staff member not found' });
       }
+      const staffList = await storage.getStaff();
+      notifyStaffChange(staffList);
       res.json(staff);
     } catch (error) {
       res.status(400).json({ error: 'Invalid staff data' });
@@ -506,6 +522,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ error: 'Staff member not found' });
       }
+      const staffList = await storage.getStaff();
+      notifyStaffChange(staffList);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete staff member' });
@@ -537,6 +555,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertEventSchema.parse(req.body);
       const event = await storage.createEvent(data);
+      const events = await storage.getEvents();
+      notifyEventsChange(events);
       res.status(201).json(event);
     } catch (error) {
       res.status(400).json({ error: 'Invalid event data' });
@@ -550,6 +570,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!event) {
         return res.status(404).json({ error: 'Event not found' });
       }
+      const events = await storage.getEvents();
+      notifyEventsChange(events);
       res.json(event);
     } catch (error) {
       res.status(400).json({ error: 'Invalid event data' });
@@ -562,6 +584,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ error: 'Event not found' });
       }
+      const events = await storage.getEvents();
+      notifyEventsChange(events);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete event' });
@@ -593,6 +617,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertWalkpathSchema.parse(req.body);
       const walkpath = await storage.createWalkpath(data);
+      const walkpaths = await storage.getWalkpaths();
+      notifyWalkpathsChange(walkpaths);
       res.status(201).json(walkpath);
     } catch (error) {
       res.status(400).json({ error: 'Invalid walkpath data' });
@@ -606,6 +632,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!walkpath) {
         return res.status(404).json({ error: 'Walkpath not found' });
       }
+      const walkpaths = await storage.getWalkpaths();
+      notifyWalkpathsChange(walkpaths);
       res.json(walkpath);
     } catch (error) {
       res.status(400).json({ error: 'Invalid walkpath data' });
@@ -618,6 +646,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ error: 'Walkpath not found' });
       }
+      const walkpaths = await storage.getWalkpaths();
+      notifyWalkpathsChange(walkpaths);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete walkpath' });
