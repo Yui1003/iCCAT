@@ -1,7 +1,13 @@
+/**
+ * ICCAT Service Worker v7
+ * Complete offline support with auto-caching of all assets
+ */
+
 const CACHE_NAME = 'iccat-v7';
 const DATA_CACHE_NAME = 'iccat-data-v7';
 const IMAGE_CACHE_NAME = 'iccat-images-v7';
 
+// Static assets to cache immediately
 const urlsToCache = [
   '/',
   '/index.html',
@@ -11,6 +17,7 @@ const urlsToCache = [
   'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Roboto+Mono:wght@400;500;700&display=swap'
 ];
 
+// API endpoints to cache for offline
 const apiEndpointsToCache = [
   '/api/buildings',
   '/api/walkpaths',
@@ -24,6 +31,9 @@ const apiEndpointsToCache = [
   '/api/settings/home_inactivity_timeout',
   '/api/settings/global_inactivity_timeout'
 ];
+
+// File extensions that should be cached for offline
+const CACHEABLE_EXTENSIONS = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.woff', '.woff2', '.ttf', '.ico'];
 
 function latLngToTile(lat, lng, zoom) {
   const n = Math.pow(2, zoom);
@@ -128,6 +138,23 @@ async function cacheBackgroundTiles() {
   console.log(`[SW-BG] Background tile caching complete: ${successCount} succeeded, ${failCount} failed`);
 }
 
+/**
+ * Check if a URL should be cached based on its extension
+ */
+function shouldCacheStaticAsset(url) {
+  const pathname = new URL(url).pathname.toLowerCase();
+  return CACHEABLE_EXTENSIONS.some(ext => pathname.endsWith(ext));
+}
+
+/**
+ * Check if this is a Vite-bundled asset (has hash in filename)
+ */
+function isViteBundledAsset(url) {
+  const pathname = new URL(url).pathname;
+  // Vite assets typically have patterns like: index-CCwASkC2.js, logo-abc123.png
+  return /\/assets\/.*-[a-zA-Z0-9]{8,}\.(js|css|png|jpg|jpeg|gif|svg|webp|woff|woff2)$/i.test(pathname);
+}
+
 self.addEventListener('install', (event) => {
   console.log('[SW] ========================================');
   console.log('[SW] OPTIMIZED INSTALL - Fast loading enabled');
@@ -149,14 +176,14 @@ self.addEventListener('install', (event) => {
           fetch(url)
             .then(response => {
               if (response.ok) {
-                console.log(`[SW] ✓ Cached API: ${url}`);
+                console.log(`[SW] Cached API: ${url}`);
                 return cache.put(url, response);
               } else {
-                console.warn(`[SW] ✗ Failed to cache ${url}: HTTP ${response.status}`);
+                console.warn(`[SW] Failed to cache ${url}: HTTP ${response.status}`);
               }
             })
             .catch(err => {
-              console.warn(`[SW] ✗ Failed to fetch ${url}:`, err.message);
+              console.warn(`[SW] Failed to fetch ${url}:`, err.message);
             })
         )
       ).then(results => {
@@ -185,14 +212,14 @@ self.addEventListener('install', (event) => {
       });
     }).then(() => {
       console.log('[SW] ========================================');
-      console.log('[SW] ✅ INSTALL COMPLETE - App ready to use!');
+      console.log('[SW] INSTALL COMPLETE - App ready to use!');
       console.log('[SW] ========================================');
       console.log('[SW] Background: Will cache extra tiles (zoom 16, 19) after activation');
       
       if (typeof localStorage !== 'undefined') {
         try {
           localStorage.setItem('sw_install_complete', 'true');
-          console.log('[SW] ✅ Client notified - app can proceed');
+          console.log('[SW] Client notified - app can proceed');
         } catch (e) {
           console.warn('[SW] Cannot access localStorage:', e);
         }
@@ -231,11 +258,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip admin routes - always fetch fresh
   if (url.pathname.startsWith('/admin/')) {
     event.respondWith(fetch(request));
     return;
   }
 
+  // Skip SSE/EventSource connections - these should not be cached
+  if (url.pathname.startsWith('/api/listen/')) {
+    return; // Let the browser handle SSE connections
+  }
+
+  // Handle proxied images - cache for offline
   if (url.pathname.startsWith('/api/proxy-image')) {
     event.respondWith(
       caches.open(IMAGE_CACHE_NAME).then((cache) => {
@@ -263,6 +297,7 @@ self.addEventListener('fetch', (event) => {
             })
             .catch((error) => {
               console.warn(`[SW] Proxied image fetch failed:`, error.message);
+              // Return transparent 1x1 PNG as fallback
               return new Response(
                 new Blob([new Uint8Array([
                   137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
@@ -278,6 +313,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Handle API requests - network first, cache fallback
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       caches.open(DATA_CACHE_NAME).then((cache) => {
@@ -306,6 +342,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Handle OpenStreetMap tiles - cache first for performance
   if (url.origin.includes('tile.openstreetmap.org')) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
@@ -325,6 +362,7 @@ self.addEventListener('fetch', (event) => {
               return response;
             })
             .catch((error) => {
+              // Return placeholder tile when offline
               return new Response(
                 new Blob([new Uint8Array([
                   137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
@@ -345,11 +383,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Handle index.html and root path
   if (url.pathname === '/' || url.pathname === '/index.html') {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
         return cache.match(request).then((response) => {
           if (response) {
+            // Return cached version but update in background
+            fetch(request).then((freshResponse) => {
+              if (freshResponse && freshResponse.status === 200) {
+                cache.put(request, freshResponse.clone());
+              }
+            }).catch(() => {});
             return response;
           }
           
@@ -388,6 +433,57 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Handle Vite-bundled assets (JS, CSS, images with hashes) - CACHE FIRST for performance
+  if (url.pathname.startsWith('/assets/') || isViteBundledAsset(request.url)) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          
+          return fetch(request).then((response) => {
+            if (response && response.status === 200) {
+              // Cache bundled assets for offline use
+              cache.put(request, response.clone());
+              console.log(`[SW] Cached bundled asset: ${url.pathname}`);
+            }
+            return response;
+          }).catch((error) => {
+            console.warn(`[SW] Failed to fetch bundled asset: ${url.pathname}`);
+            throw error;
+          });
+        });
+      })
+    );
+    return;
+  }
+
+  // Handle other static assets (fonts, images, etc.)
+  if (shouldCacheStaticAsset(request.url)) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          
+          return fetch(request).then((response) => {
+            if (response && response.status === 200) {
+              cache.put(request, response.clone());
+            }
+            return response;
+          }).catch((error) => {
+            console.warn(`[SW] Failed to fetch static asset: ${url.pathname}`);
+            throw error;
+          });
+        });
+      })
+    );
+    return;
+  }
+
+  // Handle all other requests - stale while revalidate
   const isHardRefresh = !globalThis.localStorage || localStorage.getItem('sw_install_complete') !== 'true';
   
   if (isHardRefresh) {
@@ -496,5 +592,19 @@ self.addEventListener('message', (event) => {
           .catch(() => {});
       });
     }
+  }
+  
+  // Force refresh all caches
+  if (event.data && event.data.type === 'REFRESH_CACHE') {
+    console.log('[SW] Refreshing all caches...');
+    caches.open(DATA_CACHE_NAME).then((cache) => {
+      apiEndpointsToCache.forEach(url => {
+        fetch(url).then(response => {
+          if (response.ok) {
+            cache.put(url, response);
+          }
+        }).catch(() => {});
+      });
+    });
   }
 });
