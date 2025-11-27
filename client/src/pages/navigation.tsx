@@ -2626,11 +2626,34 @@ export default function Navigation() {
               routePhases={route?.phases}
               hidePolygonsInNavigation={!!route}
               waypointsData={
-                route && waypoints.length > 0
-                  ? waypoints
-                      .map(id => buildings.find(b => b.id === id))
-                      .filter((b): b is Building => !!b)
-                      .map(b => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng }))
+                route && (waypoints.length > 0 || (route.phases && route.phases.length > 1))
+                  ? [
+                      // User-specified waypoints
+                      ...waypoints
+                        .map(id => buildings.find(b => b.id === id))
+                        .filter((b): b is Building => !!b)
+                        .map(b => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng })),
+                      // Extract intermediate waypoints from multi-phase routes (e.g., car parking)
+                      ...(route.phases && route.phases.length > 1
+                        ? route.phases.slice(0, -1).map((phase, index) => {
+                            const phaseEndpoint = phase.polyline[phase.polyline.length - 1];
+                            // Try to find building at this location
+                            const building = buildings.find(b => 
+                              b.lat === phaseEndpoint.lat && b.lng === phaseEndpoint.lng
+                            );
+                            if (building) {
+                              return { id: building.id, name: building.name, lat: building.lat, lng: building.lng };
+                            }
+                            // Fallback: generic waypoint name based on phase
+                            return {
+                              id: `waypoint-${index}`,
+                              name: phase.phaseName || `Waypoint ${index + 1}`,
+                              lat: phaseEndpoint.lat,
+                              lng: phaseEndpoint.lng
+                            };
+                          })
+                        : [])
+                    ]
                   : []
               }
             />
