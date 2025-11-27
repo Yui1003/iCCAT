@@ -123,16 +123,14 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: networkFirstQueryFn,
-      // REAL-TIME COST-OPTIMIZED: Smart refetch intervals by data type
-      // Critical user-facing data: 5 seconds (events, staff, buildings)
-      // Less critical data: 30 seconds (paths, floors, rooms)
-      // Rarely changing admin data: 60 seconds (settings, analytics)
-      // See getRefetchInterval() to customize per endpoint
-      refetchInterval: 5000, // REAL-TIME: Refetch every 5 seconds for active pages
-      refetchIntervalInBackground: false, // Don't refetch if app/tab is hidden
-      refetchOnWindowFocus: true, // Refetch when user returns to window
-      refetchOnReconnect: true, // Refetch immediately when internet reconnects
-      staleTime: 2000, // Mark data stale after 2 seconds - shows real-time feel
+      // FIREBASE LISTENER OPTIMIZATION: No polling needed
+      // Firebase listeners notify us of changes instantly (see firebase-listeners.ts)
+      // This replaces the old 5-second refetch interval entirely
+      refetchInterval: false, // DISABLED: Using Firebase listeners instead
+      refetchIntervalInBackground: false,
+      refetchOnWindowFocus: true, // Still refetch on focus for stale data
+      refetchOnReconnect: true, // Refetch when internet reconnects
+      staleTime: 60 * 1000, // 1 minute: Reuse cache longer (listeners keep it fresh)
       retry: 1,
     },
     mutations: {
