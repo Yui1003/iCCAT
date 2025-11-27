@@ -200,6 +200,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Cache-first strategy for map tiles
   if (url.origin.includes('tile.openstreetmap.org')) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
@@ -238,6 +239,64 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Helper function to check if URL is an image
+  function isImageUrl(urlString) {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico'];
+    const imageKeywords = ['image', 'photo', 'picture', 'floor', 'plan', 'avatar'];
+    const urlLower = urlString.toLowerCase();
+    
+    // Check file extensions
+    if (imageExtensions.some(ext => urlLower.includes(ext))) {
+      return true;
+    }
+    
+    // Check URL keywords that typically indicate images
+    if (imageKeywords.some(keyword => urlLower.includes(keyword))) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  // Cache-first strategy for images (staff photos, building images, floor plans, etc.)
+  if (isImageUrl(url.pathname) || isImageUrl(url.href)) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(request).then((response) => {
+          if (response) {
+            console.log(`[SW] Image served from cache: ${url.pathname}`);
+            return response;
+          }
+          
+          // Not in cache, try network
+          return fetch(request)
+            .then((response) => {
+              if (response && response.status === 200) {
+                const responseToCache = response.clone();
+                cache.put(request, responseToCache);
+                console.log(`[SW] Image cached: ${url.pathname}`);
+              }
+              return response;
+            })
+            .catch((error) => {
+              console.warn(`[SW] Image fetch failed (offline): ${url.pathname}`, error.message);
+              // Return transparent 1x1 PNG placeholder for images that fail offline
+              return new Response(
+                new Blob([new Uint8Array([
+                  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
+                  0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0,
+                  0, 10, 73, 68, 65, 84, 8, 29, 1, 0, 0, 255, 255, 0, 0, 0, 0, 0, 1,
+                  0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130
+                ])], { type: 'image/png' })
+              );
+            });
+        });
+      })
+    );
+    return;
+  }
+
+  // Default: Network-first for other resources, cache as fallback
   event.respondWith(
     caches.match(request)
       .then((response) => {
@@ -257,6 +316,10 @@ self.addEventListener('fetch', (event) => {
 
           return response;
         });
+      })
+      .catch(() => {
+        // If network fails and no cache, return cached version if available
+        return caches.match(request);
       })
   );
 });
