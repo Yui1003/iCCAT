@@ -1,0 +1,158 @@
+16Tracking Prevention blocked access to storage for <URL>.
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+react-dom.development.js:29895 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+firebase-client.ts:11 [FIREBASE] Offline support initialized via Service Worker and React Query
+firebase-listeners.ts:18 [LISTENERS] Initializing Firebase real-time listeners
+data-prefetcher.ts:22 [PREFETCH] Starting data prefetch for all collections...
+cache-verification-loader.tsx:33 [CACHE-LOADER] Waiting for Service Worker install to complete...
+device-id.ts:16 [DEVICE-ID] Using existing device ID: iccat-kiosk-mihbqyn5-6ts0xo
+use-kiosk-uptime.ts:15 [UPTIME] Kiosk session started with device ID: iccat-kiosk-mihbqyn5-6ts0xo
+(index):162 Found cache: iccat-v6
+(index):162 Found cache: iccat-data-v6
+(index):162 Found cache: iccat-images-v6
+queryClient.ts:58 [QUERY] Network-first: Fetched fresh /api/floors from server
+queryClient.ts:58 [QUERY] Network-first: Fetched fresh /api/events from server
+queryClient.ts:58 [QUERY] Network-first: Fetched fresh /api/staff from server
+queryClient.ts:58 [QUERY] Network-first: Fetched fresh /api/buildings from server
+queryClient.ts:58 [QUERY] Network-first: Fetched fresh /api/walkpaths from server
+queryClient.ts:77 [QUERY] Network failed for /api/settings, falling back to cache...
+queryClient.ts:85 [QUERY] Retrieved /api/settings from CacheStorage (offline)
+queryClient.ts:90  [QUERY] CacheStorage error for /api/settings: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+networkFirstQueryFn @ queryClient.ts:90
+await in networkFirstQueryFn
+fetchFn @ query.ts:429
+run @ retryer.ts:153
+start @ retryer.ts:218
+fetch @ query.ts:540
+fetchQuery @ queryClient.ts:353
+prefetchQuery @ queryClient.ts:365
+(anonymous) @ data-prefetcher.ts:25
+prefetchAllData @ data-prefetcher.ts:24
+(anonymous) @ main.tsx:17
+queryClient.ts:58 [QUERY] Network-first: Fetched fresh /api/rooms from server
+queryClient.ts:58 [QUERY] Network-first: Fetched fresh /api/indoor-nodes from server
+queryClient.ts:58 [QUERY] Network-first: Fetched fresh /api/drivepaths from server
+queryClient.ts:58 [QUERY] Network-first: Fetched fresh /api/room-paths from server
+firebase-listeners.ts:39 [LISTENERS] Firebase change detected: /api/events
+firebase-listeners.ts:39 [LISTENERS] Firebase change detected: /api/staff
+firebase-listeners.ts:39 [LISTENERS] Firebase change detected: /api/buildings
+firebase-listeners.ts:39 [LISTENERS] Firebase change detected: /api/floors
+firebase-listeners.ts:39 [LISTENERS] Firebase change detected: /api/rooms
+firebase-listeners.ts:39 [LISTENERS] Firebase change detected: /api/walkpaths
+Access to fetch at 'https://iimtu.edu.in/blog/wp-content/uploads/2023/08/Untitled-1.jpg' from origin 'https://0931385d-d82d-4bc4-b6fa-5664966dc5a0-00-j3apcfm2mmjs.janeway.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+sw.js?1764252412042:397  [SW] Image fetch failed (offline): /blog/wp-content/uploads/2023/08/Untitled-1.jpg Failed to fetch
+(anonymous) @ sw.js?1764252412042:397
+Promise.catch
+(anonymous) @ sw.js?1764252412042:396
+Promise.then
+(anonymous) @ sw.js?1764252412042:377
+Promise.then
+(anonymous) @ sw.js?1764252412042:376
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /image-photo/success-teamwork-joint-achievement-goal-600nw-2505270505.jpg
+Access to fetch at 'https://slidemodel.com/wp-content/uploads/00_thesis-defense-presentation-cover.png' from origin 'https://0931385d-d82d-4bc4-b6fa-5664966dc5a0-00-j3apcfm2mmjs.janeway.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+sw.js?1764252412042:397  [SW] Image fetch failed (offline): /wp-content/uploads/00_thesis-defense-presentation-cover.png Failed to fetch
+(anonymous) @ sw.js?1764252412042:397
+Promise.catch
+(anonymous) @ sw.js?1764252412042:396
+Promise.then
+(anonymous) @ sw.js?1764252412042:377
+Promise.then
+(anonymous) @ sw.js?1764252412042:376
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /v/t1.15752-9/574621210_806305078679885_5065534998734207607_n.jpg
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /id/1279897409/photo/stressed-male-student-sitting-with-book-at-desk.jpg
+Access to fetch at 'https://graphicsfamily.com/wp-content/uploads/edd/2021/01/Beautiful-certificate-of-achievement-template-scaled.jpg' from origin 'https://0931385d-d82d-4bc4-b6fa-5664966dc5a0-00-j3apcfm2mmjs.janeway.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+sw.js?1764252412042:397  [SW] Image fetch failed (offline): /wp-content/uploads/edd/2021/01/Beautiful-certificate-of-achievement-template-scaled.jpg Failed to fetch
+(anonymous) @ sw.js?1764252412042:397
+Promise.catch
+(anonymous) @ sw.js?1764252412042:396
+Promise.then
+(anonymous) @ sw.js?1764252412042:377
+Promise.then
+(anonymous) @ sw.js?1764252412042:376
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /image-photo/success-teamwork-joint-achievement-goal-600nw-2505270505.jpg
+Access to fetch at 'https://slidemodel.com/wp-content/uploads/00_thesis-defense-presentation-cover.png' from origin 'https://0931385d-d82d-4bc4-b6fa-5664966dc5a0-00-j3apcfm2mmjs.janeway.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+sw.js?1764252412042:397  [SW] Image fetch failed (offline): /wp-content/uploads/00_thesis-defense-presentation-cover.png Failed to fetch
+(anonymous) @ sw.js?1764252412042:397
+Promise.catch
+(anonymous) @ sw.js?1764252412042:396
+Promise.then
+(anonymous) @ sw.js?1764252412042:377
+Promise.then
+(anonymous) @ sw.js?1764252412042:376
+Access to fetch at 'https://iimtu.edu.in/blog/wp-content/uploads/2023/08/Untitled-1.jpg' from origin 'https://0931385d-d82d-4bc4-b6fa-5664966dc5a0-00-j3apcfm2mmjs.janeway.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+sw.js?1764252412042:397  [SW] Image fetch failed (offline): /blog/wp-content/uploads/2023/08/Untitled-1.jpg Failed to fetch
+(anonymous) @ sw.js?1764252412042:397
+Promise.catch
+(anonymous) @ sw.js?1764252412042:396
+Promise.then
+(anonymous) @ sw.js?1764252412042:377
+Promise.then
+(anonymous) @ sw.js?1764252412042:376
+use-kiosk-uptime.ts:41 [UPTIME] Heartbeat: {total: 11, successful: 10, uptime: '90.9%'}
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /v/t1.15752-9/574621210_806305078679885_5065534998734207607_n.jpg
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /id/1279897409/photo/stressed-male-student-sitting-with-book-at-desk.jpg
+Access to fetch at 'https://graphicsfamily.com/wp-content/uploads/edd/2021/01/Beautiful-certificate-of-achievement-template-scaled.jpg' from origin 'https://0931385d-d82d-4bc4-b6fa-5664966dc5a0-00-j3apcfm2mmjs.janeway.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+sw.js?1764252412042:397  [SW] Image fetch failed (offline): /wp-content/uploads/edd/2021/01/Beautiful-certificate-of-achievement-template-scaled.jpg Failed to fetch
+(anonymous) @ sw.js?1764252412042:397
+Promise.catch
+(anonymous) @ sw.js?1764252412042:396
+Promise.then
+(anonymous) @ sw.js?1764252412042:377
+Promise.then
+(anonymous) @ sw.js?1764252412042:376
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /image-photo/success-teamwork-joint-achievement-goal-600nw-2505270505.jpg
+Access to fetch at 'https://slidemodel.com/wp-content/uploads/00_thesis-defense-presentation-cover.png' from origin 'https://0931385d-d82d-4bc4-b6fa-5664966dc5a0-00-j3apcfm2mmjs.janeway.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+sw.js?1764252412042:397  [SW] Image fetch failed (offline): /wp-content/uploads/00_thesis-defense-presentation-cover.png Failed to fetch
+(anonymous) @ sw.js?1764252412042:397
+Promise.catch
+(anonymous) @ sw.js?1764252412042:396
+Promise.then
+(anonymous) @ sw.js?1764252412042:377
+Promise.then
+(anonymous) @ sw.js?1764252412042:376
+Access to fetch at 'https://iimtu.edu.in/blog/wp-content/uploads/2023/08/Untitled-1.jpg' from origin 'https://0931385d-d82d-4bc4-b6fa-5664966dc5a0-00-j3apcfm2mmjs.janeway.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+sw.js?1764252412042:397  [SW] Image fetch failed (offline): /blog/wp-content/uploads/2023/08/Untitled-1.jpg Failed to fetch
+(anonymous) @ sw.js?1764252412042:397
+Promise.catch
+(anonymous) @ sw.js?1764252412042:396
+Promise.then
+(anonymous) @ sw.js?1764252412042:377
+Promise.then
+(anonymous) @ sw.js?1764252412042:376
+use-kiosk-uptime.ts:41 [UPTIME] Heartbeat: {total: 11, successful: 10, uptime: '90.9%'}
+use-kiosk-uptime.ts:41 [UPTIME] Heartbeat: {total: 11, successful: 10, uptime: '90.9%'}
+cache-verification-loader.tsx:54  [CACHE-LOADER] Service Worker install timeout (>60s) - proceeding anyway
+verifyCache @ cache-verification-loader.tsx:54
+await in verifyCache
+(anonymous) @ cache-verification-loader.tsx:204
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+cache-verification-loader.tsx:63 [CACHE-LOADER] Service Worker is registered
+cache-verification-loader.tsx:86 [CACHE-LOADER] Static cache: verified
+cache-verification-loader.tsx:97 [CACHE-LOADER] Data cache: 18 items cached
+cache-verification-loader.tsx:111 [CACHE-LOADER] Map tiles: 248 tiles cached
+cache-verification-loader.tsx:138 [CACHE-LOADER] API endpoints cached: (7) [true, true, true, true, true, true, true]
+cache-verification-loader.tsx:142 [CACHE-LOADER] Verifying image cache...
+cache-verification-loader.tsx:147 [CACHE-LOADER] Found 81 cached images
+cache-verification-loader.tsx:168 [CACHE-LOADER] Waiting for Service Worker image caching to complete...
+cache-verification-loader.tsx:182 [CACHE-LOADER] ✓ Images are being cached (81 so far)
+cache-verification-loader.tsx:197 [CACHE-LOADER] ✅ Cache verification complete - ready for offline use!
+App.tsx:69 [APP] Cache verification complete - showing router
