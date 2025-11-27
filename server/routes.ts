@@ -15,6 +15,7 @@ import {
   insertSavedRouteSchema,
   insertIndoorNodeSchema,
   insertRoomPathSchema,
+  insertKioskUptimeSchema,
   canHaveStaff,
   type POIType
 } from "@shared/schema";

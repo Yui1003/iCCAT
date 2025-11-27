@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, jsonb, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, jsonb, timestamp, pgEnum, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -432,6 +432,24 @@ export const roomPaths = pgTable("room_paths", {
 export const insertRoomPathSchema = createInsertSchema(roomPaths).omit({ id: true });
 export type InsertRoomPath = z.infer<typeof insertRoomPathSchema>;
 export type RoomPath = typeof roomPaths.$inferSelect;
+
+// Kiosk Uptime table - tracks uptime per device
+export const kioskUptimes = pgTable("kiosk_uptimes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  deviceId: varchar("device_id").notNull().unique(), // Unique per kiosk
+  sessionStart: timestamp("session_start").notNull().defaultNow(),
+  sessionEnd: timestamp("session_end"), // null = still active
+  totalRequests: integer("total_requests").notNull().default(0),
+  successfulRequests: integer("successful_requests").notNull().default(0),
+  uptimePercentage: real("uptime_percentage").notNull().default(100),
+  lastHeartbeat: timestamp("last_heartbeat").notNull().defaultNow(),
+  appVersion: text("app_version"),
+  isActive: boolean("is_active", { mode: 'boolean' }).notNull().default(true),
+});
+
+export const insertKioskUptimeSchema = createInsertSchema(kioskUptimes).omit({ id: true, sessionStart: true, lastHeartbeat: true });
+export type InsertKioskUptime = z.infer<typeof insertKioskUptimeSchema>;
+export type KioskUptime = typeof kioskUptimes.$inferSelect;
 
 // TypeScript interface for room path waypoints
 export interface RoomPathWaypoint {
