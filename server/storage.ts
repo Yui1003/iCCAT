@@ -15,7 +15,8 @@ import type {
   Feedback, InsertFeedback,
   SavedRoute, InsertSavedRoute,
   IndoorNode, InsertIndoorNode,
-  RoomPath, InsertRoomPath
+  RoomPath, InsertRoomPath,
+  KioskUptime, InsertKioskUptime
 } from "@shared/schema";
 import type { AnalyticsEvent, AnalyticsSummary } from "@shared/analytics-schema";
 import { AnalyticsEventType } from "@shared/analytics-schema";
@@ -144,6 +145,13 @@ export interface IStorage {
   createRoomPath(path: InsertRoomPath): Promise<RoomPath>;
   updateRoomPath(id: string, path: InsertRoomPath): Promise<RoomPath | undefined>;
   deleteRoomPath(id: string): Promise<boolean>;
+
+  // Kiosk Uptime - for tracking per-device uptime
+  getKioskUptime(deviceId: string): Promise<KioskUptime | undefined>;
+  startKioskSession(deviceId: string, appVersion?: string): Promise<KioskUptime>;
+  updateKioskHeartbeat(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined>;
+  endKioskSession(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined>;
+  getAllKioskUptimes(): Promise<KioskUptime[]>;
 }
 
 export class DatabaseStorage implements IStorage {

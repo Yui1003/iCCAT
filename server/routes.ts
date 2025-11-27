@@ -817,7 +817,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           departments: null,
           image: null,
           markerIcon: null,
-          polygon: null
+          polygon: null,
+          polygonColor: null,
+          polygonOpacity: null
         };
       } else {
         startBuilding = await storage.getBuilding(startId);

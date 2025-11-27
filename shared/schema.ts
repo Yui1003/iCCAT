@@ -444,7 +444,7 @@ export const kioskUptimes = pgTable("kiosk_uptimes", {
   uptimePercentage: real("uptime_percentage").notNull().default(100),
   lastHeartbeat: timestamp("last_heartbeat").notNull().defaultNow(),
   appVersion: text("app_version"),
-  isActive: boolean("is_active", { mode: 'boolean' }).notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
 });
 
 export const insertKioskUptimeSchema = createInsertSchema(kioskUptimes).omit({ id: true, sessionStart: true, lastHeartbeat: true });
