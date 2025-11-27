@@ -11,87 +11,6 @@ import { queryClient } from './queryClient';
 const activeListeners: (() => void)[] = [];
 
 /**
- * Extract all image URLs from data object recursively
- */
-function extractImageUrls(data: any, urls: Set<string> = new Set()): Set<string> {
-  if (!data) return urls;
-
-  if (Array.isArray(data)) {
-    data.forEach(item => extractImageUrls(item, urls));
-  } else if (typeof data === 'object') {
-    // Common image field names across all collections
-    const imageFields = ['image', 'photo', 'floorPlanImage', 'imageUrl', 'photoUrl', 'picture', 'icon', 'avatar'];
-    
-    for (const field of imageFields) {
-      if (field in data && typeof data[field] === 'string' && data[field]) {
-        const url = data[field].trim();
-        // Cache actual URLs (http/https, //, or /)
-        if (url.startsWith('http') || url.startsWith('//') || url.startsWith('/')) {
-          urls.add(url);
-        }
-      }
-    }
-    
-    // Recursively check nested objects
-    for (const key in data) {
-      if (typeof data[key] === 'object' && data[key] !== null) {
-        extractImageUrls(data[key], urls);
-      }
-    }
-  }
-
-  return urls;
-}
-
-/**
- * Pre-cache images in background (non-blocking)
- * Called automatically when real-time data arrives with image URLs
- */
-async function precacheImagesInBackground(imageUrls: Set<string>, collection: string = 'data') {
-  if (imageUrls.size === 0) return;
-
-  console.log(`[LISTENERS] ⏳ Auto-caching ${imageUrls.size} images from ${collection} (background)...`);
-
-  try {
-    const cache = await caches.open('iccat-images-v6');
-    let successCount = 0;
-    let failCount = 0;
-    
-    // Batch fetch and cache all images
-    Array.from(imageUrls).forEach((url, index) => {
-      fetch(url, { 
-        cache: 'no-store',
-        mode: 'cors',
-        credentials: 'omit'
-      })
-        .then(response => {
-          if (response.ok) {
-            cache.put(url, response.clone());
-            successCount++;
-            if (index < 3 || index % 5 === 0) {
-              console.log(`[LISTENERS] ✓ Auto-cached: ${url.split('/').pop() || url}`);
-            }
-          } else {
-            failCount++;
-            console.warn(`[LISTENERS] ✗ Failed to cache ${url}: HTTP ${response.status}`);
-          }
-        })
-        .catch(err => {
-          failCount++;
-          console.warn(`[LISTENERS] ✗ Failed to fetch ${url}:`, err.message);
-        });
-    });
-    
-    // Log summary after a delay
-    setTimeout(() => {
-      console.log(`[LISTENERS] 📦 Auto-cache summary for ${collection}: ${successCount} cached, ${failCount} failed`);
-    }, 1000);
-  } catch (err) {
-    console.warn('[LISTENERS] Error pre-caching images:', err);
-  }
-}
-
-/**
  * Sets up Firebase listeners for all collections
  * Called once on app initialization
  */
@@ -115,43 +34,19 @@ export function initializeFirebaseListeners() {
 
 /**
  * Helper: Updates React Query cache when data changes
- * Also automatically caches ALL data (buildings, events, staff, etc.) for offline use
  */
 function updateCache(endpoint: string, data: any) {
-  // Extract collection name from endpoint (e.g., '/api/staff' -> 'staff')
-  const collection = endpoint.split('/').pop() || 'unknown';
-  const itemCount = Array.isArray(data) ? data.length : 1;
-  
-  console.log(`[LISTENERS] 📡 Real-time update: ${collection} (${itemCount} items)`);
-  
-  // Update React Query cache (for immediate UI updates)
+  console.log(`[LISTENERS] Firebase change detected: ${endpoint}`);
   queryClient.setQueryData([endpoint], data);
   
-  // AUTO-CACHE ALL DATA to CacheStorage for offline use (non-blocking)
+  // Update CacheStorage for offline
   if (window.caches) {
-    caches.open('iccat-data-v6')
-      .then(cache => {
-        const response = new Response(JSON.stringify(data), {
-          headers: { 
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache'
-          }
-        });
-        return cache.put(endpoint, response)
-          .then(() => {
-            console.log(`[LISTENERS] 💾 Cached offline: ${collection} (${itemCount} items)`);
-          });
-      })
-      .catch(err => {
-        console.warn(`[LISTENERS] ⚠️ Failed to cache ${collection}:`, err.message);
+    caches.open('iccat-data-v6').then(cache => {
+      const response = new Response(JSON.stringify(data), {
+        headers: { 'Content-Type': 'application/json' }
       });
-  }
-
-  // AUTO-PRECACHE any images from this data in background (non-blocking)
-  // This works for ALL CRUD operations: CREATE, UPDATE, DELETE
-  const imageUrls = extractImageUrls(data);
-  if (imageUrls.size > 0) {
-    precacheImagesInBackground(imageUrls, collection);
+      cache.put(endpoint, response);
+    });
   }
 }
 

@@ -4,8 +4,8 @@
  * during the loading phase to ensure offline image availability
  */
 
-const IMAGE_CACHE_NAME = 'iccat-images-v6';
-const DATA_CACHE_NAME = 'iccat-data-v6';
+const CACHE_NAME = 'iccat-v5';
+const DATA_CACHE_NAME = 'iccat-data-v5';
 
 export interface ImagePrecacheStatus {
   extracted: number;
@@ -97,11 +97,11 @@ export async function precacheApiImages(): Promise<ImagePrecacheStatus> {
     // Batch fetch and cache all images
     console.log('[IMAGE-PRECACHE] Pre-caching images...');
     
-    const cache = await caches.open(IMAGE_CACHE_NAME);
+    const cache = await caches.open(CACHE_NAME);
     const imageArray = Array.from(imageUrls);
 
     // Batch fetch with Promise.allSettled to handle failures gracefully
-    const fetchPromises = imageArray.map((url, index) =>
+    const fetchPromises = imageArray.map(url =>
       fetch(url, { 
         cache: 'no-store',
         mode: 'cors'
@@ -109,22 +109,17 @@ export async function precacheApiImages(): Promise<ImagePrecacheStatus> {
         .then(response => {
           if (response.ok) {
             // Cache successful responses
-            if (index < 5 || index % 10 === 0) {
-              console.log(`[IMAGE-PRECACHE] ✓ Cached image ${index + 1}/${imageArray.length}: ${url}`);
-            }
             return cache.put(url, response.clone()).then(() => {
               status.cached++;
               return { success: true, url };
             });
           } else {
             status.failed++;
-            console.warn(`[IMAGE-PRECACHE] ✗ Failed to cache image ${url}: HTTP ${response.status}`);
             return { success: false, url, status: response.status };
           }
         })
         .catch(err => {
           status.failed++;
-          console.warn(`[IMAGE-PRECACHE] ✗ Failed to fetch image ${url}:`, err.message);
           return { success: false, url, error: err.message };
         })
     );
@@ -147,7 +142,7 @@ export async function precacheApiImages(): Promise<ImagePrecacheStatus> {
  */
 export async function getImageCacheStats(): Promise<{ count: number; size: number }> {
   try {
-    const cache = await caches.open(IMAGE_CACHE_NAME);
+    const cache = await caches.open(CACHE_NAME);
     const requests = await cache.keys();
     
     // Filter to image requests (rough heuristic)
