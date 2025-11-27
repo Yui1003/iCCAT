@@ -375,6 +375,11 @@ self.addEventListener('fetch', (event) => {
     const imageKeywords = ['image', 'photo', 'picture', 'floor', 'plan', 'avatar'];
     const urlLower = urlString.toLowerCase();
     
+    // Check for Firebase Storage URLs (includes all image types)
+    if (urlLower.includes('firebasestorage.googleapis.com') || urlLower.includes('storage.googleapis.com')) {
+      return true;
+    }
+    
     // Check file extensions
     if (imageExtensions.some(ext => urlLower.includes(ext))) {
       return true;
@@ -446,7 +451,16 @@ self.addEventListener('fetch', (event) => {
   if (isImageUrl(url.pathname) || isImageUrl(url.href)) {
     event.respondWith(
       caches.open(IMAGE_CACHE_NAME).then((cache) => {
-        return cache.match(request).then((response) => {
+        // For Firebase URLs with tokens, strip query params for cache matching
+        let cacheKey = request;
+        const isFirebaseUrl = url.href.includes('firebasestorage.googleapis.com') || url.href.includes('storage.googleapis.com');
+        
+        if (isFirebaseUrl && url.search) {
+          const baseUrl = url.href.split('?')[0];
+          cacheKey = new Request(baseUrl, { method: 'GET' });
+        }
+        
+        return cache.match(cacheKey).then((response) => {
           if (response) {
             console.log(`[SW] Image served from pre-cached: ${url.pathname}`);
             return response;
@@ -455,13 +469,14 @@ self.addEventListener('fetch', (event) => {
           // Not in image cache, try network and cache it
           return fetch(request, { 
             cache: 'no-store',
-            mode: 'cors'
+            mode: 'cors',
+            credentials: 'omit'
           })
             .then((response) => {
-              if (response && response.status === 200 && url.protocol === 'http:' || url.protocol === 'https:') {
+              if (response && response.status === 200 && (url.protocol === 'http:' || url.protocol === 'https:')) {
                 try {
                   const responseToCache = response.clone();
-                  cache.put(request, responseToCache);
+                  cache.put(cacheKey, responseToCache);
                   console.log(`[SW] Image cached on-demand: ${url.pathname}`);
                 } catch (cacheError) {
                   console.warn(`[SW] Failed to cache image: ${url.pathname}`, cacheError.message);
