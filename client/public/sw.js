@@ -428,10 +428,12 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Default: Network-first for other resources, cache as fallback
+  // For navigation requests (HTML pages), always fallback to index.html for SPA
   event.respondWith(
     caches.match(request)
       .then((response) => {
         if (response) {
+          console.log(`[SW] Served from cache: ${url.pathname}`);
           return response;
         }
 
@@ -448,9 +450,18 @@ self.addEventListener('fetch', (event) => {
           return response;
         });
       })
-      .catch(() => {
-        // If network fails and no cache, return cached version if available
-        return caches.match(request);
+      .catch((error) => {
+        // If network fails, check if this is a navigation request
+        const requestURL = new URL(request.url);
+        
+        // For HTML/navigation requests (not API, not assets), serve index.html to enable SPA offline
+        if (request.mode === 'navigate' || request.destination === 'document' || requestURL.pathname.endsWith('/') || requestURL.pathname === '') {
+          console.log(`[SW] Navigation request offline (${request.url}) - serving cached index.html`);
+          return caches.match('/index.html');
+        }
+        
+        console.error(`[SW] Offline: Could not fetch ${url.pathname}:`, error.message);
+        return Promise.reject(error);
       })
   );
 });
