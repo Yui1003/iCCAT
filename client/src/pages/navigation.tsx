@@ -81,11 +81,19 @@ export default function Navigation() {
   });
 
   const { data: indoorNodes = [] } = useQuery<IndoorNode[]>({
-    queryKey: ['/api/indoor-nodes']
+    queryKey: ['/api/indoor-nodes'],
+    queryFn: async () => {
+      const res = await fetch('/api/indoor-nodes');
+      return res.json();
+    }
   });
 
   const { data: roomPaths = [] } = useQuery<RoomPath[]>({
-    queryKey: ['/api/room-paths']
+    queryKey: ['/api/room-paths'],
+    queryFn: async () => {
+      const res = await fetch('/api/room-paths');
+      return res.json();
+    }
   });
 
   useEffect(() => {

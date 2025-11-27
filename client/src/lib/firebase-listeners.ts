@@ -47,15 +47,13 @@ function extractImageUrls(data: any, urls: Set<string> = new Set()): Set<string>
  * Pre-cache images in background (non-blocking)
  * Called automatically when real-time data arrives with image URLs
  */
-async function precacheImagesInBackground(imageUrls: Set<string>, collection: string = 'data') {
+async function precacheImagesInBackground(imageUrls: Set<string>) {
   if (imageUrls.size === 0) return;
 
-  console.log(`[LISTENERS] ⏳ Auto-caching ${imageUrls.size} images from ${collection} (background)...`);
+  console.log(`[LISTENERS] Pre-caching ${imageUrls.size} images in background...`);
 
   try {
     const cache = await caches.open('iccat-images-v6');
-    let successCount = 0;
-    let failCount = 0;
     
     // Batch fetch and cache all images
     Array.from(imageUrls).forEach((url, index) => {
@@ -67,25 +65,17 @@ async function precacheImagesInBackground(imageUrls: Set<string>, collection: st
         .then(response => {
           if (response.ok) {
             cache.put(url, response.clone());
-            successCount++;
             if (index < 3 || index % 5 === 0) {
-              console.log(`[LISTENERS] ✓ Auto-cached: ${url.split('/').pop() || url}`);
+              console.log(`[LISTENERS] ✓ Pre-cached image: ${url}`);
             }
           } else {
-            failCount++;
-            console.warn(`[LISTENERS] ✗ Failed to cache ${url}: HTTP ${response.status}`);
+            console.warn(`[LISTENERS] Failed to cache image ${url}: HTTP ${response.status}`);
           }
         })
         .catch(err => {
-          failCount++;
-          console.warn(`[LISTENERS] ✗ Failed to fetch ${url}:`, err.message);
+          console.warn(`[LISTENERS] Failed to fetch image ${url}:`, err.message);
         });
     });
-    
-    // Log summary after a delay
-    setTimeout(() => {
-      console.log(`[LISTENERS] 📦 Auto-cache summary for ${collection}: ${successCount} cached, ${failCount} failed`);
-    }, 1000);
   } catch (err) {
     console.warn('[LISTENERS] Error pre-caching images:', err);
   }
@@ -115,43 +105,26 @@ export function initializeFirebaseListeners() {
 
 /**
  * Helper: Updates React Query cache when data changes
- * Also automatically caches ALL data (buildings, events, staff, etc.) for offline use
+ * Also automatically pre-caches any images in the data
  */
 function updateCache(endpoint: string, data: any) {
-  // Extract collection name from endpoint (e.g., '/api/staff' -> 'staff')
-  const collection = endpoint.split('/').pop() || 'unknown';
-  const itemCount = Array.isArray(data) ? data.length : 1;
-  
-  console.log(`[LISTENERS] 📡 Real-time update: ${collection} (${itemCount} items)`);
-  
-  // Update React Query cache (for immediate UI updates)
+  console.log(`[LISTENERS] Firebase change detected: ${endpoint}`);
   queryClient.setQueryData([endpoint], data);
   
-  // AUTO-CACHE ALL DATA to CacheStorage for offline use (non-blocking)
+  // Update CacheStorage for offline
   if (window.caches) {
-    caches.open('iccat-data-v6')
-      .then(cache => {
-        const response = new Response(JSON.stringify(data), {
-          headers: { 
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache'
-          }
-        });
-        return cache.put(endpoint, response)
-          .then(() => {
-            console.log(`[LISTENERS] 💾 Cached offline: ${collection} (${itemCount} items)`);
-          });
-      })
-      .catch(err => {
-        console.warn(`[LISTENERS] ⚠️ Failed to cache ${collection}:`, err.message);
+    caches.open('iccat-data-v6').then(cache => {
+      const response = new Response(JSON.stringify(data), {
+        headers: { 'Content-Type': 'application/json' }
       });
+      cache.put(endpoint, response);
+    });
   }
 
   // AUTO-PRECACHE any images from this data in background (non-blocking)
-  // This works for ALL CRUD operations: CREATE, UPDATE, DELETE
   const imageUrls = extractImageUrls(data);
   if (imageUrls.size > 0) {
-    precacheImagesInBackground(imageUrls, collection);
+    precacheImagesInBackground(imageUrls);
   }
 }
 
