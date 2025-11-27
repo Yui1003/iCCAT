@@ -34,25 +34,17 @@ function latLngToTile(lat, lng, zoom) {
 }
 
 // Extract all image URLs from API responses
-// This extracts from ALL endpoints to ensure EVERY image in the app is cached
 async function extractAllImageUrls() {
   const imageUrls = new Set();
-  // Include ALL 11 API endpoints - buildings, staff, events, floors, rooms, walkpaths, drivepaths, indoor-nodes, room-paths, and settings
   const apiEndpoints = [
     '/api/buildings',
     '/api/staff',
     '/api/events',
     '/api/floors',
-    '/api/rooms',
-    '/api/walkpaths',
-    '/api/drivepaths',
-    '/api/indoor-nodes',
-    '/api/room-paths',
-    '/api/settings/home_inactivity_timeout',
-    '/api/settings/global_inactivity_timeout'
+    '/api/rooms'
   ];
 
-  console.log('[SW] Extracting image URLs from ALL API endpoints...');
+  console.log('[SW] Extracting image URLs from API responses...');
 
   for (const endpoint of apiEndpoints) {
     try {
@@ -60,32 +52,24 @@ async function extractAllImageUrls() {
       if (response.ok) {
         const data = await response.json();
         extractImageUrlsFromData(data, imageUrls);
-        console.log(`[SW] Extracted images from ${endpoint}`);
       }
     } catch (err) {
       console.warn(`[SW] Failed to fetch ${endpoint}:`, err.message);
     }
   }
 
-  console.log(`[SW] Total images found: ${imageUrls.size}`);
   return imageUrls;
 }
 
 // Recursively extract image URLs from API data
-// Comprehensive search for ALL possible image fields
 function extractImageUrlsFromData(data, urls = new Set()) {
   if (!data) return urls;
 
   if (Array.isArray(data)) {
     data.forEach(item => extractImageUrlsFromData(item, urls));
   } else if (typeof data === 'object') {
-    // COMPREHENSIVE image field names - covers all possible image references
-    const imageFields = [
-      'image', 'photo', 'floorPlanImage', 'imageUrl', 'photoUrl', 'picture', 'icon',
-      'avatar', 'thumbnail', 'photo_url', 'image_url', 'background', 'backgroundImage',
-      'floor_plan_image', 'floorplanImage', 'profilePic', 'profilePhoto', 'profileImage',
-      'coverImage', 'coverPhoto', 'bannerImage', 'thumbnail_url', 'featured_image'
-    ];
+    // Common image field names
+    const imageFields = ['image', 'photo', 'floorPlanImage', 'imageUrl', 'photoUrl', 'picture', 'icon'];
     
     for (const field of imageFields) {
       if (field in data && typeof data[field] === 'string' && data[field]) {
@@ -97,7 +81,7 @@ function extractImageUrlsFromData(data, urls = new Set()) {
       }
     }
     
-    // Recursively check nested objects and arrays
+    // Recursively check nested objects
     for (const key in data) {
       if (typeof data[key] === 'object' && data[key] !== null) {
         extractImageUrlsFromData(data[key], urls);
@@ -428,12 +412,10 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Default: Network-first for other resources, cache as fallback
-  // For navigation requests (HTML pages), always fallback to index.html for SPA
   event.respondWith(
     caches.match(request)
       .then((response) => {
         if (response) {
-          console.log(`[SW] Served from cache: ${url.pathname}`);
           return response;
         }
 
@@ -450,18 +432,9 @@ self.addEventListener('fetch', (event) => {
           return response;
         });
       })
-      .catch((error) => {
-        // If network fails, check if this is a navigation request
-        const requestURL = new URL(request.url);
-        
-        // For HTML/navigation requests (not API, not assets), serve index.html to enable SPA offline
-        if (request.mode === 'navigate' || request.destination === 'document' || requestURL.pathname.endsWith('/') || requestURL.pathname === '') {
-          console.log(`[SW] Navigation request offline (${request.url}) - serving cached index.html`);
-          return caches.match('/index.html');
-        }
-        
-        console.error(`[SW] Offline: Could not fetch ${url.pathname}:`, error.message);
-        return Promise.reject(error);
+      .catch(() => {
+        // If network fails and no cache, return cached version if available
+        return caches.match(request);
       })
   );
 });
