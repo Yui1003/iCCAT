@@ -9,16 +9,18 @@ interface CacheVerificationStatus {
   mapTiles: 'checking' | 'verified' | 'failed';
   apiEndpoints: 'checking' | 'verified' | 'failed';
   images: 'checking' | 'verified' | 'failed';
+  swInstall: 'checking' | 'complete' | 'timeout';
 }
 
-export function CacheVerificationLoader() {
+export function CacheVerificationLoader({ onComplete }: { onComplete: () => void }) {
   const [status, setStatus] = useState<CacheVerificationStatus>({
     serviceWorker: 'checking',
     staticCache: 'checking',
     dataCache: 'checking',
     mapTiles: 'checking',
     apiEndpoints: 'checking',
-    images: 'checking'
+    images: 'checking',
+    swInstall: 'checking'
   });
   const [isComplete, setIsComplete] = useState(false);
   const [imagePrecacheInfo, setImagePrecacheInfo] = useState<string>('');
@@ -26,6 +28,32 @@ export function CacheVerificationLoader() {
   useEffect(() => {
     const verifyCache = async () => {
       try {
+        // 0. WAIT for Service Worker install to complete
+        // SW sets localStorage when install finishes
+        console.log('[CACHE-LOADER] Waiting for Service Worker install to complete...');
+        const maxWaitTime = 60000; // 60 seconds max
+        const checkInterval = 100;
+        let elapsedTime = 0;
+        let swInstallComplete = false;
+
+        while (elapsedTime < maxWaitTime && !swInstallComplete) {
+          const swInstalled = localStorage.getItem('sw_install_complete') === 'true';
+          if (swInstalled) {
+            setStatus(prev => ({ ...prev, swInstall: 'complete' }));
+            console.log('[CACHE-LOADER] ✓ Service Worker install complete');
+            swInstallComplete = true;
+            break;
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, checkInterval));
+          elapsedTime += checkInterval;
+        }
+
+        if (!swInstallComplete) {
+          setStatus(prev => ({ ...prev, swInstall: 'timeout' }));
+          console.warn('[CACHE-LOADER] Service Worker install timeout (>60s) - proceeding anyway');
+        }
+
         // 1. Verify Service Worker registration
         if ('serviceWorker' in navigator) {
           try {
@@ -140,12 +168,12 @@ export function CacheVerificationLoader() {
         console.log('[CACHE-LOADER] Waiting for Service Worker image caching to complete...');
         
         // Wait up to 30 seconds for images to be cached
-        const maxWaitTime = 30000;
-        const checkInterval = 500;
-        let elapsedTime = 0;
+        const imageWaitMaxTime = 30000;
+        const imageCheckInterval = 500;
+        let imageElapsedTime = 0;
         let imagesFullyCached = false;
 
-        while (elapsedTime < maxWaitTime && !imagesFullyCached) {
+        while (imageElapsedTime < imageWaitMaxTime && !imagesFullyCached) {
           const imageCache = await caches.open('iccat-images-v6');
           const cachedImages = await imageCache.keys();
           
@@ -157,8 +185,8 @@ export function CacheVerificationLoader() {
           }
           
           // Wait and check again
-          await new Promise(resolve => setTimeout(resolve, checkInterval));
-          elapsedTime += checkInterval;
+          await new Promise(resolve => setTimeout(resolve, imageCheckInterval));
+          imageElapsedTime += imageCheckInterval;
         }
 
         if (!imagesFullyCached) {
@@ -166,7 +194,7 @@ export function CacheVerificationLoader() {
         }
 
         setIsComplete(true);
-        console.log('[CACHE-LOADER] Cache verification complete - ready for offline use!');
+        console.log('[CACHE-LOADER] ✅ Cache verification complete - ready for offline use!');
       } catch (err) {
         console.error('[CACHE-LOADER] Verification error:', err);
         setIsComplete(true);
@@ -176,15 +204,16 @@ export function CacheVerificationLoader() {
     verifyCache();
   }, []);
 
-  // Auto-hide loader after brief delay if all verifications are complete
+  // Notify parent when cache is complete
   useEffect(() => {
     if (isComplete) {
+      // Brief delay to ensure UI updates
       const timer = setTimeout(() => {
-        // Component will be removed by parent
-      }, 500);
+        onComplete();
+      }, 300);
       return () => clearTimeout(timer);
     }
-  }, [isComplete]);
+  }, [isComplete, onComplete]);
 
   const getStatusIcon = (s: string) => {
     switch (s) {
@@ -226,6 +255,16 @@ export function CacheVerificationLoader() {
         </div>
 
         <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 bg-card rounded-lg border">
+            <div className="flex items-center gap-3">
+              <Loader2 className={`w-4 h-4 ${status.swInstall === 'checking' ? 'animate-spin' : ''}`} />
+              <span className="text-sm">SW Install & Caching</span>
+            </div>
+            <span className={`text-sm font-medium ${getStatusColor(status.swInstall)}`}>
+              {getStatusIcon(status.swInstall)}
+            </span>
+          </div>
+
           <div className="flex items-center justify-between p-3 bg-card rounded-lg border">
             <div className="flex items-center gap-3">
               <Loader2 className={`w-4 h-4 ${status.serviceWorker === 'checking' ? 'animate-spin' : ''}`} />

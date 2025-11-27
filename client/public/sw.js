@@ -263,6 +263,16 @@ self.addEventListener('install', (event) => {
           if (failed > 0) {
             console.warn(`[SW] ${failed} images failed to cache. They will be cached on-demand.`);
           }
+          
+          // ✅ SIGNAL TO CLIENT: All caching complete!
+          console.log('[SW] ✅ All SW install caching complete! Signaling client...');
+          if (typeof localStorage !== 'undefined') {
+            try {
+              localStorage.setItem('sw_install_complete', 'true');
+            } catch (e) {
+              console.warn('[SW] Cannot access localStorage:', e);
+            }
+          }
         });
       });
     })

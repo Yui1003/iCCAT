@@ -65,21 +65,16 @@ function AppContent() {
   const [cacheReady, setCacheReady] = useState(false);
   useKioskUptime(); // Start tracking kiosk uptime
 
-  useEffect(() => {
-    const initApp = async () => {
-      // Give cache verification time to complete
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setCacheReady(true);
-    };
-
-    initApp();
-  }, []);
+  const handleCacheComplete = () => {
+    console.log('[APP] Cache verification complete - showing router');
+    setCacheReady(true);
+  };
 
   return (
     <>
       <Toaster />
       <OfflineIndicator />
-      {!cacheReady && <CacheVerificationLoader />}
+      {!cacheReady && <CacheVerificationLoader onComplete={handleCacheComplete} />}
       {cacheReady && <Router />}
     </>
   );
