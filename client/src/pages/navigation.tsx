@@ -2647,7 +2647,7 @@ export default function Navigation() {
                             // Fallback: generic waypoint name based on phase
                             return {
                               id: `waypoint-${index}`,
-                              name: phase.phaseName || `Waypoint ${index + 1}`,
+                              name: phase.endName || `Waypoint ${index + 1}`,
                               lat: phaseEndpoint.lat,
                               lng: phaseEndpoint.lng
                             };
