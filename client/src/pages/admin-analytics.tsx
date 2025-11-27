@@ -133,14 +133,48 @@ export default function AdminAnalytics() {
     return `${(ms / 1000).toFixed(2)}s`;
   };
 
-  const formatDuration = (startTime: Date | string, endTime?: Date | string): string => {
-    const start = new Date(startTime);
-    const end = endTime ? new Date(endTime) : new Date();
-    const diffMs = end.getTime() - start.getTime();
-    const hours = Math.floor(diffMs / 3600000);
-    const minutes = Math.floor((diffMs % 3600000) / 60000);
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
+  const formatDuration = (startTime: Date | string | number, endTime?: Date | string | number): string => {
+    try {
+      let start: number;
+      let end: number;
+
+      // Parse start time
+      if (typeof startTime === 'number') {
+        start = startTime;
+      } else if (startTime instanceof Date) {
+        start = startTime.getTime();
+      } else if (typeof startTime === 'string') {
+        start = new Date(startTime).getTime();
+      } else {
+        return 'N/A';
+      }
+
+      // Parse end time
+      if (endTime) {
+        if (typeof endTime === 'number') {
+          end = endTime;
+        } else if (endTime instanceof Date) {
+          end = endTime.getTime();
+        } else if (typeof endTime === 'string') {
+          end = new Date(endTime).getTime();
+        } else {
+          end = Date.now();
+        }
+      } else {
+        end = Date.now();
+      }
+
+      const diffMs = end - start;
+      if (diffMs < 0) return 'N/A';
+      
+      const hours = Math.floor(diffMs / 3600000);
+      const minutes = Math.floor((diffMs % 3600000) / 60000);
+      if (hours > 0) return `${hours}h ${minutes}m`;
+      return `${minutes}m`;
+    } catch (err) {
+      console.error('Error formatting duration:', err);
+      return 'N/A';
+    }
   };
 
   const currentDeviceUptime = kioskUptimes.find(k => k.deviceId === currentDeviceId);
