@@ -65,23 +65,19 @@ export default function Navigation() {
   const [outdoorRouteSnapshot, setOutdoorRouteSnapshot] = useState<NavigationRoute | null>(null);
 
   const { data: buildings = [] } = useQuery<Building[]>({
-    queryKey: ['/api/buildings'],
-    queryFn: getBuildings
+    queryKey: ['/api/buildings']
   });
 
   const { data: staff = [] } = useQuery<Staff[]>({
-    queryKey: ['/api/staff'],
-    queryFn: getStaff
+    queryKey: ['/api/staff']
   });
 
   const { data: floors = [] } = useQuery<Floor[]>({
-    queryKey: ['/api/floors'],
-    queryFn: getFloors
+    queryKey: ['/api/floors']
   });
 
   const { data: rooms = [] } = useQuery<Room[]>({
-    queryKey: ['/api/rooms'],
-    queryFn: getRooms
+    queryKey: ['/api/rooms']
   });
 
   const { data: indoorNodes = [] } = useQuery<IndoorNode[]>({

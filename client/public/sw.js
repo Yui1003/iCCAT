@@ -162,6 +162,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // NEVER cache admin routes - always fetch fresh from network
+  if (url.pathname.startsWith('/admin/')) {
+    console.log(`[SW] ⛔ Admin route detected: ${url.pathname} - bypassing cache`);
+    event.respondWith(fetch(request));
+    return;
+  }
+
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       caches.open(DATA_CACHE_NAME).then((cache) => {
