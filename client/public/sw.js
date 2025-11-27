@@ -378,6 +378,60 @@ self.addEventListener('fetch', (event) => {
     return false;
   }
 
+  // Cache-first strategy for HTML documents (root and index.html)
+  // This ensures offline hard refresh works
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        // Try to match the exact request first
+        return cache.match(request).then((response) => {
+          if (response) {
+            console.log(`[SW] HTML served from cache: ${url.pathname}`);
+            return response;
+          }
+          
+          // If exact match not found, try to match /index.html or /
+          const alternateRequest = url.pathname === '/' ? '/index.html' : '/';
+          return cache.match(alternateRequest).then((altResponse) => {
+            if (altResponse) {
+              console.log(`[SW] HTML served from alternate cache: ${alternateRequest}`);
+              return altResponse;
+            }
+            
+            // No cache found, try network
+            return fetch(request)
+              .then((response) => {
+                if (response.status === 200) {
+                  try {
+                    cache.put(request, response.clone());
+                    console.log(`[SW] HTML cached: ${url.pathname}`);
+                  } catch (cacheError) {
+                    console.warn(`[SW] Failed to cache HTML: ${url.pathname}`, cacheError.message);
+                  }
+                }
+                return response;
+              })
+              .catch((error) => {
+                console.error(`[SW] HTML fetch failed (offline): ${url.pathname}`, error.message);
+                // If network fails, try to serve any cached HTML we have
+                return cache.match('/').then((rootResponse) => {
+                  if (rootResponse) return rootResponse;
+                  return cache.match('/index.html');
+                }).then((fallbackResponse) => {
+                  if (fallbackResponse) {
+                    console.log(`[SW] Serving fallback HTML from cache`);
+                    return fallbackResponse;
+                  }
+                  throw error;
+                });
+              });
+          });
+        });
+      })
+    );
+    return;
+  }
+
   // Cache-first strategy for images (staff photos, building images, floor plans, etc.)
   if (isImageUrl(url.pathname) || isImageUrl(url.href)) {
     event.respondWith(
