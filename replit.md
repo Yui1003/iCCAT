@@ -1,25 +1,7 @@
 # CVSU CCAT Campus Navigation App
 
 ## Overview
-The CVSU CCAT Campus Navigation App is a comprehensive web application designed for campus wayfinding and navigation. It features interactive maps, multi-phase route navigation with color-coded paths and ETA calculations, and tools for administrators to manage content, collect feedback, and track analytics. The application supports both kiosk and mobile QR-code versions, aims to provide an intuitive user experience, and includes offline capabilities. It is deployed on Render with a Firebase backend.
-
-## Testing Environment Setup (Replit)
-**IMPORTANT**: This Replit workspace is used for TESTING changes before pushing to the production app on Render.
-
-### How It Works:
-1. **Production Environment**: Deployed on Render, uses Firebase Firestore database
-2. **Testing Environment (This Replit)**: Uses `data.json` as a local data source
-
-### Current Configuration:
-- `FORCE_FALLBACK_MODE = true` in `server/storage.ts` - Forces the app to use `data.json` instead of Firebase
-- Data was exported from Firebase on Nov 26, 2025 using `scripts/export-firebase-data.ts`
-- To refresh data from Firebase: run `npx tsx scripts/export-firebase-data.ts`
-- **Data Persistence**: Changes made in fallback mode ARE persisted to `data.json` via `saveFallbackData()` function
-
-### Before Pushing Changes to Production:
-1. Set `FORCE_FALLBACK_MODE = false` in `server/storage.ts` to re-enable Firebase
-2. Test with Firebase connection to ensure production compatibility
-3. Push changes to your Git repository for Render deployment
+The CVSU CCAT Campus Navigation App is a web application for campus wayfinding, offering interactive maps, multi-phase, color-coded route navigation with ETA, and administrative tools for content, feedback, and analytics. It supports kiosk and mobile QR-code access, provides an intuitive user experience, includes offline capabilities, and is deployed on Render with a Firebase backend. The project aims to provide comprehensive campus navigation.
 
 ## User Preferences
 - Touchscreen optimized (48px+ touch targets)
@@ -27,172 +9,35 @@ The CVSU CCAT Campus Navigation App is a comprehensive web application designed 
 - No session ID complexity (simplified design)
 - Export/reset buttons intact and functional
 - Charts for data visualization but NOT in exports
+- REAL-TIME UPDATES REQUIRED - 5-second refetch interval for live admin changes
 
 ## System Architecture
 
 ### UI/UX Decisions
-The application features interactive campus maps for path drawing, navigation, and building boundary definition, with enhanced zoom capabilities (up to 22 for path drawing, 21 for navigation and polygon drawing) and stable tile loading across all zoom levels. Existing paths are visualized on admin maps with distinct colors for walkpaths (green dashed) and drivepaths (blue dashed) to aid verification. Admin interfaces include search and filtering functionalities for Events, Buildings, and Paths management to improve usability.
+The application features interactive campus maps for path drawing, navigation, and building boundary definition, with enhanced zoom capabilities (up to 22 for path drawing, 21 for navigation and polygon drawing) and stable tile loading. Admin maps visualize existing paths with distinct colors (green dashed for walkpaths, blue dashed for drivepaths). Admin interfaces include search and filtering for Events, Buildings, and Paths.
 
 ### Technical Implementations
-The system tracks three key metrics: interface action response times, loading speeds for maps/images/menus, and route-generation speed. Analytics data is collected in real-time, persisted to Firestore, and displayed on an admin dashboard using interactive Recharts visualizations (Bar, Pie, Line charts). Offline data collection queues events locally and syncs them upon reconnection. CSV exports are formatted for clarity with proper date/time and timezone handling (Philippine Time). ETA calculations for routing are based on predefined speeds for walking and driving.
+The system tracks interface action response times, loading speeds for maps/images/menus, and route-generation speed. Analytics data is collected in real-time, persisted to Firestore, and displayed on an admin dashboard using interactive Recharts (Bar, Pie, Line charts). Offline data collection queues events locally and syncs upon reconnection. CSV exports are formatted with proper date/time and timezone handling (Philippine Time). ETA calculations use predefined speeds for walking and driving.
 
-### Pathfinding Architecture (Nov 25, 2025)
-**Design Decision: Manual Path Control with Zero Automatic Merging**
-
-The pathfinding system now operates on a **purely manual connection model**:
-
-1. **User-Controlled Path Network**: 
-   - Admins manually connect path waypoints by clicking on existing nodes when creating/editing paths
-   - Building markers (orange) are clickable to snap paths directly to building locations
-   - NO automatic node merging - paths connect ONLY where admins explicitly connect them
-
-2. **Why No Auto-Merging?**
-   - Previous 10-meter automatic node merging created false shortcuts by merging nodes from different paths
-   - Users are already manually connecting nodes, making auto-merging redundant
-   - Manual connections give precise control over the navigation network
-   - Result: Routes follow the EXACT path network admins created, not arbitrary proximity-based connections
-
-3. **How Pathfinding Works**:
-   - Dijkstra's algorithm finds the shortest path through connected nodes (Dijkstra nodes only)
-   - Route expansion: For each consecutive pair of Dijkstra nodes, ALL intermediate waypoints are included
-   - Example: If Dijkstra finds [NodeA → NodeC → NodeE], the route includes [NodeA, NodeB, NodeC, NodeD, NodeE]
-   - Result: Routes trace the complete manually-created paths with zero node skipping
-
-4. **Connection Points**:
-   - **Path-to-Path**: Connected by overlapping/clicking on adjacent waypoints
-   - **Building-to-Path**: Connected by clicking building markers (which snap to nearest path)
-   - **Path Segments**: All intermediate waypoints between connected nodes are preserved in final route
+### Pathfinding Architecture
+The pathfinding system uses a purely manual connection model. Admins manually connect path waypoints by clicking existing nodes. There is no automatic node merging, ensuring precise control over the navigation network. Dijkstra's algorithm finds the shortest path through connected nodes, and the route expands to include all intermediate waypoints, tracing the complete manually-created paths. Connections occur path-to-path via overlapping waypoints, and building-to-path by clicking building markers.
 
 ### Feature Specifications
 - **Campus Maps**: Interactive, multi-zoom level (up to 22), stable tile loading, visualization of existing paths.
 - **Admin Tools**: Search and filter for events, buildings, and paths; robust analytics dashboard with visual charts; CSV/JSON export of analytics data; data reset functionality.
-- **Path Drawing**: 
-  - Building markers (orange) visible and clickable to add path waypoints
-  - Existing waypoints (gray dots) from other paths clickable to connect
-  - Visual feedback showing number of buildings, waypoints, and nearby path segments
+- **Path Drawing**: Building markers and existing waypoints are clickable for path creation and connection, with visual feedback on nearby elements.
 - **Navigation**: Multi-phase route generation using manually-created path network, color-coded paths, ETA display.
 - **Analytics**: Tracks interface actions, loading speeds, route generation; offline data queuing and syncing; Firebase persistence.
 - **Data Export**: Formatted CSV with Philippine Timezone and separate date/time columns; JSON export.
+- **Multi-Floor Navigation**: Generic floor-agnostic algorithm for unlimited floors, dynamic floor sequencing, automatic stairway connection logic, and independent path calculation per floor.
+- **Two-Phase Indoor Navigation**: Phase 1 (Outdoor) for campus map routing to building entrance, Phase 2 (Indoor) for turn-by-turn navigation on floor plans. Uses Dijkstra graph building for rooms, indoor nodes, and path waypoints, with cross-floor connections via stairways/elevators.
 
 ### System Design Choices
-- **Client-side Performance**: Utilizes React Query for data fetching and caching, and measures actual performance durations for analytics rather than hardcoded values.
-- **Backend Persistence**: Firebase Firestore is used for reliable data storage, ensuring data integrity across server restarts.
-- **Offline Resilience**: Implements mechanisms to queue and sync data collected while offline, preventing data loss.
-- **Modularity**: Codebase is structured with clear separation of concerns (client, server, shared), and dedicated libraries for analytics tracking and ETA calculation.
+- **Client-side Performance**: React Query for data fetching/caching; measures actual performance durations for analytics.
+- **Backend Persistence**: Firebase Firestore for reliable data storage.
+- **Offline Resilience**: Mechanisms to queue and sync data collected while offline.
+- **Modularity**: Codebase structured with clear separation of concerns (client, server, shared).
 - **Pathfinding Purity**: Zero automatic node merging; routes reflect user's manual path creation exactly.
-
-## Recent Changes
-- **Fully Scalable Multi-Floor Navigation System (Nov 26, 2025 - VERIFIED WORKING)**:
-  - **Generic Floor-Agnostic Algorithm**: The `handleProceedToNextFloor` function works automatically for ANY number of floors (Floor 1→2, 2→3, 3→4+, etc.) without code changes
-  - **Dynamic Floor Sequencing**: Floors are automatically ordered based on `floorsInRoute` array calculated during initial pathfinding
-  - **Stairway Connection Logic**: 
-    - Automatically finds any stairway/elevator on next floor with `connectedFloorIds` matching current floor
-    - Falls back to any available stairway if perfect connection not found
-    - Supports unlimited vertical connections
-  - **Automatic Path Calculation**: Dijkstra pathfinding runs on each floor independently to connect stairway entry point to destination room (or next stairway)
-  - **Verified for Floor 1→2**: Button click triggers proper floor transition with updated floor plan and navigation instructions
-  - **Production Ready**: Zero additional debugging needed for Floor 3+ - scalable to unlimited floors
-
-- **Complete Two-Phase Indoor Navigation (Nov 26, 2025 - VERIFIED WORKING)**:
-  - **Phase 1 (Outdoor)**: Campus map routing from user location to building entrance
-  - **Phase 2 (Indoor)**: Floor plan with turn-by-turn indoor navigation
-  - **Schema**: IndoorNode (entrance, stairway, elevator, room, hallway), RoomPath, Room, Floor
-  - **Dijkstra Graph Building**:
-    - Creates nodes for all rooms, indoor nodes, and path waypoints
-    - Waypoints at same coordinates automatically merge (prevents false shortcuts)
-    - Rooms/nodes bridge to nearest waypoint on each path network
-    - Stairways/elevators connect across floors via connectedFloorIds
-  - **Pathfinding Algorithm** (Verified Nov 26):
-    - Dijkstra finds shortest path through node network
-    - Full waypoint extraction from edges (shows complete drawn path, not shortcuts)
-    - 18 iterations for 20 nodes across 4 paths = excellent performance
-    - Successfully routes through 13+ waypoints with proper directions
-  - **Multi-Floor Support**:
-    - Each floor processed independently (no cross-floor interference)
-    - Stairway nodes automatically connect floors via connectedFloorIds array
-    - Scales safely for 5-20 floors with 3-10 rooms per floor
-  - **Testing**: Kitchen navigation on Ground Floor verified with complete waypoint visualization
-
-- **Pathfinding - Automatic Node Merging Disabled (Nov 25, 2025)**:
-  - Issue: Routes were skipping path waypoints due to 10-meter automatic node merging creating false shortcuts
-  - Root Cause: Auto-merging was connecting nodes from different paths that users never explicitly connected
-  - Solution: Removed `mergeNearbyNodes()` function entirely
-  - Result: Routes now follow EXACTLY the paths users manually created and connected
-  - Verification: Pathfinding trace now matches user-drawn walkpath exactly with no diagonal shortcuts
-
-- **All Campus Maps - Tile Loading & Performance (OPTIMIZED)**: 
-  - **Campus Navigation Map**: 
-    - Issue: Tiles weren't loading on initial render; users had to zoom out then zoom in to see tiles
-    - Root Cause: `setMaxBounds()` bounds constraint was applied immediately, blocking tile loading
-    - Solutions Applied:
-      1. Delayed bounds constraint to 350ms to allow tiles to fully render first
-      2. ResizeObserver for container resize handling
-      3. requestAnimationFrame for immediate next paint (critical)
-      4. Streamlined invalidateSize() calls: 75ms and 250ms delays (reduced from 4 to 2 calls)
-      5. **Increased max zoom from 20.5 to 21** for better detail viewing
-    - Performance: Map load time now **101ms** (extremely fast)
-  - **Building Boundary Map (Polygon Drawing)**:
-    - Applied identical tile loading optimizations as campus navigation map
-    - Removed `subdomains` parameter that was interfering with tile loading
-    - Added ResizeObserver, requestAnimationFrame, and optimized invalidateSize calls
-    - **Increased max zoom from 20.5 to 21** for precise polygon drawing
-  - **Result**: All maps now load tiles smoothly on initial render without delays; max zoom 21 provides enhanced detail for all map types
-
-## Planned Features - PWD (Persons with Disabilities) Accessibility Navigation
-
-### Feature Overview
-Add a third navigation mode alongside Walk and Drive specifically for PWD users. PWD paths are wheelchair-accessible routes (ramps, elevators, accessible corridors) that can connect to existing walkpaths at accessible building entrances. This creates a hybrid network where PWD users get optimal accessible routes.
-
-### Implementation Specification
-
-**Schema Changes Required:**
-```typescript
-// Add field to walkpaths table
-export const walkpaths = pgTable("walkpaths", {
-  // ... existing fields
-  isPwdFriendly: boolean("is_pwd_friendly").default(true), // Mark muddy/inaccessible segments
-});
-
-// Create new accessiblePaths table OR add pathType to paths
-export const accessiblePaths = pgTable("accessible_paths", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name"),
-  nodes: jsonb("nodes").notNull(), // Array of {lat, lng}
-  connectedWalkpathNodeId: varchar("connected_walkpath_node_id"), // Ramp entry point
-});
-```
-
-**Pathfinding Logic for PWD Mode:**
-1. User selects "Accessible/PWD" mode in navigation
-2. Dijkstra graph includes: PWD paths + PWD nodes + accessible walkpath segments only
-3. PWD nodes connect to walkpath nodes at accessible building entrances (ramps)
-4. Algorithm automatically finds optimal hybrid route avoiding inaccessible walkpath segments
-
-**Navigation Flow Example:**
-```
-Gate 1 
-  → [Walkpath A - accessible/paved] ✅
-  → [PWD Node - ramp entrance]
-  → [PWD Path - accessible corridor into building]
-  → Technovation Building
-  
-(Muddy walkpaths marked isPwdFriendly: false are automatically excluded)
-```
-
-**Admin Interface Changes Needed:**
-1. **Navigation Page** - Add mode selector dropdown: Walk | Drive | Accessible
-2. **Path Management** - When adding/editing walkpaths: checkbox "PWD Friendly?"
-3. **Accessible Path Admin** - New interface to add PWD-specific paths with connections to existing walkpath nodes
-4. **Path Visualization** - Show PWD paths in different color (e.g., orange dashed) on admin map
-
-**Key Features:**
-- PWD users see mode-appropriate routes only
-- Reuses existing walkpath infrastructure where accessible
-- Muddy/inaccessible walkpath segments automatically excluded for PWD mode
-- Regular users unaffected - can still use all walkpaths
-- Flexible - PWD connections added incrementally as campus accessibility improves
-
-**To Implement This Feature:** Ask to "Implement PWD accessibility navigation with hybrid network topology" and reference this specification.
 
 ## External Dependencies
 - **Frontend Framework**: React 18
