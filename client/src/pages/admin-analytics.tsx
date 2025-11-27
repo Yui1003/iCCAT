@@ -133,30 +133,40 @@ export default function AdminAnalytics() {
     return `${(ms / 1000).toFixed(2)}s`;
   };
 
-  const formatDuration = (startTime: Date | string | number, endTime?: Date | string | number): string => {
+  const formatDuration = (startTime: any, endTime?: any): string => {
     try {
       let start: number;
       let end: number;
 
-      // Parse start time
+      // Parse start time - handle all formats
       if (typeof startTime === 'number') {
         start = startTime;
       } else if (startTime instanceof Date) {
         start = startTime.getTime();
       } else if (typeof startTime === 'string') {
-        start = new Date(startTime).getTime();
+        const parsed = new Date(startTime).getTime();
+        if (isNaN(parsed)) return 'N/A';
+        start = parsed;
+      } else if (startTime && typeof startTime === 'object' && startTime._seconds) {
+        // Firestore Timestamp
+        start = (startTime._seconds * 1000) + Math.floor(startTime._nanoseconds / 1000000);
       } else {
         return 'N/A';
       }
 
-      // Parse end time
+      // Parse end time - handle all formats
       if (endTime) {
         if (typeof endTime === 'number') {
           end = endTime;
         } else if (endTime instanceof Date) {
           end = endTime.getTime();
         } else if (typeof endTime === 'string') {
-          end = new Date(endTime).getTime();
+          const parsed = new Date(endTime).getTime();
+          if (isNaN(parsed)) return 'N/A';
+          end = parsed;
+        } else if (endTime && typeof endTime === 'object' && endTime._seconds) {
+          // Firestore Timestamp
+          end = (endTime._seconds * 1000) + Math.floor(endTime._nanoseconds / 1000000);
         } else {
           end = Date.now();
         }
@@ -165,14 +175,14 @@ export default function AdminAnalytics() {
       }
 
       const diffMs = end - start;
-      if (diffMs < 0) return 'N/A';
+      if (diffMs < 0 || isNaN(diffMs)) return 'N/A';
       
       const hours = Math.floor(diffMs / 3600000);
       const minutes = Math.floor((diffMs % 3600000) / 60000);
       if (hours > 0) return `${hours}h ${minutes}m`;
       return `${minutes}m`;
     } catch (err) {
-      console.error('Error formatting duration:', err);
+      console.error('Error formatting duration:', err, startTime, endTime);
       return 'N/A';
     }
   };
