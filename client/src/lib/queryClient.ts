@@ -123,10 +123,14 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: networkFirstQueryFn,
-      refetchInterval: 5000, // REDUCED: Refetch every 5 seconds for faster updates (was 30s)
-      refetchOnWindowFocus: true, // Refetch when window regains focus
-      refetchOnReconnect: true, // Refetch when connection is restored
-      staleTime: 5000, // REDUCED: Mark data stale after 5 seconds (was 60s) - forces frequent fresh checks
+      // PRODUCTION OPTIMIZATION: 5-minute interval to minimize Firebase read costs
+      // For kiosk: Queries auto-refetch only on window focus or reconnect
+      // For mobile: Users navigate between pages, triggering fresh fetches naturally
+      refetchInterval: 5 * 60 * 1000, // 5 minutes (was 5s for testing - too expensive!)
+      refetchIntervalInBackground: false, // Don't refetch if app is in background/hidden
+      refetchOnWindowFocus: true, // Refetch when user returns to window
+      refetchOnReconnect: true, // Refetch when internet reconnects
+      staleTime: 3 * 60 * 1000, // 3 minutes: Data considered fresh for 3 min (then marked stale)
       retry: 1,
     },
     mutations: {
