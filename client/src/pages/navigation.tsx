@@ -27,7 +27,7 @@ import { poiTypes, KIOSK_LOCATION } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
 import { findShortestPath } from "@/lib/pathfinding";
 import { buildIndoorGraph, findRoomPath, connectOutdoorToIndoor } from "@/lib/indoor-pathfinding";
-import { getWalkpaths, getDrivepaths, getBuildings, getStaff, getFloors, getRooms } from "@/lib/offline-data";
+import { getWalkpaths, getDrivepaths } from "@/lib/offline-data";
 import { calculateMultiPhaseRoute, multiPhaseToNavigationRoute } from "@/lib/multi-phase-routes";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { calculateETA, parseDistance } from "@/lib/eta-calculator";
@@ -1364,7 +1364,7 @@ export default function Navigation() {
         phases: route.phases?.map(phase => ({
           ...phase,
           steps: phase.steps.map(step => ({ ...step })),
-          polyline: phase.polyline ? phase.polyline.map(wp => ({ ...wp })) : undefined
+          polyline: phase.polyline ? phase.polyline.map(wp => ({ ...wp })) : []
         })),
         steps: route.steps.map(step => ({ ...step }))
       };
