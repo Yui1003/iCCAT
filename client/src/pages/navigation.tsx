@@ -2377,23 +2377,37 @@ export default function Navigation() {
                     <p className="font-medium text-foreground">{route.end.name}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm flex-wrap">
-                  <span className="text-muted-foreground">Distance:</span>
-                  <span className="font-medium text-foreground">{route.totalDistance}</span>
-                  <span className="text-muted-foreground">•</span>
-                  <span className="text-muted-foreground capitalize">{route.mode}</span>
-                  {route.vehicleType && (
-                    <>
-                      <span className="text-muted-foreground">•</span>
-                      <span className="text-muted-foreground capitalize">{route.vehicleType}</span>
-                    </>
-                  )}
-                  {(() => {
-                    // Calculate total ETA from all phases
-                    if (route.phases && route.phases.length > 0) {
-                      const totalDistanceMeters = route.phases.reduce((sum, phase) => {
-                        return sum + parseDistance(phase.distance);
-                      }, 0);
+                {navigationPhase !== 'indoor' && (
+                  <div className="flex items-center gap-2 text-sm flex-wrap">
+                    <span className="text-muted-foreground">Distance:</span>
+                    <span className="font-medium text-foreground">{route.totalDistance}</span>
+                    <span className="text-muted-foreground">•</span>
+                    <span className="text-muted-foreground capitalize">{route.mode}</span>
+                    {route.vehicleType && (
+                      <>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="text-muted-foreground capitalize">{route.vehicleType}</span>
+                      </>
+                    )}
+                    {(() => {
+                      // Calculate total ETA from all phases
+                      if (route.phases && route.phases.length > 0) {
+                        const totalDistanceMeters = route.phases.reduce((sum, phase) => {
+                          return sum + parseDistance(phase.distance);
+                        }, 0);
+                        const totalETA = calculateETA(totalDistanceMeters, route.mode);
+                        return (
+                          <>
+                            <span className="text-muted-foreground">•</span>
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-4 h-4 text-primary" />
+                              <span className="font-medium text-foreground">{totalETA}</span>
+                            </div>
+                          </>
+                        );
+                      }
+                      // Fallback: calculate from total distance if no phases
+                      const totalDistanceMeters = parseDistance(route.totalDistance);
                       const totalETA = calculateETA(totalDistanceMeters, route.mode);
                       return (
                         <>
@@ -2404,22 +2418,10 @@ export default function Navigation() {
                           </div>
                         </>
                       );
-                    }
-                    // Fallback: calculate from total distance if no phases
-                    const totalDistanceMeters = parseDistance(route.totalDistance);
-                    const totalETA = calculateETA(totalDistanceMeters, route.mode);
-                    return (
-                      <>
-                        <span className="text-muted-foreground">•</span>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4 text-primary" />
-                          <span className="font-medium text-foreground">{totalETA}</span>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-                {route.parkingLocation && (
+                    })()}
+                  </div>
+                )}
+                {route.parkingLocation && navigationPhase !== 'indoor' && (
                   <div className="mt-3 pt-3 border-t border-border">
                     <p className="text-xs text-muted-foreground">Parking at</p>
                     <p className="font-medium text-foreground">{route.parkingLocation.name}</p>

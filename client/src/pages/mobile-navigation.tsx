@@ -750,22 +750,23 @@ export default function MobileNavigation() {
         </Button>
       </header>
 
-      {/* Main Layout: Map/FloorPlan takes full space, Navigation Panel overlays on top */}
+      {/* Main Layout: Map always visible, Navigation Panel overlays on top */}
       <main className="flex-1 relative w-full h-full overflow-hidden">
-        {/* Map/FloorPlan Area */}
-        {navigationPhase === 'outdoor' ? (
-          <div
-            ref={mapRef}
-            id="map"
-            className="flex-1 z-0"
-            data-testid="map-container"
-            style={{
-              width: '100%',
-              height: '100%',
-            }}
-          />
-        ) : (
-          <div className="absolute inset-0 bg-background" data-testid="indoor-navigation-container">
+        {/* Map Area - Always visible as background */}
+        <div
+          ref={mapRef}
+          id="map"
+          className="absolute inset-0 z-0"
+          data-testid="map-container"
+          style={{
+            width: '100%',
+            height: '100%',
+          }}
+        />
+
+        {/* Indoor FloorPlan Overlay - Only visible when in indoor mode */}
+        {navigationPhase === 'indoor' && (
+          <div className="absolute inset-0 bg-background z-10" data-testid="indoor-navigation-container">
             {currentIndoorFloor && (
               <FloorPlanViewer
                 floor={currentIndoorFloor}
