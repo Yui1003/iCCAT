@@ -1,0 +1,165 @@
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 7.83s
+  dist/index.js  116.1kb
+⚡ Done in 9ms
+==> Uploading build...
+==> Uploaded in 5.6s. Compression took 3.4s
+==> Build successful 🎉
+==> Deploying...
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+✅ Firebase Admin initialized successfully
+10:31:42 PM [express] serving on port 10000
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://iccat.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+10:31:59 PM [express] GET /api/walkpaths 304 in 1014ms :: [{"id":"05c728bd-f2a4-4250-9448-541d2c7bc0b…
+10:31:59 PM [express] GET /api/drivepaths 304 in 1007ms :: [{"id":"3822eaf6-6db5-4b69-b86a-c8f044662c…
+10:31:59 PM [express] GET /api/drivepaths 304 in 707ms :: [{"id":"3822eaf6-6db5-4b69-b86a-c8f044662c9…
+10:31:59 PM [express] GET /api/buildings 304 in 1398ms :: [{"id":"063c2b5b-d279-4c3f-bdee-c52b12b18a7…
+10:32:00 PM [express] GET /api/walkpaths 304 in 1423ms :: [{"id":"05c728bd-f2a4-4250-9448-541d2c7bc0b…
+10:32:00 PM [express] POST /api/analytics/kiosk-uptime/heartbeat 200 in 1941ms :: {"id":"iccat-kiosk-…
+10:32:00 PM [express] POST /api/analytics/kiosk-uptime/heartbeat 200 in 2197ms :: {"id":"iccat-kiosk-…
+10:32:00 PM [express] POST /api/analytics/kiosk-uptime/heartbeat 200 in 4290ms :: {"id":"iccat-kiosk-…
+10:32:00 PM [express] GET /api/events 304 in 607ms :: [{"id":"21d14823-b4cb-47cd-994f-71534d76f7c7","…
+10:32:00 PM [express] GET /api/staff 304 in 608ms :: [{"id":"880e8400-e29b-41d4-a716-446655440002","n…
+10:32:00 PM [express] GET /api/buildings 304 in 1758ms :: [{"id":"063c2b5b-d279-4c3f-bdee-c52b12b18a7…
+10:32:00 PM [express] GET /api/floors 304 in 590ms :: [{"id":"1ac1ff61-b887-4ad7-89a0-588b5ae1abdb","…
+10:32:00 PM [express] GET /api/events 304 in 695ms :: [{"id":"21d14823-b4cb-47cd-994f-71534d76f7c7","…
+10:32:01 PM [express] GET /api/staff 304 in 604ms :: [{"id":"880e8400-e29b-41d4-a716-446655440002","n…
+10:32:01 PM [express] GET /api/indoor-nodes 304 in 417ms :: [{"id":"0b5813a1-81ce-4cbe-b5f7-665bb2fe1…
+10:32:01 PM [express] GET /api/floors 304 in 492ms :: [{"id":"1ac1ff61-b887-4ad7-89a0-588b5ae1abdb","…
+10:32:01 PM [express] GET /api/rooms 304 in 599ms :: [{"id":"063cfa85-255b-4568-80d0-505e56e23da5","f…
+10:32:01 PM [express] GET /api/room-paths 304 in 415ms :: [{"id":"1e9a0822-11b8-4f15-8f14-e78f48322c7…
+10:32:01 PM [express] GET /api/rooms 304 in 494ms :: [{"id":"063cfa85-255b-4568-80d0-505e56e23da5","f…
+10:32:01 PM [express] GET /api/settings/home_inactivity_timeout 304 in 289ms :: {"id":"setting_home_i…
+10:32:01 PM [express] GET /api/indoor-nodes 304 in 300ms :: [{"id":"0b5813a1-81ce-4cbe-b5f7-665bb2fe1…
+10:32:01 PM [express] GET /api/settings/global_inactivity_timeout 304 in 128ms :: {"id":"8e50ff9b-7f1…
+10:32:01 PM [express] GET /api/room-paths 304 in 109ms :: [{"id":"1e9a0822-11b8-4f15-8f14-e78f48322c7…
+10:32:01 PM [express] GET /api/settings/home_inactivity_timeout 200 in 115ms :: {"id":"setting_home_i…
+10:32:01 PM [express] GET /api/settings/global_inactivity_timeout 304 in 109ms :: {"id":"8e50ff9b-7f1…
+[KIOSK-UPTIME] Session ended for device: iccat-kiosk-mihfaiss-0uaoo7, uptime: 93.33333333333333%
+10:32:06 PM [express] GET /api/settings 200 in 1ms
+10:32:06 PM [express] GET /api/staff 304 in 152ms :: [{"id":"880e8400-e29b-41d4-a716-446655440002","n…
+10:32:06 PM [express] GET /api/floors 304 in 156ms :: [{"id":"1ac1ff61-b887-4ad7-89a0-588b5ae1abdb","…
+10:32:06 PM [express] GET /api/rooms 304 in 154ms :: [{"id":"063cfa85-255b-4568-80d0-505e56e23da5","f…
+10:32:06 PM [express] GET /api/events 304 in 156ms :: [{"id":"21d14823-b4cb-47cd-994f-71534d76f7c7","…
+10:32:06 PM [express] GET /api/indoor-nodes 304 in 178ms :: [{"id":"0b5813a1-81ce-4cbe-b5f7-665bb2fe1…
+10:32:06 PM [express] GET /api/drivepaths 304 in 183ms :: [{"id":"3822eaf6-6db5-4b69-b86a-c8f044662c9…
+10:32:06 PM [express] GET /api/room-paths 304 in 274ms :: [{"id":"1e9a0822-11b8-4f15-8f14-e78f48322c7…
+10:32:06 PM [express] GET /api/buildings 304 in 472ms :: [{"id":"063c2b5b-d279-4c3f-bdee-c52b12b18a74…
+10:32:06 PM [express] GET /api/walkpaths 304 in 572ms :: [{"id":"05c728bd-f2a4-4250-9448-541d2c7bc0b8…
+[LISTENER] Client indoor-nodes-1764282726888-0.43661353269506775 registered for indoor-nodes (1 total)
+[LISTENER] Client settings-1764282726981-0.3481609865936781 registered for settings (1 total)
+[KIOSK-UPTIME] Session started for device: iccat-kiosk-mihfaiss-0uaoo7
+10:32:06 PM [express] POST /api/analytics/kiosk-uptime/start 200 in 641ms :: {"id":"iccat-kiosk-mihfa…
+[LISTENER] Client floors-1764282726987-0.47588244770399246 registered for floors (1 total)
+[LISTENER] Client drivepaths-1764282727083-0.12267754932014618 registered for drivepaths (1 total)
+[LISTENER] Client events-1764282727093-0.46685337260870363 registered for events (1 total)
+[LISTENER] Client room-paths-1764282727184-0.1654306960952463 registered for room-paths (1 total)
+[LISTENER] Client rooms-1764282727187-0.35610676135530417 registered for rooms (1 total)
+[LISTENER] Client walkpaths-1764282727487-0.1935301129623399 registered for walkpaths (1 total)
+[LISTENER] Client buildings-1764282727586-0.13635364560973962 registered for buildings (1 total)
+[LISTENER] Client staff-1764282727588-0.08151185873223898 registered for staff (1 total)
+10:32:07 PM [express] GET /api/proxy-image 200 in 402ms
+10:32:07 PM [express] GET /api/proxy-image 200 in 206ms
+10:32:07 PM [express] GET /api/settings 304 in 4ms
+10:32:07 PM [express] GET /api/proxy-image 200 in 206ms
+10:32:07 PM [express] GET /api/drivepaths 304 in 201ms :: [{"id":"3822eaf6-6db5-4b69-b86a-c8f044662c9…
+10:32:08 PM [express] GET /api/walkpaths 304 in 390ms :: [{"id":"05c728bd-f2a4-4250-9448-541d2c7bc0b8…
+10:32:08 PM [express] GET /api/buildings 304 in 495ms :: [{"id":"063c2b5b-d279-4c3f-bdee-c52b12b18a74…
+10:32:08 PM [express] GET /api/proxy-image 200 in 597ms
+10:32:08 PM [express] GET /api/proxy-image 200 in 897ms
+10:32:08 PM [express] GET /api/proxy-image 200 in 1202ms
+10:32:08 PM [express] GET /api/proxy-image 200 in 998ms
+10:32:08 PM [express] GET /api/proxy-image 200 in 1898ms
+10:32:09 PM [express] GET /api/events 304 in 895ms :: [{"id":"21d14823-b4cb-47cd-994f-71534d76f7c7","…
+10:32:09 PM [express] GET /api/staff 304 in 699ms :: [{"id":"880e8400-e29b-41d4-a716-446655440002","n…
+10:32:09 PM [express] GET /api/floors 304 in 605ms :: [{"id":"1ac1ff61-b887-4ad7-89a0-588b5ae1abdb","…
+10:32:09 PM [express] GET /api/proxy-image 200 in 1005ms
+10:32:09 PM [express] GET /api/proxy-image 200 in 1304ms
+10:32:09 PM [express] GET /api/proxy-image 200 in 2000ms
+10:32:09 PM [express] GET /api/proxy-image 200 in 2392ms
+10:32:09 PM [express] GET /api/proxy-image 200 in 1898ms
+10:32:09 PM [express] GET /api/proxy-image 200 in 2001ms
+10:32:09 PM [express] GET /api/rooms 304 in 598ms :: [{"id":"063cfa85-255b-4568-80d0-505e56e23da5","f…
+10:32:09 PM [express] GET /api/indoor-nodes 304 in 597ms :: [{"id":"0b5813a1-81ce-4cbe-b5f7-665bb2fe1…
+10:32:09 PM [express] GET /api/room-paths 304 in 405ms :: [{"id":"1e9a0822-11b8-4f15-8f14-e78f48322c7…
+10:32:10 PM [express] GET /api/settings/home_inactivity_timeout 304 in 113ms :: {"id":"setting_home_i…
+10:32:10 PM [express] GET /api/settings/global_inactivity_timeout 304 in 109ms :: {"id":"8e50ff9b-7f1…
+10:32:10 PM [express] GET /api/drivepaths 304 in 119ms :: [{"id":"3822eaf6-6db5-4b69-b86a-c8f044662c9…
+10:32:10 PM [express] GET /api/walkpaths 304 in 135ms :: [{"id":"05c728bd-f2a4-4250-9448-541d2c7bc0b8…
+10:32:10 PM [express] GET /api/buildings 304 in 185ms :: [{"id":"063c2b5b-d279-4c3f-bdee-c52b12b18a74…
+10:32:11 PM [express] GET /api/events 304 in 111ms :: [{"id":"21d14823-b4cb-47cd-994f-71534d76f7c7","…
+10:32:11 PM [express] GET /api/staff 304 in 112ms :: [{"id":"880e8400-e29b-41d4-a716-446655440002","n…
+10:32:11 PM [express] GET /api/floors 304 in 125ms :: [{"id":"1ac1ff61-b887-4ad7-89a0-588b5ae1abdb","…
+10:32:11 PM [express] GET /api/indoor-nodes 304 in 118ms :: [{"id":"0b5813a1-81ce-4cbe-b5f7-665bb2fe1…
+10:32:11 PM [express] GET /api/rooms 304 in 114ms :: [{"id":"063cfa85-255b-4568-80d0-505e56e23da5","f…
+10:32:11 PM [express] GET /api/room-paths 304 in 112ms :: [{"id":"1e9a0822-11b8-4f15-8f14-e78f48322c7…
+10:32:11 PM [express] GET /api/settings/home_inactivity_timeout 304 in 117ms :: {"id":"setting_home_i…
+10:32:11 PM [express] GET /api/settings/global_inactivity_timeout 304 in 116ms :: {"id":"8e50ff9b-7f1…
+10:32:11 PM [express] GET /api/settings/home_inactivity_timeout 304 in 106ms :: {"id":"setting_home_i…
+10:32:11 PM [express] GET /api/settings/global_inactivity_timeout 304 in 115ms :: {"id":"8e50ff9b-7f1…
+10:32:14 PM [express] GET /api/settings/home_inactivity_timeout 304 in 107ms :: {"id":"setting_home_i…
+[Analytics] Event persisted to Firestore: map_load (26ms)
+10:32:15 PM [express] POST /api/analytics 200 in 119ms :: {"success":true}
+10:32:15 PM [express] GET /api/settings/global_inactivity_timeout 304 in 106ms :: {"id":"8e50ff9b-7f1…
+[LISTENER] Client floors-1764282726987-0.47588244770399246 disconnected from floors (0 remaining)
+[LISTENER] Client indoor-nodes-1764282726888-0.43661353269506775 disconnected from indoor-nodes (0 remaining)
+[LISTENER] Client events-1764282727093-0.46685337260870363 disconnected from events (0 remaining)
+[LISTENER] Client room-paths-1764282727184-0.1654306960952463 disconnected from room-paths (0 remaining)
+[LISTENER] Client buildings-1764282727586-0.13635364560973962 disconnected from buildings (0 remaining)
+[LISTENER] Client walkpaths-1764282727487-0.1935301129623399 disconnected from walkpaths (0 remaining)
+[LISTENER] Client staff-1764282727588-0.08151185873223898 disconnected from staff (0 remaining)
+[LISTENER] Client drivepaths-1764282727083-0.12267754932014618 disconnected from drivepaths (0 remaining)
+[LISTENER] Client rooms-1764282727187-0.35610676135530417 disconnected from rooms (0 remaining)
+[LISTENER] Client settings-1764282726981-0.3481609865936781 disconnected from settings (0 remaining)
+[KIOSK-UPTIME] Session ended for device: iccat-kiosk-mihfaiss-0uaoo7, uptime: 90.9090909090909%
+10:32:21 PM [express] GET /api/settings 304 in 88ms
+10:32:21 PM [express] GET /api/rooms 304 in 304ms :: [{"id":"063cfa85-255b-4568-80d0-505e56e23da5","f…
+10:32:22 PM [express] GET /api/events 304 in 496ms :: [{"id":"21d14823-b4cb-47cd-994f-71534d76f7c7","…
+10:32:22 PM [express] GET /api/buildings 304 in 709ms :: [{"id":"063c2b5b-d279-4c3f-bdee-c52b12b18a74…
+[LISTENER] Client indoor-nodes-1764282742389-0.1762088031432132 registered for indoor-nodes (1 total)
+[LISTENER] Client rooms-1764282742392-0.3329117190272226 registered for rooms (1 total)
+10:32:22 PM [express] GET /api/indoor-nodes 304 in 898ms :: [{"id":"0b5813a1-81ce-4cbe-b5f7-665bb2fe1…
+10:32:22 PM [express] GET /api/staff 304 in 896ms :: [{"id":"880e8400-e29b-41d4-a716-446655440002","n…
+10:32:22 PM [express] GET /api/floors 304 in 901ms :: [{"id":"1ac1ff61-b887-4ad7-89a0-588b5ae1abdb","…
+10:32:22 PM [express] GET /api/drivepaths 304 in 902ms :: [{"id":"3822eaf6-6db5-4b69-b86a-c8f044662c9…
+[LISTENER] Client settings-1764282742496-0.988713445712804 registered for settings (1 total)
+[LISTENER] Client floors-1764282742583-0.17036360675643847 registered for floors (1 total)
+10:32:22 PM [express] GET /api/walkpaths 304 in 1003ms :: [{"id":"05c728bd-f2a4-4250-9448-541d2c7bc0b…
+[KIOSK-UPTIME] Session started for device: iccat-kiosk-mihfaiss-0uaoo7
+10:32:22 PM [express] POST /api/analytics/kiosk-uptime/start 200 in 994ms :: {"id":"iccat-kiosk-mihfa…
+[LISTENER] Client room-paths-1764282742881-0.24470384682772672 registered for room-paths (1 total)
+node:_http_outgoing:699
+    throw new ERR_HTTP_HEADERS_SENT('set');
+    ^
+Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+    at ServerResponse.setHeader (node:_http_outgoing:699:11)
+    at ServerResponse.header (/opt/render/project/src/node_modules/express/lib/response.js:794:10)
+    at ServerResponse.send (/opt/render/project/src/node_modules/express/lib/response.js:174:12)
+    at ServerResponse.json (/opt/render/project/src/node_modules/express/lib/response.js:278:15)
+    at res.json (file:///opt/render/project/src/dist/index.js:3262:28)
+    at ClientRequest.<anonymous> (file:///opt/render/project/src/dist/index.js:2010:25)
+    at ClientRequest.emit (node:events:518:28)
+    at TLSSocket.emitRequestTimeout (node:_http_client:863:9)
+    at Object.onceWrapper (node:events:632:28)
+    at TLSSocket.emit (node:events:530:35) {
+  code: 'ERR_HTTP_HEADERS_SENT'
+}
+Node.js v22.16.0
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+✅ Firebase Admin initialized successfully
+10:32:41 PM [express] serving on port 10000

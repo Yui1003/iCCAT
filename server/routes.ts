@@ -131,12 +131,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           redirectRequest.on('error', (err) => {
             console.error('[PROXY] Redirect request error:', err.message);
-            res.status(502).json({ error: 'Failed to fetch redirected image' });
+            if (!res.headersSent) {
+              return res.status(502).json({ error: 'Failed to fetch redirected image' });
+            }
           });
           
           redirectRequest.on('timeout', () => {
             redirectRequest.destroy();
-            res.status(504).json({ error: 'Redirect request timeout' });
+            if (!res.headersSent) {
+              return res.status(504).json({ error: 'Redirect request timeout' });
+            }
           });
           
           return;
@@ -157,12 +161,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       proxyRequest.on('error', (err) => {
         console.error('[PROXY] Request error:', err.message);
-        res.status(502).json({ error: 'Failed to fetch image' });
+        if (!res.headersSent) {
+          return res.status(502).json({ error: 'Failed to fetch image' });
+        }
       });
 
       proxyRequest.on('timeout', () => {
         proxyRequest.destroy();
-        res.status(504).json({ error: 'Request timeout' });
+        if (!res.headersSent) {
+          return res.status(504).json({ error: 'Request timeout' });
+        }
       });
 
     } catch (error) {
