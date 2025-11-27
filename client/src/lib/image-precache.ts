@@ -2,7 +2,12 @@
  * Image pre-caching utility
  * Extracts image URLs from API responses and proactively caches them
  * during the loading phase to ensure offline image availability
+ * 
+ * All external images are fetched through the /api/proxy-image endpoint
+ * to bypass CORS restrictions and ensure proper caching
  */
+
+import { getProxiedImageUrl } from '@/components/proxied-image';
 
 const CACHE_NAME = 'iccat-v6';
 const DATA_CACHE_NAME = 'iccat-data-v6';
@@ -95,40 +100,38 @@ export async function precacheApiImages(): Promise<ImagePrecacheStatus> {
       return status;
     }
 
-    // Batch fetch and cache all images
-    console.log('[IMAGE-PRECACHE] Pre-caching images...');
+    // Batch fetch and cache all images through the proxy endpoint
+    console.log('[IMAGE-PRECACHE] Pre-caching images through proxy...');
     
     const cache = await caches.open(IMAGE_CACHE_NAME);
     const imageArray = Array.from(imageUrls);
 
     // Batch fetch with Promise.allSettled to handle failures gracefully
-    const fetchPromises = imageArray.map(url => {
-      // Use no-cors mode for Firebase Storage URLs to bypass CORS restrictions
-      const isFirebaseUrl = url.includes('firebasestorage.googleapis.com') || url.includes('storage.googleapis.com');
-      const fetchOptions = {
-        cache: 'no-store' as const,
-        mode: (isFirebaseUrl ? 'no-cors' : 'cors') as RequestMode
-      };
+    // All images are fetched through the proxy to bypass CORS restrictions
+    const fetchPromises = imageArray.map(originalUrl => {
+      const proxyUrl = getProxiedImageUrl(originalUrl);
       
-      return fetch(url, fetchOptions)
+      return fetch(proxyUrl, { cache: 'no-store' })
         .then(response => {
           if (response.ok) {
-            // Cache successful responses
-            return cache.put(url, response.clone()).then(() => {
+            // Cache using the proxy URL (this is what the ProxiedImage component will request)
+            return cache.put(proxyUrl, response.clone()).then(() => {
               status.cached++;
-              return { success: true, url };
+              console.log(`[IMAGE-PRECACHE] ✓ Cached: ${originalUrl.substring(0, 60)}...`);
+              return { success: true, url: originalUrl };
             });
           } else {
             status.failed++;
-            return { success: false, url, status: response.status };
+            console.warn(`[IMAGE-PRECACHE] ✗ Failed (HTTP ${response.status}): ${originalUrl.substring(0, 60)}...`);
+            return { success: false, url: originalUrl, status: response.status };
           }
         })
         .catch(err => {
           status.failed++;
-          return { success: false, url, error: err.message };
-        })
-    }
-    );
+          console.warn(`[IMAGE-PRECACHE] ✗ Fetch error: ${originalUrl.substring(0, 60)}...`, err.message);
+          return { success: false, url: originalUrl, error: err.message };
+        });
+    });
 
     const results = await Promise.allSettled(fetchPromises);
     
@@ -163,31 +166,27 @@ export async function cacheNewImages(data: any): Promise<void> {
     const cache = await caches.open(IMAGE_CACHE_NAME);
     const imageArray = Array.from(imageUrls);
 
-    // Batch fetch new images
-    const fetchPromises = imageArray.map(url => {
-      // Use no-cors mode for Firebase Storage URLs to bypass CORS restrictions
-      const isFirebaseUrl = url.includes('firebasestorage.googleapis.com') || url.includes('storage.googleapis.com');
-      const fetchOptions = {
-        cache: 'no-store' as const,
-        mode: (isFirebaseUrl ? 'no-cors' : 'cors') as RequestMode
-      };
+    // Batch fetch new images through the proxy to bypass CORS
+    const fetchPromises = imageArray.map(originalUrl => {
+      const proxyUrl = getProxiedImageUrl(originalUrl);
       
-      return fetch(url, fetchOptions)
+      return fetch(proxyUrl, { cache: 'no-store' })
         .then(response => {
           if (response.ok) {
-            return cache.put(url, response.clone()).then(() => {
-              console.log(`[IMAGE-PRECACHE] ✓ Cached image: ${url}`);
+            // Cache using the proxy URL (this is what the ProxiedImage component will request)
+            return cache.put(proxyUrl, response.clone()).then(() => {
+              console.log(`[IMAGE-PRECACHE] ✓ Cached image: ${originalUrl.substring(0, 60)}...`);
               return true;
             });
           } else {
-            console.warn(`[IMAGE-PRECACHE] ✗ Failed to cache image (HTTP ${response.status}): ${url}`);
+            console.warn(`[IMAGE-PRECACHE] ✗ Failed to cache image (HTTP ${response.status}): ${originalUrl.substring(0, 60)}...`);
             return false;
           }
         })
         .catch(err => {
-          console.warn(`[IMAGE-PRECACHE] ✗ Failed to fetch image: ${url}`, err.message);
+          console.warn(`[IMAGE-PRECACHE] ✗ Failed to fetch image: ${originalUrl.substring(0, 60)}...`, err.message);
           return false;
-        })
+        });
     });
 
     await Promise.allSettled(fetchPromises);
