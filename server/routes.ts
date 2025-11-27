@@ -956,6 +956,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Kiosk Uptime Tracking
+  app.post('/api/analytics/kiosk-uptime/start', async (req, res) => {
+    try {
+      const { deviceId, appVersion } = req.body;
+      if (!deviceId) {
+        return res.status(400).json({ error: 'Device ID is required' });
+      }
+      const uptime = await storage.startKioskSession(deviceId, appVersion);
+      console.log(`[KIOSK-UPTIME] Session started for device: ${deviceId}`);
+      res.json(uptime);
+    } catch (error) {
+      console.error('Error starting kiosk session:', error);
+      res.status(500).json({ error: 'Failed to start kiosk session' });
+    }
+  });
+
+  app.post('/api/analytics/kiosk-uptime/heartbeat', async (req, res) => {
+    try {
+      const { deviceId, totalRequests, successfulRequests, uptimePercentage } = req.body;
+      if (!deviceId) {
+        return res.status(400).json({ error: 'Device ID is required' });
+      }
+      const uptime = await storage.updateKioskHeartbeat(deviceId, totalRequests, successfulRequests, uptimePercentage);
+      res.json(uptime);
+    } catch (error) {
+      console.error('Error updating kiosk heartbeat:', error);
+      res.status(500).json({ error: 'Failed to update heartbeat' });
+    }
+  });
+
+  app.post('/api/analytics/kiosk-uptime/end', async (req, res) => {
+    try {
+      const { deviceId, totalRequests, successfulRequests, uptimePercentage } = req.body;
+      if (!deviceId) {
+        return res.status(400).json({ error: 'Device ID is required' });
+      }
+      const uptime = await storage.endKioskSession(deviceId, totalRequests, successfulRequests, uptimePercentage);
+      console.log(`[KIOSK-UPTIME] Session ended for device: ${deviceId}, uptime: ${uptimePercentage}%`);
+      res.json(uptime);
+    } catch (error) {
+      console.error('Error ending kiosk session:', error);
+      res.status(500).json({ error: 'Failed to end kiosk session' });
+    }
+  });
+
+  app.get('/api/analytics/kiosk-uptime', async (req, res) => {
+    try {
+      const uptimes = await storage.getAllKioskUptimes();
+      res.json(uptimes);
+    } catch (error) {
+      console.error('Error fetching kiosk uptimes:', error);
+      res.status(500).json({ error: 'Failed to fetch kiosk uptimes' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

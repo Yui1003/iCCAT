@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { CacheVerificationLoader } from "@/components/cache-verification-loader";
+import { useKioskUptime } from "@/lib/use-kiosk-uptime";
 
 import Landing from "@/pages/landing";
 import Navigation from "@/pages/navigation";
@@ -60,8 +61,9 @@ function Router() {
   );
 }
 
-function App() {
+function AppContent() {
   const [cacheReady, setCacheReady] = useState(false);
+  useKioskUptime(); // Start tracking kiosk uptime
 
   useEffect(() => {
     const initApp = async () => {
@@ -74,12 +76,20 @@ function App() {
   }, []);
 
   return (
+    <>
+      <Toaster />
+      <OfflineIndicator />
+      {!cacheReady && <CacheVerificationLoader />}
+      {cacheReady && <Router />}
+    </>
+  );
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <OfflineIndicator />
-        {!cacheReady && <CacheVerificationLoader />}
-        {cacheReady && <Router />}
+        <AppContent />
       </TooltipProvider>
     </QueryClientProvider>
   );

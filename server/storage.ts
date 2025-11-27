@@ -1257,6 +1257,87 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Cannot create feedback');
     }
   }
+
+  // Kiosk Uptime - per-device tracking
+  async getKioskUptime(deviceId: string): Promise<KioskUptime | undefined> {
+    try {
+      const doc = await db.collection('kioskUptimes').doc(deviceId).get();
+      if (!doc.exists) return undefined;
+      return { id: doc.id, ...doc.data() } as KioskUptime;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      return undefined;
+    }
+  }
+
+  async startKioskSession(deviceId: string, appVersion?: string): Promise<KioskUptime> {
+    try {
+      const now = new Date();
+      const uptimeData: any = {
+        deviceId,
+        sessionStart: now,
+        lastHeartbeat: now,
+        totalRequests: 0,
+        successfulRequests: 0,
+        uptimePercentage: 100,
+        isActive: true,
+      };
+      if (appVersion) {
+        uptimeData.appVersion = appVersion;
+      }
+      await db.collection('kioskUptimes').doc(deviceId).set(uptimeData);
+      return { id: deviceId, ...uptimeData } as KioskUptime;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      throw new Error('Cannot start kiosk session');
+    }
+  }
+
+  async updateKioskHeartbeat(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined> {
+    try {
+      const now = new Date();
+      await db.collection('kioskUptimes').doc(deviceId).update({
+        totalRequests,
+        successfulRequests,
+        uptimePercentage,
+        lastHeartbeat: now,
+      });
+      const doc = await db.collection('kioskUptimes').doc(deviceId).get();
+      return { id: doc.id, ...doc.data() } as KioskUptime;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      return undefined;
+    }
+  }
+
+  async endKioskSession(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined> {
+    try {
+      const now = new Date();
+      await db.collection('kioskUptimes').doc(deviceId).update({
+        totalRequests,
+        successfulRequests,
+        uptimePercentage,
+        lastHeartbeat: now,
+        sessionEnd: now,
+        isActive: false,
+      });
+      const doc = await db.collection('kioskUptimes').doc(deviceId).get();
+      return { id: doc.id, ...doc.data() } as KioskUptime;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      return undefined;
+    }
+  }
+
+  async getAllKioskUptimes(): Promise<KioskUptime[]> {
+    try {
+      const snapshot = await db.collection('kioskUptimes').get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as KioskUptime));
+    } catch (error) {
+      console.error('Firestore error:', error);
+      return [];
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
