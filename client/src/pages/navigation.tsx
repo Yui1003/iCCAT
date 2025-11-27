@@ -1627,13 +1627,12 @@ export default function Navigation() {
       setRoute(outdoorRouteSnapshot);
     }
     
-    // Reset all indoor navigation states completely
+    // Reset indoor navigation states but KEEP destinationRoom to show "Reached the Building" button again
     setNavigationPhase('outdoor');
     setCurrentIndoorFloor(null);
     setFloorsInRoute([]);
     setOutdoorRouteSnapshot(null);
     setSelectedFloor(null);  // Clear floor plan viewer
-    setDestinationRoom(null);  // Clear indoor destination
     setSelectedRoomForNav(null);  // Clear room selection
     
     toast({
