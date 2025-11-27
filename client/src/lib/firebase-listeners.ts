@@ -41,9 +41,9 @@ function updateCache(endpoint: string, data: any) {
   console.log(`[LISTENERS] Firebase change detected: ${endpoint}`);
   queryClient.setQueryData([endpoint], data);
   
-  // Update CacheStorage for offline
+  // Update CacheStorage for offline - MUST match service worker cache version!
   if (window.caches) {
-    caches.open('iccat-data-v6').then(cache => {
+    caches.open('iccat-data-v7').then(cache => {
       const response = new Response(JSON.stringify(data), {
         headers: { 'Content-Type': 'application/json' }
       });
