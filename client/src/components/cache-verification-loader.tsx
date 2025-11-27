@@ -25,9 +25,42 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
   const [isComplete, setIsComplete] = useState(false);
   const [imagePrecacheInfo, setImagePrecacheInfo] = useState<string>('');
 
+  // Quick check: Are all caches already valid? (for normal page refresh)
+  const quickCacheCheck = async (): Promise<boolean> => {
+    try {
+      if (!window.caches) return false;
+
+      // Check if all essential caches exist and have content
+      const cacheNames = await caches.keys();
+      if (!cacheNames.includes('iccat-v6') || !cacheNames.includes('iccat-data-v6')) {
+        return false;
+      }
+
+      // Check data cache has items
+      const dataCache = await caches.open('iccat-data-v6');
+      const dataItems = await dataCache.keys();
+      if (dataItems.length === 0) {
+        return false;
+      }
+
+      console.log('[CACHE-LOADER] ✓ Quick cache check passed - skipping full verification');
+      return true;
+    } catch (err) {
+      return false;
+    }
+  };
+
   useEffect(() => {
     const verifyCache = async () => {
       try {
+        // QUICK CHECK: If on normal refresh, caches should already be valid
+        const cachesValid = await quickCacheCheck();
+        if (cachesValid) {
+          console.log('[CACHE-LOADER] Caches already valid (normal refresh) - skipping loader');
+          setIsComplete(true);
+          return;
+        }
+
         // 0. WAIT for Service Worker install to complete
         // SW sets localStorage when install finishes
         console.log('[CACHE-LOADER] Waiting for Service Worker install to complete...');
