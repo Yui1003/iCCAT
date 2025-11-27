@@ -137,7 +137,8 @@ export function CacheVerificationLoader() {
               break;
             }
           } catch (err) {
-            console.warn('[CACHE-LOADER] Error checking image cache:', err.message);
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            console.warn('[CACHE-LOADER] Error checking image cache:', errorMessage);
           }
           
           // Wait and check again
