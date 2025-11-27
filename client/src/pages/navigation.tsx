@@ -62,6 +62,7 @@ export default function Navigation() {
   const [destinationRoom, setDestinationRoom] = useState<IndoorNode | null>(null);
   const [currentIndoorFloor, setCurrentIndoorFloor] = useState<Floor | null>(null);
   const [floorsInRoute, setFloorsInRoute] = useState<string[]>([]);
+  const [outdoorRouteSnapshot, setOutdoorRouteSnapshot] = useState<NavigationRoute | null>(null);
 
   const { data: buildings = [] } = useQuery<Building[]>({
     queryKey: ['/api/buildings'],
@@ -1122,6 +1123,7 @@ export default function Navigation() {
     setSelectedFloor(null);
     setCurrentIndoorFloor(null);
     setFloorsInRoute([]);
+    setOutdoorRouteSnapshot(null);
   };
 
   const handleReachedBuilding = () => {
@@ -1356,6 +1358,22 @@ export default function Navigation() {
       startId: selectedEnd.id,
       endId: targetNode.id
     };
+    
+    // Save the outdoor route snapshot before adding indoor phases
+    // This allows us to restore outdoor navigation if user goes back
+    // Use deep copy to prevent mutation of the snapshot - clone each waypoint object
+    if (!outdoorRouteSnapshot) {
+      const snapshot: NavigationRoute = {
+        ...route,
+        phases: route.phases?.map(phase => ({
+          ...phase,
+          steps: phase.steps.map(step => ({ ...step })),
+          polyline: phase.polyline ? phase.polyline.map(wp => ({ ...wp })) : undefined
+        })),
+        steps: route.steps.map(step => ({ ...step }))
+      };
+      setOutdoorRouteSnapshot(snapshot);
+    }
     
     // Update route with indoor phase
     const updatedRoute: NavigationRoute = {
@@ -1597,7 +1615,59 @@ export default function Navigation() {
   };
 
   const handleDoneNavigatingIndoor = () => {
-    resetNavigation();
+    setShowFeedbackDialog(true);
+  };
+
+  // Handle going back from indoor to outdoor navigation
+  const handleGoBackToOutdoor = () => {
+    if (!selectedEnd) return;
+    
+    // Restore the original outdoor route if we have a snapshot
+    if (outdoorRouteSnapshot) {
+      setRoute(outdoorRouteSnapshot);
+    }
+    
+    // Reset all indoor navigation states completely
+    setNavigationPhase('outdoor');
+    setCurrentIndoorFloor(null);
+    setFloorsInRoute([]);
+    setOutdoorRouteSnapshot(null);
+    setSelectedFloor(null);  // Clear floor plan viewer
+    setDestinationRoom(null);  // Clear indoor destination
+    setSelectedRoomForNav(null);  // Clear room selection
+    
+    toast({
+      title: "Back to Outdoor Navigation",
+      description: "You can continue outdoor navigation to the building.",
+    });
+  };
+
+  // Handle going back to previous floor during indoor navigation
+  const handleGoBackToPreviousFloor = () => {
+    if (!selectedEnd || !route || floorsInRoute.length === 0 || !currentIndoorFloor) return;
+    
+    const currentFloorIndex = floorsInRoute.indexOf(currentIndoorFloor.id);
+    if (currentFloorIndex <= 0) {
+      // Already on first floor, go back to outdoor
+      handleGoBackToOutdoor();
+      return;
+    }
+    
+    const prevFloorId = floorsInRoute[currentFloorIndex - 1];
+    const buildingFloors = floors.filter(f => f.buildingId === selectedEnd.id);
+    const prevFloor = buildingFloors.find(f => f.id === prevFloorId);
+    
+    if (!prevFloor) return;
+    
+    // Update current floor without mutating the route phases
+    // The floor plan viewer will recalculate the path based on the current floor
+    setCurrentIndoorFloor(prevFloor);
+    setSelectedFloor(prevFloor);
+    
+    toast({
+      title: "Floor Changed",
+      description: `Back to ${prevFloor.floorName || `Floor ${prevFloor.floorNumber}`}`,
+    });
   };
 
   const handleAddWaypoint = () => {
@@ -2402,6 +2472,9 @@ export default function Navigation() {
                         (phaseRgb.r * 299 + phaseRgb.g * 587 + phaseRgb.b * 114) / 1000 > 128 : 
                         false;
                       
+                      // Check if this is an indoor phase (indoor phases use color #ef4444)
+                      const isIndoorPhase = phase.color === '#ef4444';
+                      
                       return (
                         <div key={phaseIndex} className="mb-6">
                           <div className="flex items-center gap-2 mb-3">
@@ -2419,11 +2492,14 @@ export default function Navigation() {
                                 ? `${route.vehicleType === 'bike' ? 'Ride' : 'Drive'} to ${phase.endName}`
                                 : `Walk to ${phase.endName}`}
                             </h4>
-                            <div className="text-xs text-muted-foreground ml-auto flex gap-2">
-                              <span>{phase.distance}</span>
-                              <span>•</span>
-                              <span>{eta}</span>
-                            </div>
+                            {/* Hide distance and time estimates for indoor phases */}
+                            {!isIndoorPhase && (
+                              <div className="text-xs text-muted-foreground ml-auto flex gap-2">
+                                <span>{phase.distance}</span>
+                                <span>•</span>
+                                <span>{eta}</span>
+                              </div>
+                            )}
                           </div>
                           <div className="space-y-3 pl-8">
                             {phase.steps.map((step, stepIndex) => (
@@ -2437,7 +2513,10 @@ export default function Navigation() {
                                 </div>
                                 <div className="flex-1">
                                   <p className="text-sm font-medium text-foreground">{step.instruction}</p>
-                                  <p className="text-xs text-muted-foreground">{step.distance}</p>
+                                  {/* Hide step distance for indoor phases */}
+                                  {!isIndoorPhase && (
+                                    <p className="text-xs text-muted-foreground">{step.distance}</p>
+                                  )}
                                 </div>
                               </div>
                             ))}
@@ -2471,23 +2550,34 @@ export default function Navigation() {
 
                 {/* Phase-specific Navigation Buttons */}
                 {navigationPhase === 'indoor' && destinationRoom && currentIndoorFloor ? (
-                  currentIndoorFloor.id !== destinationRoom.floorId ? (
+                  <div className="space-y-3 mt-6">
+                    {currentIndoorFloor.id !== destinationRoom.floorId ? (
+                      <Button
+                        className="w-full"
+                        onClick={handleProceedToNextFloor}
+                        data-testid="button-proceed-next-floor"
+                      >
+                        Proceed to Next Floor
+                      </Button>
+                    ) : (
+                      <Button
+                        className="w-full"
+                        onClick={handleDoneNavigatingIndoor}
+                        data-testid="button-done-navigating-indoor"
+                      >
+                        Done Navigating
+                      </Button>
+                    )}
                     <Button
-                      className="w-full mt-6"
-                      onClick={handleProceedToNextFloor}
-                      data-testid="button-proceed-next-floor"
+                      className="w-full"
+                      variant="outline"
+                      onClick={handleGoBackToPreviousFloor}
+                      data-testid="button-go-back-indoor"
                     >
-                      Proceed to Next Floor
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Go Back
                     </Button>
-                  ) : (
-                    <Button
-                      className="w-full mt-6"
-                      onClick={handleDoneNavigatingIndoor}
-                      data-testid="button-done-navigating-indoor"
-                    >
-                      Done Navigating
-                    </Button>
-                  )
+                  </div>
                 ) : navigationPhase === 'outdoor' && destinationRoom ? (
                   <Button
                     className="w-full mt-6"

@@ -220,11 +220,35 @@ export default function MobileNavigation() {
     }
   };
 
+  // Handle going back to outdoor navigation from indoor mode
+  const handleGoBackToOutdoor = () => {
+    // Reset indoor navigation states
+    setNavigationPhase('outdoor');
+    setDestinationRoom(null);
+    setCurrentIndoorFloor(null);
+    setFloorsInRoute([]);
+    
+    // Reset completed phases to allow re-navigation
+    // Keep the last phase incomplete so user can click "Reached the Building" again
+    if (route && route.phases.length > 0) {
+      setCurrentPhaseIndex(route.phases.length - 1);
+      setCompletedPhases(route.phases.slice(0, -1).map((_, i) => i));
+    }
+    
+    toast({
+      title: "Back to Outdoor Navigation",
+      description: "You can continue outdoor navigation to the building.",
+    });
+  };
+
   // Check if we're on the destination floor
   const isOnDestinationFloor = currentIndoorFloor?.id === destinationRoom?.floorId;
   
   // Get current floor index in route
   const currentFloorIndex = floorsInRoute.findIndex(f => f.id === currentIndoorFloor?.id);
+
+  // Check if we're on the first floor of indoor navigation
+  const isOnFirstFloor = currentFloorIndex === 0;
   const isLastFloor = currentFloorIndex === floorsInRoute.length - 1;
 
   // Handle completing indoor navigation
@@ -939,7 +963,10 @@ export default function MobileNavigation() {
                       const isCurrent = index === currentPhaseIndex;
                       const color = phase.color || getPhaseColor(index);
 
-                      // Calculate ETA for this phase
+                      // Check if this is an indoor phase (indoor phases use color #ef4444)
+                      const isIndoorPhase = phase.color === '#ef4444';
+
+                      // Calculate ETA for this phase (only for outdoor phases)
                       const parseDistance = (distStr: string): number => {
                         const match = distStr.match(/(\d+(?:\.\d+)?)\s*m/);
                         return match ? parseFloat(match[1]) : 0;
@@ -976,9 +1003,12 @@ export default function MobileNavigation() {
                             <p className="font-medium text-foreground truncate">
                               {phase.startName}
                             </p>
-                            <p className="text-muted-foreground text-xs">
-                              {phase.distance} • {eta}
-                            </p>
+                            {/* Hide distance and time for indoor phases */}
+                            {!isIndoorPhase && (
+                              <p className="text-muted-foreground text-xs">
+                                {phase.distance} • {eta}
+                              </p>
+                            )}
                           </div>
                         </div>
                       );
@@ -1181,6 +1211,16 @@ export default function MobileNavigation() {
                     Continue to Next Floor
                   </Button>
                 )}
+                <Button
+                  className="w-full text-sm"
+                  size="sm"
+                  variant="outline"
+                  onClick={isOnFirstFloor ? handleGoBackToOutdoor : handlePrevFloor}
+                  data-testid="button-go-back-mobile"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  {isOnFirstFloor ? 'Back to Outdoor Navigation' : 'Go Back to Previous Floor'}
+                </Button>
               </>
             )}
           </div>
