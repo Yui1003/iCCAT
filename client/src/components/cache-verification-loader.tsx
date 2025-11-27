@@ -64,7 +64,7 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
         // 0. WAIT for Service Worker install to complete
         // SW sets localStorage when install finishes
         console.log('[CACHE-LOADER] Waiting for Service Worker install to complete...');
-        const maxWaitTime = 60000; // 60 seconds max
+        const maxWaitTime = 90000; // 90 seconds max
         const checkInterval = 100;
         let elapsedTime = 0;
         let swInstallComplete = false;
@@ -84,7 +84,7 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
 
         if (!swInstallComplete) {
           setStatus(prev => ({ ...prev, swInstall: 'timeout' }));
-          console.warn('[CACHE-LOADER] Service Worker install timeout (>60s) - proceeding anyway');
+          console.warn('[CACHE-LOADER] Service Worker install timeout (>90s) - proceeding anyway');
         }
 
         // 1. Verify Service Worker registration

@@ -266,9 +266,11 @@ self.addEventListener('install', (event) => {
           
           // ✅ SIGNAL TO CLIENT: All caching complete!
           console.log('[SW] ✅ All SW install caching complete! Signaling client...');
+          console.log('[SW] ✅ SW INSTALL COMPLETE - Setting localStorage flag for client');
           if (typeof localStorage !== 'undefined') {
             try {
               localStorage.setItem('sw_install_complete', 'true');
+              console.log('[SW] ✅ localStorage.sw_install_complete set to true - client can now proceed');
             } catch (e) {
               console.warn('[SW] Cannot access localStorage:', e);
             }
