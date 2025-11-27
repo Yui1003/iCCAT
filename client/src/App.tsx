@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -63,7 +63,23 @@ function Router() {
 
 function AppContent() {
   const [cacheReady, setCacheReady] = useState(false);
+  const [location] = useLocation();
   useKioskUptime(); // Start tracking kiosk uptime
+
+  // Check if current route is an admin route
+  const isAdminRoute = location?.startsWith('/admin/');
+
+  // For admin routes, skip cache verification - just show router immediately
+  if (isAdminRoute) {
+    console.log('[APP] Admin route detected:', location, '- skipping cache verification');
+    return (
+      <>
+        <Toaster />
+        <OfflineIndicator />
+        <Router />
+      </>
+    );
+  }
 
   const handleCacheComplete = () => {
     console.log('[APP] Cache verification complete - showing router');
