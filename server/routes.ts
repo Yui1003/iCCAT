@@ -2,6 +2,19 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { exec } from "child_process";
 import { storage } from "./storage";
+import { 
+  listenerManager, 
+  notifyBuildingsChange, 
+  notifyEventsChange, 
+  notifyStaffChange, 
+  notifyFloorsChange, 
+  notifyRoomsChange, 
+  notifyWalkpathsChange, 
+  notifyDrivepathsChange, 
+  notifyIndoorNodesChange, 
+  notifyRoomPathsChange, 
+  notifySettingsChange 
+} from "./listeners";
 import {
   insertBuildingSchema,
   insertFloorSchema,
@@ -266,6 +279,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertBuildingSchema.parse(req.body);
       const building = await storage.createBuilding(data);
+      const buildings = await storage.getBuildings();
+      notifyBuildingsChange(buildings);
       res.status(201).json(building);
     } catch (error) {
       res.status(400).json({ error: 'Invalid building data' });
@@ -279,6 +294,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!building) {
         return res.status(404).json({ error: 'Building not found' });
       }
+      const buildings = await storage.getBuildings();
+      notifyBuildingsChange(buildings);
       res.json(building);
     } catch (error) {
       res.status(400).json({ error: 'Invalid building data' });
@@ -291,6 +308,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ error: 'Building not found' });
       }
+      const buildings = await storage.getBuildings();
+      notifyBuildingsChange(buildings);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete building' });
