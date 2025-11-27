@@ -361,6 +361,24 @@ export default function MobileNavigation() {
     };
   }, []);
 
+  // Force map redraw when transitioning back to outdoor mode
+  useEffect(() => {
+    if (navigationPhase === 'outdoor' && mapInstanceRef.current && window.L) {
+      const map = mapInstanceRef.current;
+      const L = window.L;
+      
+      // Force map to recalculate and redraw tiles
+      setTimeout(() => {
+        map.invalidateSize(false);
+        console.log("Map size invalidated for outdoor transition");
+      }, 50);
+      
+      setTimeout(() => {
+        map.invalidateSize(false);
+      }, 200);
+    }
+  }, [navigationPhase]);
+
   // Draw route on map when it updates
   useEffect(() => {
     const drawRoute = () => {
