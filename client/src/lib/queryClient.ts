@@ -123,10 +123,10 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: networkFirstQueryFn,
-      refetchInterval: 30000, // Refetch every 30 seconds when data is stale
+      refetchInterval: 5000, // REDUCED: Refetch every 5 seconds for faster updates (was 30s)
       refetchOnWindowFocus: true, // Refetch when window regains focus
       refetchOnReconnect: true, // Refetch when connection is restored
-      staleTime: 60000, // Data is fresh for 60 seconds
+      staleTime: 5000, // REDUCED: Mark data stale after 5 seconds (was 60s) - forces frequent fresh checks
       retry: 1,
     },
     mutations: {

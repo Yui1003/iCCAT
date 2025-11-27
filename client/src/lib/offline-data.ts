@@ -258,7 +258,7 @@ export async function invalidateEndpointCache(
   // Layer 2: Delete from Service Worker CacheStorage
   await deleteCacheStorageEntry(endpoint);
   
-  // Layer 3: Invalidate React Query cache and force immediate refetch
+  // Layer 3: Invalidate React Query cache and force IMMEDIATE refetch for ALL queries
   if (queryClient) {
     // Invalidate queries to mark them as stale
     await queryClient.invalidateQueries({ 
@@ -266,14 +266,20 @@ export async function invalidateEndpointCache(
       exact: false  // Enable partial matching for derivative keys
     });
     
-    // Force refetch to ensure immediate update (important when staleTime is Infinity)
+    // Force immediate refetch for ALL queries (active or cached), not just active mounted ones
+    // This ensures instant updates even when navigation page is not currently visible
     await queryClient.refetchQueries({
       queryKey: [endpoint],
       exact: false,  // Refetch derivatives too
-      type: 'active'  // Only refetch currently mounted queries
+      type: 'all'  // Refetch ALL queries (active + inactive cached)
     });
     
-    console.log(`[CACHE INVALIDATION] Invalidated and refetched React Query cache for ${endpoint} (including derivatives)`);
+    // Also prefetch to ensure data is ready in cache for next page view
+    await queryClient.prefetchQuery({
+      queryKey: [endpoint]
+    });
+    
+    console.log(`[CACHE INVALIDATION] ✅ Invalidated, refetched (all), and prefetched ${endpoint}`);
   }
   
   console.log(`[CACHE INVALIDATION] ✅ Complete for ${endpoint} (all 3 layers cleared)`);
