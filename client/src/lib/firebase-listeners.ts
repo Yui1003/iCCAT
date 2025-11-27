@@ -11,6 +11,77 @@ import { queryClient } from './queryClient';
 const activeListeners: (() => void)[] = [];
 
 /**
+ * Extract all image URLs from data object recursively
+ */
+function extractImageUrls(data: any, urls: Set<string> = new Set()): Set<string> {
+  if (!data) return urls;
+
+  if (Array.isArray(data)) {
+    data.forEach(item => extractImageUrls(item, urls));
+  } else if (typeof data === 'object') {
+    // Common image field names across all collections
+    const imageFields = ['image', 'photo', 'floorPlanImage', 'imageUrl', 'photoUrl', 'picture', 'icon', 'avatar'];
+    
+    for (const field of imageFields) {
+      if (field in data && typeof data[field] === 'string' && data[field]) {
+        const url = data[field].trim();
+        // Cache actual URLs (http/https, //, or /)
+        if (url.startsWith('http') || url.startsWith('//') || url.startsWith('/')) {
+          urls.add(url);
+        }
+      }
+    }
+    
+    // Recursively check nested objects
+    for (const key in data) {
+      if (typeof data[key] === 'object' && data[key] !== null) {
+        extractImageUrls(data[key], urls);
+      }
+    }
+  }
+
+  return urls;
+}
+
+/**
+ * Pre-cache images in background (non-blocking)
+ * Called automatically when real-time data arrives with image URLs
+ */
+async function precacheImagesInBackground(imageUrls: Set<string>) {
+  if (imageUrls.size === 0) return;
+
+  console.log(`[LISTENERS] Pre-caching ${imageUrls.size} images in background...`);
+
+  try {
+    const cache = await caches.open('iccat-images-v6');
+    
+    // Batch fetch and cache all images
+    Array.from(imageUrls).forEach((url, index) => {
+      fetch(url, { 
+        cache: 'no-store',
+        mode: 'cors',
+        credentials: 'omit'
+      })
+        .then(response => {
+          if (response.ok) {
+            cache.put(url, response.clone());
+            if (index < 3 || index % 5 === 0) {
+              console.log(`[LISTENERS] ✓ Pre-cached image: ${url}`);
+            }
+          } else {
+            console.warn(`[LISTENERS] Failed to cache image ${url}: HTTP ${response.status}`);
+          }
+        })
+        .catch(err => {
+          console.warn(`[LISTENERS] Failed to fetch image ${url}:`, err.message);
+        });
+    });
+  } catch (err) {
+    console.warn('[LISTENERS] Error pre-caching images:', err);
+  }
+}
+
+/**
  * Sets up Firebase listeners for all collections
  * Called once on app initialization
  */
@@ -34,6 +105,7 @@ export function initializeFirebaseListeners() {
 
 /**
  * Helper: Updates React Query cache when data changes
+ * Also automatically pre-caches any images in the data
  */
 function updateCache(endpoint: string, data: any) {
   console.log(`[LISTENERS] Firebase change detected: ${endpoint}`);
@@ -47,6 +119,12 @@ function updateCache(endpoint: string, data: any) {
       });
       cache.put(endpoint, response);
     });
+  }
+
+  // AUTO-PRECACHE any images from this data in background (non-blocking)
+  const imageUrls = extractImageUrls(data);
+  if (imageUrls.size > 0) {
+    precacheImagesInBackground(imageUrls);
   }
 }
 
