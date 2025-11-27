@@ -110,59 +110,54 @@ export function CacheVerificationLoader() {
           console.log('[CACHE-LOADER] API endpoints cached:', cachedEndpoints);
         }
 
-        // 6. Verify ALL images are cached from IMAGE_CACHE_NAME
-        console.log('[CACHE-LOADER] Verifying image cache...');
-        if (window.caches) {
+        // 6. WAIT for Service Worker to complete image caching - BLOCKING
+        console.log('[CACHE-LOADER] Waiting for Service Worker to cache all images...');
+        
+        // Wait up to 60 seconds for images to be cached by SW
+        const maxWaitTime = 60000;
+        const checkInterval = 200;
+        let elapsedTime = 0;
+        let lastKnownImageCount = 0;
+
+        while (elapsedTime < maxWaitTime) {
           try {
             const imageCache = await caches.open('iccat-images-v6');
             const cachedImages = await imageCache.keys();
-            console.log(`[CACHE-LOADER] Found ${cachedImages.length} cached images`);
             
-            setImagePrecacheInfo(`${cachedImages.length} images cached`);
-            setStatus(prev => ({
-              ...prev,
-              images: cachedImages.length > 0 ? 'verified' : 'failed'
-            }));
-            
-            if (cachedImages.length === 0) {
-              console.warn('[CACHE-LOADER] No images in cache yet - they will be cached during SW install');
+            if (cachedImages.length > 0) {
+              lastKnownImageCount = cachedImages.length;
+              console.log(`[CACHE-LOADER] ✓ Images cached: ${cachedImages.length} found`);
+              
+              setImagePrecacheInfo(`${cachedImages.length} images cached`);
+              setStatus(prev => ({
+                ...prev,
+                images: 'verified'
+              }));
+              console.log('[CACHE-LOADER] Image cache verified!');
+              break;
             }
           } catch (err) {
-            console.error('[CACHE-LOADER] Failed to check image cache:', err);
-            setStatus(prev => ({
-              ...prev,
-              images: 'failed'
-            }));
-          }
-        }
-
-        // 7. WAIT for Service Worker to complete image caching
-        console.log('[CACHE-LOADER] Waiting for Service Worker image caching to complete...');
-        
-        // Wait up to 30 seconds for images to be cached
-        const maxWaitTime = 30000;
-        const checkInterval = 500;
-        let elapsedTime = 0;
-        let imagesFullyCached = false;
-
-        while (elapsedTime < maxWaitTime && !imagesFullyCached) {
-          const imageCache = await caches.open('iccat-images-v6');
-          const cachedImages = await imageCache.keys();
-          
-          // Give SW time to extract and cache images
-          if (cachedImages.length > 0) {
-            console.log(`[CACHE-LOADER] ✓ Images are being cached (${cachedImages.length} so far)`);
-            imagesFullyCached = true;
-            break;
+            console.warn('[CACHE-LOADER] Error checking image cache:', err.message);
           }
           
           // Wait and check again
           await new Promise(resolve => setTimeout(resolve, checkInterval));
           elapsedTime += checkInterval;
+          
+          // Log progress every 2 seconds
+          if (elapsedTime % 2000 === 0) {
+            console.log(`[CACHE-LOADER] Still waiting for images... (${elapsedTime / 1000}s elapsed)`);
+          }
         }
 
-        if (!imagesFullyCached) {
-          console.warn('[CACHE-LOADER] Timeout waiting for SW image caching - proceeding anyway');
+        // Final check - did we get images?
+        if (lastKnownImageCount === 0) {
+          console.error('[CACHE-LOADER] ✗ No images cached after timeout - offline images may not work');
+          setImagePrecacheInfo('No images cached (offline may be limited)');
+          setStatus(prev => ({
+            ...prev,
+            images: 'failed'
+          }));
         }
 
         setIsComplete(true);
