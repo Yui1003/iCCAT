@@ -1,0 +1,131 @@
+[SW] HTML served from cache: /
+index-BkRxj1qC.js:575 [FIREBASE] Offline support initialized via Service Worker and React Query
+index-BkRxj1qC.js:575 [LISTENERS] Initializing Firebase real-time listeners
+index-BkRxj1qC.js:575 [PREFETCH] Starting data prefetch for all collections...
+index-BkRxj1qC.js:363 [CACHE-LOADER] Waiting for Service Worker install to complete...
+index-BkRxj1qC.js:363 [DEVICE-ID] Using existing device ID: iccat-kiosk-mihcscz1-l2fv4c
+index-BkRxj1qC.js:363 [UPTIME] Kiosk session started with device ID: iccat-kiosk-mihcscz1-l2fv4c
+(index):40 Found cache: iccat-v6
+(index):40 Found cache: iccat-data-v6
+(index):40 Found cache: iccat-images-v6
+index-BkRxj1qC.js:575 [SW-REG] Service Worker registered successfully
+sw.js:141 [SW] Caching static assets
+index-BkRxj1qC.js:363 [OFFLINE] Network check successful - back online
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/settings from server
+index-BkRxj1qC.js:48 [QUERY] Network failed for /api/settings, falling back to cache...
+index-BkRxj1qC.js:48 [QUERY] Retrieved /api/settings from CacheStorage (offline)
+sw.js:149 [SW] Pre-caching API endpoints for offline use
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/listen/floors from server
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/listen/settings from server
+index-BkRxj1qC.js:575 [LISTENERS] Firebase change detected: /api/floors
+index-BkRxj1qC.js:575 [LISTENERS] Firebase change detected: /api/settings
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/listen/events from server
+index-BkRxj1qC.js:575 [LISTENERS] Firebase change detected: /api/events
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/rooms from server
+index-BkRxj1qC.js:48 [QUERY] Network-first: Fetched fresh /api/rooms from server
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/floors from server
+index-BkRxj1qC.js:48 [QUERY] Network-first: Fetched fresh /api/floors from server
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/room-paths from server
+index-BkRxj1qC.js:48 [QUERY] Network-first: Fetched fresh /api/room-paths from server
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/listen/drivepaths from server
+index-BkRxj1qC.js:575 [LISTENERS] Firebase change detected: /api/drivepaths
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/listen/staff from server
+index-BkRxj1qC.js:575 [LISTENERS] Firebase change detected: /api/staff
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/drivepaths from server
+index-BkRxj1qC.js:48 [QUERY] Network-first: Fetched fresh /api/drivepaths from server
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/listen/room-paths from server
+index-BkRxj1qC.js:575 [LISTENERS] Firebase change detected: /api/room-paths
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/listen/indoor-nodes from server
+index-BkRxj1qC.js:575 [LISTENERS] Firebase change detected: /api/indoor-nodes
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/staff from server
+index-BkRxj1qC.js:48 [QUERY] Network-first: Fetched fresh /api/staff from server
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/buildings from server
+index-BkRxj1qC.js:48 [QUERY] Network-first: Fetched fresh /api/buildings from server
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/events from server
+index-BkRxj1qC.js:48 [QUERY] Network-first: Fetched fresh /api/events from server
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/indoor-nodes from server
+index-BkRxj1qC.js:48 [QUERY] Network-first: Fetched fresh /api/indoor-nodes from server
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/listen/buildings from server
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/listen/rooms from server
+index-BkRxj1qC.js:575 [LISTENERS] Firebase change detected: /api/rooms
+index-BkRxj1qC.js:575 [LISTENERS] Firebase change detected: /api/buildings
+index-BkRxj1qC.js:363 [UPTIME] Session started on server
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/walkpaths from server
+index-BkRxj1qC.js:48 [QUERY] Network-first: Fetched fresh /api/walkpaths from server
+index-BkRxj1qC.js:575 [PREFETCH] All data prefetched successfully
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/listen/walkpaths from server
+sw.js:155 [SW] Cached /api/drivepaths
+index-BkRxj1qC.js:575 [LISTENERS] Firebase change detected: /api/walkpaths
+sw.js:155 [SW] Cached /api/buildings
+sw.js:155 [SW] Cached /api/walkpaths
+sw.js:155 [SW] Cached /api/events
+sw.js:155 [SW] Cached /api/staff
+sw.js:155 [SW] Cached /api/floors
+index-BkRxj1qC.js:363 [OFFLINE] Network check successful - back online
+sw.js:155 [SW] Cached /api/rooms
+sw.js:155 [SW] Cached /api/room-paths
+sw.js:155 [SW] Cached /api/indoor-nodes
+sw.js:155 [SW] Cached /api/settings/global_inactivity_timeout
+sw.js:155 [SW] Cached /api/settings/home_inactivity_timeout
+sw.js:168 [SW] API pre-caching complete: 11 succeeded, 0 failed
+sw.js:174 [SW] Starting map tile pre-caching for offline use...
+sw.js:111 [SW] Generating tile URLs for campus area...
+sw.js:112 [SW] Bounds: N=14.407, S=14.398, E=120.87, W=120.862
+sw.js:119 [SW] Zoom 16: tiles from (54770,30117) to (54771,30118)
+sw.js:119 [SW] Zoom 17: tiles from (109540,60234) to (109543,60237)
+sw.js:119 [SW] Zoom 18: tiles from (219081,120468) to (219086,120475)
+sw.js:119 [SW] Zoom 19: tiles from (438162,240937) to (438173,240951)
+sw.js:134 [SW] Generated 248 map tile URLs for pre-caching
+sw.js:176 [SW] Will attempt to cache 248 tiles
+sw.js:188 [SW] ✓ Cached tile 1/248: https://c.tile.openstreetmap.org/16/54770/30117.png
+sw.js:188 [SW] ✓ Cached tile 2/248: https://a.tile.openstreetmap.org/16/54770/30118.png
+sw.js:188 [SW] ✓ Cached tile 3/248: https://a.tile.openstreetmap.org/16/54771/30117.png
+sw.js:188 [SW] ✓ Cached tile 5/248: https://b.tile.openstreetmap.org/17/109540/60234.png
+sw.js:188 [SW] ✓ Cached tile 4/248: https://b.tile.openstreetmap.org/16/54771/30118.png
+sw.js:188 [SW] ✓ Cached tile 21/248: https://a.tile.openstreetmap.org/18/219081/120468.png
+sw.js:188 [SW] ✓ Cached tile 41/248: https://a.tile.openstreetmap.org/18/219083/120472.png
+sw.js:188 [SW] ✓ Cached tile 61/248: https://c.tile.openstreetmap.org/18/219086/120468.png
+sw.js:188 [SW] ✓ Cached tile 81/248: https://b.tile.openstreetmap.org/19/438162/240949.png
+sw.js:188 [SW] ✓ Cached tile 101/248: https://c.tile.openstreetmap.org/19/438164/240939.png
+sw.js:188 [SW] ✓ Cached tile 121/248: https://c.tile.openstreetmap.org/19/438165/240944.png
+sw.js?1764265682253:399 [SW] HTML served from cache: /
+sw.js:188 [SW] ✓ Cached tile 141/248: https://c.tile.openstreetmap.org/19/438166/240949.png
+sw.js:188 [SW] ✓ Cached tile 161/248: https://a.tile.openstreetmap.org/19/438168/240939.png
+sw.js:188 [SW] ✓ Cached tile 181/248: https://a.tile.openstreetmap.org/19/438169/240944.png
+sw.js:188 [SW] ✓ Cached tile 201/248: https://a.tile.openstreetmap.org/19/438170/240949.png
+sw.js:188 [SW] ✓ Cached tile 221/248: https://b.tile.openstreetmap.org/19/438172/240939.png
+sw.js:188 [SW] ✓ Cached tile 241/248: https://b.tile.openstreetmap.org/19/438173/240944.png
+sw.js:206 [SW] ========================================
+sw.js:207 [SW] Map tile pre-caching complete!
+sw.js:208 [SW] Success: 248/248 tiles
+sw.js:209 [SW] Failed: 0/248 tiles
+sw.js:210 [SW] ========================================
+sw.js:218 [SW] Starting image pre-caching from API responses...
+sw.js:47 [SW] Extracting image URLs from API responses...
+4index-BkRxj1qC.js:363 [OFFLINE] Network check successful - back online
+index-BkRxj1qC.js:363 [UPTIME] Heartbeat: {total: 10, successful: 10, uptime: '100.0%'}
+6index-BkRxj1qC.js:363 [OFFLINE] Network check successful - back online
+index-BkRxj1qC.js:363 [UPTIME] Heartbeat: {total: 10, successful: 10, uptime: '100.0%'}
+index-BkRxj1qC.js:363 [OFFLINE] Network check successful - back online
+index-BkRxj1qC.js:363  [CACHE-LOADER] Service Worker install timeout (>60s) - proceeding anyway
+(anonymous) @ index-BkRxj1qC.js:363
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+index-BkRxj1qC.js:363 [CACHE-LOADER] Service Worker is registered
+index-BkRxj1qC.js:363 [CACHE-LOADER] Static cache: verified
+index-BkRxj1qC.js:363 [CACHE-LOADER] Data cache: 14 items cached
+index-BkRxj1qC.js:363 [CACHE-LOADER] Map tiles: 248 tiles cached
+index-BkRxj1qC.js:363 [CACHE-LOADER] API endpoints cached: (7) [true, true, true, true, true, true, true]
+index-BkRxj1qC.js:363 [CACHE-LOADER] Verifying image cache...
+index-BkRxj1qC.js:363 [CACHE-LOADER] Found 39 cached images
+index-BkRxj1qC.js:363 [CACHE-LOADER] Waiting for Service Worker image caching to complete...
+index-BkRxj1qC.js:363 [CACHE-LOADER] ✓ Images are being cached (39 so far)
+index-BkRxj1qC.js:363 [CACHE-LOADER] ✅ Cache verification complete - ready for offline use!
+index-BkRxj1qC.js:575 [APP] Cache verification complete - showing router
+sw.js?1764265682253:451 [SW] Image served from pre-cached: /assets/logo-BQbS4b83.png
+index-BkRxj1qC.js:363 [OFFLINE] Network check successful - back online
+sw.js?1764265682253:304 [SW] Network-first: Fetched fresh /api/settings/home_inactivity_timeout from server
+4index-BkRxj1qC.js:363 [OFFLINE] Network check successful - back online
