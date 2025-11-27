@@ -50,7 +50,7 @@ export function CacheVerificationLoader() {
         // 2. Verify static cache
         if (window.caches) {
           const cacheNames = await caches.keys();
-          const hasStaticCache = cacheNames.includes('iccat-v5');
+          const hasStaticCache = cacheNames.includes('iccat-v6');
           setStatus(prev => ({
             ...prev,
             staticCache: hasStaticCache ? 'verified' : 'failed'
@@ -60,7 +60,7 @@ export function CacheVerificationLoader() {
 
         // 3. Verify data cache
         if (window.caches) {
-          const dataCache = await caches.open('iccat-data-v5');
+          const dataCache = await caches.open('iccat-data-v6');
           const cachedRequests = await dataCache.keys();
           setStatus(prev => ({
             ...prev,
@@ -71,7 +71,7 @@ export function CacheVerificationLoader() {
 
         // 4. Verify map tiles cache
         if (window.caches) {
-          const staticCache = await caches.open('iccat-v5');
+          const staticCache = await caches.open('iccat-v6');
           const allCached = await staticCache.keys();
           const tilesCached = allCached.filter(req =>
             req.url.includes('tile.openstreetmap.org')
@@ -85,13 +85,15 @@ export function CacheVerificationLoader() {
 
         // 5. Verify API endpoints are cached
         if (window.caches) {
-          const dataCache = await caches.open('iccat-data-v5');
+          const dataCache = await caches.open('iccat-data-v6');
           const apiEndpoints = [
             '/api/buildings',
             '/api/walkpaths',
             '/api/drivepaths',
             '/api/floors',
-            '/api/rooms'
+            '/api/rooms',
+            '/api/staff',
+            '/api/events'
           ];
           
           const cachedEndpoints = await Promise.all(
@@ -108,23 +110,59 @@ export function CacheVerificationLoader() {
           console.log('[CACHE-LOADER] API endpoints cached:', cachedEndpoints);
         }
 
-        // 6. Pre-cache all images from API responses
-        console.log('[CACHE-LOADER] Starting image pre-caching...');
-        try {
-          const imageStatus = await precacheApiImages();
-          setImagePrecacheInfo(`${imageStatus.cached}/${imageStatus.extracted} images`);
-          setStatus(prev => ({
-            ...prev,
-            images: (imageStatus.cached > 0 || imageStatus.extracted === 0) ? 'verified' : 'failed'
-          }));
-          console.log('[CACHE-LOADER] Image pre-caching complete:', imageStatus);
-        } catch (err) {
-          console.error('[CACHE-LOADER] Image pre-caching failed:', err);
-          setStatus(prev => ({
-            ...prev,
-            images: 'failed'
-          }));
-          setImagePrecacheInfo('0/0 images');
+        // 6. Verify ALL images are cached from IMAGE_CACHE_NAME
+        console.log('[CACHE-LOADER] Verifying image cache...');
+        if (window.caches) {
+          try {
+            const imageCache = await caches.open('iccat-images-v6');
+            const cachedImages = await imageCache.keys();
+            console.log(`[CACHE-LOADER] Found ${cachedImages.length} cached images`);
+            
+            setImagePrecacheInfo(`${cachedImages.length} images cached`);
+            setStatus(prev => ({
+              ...prev,
+              images: cachedImages.length > 0 ? 'verified' : 'failed'
+            }));
+            
+            if (cachedImages.length === 0) {
+              console.warn('[CACHE-LOADER] No images in cache yet - they will be cached during SW install');
+            }
+          } catch (err) {
+            console.error('[CACHE-LOADER] Failed to check image cache:', err);
+            setStatus(prev => ({
+              ...prev,
+              images: 'failed'
+            }));
+          }
+        }
+
+        // 7. WAIT for Service Worker to complete image caching
+        console.log('[CACHE-LOADER] Waiting for Service Worker image caching to complete...');
+        
+        // Wait up to 30 seconds for images to be cached
+        const maxWaitTime = 30000;
+        const checkInterval = 500;
+        let elapsedTime = 0;
+        let imagesFullyCached = false;
+
+        while (elapsedTime < maxWaitTime && !imagesFullyCached) {
+          const imageCache = await caches.open('iccat-images-v6');
+          const cachedImages = await imageCache.keys();
+          
+          // Give SW time to extract and cache images
+          if (cachedImages.length > 0) {
+            console.log(`[CACHE-LOADER] ✓ Images are being cached (${cachedImages.length} so far)`);
+            imagesFullyCached = true;
+            break;
+          }
+          
+          // Wait and check again
+          await new Promise(resolve => setTimeout(resolve, checkInterval));
+          elapsedTime += checkInterval;
+        }
+
+        if (!imagesFullyCached) {
+          console.warn('[CACHE-LOADER] Timeout waiting for SW image caching - proceeding anyway');
         }
 
         setIsComplete(true);

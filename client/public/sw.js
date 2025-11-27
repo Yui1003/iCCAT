@@ -1,6 +1,6 @@
-const CACHE_NAME = 'iccat-v5';
-const DATA_CACHE_NAME = 'iccat-data-v5';
-const IMAGE_CACHE_NAME = 'iccat-images-v5';
+const CACHE_NAME = 'iccat-v6';
+const DATA_CACHE_NAME = 'iccat-data-v6';
+const IMAGE_CACHE_NAME = 'iccat-images-v6';
 
 const urlsToCache = [
   '/',
