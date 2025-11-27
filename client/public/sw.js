@@ -292,7 +292,11 @@ self.addEventListener('fetch', (event) => {
           .then((response) => {
             if (response.status === 200) {
               console.log(`[SW] Network-first: Fetched fresh ${url.pathname} from server`);
-              cache.put(request, response.clone());
+              try {
+                cache.put(request, response.clone());
+              } catch (cacheError) {
+                console.warn(`[SW] Failed to cache API response: ${url.pathname}`, cacheError.message);
+              }
             }
             return response;
           })
@@ -323,7 +327,11 @@ self.addEventListener('fetch', (event) => {
           return fetch(request)
             .then((response) => {
               if (response.status === 200) {
-                cache.put(request, response.clone());
+                try {
+                  cache.put(request, response.clone());
+                } catch (cacheError) {
+                  console.warn(`[SW] Failed to cache map tile: ${url.pathname}`, cacheError.message);
+                }
               }
               return response;
             })
@@ -386,10 +394,14 @@ self.addEventListener('fetch', (event) => {
             mode: 'cors'
           })
             .then((response) => {
-              if (response && response.status === 200) {
-                const responseToCache = response.clone();
-                cache.put(request, responseToCache);
-                console.log(`[SW] Image cached on-demand: ${url.pathname}`);
+              if (response && response.status === 200 && url.protocol === 'http:' || url.protocol === 'https:') {
+                try {
+                  const responseToCache = response.clone();
+                  cache.put(request, responseToCache);
+                  console.log(`[SW] Image cached on-demand: ${url.pathname}`);
+                } catch (cacheError) {
+                  console.warn(`[SW] Failed to cache image: ${url.pathname}`, cacheError.message);
+                }
               }
               return response;
             })
@@ -424,10 +436,21 @@ self.addEventListener('fetch', (event) => {
             return response;
           }
 
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
+          try {
+            const url = new URL(request.url);
+            if (url.protocol === 'http:' || url.protocol === 'https:') {
+              const responseToCache = response.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                try {
+                  cache.put(request, responseToCache);
+                } catch (cacheError) {
+                  console.warn(`[SW] Failed to cache response: ${request.url}`, cacheError.message);
+                }
+              });
+            }
+          } catch (e) {
+            console.warn(`[SW] Invalid URL for caching: ${request.url}`, e.message);
+          }
 
           return response;
         });

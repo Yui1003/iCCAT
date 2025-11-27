@@ -1,0 +1,140 @@
+4sw.js?1764252412042:429  Uncaught (in promise) TypeError: Failed to execute 'put' on 'Cache': Request scheme 'chrome-extension' is unsupported
+    at sw.js?1764252412042:429:19
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/pages/admin-floor-plans.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/pages/admin-floor-plan-management.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/logo.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/components/floor-plan-viewer.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/components/ui/avatar.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/components/floor-plan-drawing-canvas.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/components/floor-plan-node-placer.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-avatar.js
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Building_icon_green_background_3206ffb3.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/You_are_Here_location_icon_294f7572.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Gate_entrance_icon_green_b8dfb5ed.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Canteen_dining_icon_green_8cdb8c87.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Food_stall_cart_icon_117edf54.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Library_books_icon_green_8639e524.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Student_lounge_sofa_icon_91f45151.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Motorcycle_parking_icon_green_58dd1569.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Car_parking_icon_green_15c240c8.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Restroom_comfort_room_icon_6cad7368.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Lecture_hall_classroom_icon_6a8a28ad.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Administrative_office_briefcase_icon_1a31163b.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Dormitory_residence_hall_icon_0b08552a.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Health_clinic_medical_cross_2e3bb4e2.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Gym_sports_dumbbell_icon_5be0961e.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Auditorium_theater_stage_icon_2f744312.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Laboratory_flask_test_tube_60e02462.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Faculty_lounge_coffee_mug_cc34405d.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Study_area_desk_lamp_de2acdc7.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Bookstore_book_price_tag_83e37414.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/ATM_cash_machine_icon_848adad9.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Chapel_prayer_room_cross_76e35c33.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Green_space_tree_courtyard_d57ea32f.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Bus_stop_shuttle_icon_f080cef5.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Bike_parking_bicycle_icon_9b6db414.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Security_office_shield_badge_a19124a2.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Waste_recycling_station_icon_81c2fdf4.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Water_fountain_drinking_icon_690799ab.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Print_copy_center_printer_7c56d319.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Other_generic_question_mark_40bcf8cf.png
+13The FetchEvent for "<URL>" resulted in a network error response: the promise was rejected.
+2sw.js?1764252412042:1  Uncaught (in promise) TypeError: Failed to convert value to 'Response'.
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/logo.png
+sw.js?1764252412042:294 [SW] Network-first: Fetched fresh /api/listen/floors from server
+sw.js?1764252412042:294 [SW] Network-first: Fetched fresh /api/listen/staff from server
+sw.js?1764252412042:294 [SW] Network-first: Fetched fresh /api/listen/rooms from server
+sw.js?1764252412042:294 [SW] Network-first: Fetched fresh /api/listen/events from server
+sw.js?1764252412042:294 [SW] Network-first: Fetched fresh /api/listen/walkpaths from server
+sw.js?1764252412042:294 [SW] Network-first: Fetched fresh /api/listen/buildings from server
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /image-photo/success-teamwork-joint-achievement-goal-600nw-2505270505.jpg
+Access to fetch at 'https://slidemodel.com/wp-content/uploads/00_thesis-defense-presentation-cover.png' from origin 'https://0931385d-d82d-4bc4-b6fa-5664966dc5a0-00-j3apcfm2mmjs.janeway.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+sw.js?1764252412042:397  [SW] Image fetch failed (offline): /wp-content/uploads/00_thesis-defense-presentation-cover.png Failed to fetch
+(anonymous) @ sw.js?1764252412042:397
+Access to fetch at 'https://iimtu.edu.in/blog/wp-content/uploads/2023/08/Untitled-1.jpg' from origin 'https://0931385d-d82d-4bc4-b6fa-5664966dc5a0-00-j3apcfm2mmjs.janeway.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+sw.js?1764252412042:397  [SW] Image fetch failed (offline): /blog/wp-content/uploads/2023/08/Untitled-1.jpg Failed to fetch
+(anonymous) @ sw.js?1764252412042:397
+6sw.js?1764252412042:429  Uncaught (in promise) TypeError: Failed to execute 'put' on 'Cache': Request scheme 'chrome-extension' is unsupported
+    at sw.js?1764252412042:429:19
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/pages/admin-floor-plans.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/pages/admin-floor-plan-management.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/logo.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/components/floor-plan-viewer.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/components/ui/avatar.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Building_icon_green_background_3206ffb3.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/You_are_Here_location_icon_294f7572.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Gate_entrance_icon_green_b8dfb5ed.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Canteen_dining_icon_green_8cdb8c87.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Food_stall_cart_icon_117edf54.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Library_books_icon_green_8639e524.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Student_lounge_sofa_icon_91f45151.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Car_parking_icon_green_15c240c8.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Motorcycle_parking_icon_green_58dd1569.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Restroom_comfort_room_icon_6cad7368.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Lecture_hall_classroom_icon_6a8a28ad.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Administrative_office_briefcase_icon_1a31163b.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Dormitory_residence_hall_icon_0b08552a.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Health_clinic_medical_cross_2e3bb4e2.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Gym_sports_dumbbell_icon_5be0961e.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Auditorium_theater_stage_icon_2f744312.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Laboratory_flask_test_tube_60e02462.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Faculty_lounge_coffee_mug_cc34405d.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Study_area_desk_lamp_de2acdc7.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/ATM_cash_machine_icon_848adad9.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Bookstore_book_price_tag_83e37414.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Chapel_prayer_room_cross_76e35c33.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Green_space_tree_courtyard_d57ea32f.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Bus_stop_shuttle_icon_f080cef5.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Bike_parking_bicycle_icon_9b6db414.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Security_office_shield_badge_a19124a2.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Waste_recycling_station_icon_81c2fdf4.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Water_fountain_drinking_icon_690799ab.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Print_copy_center_printer_7c56d319.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Other_generic_question_mark_40bcf8cf.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/components/floor-plan-drawing-canvas.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/components/floor-plan-node-placer.tsx
+2sw.js?1764252412042:1  Uncaught (in promise) TypeError: Failed to convert value to 'Response'.
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/logo.png
+sw.js?1764252412042:294 [SW] Network-first: Fetched fresh /api/listen/staff from server
+sw.js?1764252412042:294 [SW] Network-first: Fetched fresh /api/listen/events from server
+sw.js?1764252412042:294 [SW] Network-first: Fetched fresh /api/listen/floors from server
+sw.js?1764252412042:294 [SW] Network-first: Fetched fresh /api/listen/rooms from server
+sw.js?1764252412042:294 [SW] Network-first: Fetched fresh /api/listen/buildings from server
+sw.js?1764252412042:294 [SW] Network-first: Fetched fresh /api/listen/walkpaths from server
+6sw.js?1764252412042:429  Uncaught (in promise) TypeError: Failed to execute 'put' on 'Cache': Request scheme 'chrome-extension' is unsupported
+    at sw.js?1764252412042:429:19
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/pages/admin-floor-plans.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/pages/admin-floor-plan-management.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/logo.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/components/floor-plan-viewer.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/components/ui/avatar.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/components/floor-plan-drawing-canvas.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /src/components/floor-plan-node-placer.tsx
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Building_icon_green_background_3206ffb3.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/You_are_Here_location_icon_294f7572.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Gate_entrance_icon_green_b8dfb5ed.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Canteen_dining_icon_green_8cdb8c87.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Food_stall_cart_icon_117edf54.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Library_books_icon_green_8639e524.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Student_lounge_sofa_icon_91f45151.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Car_parking_icon_green_15c240c8.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Motorcycle_parking_icon_green_58dd1569.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Restroom_comfort_room_icon_6cad7368.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Lecture_hall_classroom_icon_6a8a28ad.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Administrative_office_briefcase_icon_1a31163b.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Dormitory_residence_hall_icon_0b08552a.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Health_clinic_medical_cross_2e3bb4e2.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Gym_sports_dumbbell_icon_5be0961e.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Auditorium_theater_stage_icon_2f744312.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Laboratory_flask_test_tube_60e02462.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Faculty_lounge_coffee_mug_cc34405d.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Study_area_desk_lamp_de2acdc7.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Bookstore_book_price_tag_83e37414.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/ATM_cash_machine_icon_848adad9.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Chapel_prayer_room_cross_76e35c33.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Green_space_tree_courtyard_d57ea32f.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Bus_stop_shuttle_icon_f080cef5.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Bike_parking_bicycle_icon_9b6db414.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Security_office_shield_badge_a19124a2.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Waste_recycling_station_icon_81c2fdf4.png
+sw.js?1764252412042:379 [SW] Image served from pre-cached: /@fs/home/runner/workspace/attached_assets/generated_images/Water_fountain_
