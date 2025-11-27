@@ -137,8 +137,13 @@ export default function Screensaver() {
   }, []);
 
   // Fetch events and achievements
+  // DISABLED: refetchInterval on screensaver to save Firebase reads (screensaver runs 24/7)
+  // Events only refresh when screensaver is first opened or user clicks
   const { data: events = [] } = useQuery<Event[]>({
     queryKey: ["/api/events"],
+    refetchInterval: false, // Disable auto-refetch on screensaver (no user watching)
+    refetchOnWindowFocus: false, // Screensaver doesn't need focus-based refresh
+    staleTime: Infinity, // Keep data fresh indefinitely until manual refresh
   });
 
   // Filter ongoing, upcoming events and achievements
