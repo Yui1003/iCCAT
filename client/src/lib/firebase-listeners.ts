@@ -47,13 +47,15 @@ function extractImageUrls(data: any, urls: Set<string> = new Set()): Set<string>
  * Pre-cache images in background (non-blocking)
  * Called automatically when real-time data arrives with image URLs
  */
-async function precacheImagesInBackground(imageUrls: Set<string>) {
+async function precacheImagesInBackground(imageUrls: Set<string>, collection: string = 'data') {
   if (imageUrls.size === 0) return;
 
-  console.log(`[LISTENERS] Pre-caching ${imageUrls.size} images in background...`);
+  console.log(`[LISTENERS] ⏳ Auto-caching ${imageUrls.size} images from ${collection} (background)...`);
 
   try {
     const cache = await caches.open('iccat-images-v6');
+    let successCount = 0;
+    let failCount = 0;
     
     // Batch fetch and cache all images
     Array.from(imageUrls).forEach((url, index) => {
@@ -65,17 +67,25 @@ async function precacheImagesInBackground(imageUrls: Set<string>) {
         .then(response => {
           if (response.ok) {
             cache.put(url, response.clone());
+            successCount++;
             if (index < 3 || index % 5 === 0) {
-              console.log(`[LISTENERS] ✓ Pre-cached image: ${url}`);
+              console.log(`[LISTENERS] ✓ Auto-cached: ${url.split('/').pop() || url}`);
             }
           } else {
-            console.warn(`[LISTENERS] Failed to cache image ${url}: HTTP ${response.status}`);
+            failCount++;
+            console.warn(`[LISTENERS] ✗ Failed to cache ${url}: HTTP ${response.status}`);
           }
         })
         .catch(err => {
-          console.warn(`[LISTENERS] Failed to fetch image ${url}:`, err.message);
+          failCount++;
+          console.warn(`[LISTENERS] ✗ Failed to fetch ${url}:`, err.message);
         });
     });
+    
+    // Log summary after a delay
+    setTimeout(() => {
+      console.log(`[LISTENERS] 📦 Auto-cache summary for ${collection}: ${successCount} cached, ${failCount} failed`);
+    }, 1000);
   } catch (err) {
     console.warn('[LISTENERS] Error pre-caching images:', err);
   }
@@ -105,26 +115,43 @@ export function initializeFirebaseListeners() {
 
 /**
  * Helper: Updates React Query cache when data changes
- * Also automatically pre-caches any images in the data
+ * Also automatically caches ALL data (buildings, events, staff, etc.) for offline use
  */
 function updateCache(endpoint: string, data: any) {
-  console.log(`[LISTENERS] Firebase change detected: ${endpoint}`);
+  // Extract collection name from endpoint (e.g., '/api/staff' -> 'staff')
+  const collection = endpoint.split('/').pop() || 'unknown';
+  const itemCount = Array.isArray(data) ? data.length : 1;
+  
+  console.log(`[LISTENERS] 📡 Real-time update: ${collection} (${itemCount} items)`);
+  
+  // Update React Query cache (for immediate UI updates)
   queryClient.setQueryData([endpoint], data);
   
-  // Update CacheStorage for offline
+  // AUTO-CACHE ALL DATA to CacheStorage for offline use (non-blocking)
   if (window.caches) {
-    caches.open('iccat-data-v6').then(cache => {
-      const response = new Response(JSON.stringify(data), {
-        headers: { 'Content-Type': 'application/json' }
+    caches.open('iccat-data-v6')
+      .then(cache => {
+        const response = new Response(JSON.stringify(data), {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        return cache.put(endpoint, response)
+          .then(() => {
+            console.log(`[LISTENERS] 💾 Cached offline: ${collection} (${itemCount} items)`);
+          });
+      })
+      .catch(err => {
+        console.warn(`[LISTENERS] ⚠️ Failed to cache ${collection}:`, err.message);
       });
-      cache.put(endpoint, response);
-    });
   }
 
   // AUTO-PRECACHE any images from this data in background (non-blocking)
+  // This works for ALL CRUD operations: CREATE, UPDATE, DELETE
   const imageUrls = extractImageUrls(data);
   if (imageUrls.size > 0) {
-    precacheImagesInBackground(imageUrls);
+    precacheImagesInBackground(imageUrls, collection);
   }
 }
 
