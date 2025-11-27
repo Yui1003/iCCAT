@@ -1,7 +1,7 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import baselineData from "./baseline-data.json";
 
-const DATA_CACHE_NAME = 'iccat-data-v5';
+const DATA_CACHE_NAME = 'iccat-data-v6';
 
 // Global request counter for kiosk uptime tracking
 export const requestCounter = {
