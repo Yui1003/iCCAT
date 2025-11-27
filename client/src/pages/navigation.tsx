@@ -81,19 +81,11 @@ export default function Navigation() {
   });
 
   const { data: indoorNodes = [] } = useQuery<IndoorNode[]>({
-    queryKey: ['/api/indoor-nodes'],
-    queryFn: async () => {
-      const res = await fetch('/api/indoor-nodes');
-      return res.json();
-    }
+    queryKey: ['/api/indoor-nodes']
   });
 
   const { data: roomPaths = [] } = useQuery<RoomPath[]>({
-    queryKey: ['/api/room-paths'],
-    queryFn: async () => {
-      const res = await fetch('/api/room-paths');
-      return res.json();
-    }
+    queryKey: ['/api/room-paths']
   });
 
   useEffect(() => {
