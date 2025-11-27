@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { precacheApiImages } from '@/lib/image-precache';
 
 interface CacheVerificationStatus {
   serviceWorker: 'checking' | 'registered' | 'failed';
@@ -7,6 +8,7 @@ interface CacheVerificationStatus {
   dataCache: 'checking' | 'verified' | 'failed';
   mapTiles: 'checking' | 'verified' | 'failed';
   apiEndpoints: 'checking' | 'verified' | 'failed';
+  images: 'checking' | 'verified' | 'failed';
 }
 
 export function CacheVerificationLoader() {
@@ -15,9 +17,11 @@ export function CacheVerificationLoader() {
     staticCache: 'checking',
     dataCache: 'checking',
     mapTiles: 'checking',
-    apiEndpoints: 'checking'
+    apiEndpoints: 'checking',
+    images: 'checking'
   });
   const [isComplete, setIsComplete] = useState(false);
+  const [imagePrecacheInfo, setImagePrecacheInfo] = useState<string>('');
 
   useEffect(() => {
     const verifyCache = async () => {
@@ -102,6 +106,25 @@ export function CacheVerificationLoader() {
             apiEndpoints: allCached ? 'verified' : 'failed'
           }));
           console.log('[CACHE-LOADER] API endpoints cached:', cachedEndpoints);
+        }
+
+        // 6. Pre-cache all images from API responses
+        console.log('[CACHE-LOADER] Starting image pre-caching...');
+        try {
+          const imageStatus = await precacheApiImages();
+          setImagePrecacheInfo(`${imageStatus.cached}/${imageStatus.extracted} images`);
+          setStatus(prev => ({
+            ...prev,
+            images: (imageStatus.cached > 0 || imageStatus.extracted === 0) ? 'verified' : 'failed'
+          }));
+          console.log('[CACHE-LOADER] Image pre-caching complete:', imageStatus);
+        } catch (err) {
+          console.error('[CACHE-LOADER] Image pre-caching failed:', err);
+          setStatus(prev => ({
+            ...prev,
+            images: 'failed'
+          }));
+          setImagePrecacheInfo('0/0 images');
         }
 
         setIsComplete(true);
@@ -214,7 +237,25 @@ export function CacheVerificationLoader() {
               {getStatusIcon(status.apiEndpoints)}
             </span>
           </div>
+
+          <div className="flex items-center justify-between p-3 bg-card rounded-lg border">
+            <div className="flex items-center gap-3">
+              <Loader2 className={`w-4 h-4 ${status.images === 'checking' ? 'animate-spin' : ''}`} />
+              <span className="text-sm">Images</span>
+            </div>
+            <span className={`text-sm font-medium ${getStatusColor(status.images)}`}>
+              {getStatusIcon(status.images)}
+            </span>
+          </div>
         </div>
+
+        {imagePrecacheInfo && (
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">
+              Pre-cached: {imagePrecacheInfo}
+            </p>
+          </div>
+        )}
 
         <div className="pt-2 text-center">
           <p className="text-xs text-muted-foreground">
