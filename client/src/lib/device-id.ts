@@ -1,44 +1,60 @@
 // Device ID generation and retrieval for kiosk identification
+// Now IP-based for consistent kiosk device tracking across browser sessions
 const DEVICE_ID_KEY = 'iccat-device-id';
+let cachedDeviceId: string | null = null;
 
-export function generateDeviceId(): string {
-  // Format: iccat-kiosk-{timestamp}-{random}
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 8);
-  return `iccat-kiosk-${timestamp}-${random}`;
-}
+export async function getOrCreateDeviceId(): Promise<string> {
+  // Return cached device ID if available
+  if (cachedDeviceId) {
+    console.log('[DEVICE-ID] Using cached device ID:', cachedDeviceId);
+    return cachedDeviceId;
+  }
 
-export function getOrCreateDeviceId(): string {
   try {
-    // Try to retrieve existing device ID from localStorage
+    // Fetch IP address from backend (this identifies the physical kiosk device)
+    const response = await fetch('/api/get-device-ip');
+    if (response.ok) {
+      const data = await response.json();
+      const ipBasedId = data.ip || 'unknown-device';
+      cachedDeviceId = ipBasedId;
+      console.log('[DEVICE-ID] Using IP-based device ID:', ipBasedId);
+      return ipBasedId;
+    }
+  } catch (err) {
+    console.warn('[DEVICE-ID] Failed to fetch IP:', err);
+  }
+
+  // Fallback to localStorage for offline mode or if fetch fails
+  try {
     const existing = localStorage.getItem(DEVICE_ID_KEY);
     if (existing) {
-      console.log('[DEVICE-ID] Using existing device ID:', existing);
+      cachedDeviceId = existing;
+      console.log('[DEVICE-ID] Using fallback localStorage device ID:', existing);
       return existing;
     }
 
-    // Generate new device ID for this kiosk
-    const newId = generateDeviceId();
-    localStorage.setItem(DEVICE_ID_KEY, newId);
-    console.log('[DEVICE-ID] Generated new device ID:', newId);
-    return newId;
+    // Generate fallback device ID
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 8);
+    const fallbackId = `fallback-${timestamp}-${random}`;
+    localStorage.setItem(DEVICE_ID_KEY, fallbackId);
+    cachedDeviceId = fallbackId;
+    console.log('[DEVICE-ID] Generated fallback device ID:', fallbackId);
+    return fallbackId;
   } catch (err) {
-    console.warn('[DEVICE-ID] localStorage not available, generating temporary ID:', err);
-    // Fallback if localStorage is unavailable (shouldn't happen on modern browsers)
-    return generateDeviceId();
+    console.warn('[DEVICE-ID] localStorage not available:', err);
+    const tempId = `temp-${Date.now()}`;
+    cachedDeviceId = tempId;
+    return tempId;
   }
 }
 
 export function getDeviceId(): string | null {
-  try {
-    return localStorage.getItem(DEVICE_ID_KEY);
-  } catch (err) {
-    console.warn('[DEVICE-ID] Unable to access localStorage:', err);
-    return null;
-  }
+  return cachedDeviceId;
 }
 
 export function clearDeviceId(): void {
+  cachedDeviceId = null;
   try {
     localStorage.removeItem(DEVICE_ID_KEY);
     console.log('[DEVICE-ID] Device ID cleared');
