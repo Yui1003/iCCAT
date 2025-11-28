@@ -1335,12 +1335,12 @@ export class DatabaseStorage implements IStorage {
   async updateKioskHeartbeat(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined> {
     try {
       const now = new Date();
-      await db.collection('kioskUptimes').doc(deviceId).update({
+      await db.collection('kioskUptimes').doc(deviceId).set({
         totalRequests,
         successfulRequests,
         uptimePercentage,
         lastHeartbeat: now,
-      });
+      }, { merge: true });
       const doc = await db.collection('kioskUptimes').doc(deviceId).get();
       return { id: doc.id, ...doc.data() } as KioskUptime;
     } catch (error) {
@@ -1352,14 +1352,14 @@ export class DatabaseStorage implements IStorage {
   async endKioskSession(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined> {
     try {
       const now = new Date();
-      await db.collection('kioskUptimes').doc(deviceId).update({
+      await db.collection('kioskUptimes').doc(deviceId).set({
         totalRequests,
         successfulRequests,
         uptimePercentage,
         lastHeartbeat: now,
         sessionEnd: now,
         isActive: false,
-      });
+      }, { merge: true });
       const doc = await db.collection('kioskUptimes').doc(deviceId).get();
       return { id: doc.id, ...doc.data() } as KioskUptime;
     } catch (error) {

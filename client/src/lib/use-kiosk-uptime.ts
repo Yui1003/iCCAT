@@ -1,13 +1,22 @@
 // Hook for tracking kiosk uptime
 import { useEffect, useRef } from 'react';
+import { useLocation } from 'wouter';
 import { getOrCreateDeviceId } from './device-id';
 import { apiRequest, requestCounter } from './queryClient';
 
 export function useKioskUptime() {
   const deviceIdRef = useRef<string | null>(null);
   const sessionStartRef = useRef<number>(Date.now());
+  const [location] = useLocation();
 
   useEffect(() => {
+    // Don't track heartbeats on admin pages - only track user-facing pages (kiosk usage)
+    const isAdminPage = location?.startsWith('/admin/');
+    if (isAdminPage) {
+      console.log('[UPTIME] Admin page detected - skipping kiosk heartbeat tracking');
+      return;
+    }
+
     // Initialize device ID and start session
     sessionStartRef.current = Date.now();
 
@@ -84,5 +93,5 @@ export function useKioskUptime() {
       clearInterval(heartbeatInterval);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []);
+  }, [location]);
 }
