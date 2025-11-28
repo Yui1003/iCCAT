@@ -18,7 +18,8 @@ import {
   notifyIndoorNodesChange, 
   notifyRoomPathsChange, 
   notifySettingsChange,
-  notifyAnalyticsReset
+  notifyAnalyticsReset,
+  notifyKioskUptimeChange
 } from "./listeners";
 import {
   insertBuildingSchema,
@@ -1206,6 +1207,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const uptime = await storage.startKioskSession(deviceId, appVersion);
       console.log(`[KIOSK-UPTIME] Session started for device: ${deviceId}`);
+      // Broadcast real-time update to all listeners
+      const allUptimes = await storage.getAllKioskUptimes();
+      notifyKioskUptimeChange(allUptimes);
       res.json(uptime);
     } catch (error) {
       console.error('Error starting kiosk session:', error);
@@ -1220,6 +1224,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Device ID is required' });
       }
       const uptime = await storage.updateKioskHeartbeat(deviceId, totalRequests, successfulRequests, uptimePercentage);
+      // Broadcast real-time update to all listeners
+      const allUptimes = await storage.getAllKioskUptimes();
+      notifyKioskUptimeChange(allUptimes);
       res.json(uptime);
     } catch (error) {
       console.error('Error updating kiosk heartbeat:', error);
@@ -1235,6 +1242,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const uptime = await storage.endKioskSession(deviceId, totalRequests, successfulRequests, uptimePercentage);
       console.log(`[KIOSK-UPTIME] Session ended for device: ${deviceId}, uptime: ${uptimePercentage}%`);
+      // Broadcast real-time update to all listeners - device now shows as INACTIVE
+      const allUptimes = await storage.getAllKioskUptimes();
+      notifyKioskUptimeChange(allUptimes);
       res.json(uptime);
     } catch (error) {
       console.error('Error ending kiosk session:', error);
@@ -1432,6 +1442,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       listenerManager.registerClient('settings', res, clientId);
     } catch (error) {
       console.error('[LISTENER] Settings listener error:', error);
+      res.write(`data: ${JSON.stringify([])}\n\n`);
+      res.end();
+    }
+  });
+
+  app.get('/api/listen/kiosk-uptime', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+      const uptimes = await storage.getAllKioskUptimes();
+      res.write(`data: ${JSON.stringify(uptimes)}\n\n`);
+      
+      const clientId = `kiosk-uptime-${Date.now()}-${Math.random()}`;
+      listenerManager.registerClient('kiosk-uptime', res, clientId);
+    } catch (error) {
+      console.error('[LISTENER] Kiosk-uptime listener error:', error);
       res.write(`data: ${JSON.stringify([])}\n\n`);
       res.end();
     }

@@ -6,7 +6,7 @@
 
 import { EventEmitter } from 'events';
 
-type ListenerType = 'buildings' | 'events' | 'staff' | 'floors' | 'rooms' | 'walkpaths' | 'drivepaths' | 'indoor-nodes' | 'room-paths' | 'settings';
+type ListenerType = 'buildings' | 'events' | 'staff' | 'floors' | 'rooms' | 'walkpaths' | 'drivepaths' | 'indoor-nodes' | 'room-paths' | 'settings' | 'kiosk-uptime';
 
 interface ClientConnection {
   res: any;
@@ -20,7 +20,7 @@ class ListenerManager extends EventEmitter {
   constructor() {
     super();
     // Initialize maps for each collection type
-    const types: ListenerType[] = ['buildings', 'events', 'staff', 'floors', 'rooms', 'walkpaths', 'drivepaths', 'indoor-nodes', 'room-paths', 'settings'];
+    const types: ListenerType[] = ['buildings', 'events', 'staff', 'floors', 'rooms', 'walkpaths', 'drivepaths', 'indoor-nodes', 'room-paths', 'settings', 'kiosk-uptime'];
     types.forEach(type => {
       this.clients.set(type, []);
     });
@@ -181,4 +181,8 @@ export function notifySettingsChange(settings: any[]) {
 export function notifyAnalyticsReset() {
   // Broadcast reset event to all settings listeners (they will refetch)
   listenerManager.broadcastUpdate('settings', { _reset: true, timestamp: Date.now() });
+}
+
+export function notifyKioskUptimeChange(uptimes: any[]) {
+  listenerManager.broadcastUpdate('kiosk-uptime', uptimes);
 }

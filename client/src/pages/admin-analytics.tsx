@@ -77,10 +77,31 @@ export default function AdminAnalytics() {
     queryKey: ['/api/admin/analytics']
   });
 
-  const { data: kioskUptimes = [] } = useQuery<KioskUptime[]>({
-    queryKey: ['/api/analytics/kiosk-uptime'],
-    refetchInterval: 30000
-  });
+  const [kioskUptimes, setKioskUptimes] = useState<KioskUptime[]>([]);
+
+  // Real-time listener for kiosk uptime changes
+  useEffect(() => {
+    const eventSource = new EventSource('/api/listen/kiosk-uptime');
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setKioskUptimes(Array.isArray(data) ? data : []);
+        console.log('[ANALYTICS] Received kiosk uptime update');
+      } catch (err) {
+        console.warn('Error parsing kiosk uptime data:', err);
+      }
+    };
+    
+    eventSource.onerror = () => {
+      console.warn('[ANALYTICS] Kiosk uptime listener disconnected');
+      eventSource.close();
+    };
+    
+    return () => {
+      eventSource.close();
+    };
+  }, []);
 
   const handleReset = async () => {
     try {
