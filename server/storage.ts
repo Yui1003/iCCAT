@@ -153,6 +153,7 @@ export interface IStorage {
   updateKioskHeartbeat(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined>;
   endKioskSession(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined>;
   getAllKioskUptimes(): Promise<KioskUptime[]>;
+  deleteAllKioskUptimes(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1335,13 +1336,23 @@ export class DatabaseStorage implements IStorage {
   async updateKioskHeartbeat(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined> {
     try {
       const now = new Date();
-      await db.collection('kioskUptimes').doc(deviceId).set({
+      const docRef = db.collection('kioskUptimes').doc(deviceId);
+      const existingDoc = await docRef.get();
+      
+      // Safeguard: Only update if the document exists (session was properly started)
+      // This prevents orphaned records with missing sessionStart
+      if (!existingDoc.exists) {
+        console.warn(`[KIOSK-UPTIME] Heartbeat rejected: No session found for device ${deviceId}. Device must call /start first.`);
+        return undefined;
+      }
+      
+      await docRef.set({
         totalRequests,
         successfulRequests,
         uptimePercentage,
         lastHeartbeat: now,
       }, { merge: true });
-      const doc = await db.collection('kioskUptimes').doc(deviceId).get();
+      const doc = await docRef.get();
       return { id: doc.id, ...doc.data() } as KioskUptime;
     } catch (error) {
       console.error('Firestore error:', error);
@@ -1375,6 +1386,30 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Firestore error:', error);
       return [];
+    }
+  }
+
+  async deleteAllKioskUptimes(): Promise<void> {
+    try {
+      const snapshot = await db.collection('kioskUptimes').get();
+      const docs = snapshot.docs;
+      const totalCount = docs.length;
+      
+      // Firestore batch operations have a limit of 500 operations per batch
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+        const batch = db.batch();
+        const chunk = docs.slice(i, i + BATCH_SIZE);
+        chunk.forEach(doc => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+      }
+      
+      console.log(`[KIOSK-UPTIME] Deleted ${totalCount} kiosk uptime records`);
+    } catch (error) {
+      console.error('Firestore error:', error);
+      throw new Error('Failed to delete kiosk uptime records');
     }
   }
 }

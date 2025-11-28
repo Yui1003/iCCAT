@@ -1248,6 +1248,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Device ID is required' });
       }
       const uptime = await storage.updateKioskHeartbeat(deviceId, totalRequests, successfulRequests, uptimePercentage);
+      
+      // If no session exists for this device, tell the client to start a session first
+      if (!uptime) {
+        return res.status(404).json({ error: 'No active session found. Please call /start first.' });
+      }
+      
       // Broadcast real-time update to all listeners
       const allUptimes = await storage.getAllKioskUptimes();
       notifyKioskUptimeChange(allUptimes);
@@ -1283,6 +1289,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching kiosk uptimes:', error);
       res.status(500).json({ error: 'Failed to fetch kiosk uptimes' });
+    }
+  });
+
+  app.delete('/api/analytics/kiosk-uptime', async (req, res) => {
+    try {
+      await storage.deleteAllKioskUptimes();
+      // Broadcast real-time update to all listeners - all devices cleared
+      notifyKioskUptimeChange([]);
+      res.json({ success: true, message: 'All kiosk uptime records deleted' });
+    } catch (error) {
+      console.error('Error deleting kiosk uptimes:', error);
+      res.status(500).json({ error: 'Failed to delete kiosk uptimes' });
     }
   });
 
