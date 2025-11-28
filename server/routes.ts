@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { exec } from "child_process";
 import https from "https";
 import http from "http";
-import type { File } from "express-fileupload";
 import { storage } from "./storage";
 import { upload, uploadImageToFirebase } from "./upload";
 import { 
