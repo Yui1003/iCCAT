@@ -16,7 +16,8 @@ import {
   notifyDrivepathsChange, 
   notifyIndoorNodesChange, 
   notifyRoomPathsChange, 
-  notifySettingsChange 
+  notifySettingsChange,
+  notifyAnalyticsReset
 } from "./listeners";
 import {
   insertBuildingSchema,
@@ -1120,10 +1121,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/analytics/reset', async (req, res) => {
     try {
       await storage.resetAnalytics();
-      res.json({ success: true, message: 'Analytics data reset' });
+      // Broadcast reset to all connected kiosks via Firebase
+      notifyAnalyticsReset();
+      return res.json({ success: true, message: 'Analytics data reset' });
     } catch (error) {
       console.error('Error resetting analytics:', error);
-      res.status(500).json({ error: 'Failed to reset analytics' });
+      if (!res.headersSent) {
+        return res.status(500).json({ error: 'Failed to reset analytics' });
+      }
     }
   });
 

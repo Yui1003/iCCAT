@@ -177,3 +177,8 @@ export function notifyRoomPathsChange(roomPaths: any[]) {
 export function notifySettingsChange(settings: any[]) {
   listenerManager.broadcastUpdate('settings', settings);
 }
+
+export function notifyAnalyticsReset() {
+  // Broadcast reset event to all settings listeners (they will refetch)
+  listenerManager.broadcastUpdate('settings', { _reset: true, timestamp: Date.now() });
+}

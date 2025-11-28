@@ -514,7 +514,25 @@ export default function AdminAnalytics() {
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-foreground truncate">{device.deviceId}</p>
                               <p className="text-xs text-muted-foreground mt-1">
-                                {formatDuration(device.sessionStart, device.sessionEnd)} • Started: {new Date(device.sessionStart).toLocaleString()}
+                                {formatDuration(device.sessionStart, device.sessionEnd)} • Started: {device.sessionStart ? (() => {
+                                  try {
+                                    const date = new Date(device.sessionStart);
+                                    if (isNaN(date.getTime())) return 'Invalid Date';
+                                    const formatter = new Intl.DateTimeFormat('en-US', {
+                                      timeZone: 'Asia/Manila',
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      second: '2-digit',
+                                      hour12: false
+                                    });
+                                    return formatter.format(date);
+                                  } catch (err) {
+                                    return 'Invalid Date';
+                                  }
+                                })() : 'N/A'}
                               </p>
                             </div>
                             <div className="flex items-center gap-6">
