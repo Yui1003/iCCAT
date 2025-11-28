@@ -891,16 +891,23 @@ export class DatabaseStorage implements IStorage {
 
   async resetAnalytics(): Promise<void> {
     try {
-      const snapshot = await db.collection('analytics').get();
       const batch = db.batch();
       
-      snapshot.docs.forEach(doc => {
+      // Delete all analytics events
+      const analyticsSnapshot = await db.collection('analytics').get();
+      analyticsSnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      
+      // Delete all kiosk uptime records
+      const kioskSnapshot = await db.collection('kioskUptimes').get();
+      kioskSnapshot.docs.forEach(doc => {
         batch.delete(doc.ref);
       });
       
       await batch.commit();
       analyticsMemory.clear();
-      console.log('[Analytics] All analytics data cleared from Firestore');
+      console.log('[Analytics] All analytics data and kiosk uptime records cleared from Firestore');
     } catch (error) {
       console.error('Error resetting analytics:', error);
       // Clear in-memory cache on error (graceful fallback)
