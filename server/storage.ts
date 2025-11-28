@@ -16,7 +16,8 @@ import type {
   SavedRoute, InsertSavedRoute,
   IndoorNode, InsertIndoorNode,
   RoomPath, InsertRoomPath,
-  KioskUptime, InsertKioskUptime
+  KioskUptime, InsertKioskUptime,
+  RoutePhase
 } from "@shared/schema";
 import type { AnalyticsEvent, AnalyticsSummary } from "@shared/analytics-schema";
 import { AnalyticsEventType } from "@shared/analytics-schema";

@@ -1,9 +1,9 @@
-import type { Express, Request } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { exec } from "child_process";
 import https from "https";
 import http from "http";
-import type { File } from "multer";
+import type { File } from "express-fileupload";
 import { storage } from "./storage";
 import { upload, uploadImageToFirebase } from "./upload";
 import { 
@@ -50,6 +50,11 @@ const updateSettingSchema = z.object({
   value: z.string()
 });
 
+interface UploadRequestBody {
+  type?: string;
+  id?: string;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get device IP endpoint - returns the client IP for kiosk device identification
   app.get('/api/get-device-ip', (req, res) => {
@@ -65,15 +70,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Image upload endpoint
-  app.post('/api/upload-image', upload.single('file'), async (req: Request<{}, {}, {}, {}>, res) => {
+  app.post('/api/upload-image', upload.single('file'), async (req: Request<{}, {}, UploadRequestBody>, res: Response) => {
     try {
-      const file = (req as any).file as File | undefined;
+      const file = (req as any).file as any;
       if (!file) {
         return res.status(400).json({ error: 'No file provided' });
       }
 
-      const type = req.body.type || 'general';
-      const id = req.body.id || 'unknown';
+      const type = (req.body as UploadRequestBody).type || 'general';
+      const id = (req.body as UploadRequestBody).id || 'unknown';
 
       const url = await uploadImageToFirebase(file, type, id);
       return res.json({ url });
