@@ -763,14 +763,16 @@ export class DatabaseStorage implements IStorage {
   async createSavedRoute(route: InsertSavedRoute): Promise<SavedRoute> {
     try {
       const id = randomUUID();
+      const waypoints = Array.isArray(route.waypoints) ? (route.waypoints as string[]) : [];
+      const phases = Array.isArray(route.phases) ? (route.phases as RoutePhase[]) : [];
       const savedRoute: SavedRoute = { 
         id,
         startId: route.startId,
         endId: route.endId,
-        waypoints: Array.isArray(route.waypoints) ? route.waypoints : [],
+        waypoints,
         mode: route.mode,
         vehicleType: route.vehicleType ?? null,
-        phases: route.phases,
+        phases,
         createdAt: new Date(),
         expiresAt: route.expiresAt ?? null,
         // Indoor navigation fields
@@ -785,14 +787,16 @@ export class DatabaseStorage implements IStorage {
       console.error('Firestore error, using in-memory storage:', error);
       // Fallback to in-memory storage
       const id = randomUUID();
+      const waypoints = Array.isArray(route.waypoints) ? (route.waypoints as string[]) : [];
+      const phases = Array.isArray(route.phases) ? (route.phases as RoutePhase[]) : [];
       const savedRoute: SavedRoute = { 
         id,
         startId: route.startId,
         endId: route.endId,
-        waypoints: Array.isArray(route.waypoints) ? route.waypoints : [],
+        waypoints,
         mode: route.mode,
         vehicleType: route.vehicleType ?? null,
-        phases: route.phases,
+        phases,
         createdAt: new Date(),
         expiresAt: route.expiresAt ?? null,
         // Indoor navigation fields
@@ -847,11 +851,11 @@ export class DatabaseStorage implements IStorage {
 
       const summaries: AnalyticsSummary[] = [];
       
-      for (const [eventType, events] of eventsByType) {
+      for (const [eventType, events] of Array.from(eventsByType)) {
         if (events.length === 0) continue;
 
-        const responseTimes = events.map(e => e.responseTime);
-        const averageResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+        const responseTimes = events.map((e: AnalyticsEvent) => e.responseTime);
+        const averageResponseTime = responseTimes.reduce((a: number, b: number) => a + b, 0) / responseTimes.length;
         const minResponseTime = Math.min(...responseTimes);
         const maxResponseTime = Math.max(...responseTimes);
 
@@ -867,7 +871,7 @@ export class DatabaseStorage implements IStorage {
 
       // Update in-memory cache
       analyticsMemory.clear();
-      for (const [eventType, events] of eventsByType) {
+      for (const [eventType, events] of Array.from(eventsByType)) {
         analyticsMemory.set(eventType, { events });
       }
 
@@ -969,7 +973,12 @@ export class DatabaseStorage implements IStorage {
 
   async createIndoorNode(node: InsertIndoorNode): Promise<IndoorNode> {
     const id = randomUUID();
-    const newNode: IndoorNode = { id, ...node };
+    const newNode: IndoorNode = { 
+      id, 
+      ...node,
+      label: node.label ?? null,
+      description: node.description ?? null
+    } as IndoorNode;
     
     if (FORCE_FALLBACK_MODE) {
       const data = loadFallbackData();
@@ -993,7 +1002,12 @@ export class DatabaseStorage implements IStorage {
       const data = loadFallbackData();
       const index = (data.indoorNodes || []).findIndex((n: IndoorNode) => n.id === id);
       if (index === -1) return undefined;
-      const updatedNode = { id, ...node };
+      const updatedNode: IndoorNode = { 
+        id, 
+        ...node,
+        label: node.label ?? null,
+        description: node.description ?? null
+      } as IndoorNode;
       data.indoorNodes[index] = updatedNode;
       saveFallbackData();
       return updatedNode;
@@ -1004,7 +1018,12 @@ export class DatabaseStorage implements IStorage {
       const doc = await docRef.get();
       if (!doc.exists) return undefined;
       await docRef.update(node as any);
-      return { id, ...node };
+      return { 
+        id, 
+        ...node,
+        label: node.label ?? null,
+        description: node.description ?? null
+      } as IndoorNode;
     } catch (error) {
       console.error('Firestore error:', error);
       return undefined;
@@ -1079,7 +1098,11 @@ export class DatabaseStorage implements IStorage {
 
   async createRoomPath(path: InsertRoomPath): Promise<RoomPath> {
     const id = randomUUID();
-    const newPath: RoomPath = { id, ...path };
+    const newPath: RoomPath = { 
+      id, 
+      ...path,
+      name: path.name ?? null
+    } as RoomPath;
     
     if (FORCE_FALLBACK_MODE) {
       const data = loadFallbackData();
@@ -1103,7 +1126,11 @@ export class DatabaseStorage implements IStorage {
       const data = loadFallbackData();
       const index = (data.roomPaths || []).findIndex((p: RoomPath) => p.id === id);
       if (index === -1) return undefined;
-      const updatedPath = { id, ...path };
+      const updatedPath: RoomPath = { 
+        id, 
+        ...path,
+        name: path.name ?? null
+      } as RoomPath;
       data.roomPaths[index] = updatedPath;
       saveFallbackData();
       return updatedPath;
@@ -1114,7 +1141,11 @@ export class DatabaseStorage implements IStorage {
       const doc = await docRef.get();
       if (!doc.exists) return undefined;
       await docRef.update(path as any);
-      return { id, ...path };
+      return { 
+        id, 
+        ...path,
+        name: path.name ?? null
+      } as RoomPath;
     } catch (error) {
       console.error('Firestore error:', error);
       return undefined;

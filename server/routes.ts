@@ -1,8 +1,9 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { exec } from "child_process";
 import https from "https";
 import http from "http";
+import type { File } from "multer";
 import { storage } from "./storage";
 import { upload, uploadImageToFirebase } from "./upload";
 import { 
@@ -64,16 +65,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Image upload endpoint
-  app.post('/api/upload-image', upload.single('file'), async (req, res) => {
+  app.post('/api/upload-image', upload.single('file'), async (req: Request<{}, {}, {}, {}>, res) => {
     try {
-      if (!req.file) {
+      const file = (req as any).file as File | undefined;
+      if (!file) {
         return res.status(400).json({ error: 'No file provided' });
       }
 
       const type = req.body.type || 'general';
       const id = req.body.id || 'unknown';
 
-      const url = await uploadImageToFirebase(req.file, type, id);
+      const url = await uploadImageToFirebase(file, type, id);
       return res.json({ url });
     } catch (error) {
       console.error('[UPLOAD] Error:', error);
