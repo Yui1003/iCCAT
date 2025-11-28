@@ -1708,6 +1708,8 @@ export default function Navigation() {
   ) => {
     if (!directionsDestination) return;
 
+    const routeStartTime = performance.now();
+
     // Handle kiosk location or regular building
     const start = startId === 'kiosk' 
       ? KIOSK_LOCATION as any
@@ -1759,6 +1761,9 @@ export default function Navigation() {
           } catch (error) {
             console.error('Error saving two-phase route:', error);
           }
+
+          const duration = performance.now() - routeStartTime;
+          trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, vehicleType: selectedVehicle, routeType: 'two-phase', source: 'dialog' });
         }
       } catch (error) {
         console.error('Error generating two-phase route:', error);
@@ -1777,6 +1782,8 @@ export default function Navigation() {
             description: `Unable to calculate ${travelMode} route. Please try again.`,
             variant: "destructive"
           });
+          const duration = performance.now() - routeStartTime;
+          trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, source: 'dialog' });
           return;
         }
 
@@ -1856,6 +1863,9 @@ export default function Navigation() {
         } catch (error) {
           console.error('Error saving single-destination route:', error);
         }
+
+        const duration = performance.now() - routeStartTime;
+        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: true, hasRoom: !!destinationRoomData, source: 'dialog' });
       } catch (error) {
         console.error('Error generating single-destination route:', error);
         toast({
@@ -1863,6 +1873,8 @@ export default function Navigation() {
           description: "Unable to calculate route. Please try again.",
           variant: "destructive"
         });
+        const duration = performance.now() - routeStartTime;
+        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, error: true, source: 'dialog' });
       }
       return;
     }
@@ -1883,6 +1895,8 @@ export default function Navigation() {
             description: "Unable to calculate route with stops. Please try again.",
             variant: "destructive"
           });
+          const duration = performance.now() - routeStartTime;
+          trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'multi-phase', routeFound: false, source: 'dialog' });
           return;
         }
 
@@ -1930,6 +1944,8 @@ export default function Navigation() {
           // Continue even if save fails - route is still usable on kiosk
         }
 
+        const duration = performance.now() - routeStartTime;
+        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, hasWaypoints: waypointBuildings.length > 0, routeType: 'multi-phase', source: 'dialog' });
         return;
       } catch (error) {
         console.error('Error generating multi-phase route:', error);
@@ -1938,6 +1954,8 @@ export default function Navigation() {
           description: "Unable to calculate route with stops.",
           variant: "destructive"
         });
+        const duration = performance.now() - routeStartTime;
+        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, error: true, source: 'dialog' });
         return;
       }
     }
