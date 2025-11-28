@@ -187,34 +187,40 @@ export default function AdminAnalytics() {
       let end: number;
 
       // Parse start time - handle all formats
-      if (typeof startTime === 'number') {
+      if (typeof startTime === 'number' && startTime > 0) {
         start = startTime;
       } else if (startTime instanceof Date) {
         start = startTime.getTime();
-      } else if (typeof startTime === 'string') {
+      } else if (typeof startTime === 'string' && startTime.length > 0) {
         const parsed = new Date(startTime).getTime();
         if (isNaN(parsed)) return 'N/A';
         start = parsed;
-      } else if (startTime && typeof startTime === 'object' && startTime._seconds) {
+      } else if (startTime && typeof startTime === 'object' && startTime._seconds && startTime._seconds > 0) {
         // Firestore Timestamp
         start = (startTime._seconds * 1000) + Math.floor(startTime._nanoseconds / 1000000);
+      } else if (startTime && typeof startTime === 'object' && startTime.toMillis) {
+        // Firebase Timestamp object
+        start = startTime.toMillis();
       } else {
         return 'N/A';
       }
 
       // Parse end time - use liveTime if no endTime (active session)
       if (endTime) {
-        if (typeof endTime === 'number') {
+        if (typeof endTime === 'number' && endTime > 0) {
           end = endTime;
         } else if (endTime instanceof Date) {
           end = endTime.getTime();
-        } else if (typeof endTime === 'string') {
+        } else if (typeof endTime === 'string' && endTime.length > 0) {
           const parsed = new Date(endTime).getTime();
-          if (isNaN(parsed)) return 'N/A';
-          end = parsed;
-        } else if (endTime && typeof endTime === 'object' && endTime._seconds) {
+          if (isNaN(parsed)) end = liveTime;
+          else end = parsed;
+        } else if (endTime && typeof endTime === 'object' && endTime._seconds && endTime._seconds > 0) {
           // Firestore Timestamp
           end = (endTime._seconds * 1000) + Math.floor(endTime._nanoseconds / 1000000);
+        } else if (endTime && typeof endTime === 'object' && endTime.toMillis) {
+          // Firebase Timestamp object
+          end = endTime.toMillis();
         } else {
           end = liveTime; // Use live time for ongoing sessions
         }
@@ -438,7 +444,7 @@ export default function AdminAnalytics() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                   <XAxis dataKey="name" stroke="var(--color-muted-foreground)" />
                   <YAxis stroke="var(--color-muted-foreground)" />
-                  <Tooltip 
+                  <RechartsTooltip 
                     contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}
                     labelStyle={{ color: 'var(--color-foreground)' }}
                   />
@@ -527,7 +533,19 @@ export default function AdminAnalytics() {
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Uptime %</p>
+                        <div className="flex items-center gap-1">
+                          <p className="text-xs text-muted-foreground">Uptime %</p>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button className="p-0 h-4 w-4 rounded-full hover:bg-muted flex items-center justify-center">
+                                <Info className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs max-w-xs">Percentage of successful API requests. Calculated as: (Successful Requests / Total Requests) × 100</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                         <p className="text-2xl font-bold text-foreground">{currentDeviceUptime.uptimePercentage.toFixed(1)}%</p>
                       </div>
                       <div className="space-y-1">
@@ -539,7 +557,19 @@ export default function AdminAnalytics() {
                         <p className="text-2xl font-bold text-green-600">{currentDeviceUptime.successfulRequests}</p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Session Duration</p>
+                        <div className="flex items-center gap-1">
+                          <p className="text-xs text-muted-foreground">Session Duration</p>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button className="p-0 h-4 w-4 rounded-full hover:bg-muted flex items-center justify-center">
+                                <Info className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs max-w-xs">Time elapsed since the kiosk browser session started. Updates in real-time.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                         <p className="text-lg font-bold text-foreground flex items-center gap-1">
                           <Clock className="w-4 h-4" />
                           {formatDuration(currentDeviceUptime.sessionStart, currentDeviceUptime.sessionEnd)}
