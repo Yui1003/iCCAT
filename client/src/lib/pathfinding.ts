@@ -248,16 +248,26 @@ function mergeNearbyNodes(
   return { nodes: mergedNodes, edges: mergedEdges, nodeMapping };
 }
 
-function buildGraph(paths: (Walkpath | Drivepath)[]): {
+function buildGraph(paths: (Walkpath | Drivepath)[], mode?: 'walking' | 'driving' | 'accessible'): {
   nodes: Map<string, GraphNode>,
   edges: Edge[]
 } {
   const nodes = new Map<string, GraphNode>();
   const edges: Edge[] = [];
 
-  console.log(`[CLIENT] Building graph from ${paths.length} paths`);
+  // Filter paths for accessible mode: only use PWD-friendly walkpaths
+  let filteredPaths = paths;
+  if (mode === 'accessible') {
+    filteredPaths = paths.filter(path => {
+      // For walkpaths, check isPwdFriendly flag
+      return (path as any).isPwdFriendly !== false;
+    });
+    console.log(`[CLIENT] Accessible mode: filtered to ${filteredPaths.length}/${paths.length} PWD-friendly paths`);
+  }
 
-  paths.forEach((path) => {
+  console.log(`[CLIENT] Building graph from ${filteredPaths.length} paths`);
+
+  filteredPaths.forEach((path) => {
     const pathNodes = path.nodes as LatLng[];
     
     pathNodes.forEach((node) => {
