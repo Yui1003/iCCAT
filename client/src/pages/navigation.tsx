@@ -158,6 +158,7 @@ export default function Navigation() {
         // Auto-generate route if requested
         if (autoGenerate) {
           setTimeout(async () => {
+            const routeStartTime = performance.now();
             try {
               const waypointIds = waypointsParam ? waypointsParam.split(',') : [];
               const effectiveMode = travelMode || 'walking';
@@ -189,6 +190,9 @@ export default function Navigation() {
                   } catch (error) {
                     console.error('Error saving two-phase route:', error);
                   }
+
+                  const duration = performance.now() - routeStartTime;
+                  trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, vehicleType: vehicleParam, routeType: 'two-phase', source: 'autoGenerate' });
                   return;
                 }
               }
@@ -241,6 +245,9 @@ export default function Navigation() {
                   } catch (error) {
                     console.error('Error saving multi-phase route:', error);
                   }
+
+                  const duration = performance.now() - routeStartTime;
+                  trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, hasWaypoints: waypointIds.length > 0, routeType: 'multi-phase', source: 'autoGenerate' });
                   return;
                 }
               }
@@ -301,9 +308,17 @@ export default function Navigation() {
                 } catch (error) {
                   console.error('Error saving route:', error);
                 }
+
+                const duration = performance.now() - routeStartTime;
+                trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, routeType: 'standard', routeFound: true, source: 'autoGenerate' });
+              } else {
+                const duration = performance.now() - routeStartTime;
+                trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, routeType: 'standard', routeFound: false, source: 'autoGenerate' });
               }
             } catch (error) {
               console.error('Error generating auto route:', error);
+              const duration = performance.now() - routeStartTime;
+              trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { error: true, source: 'autoGenerate' });
             }
           }, 100);
         }
