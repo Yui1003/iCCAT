@@ -737,6 +737,7 @@ export default function Navigation() {
     const validWaypoints = waypoints.filter(w => w !== '');
 
     // If driving mode and no vehicle type selected, show vehicle selector
+    // Skip vehicle selection for accessible mode - it uses PWD-friendly walkpaths only
     if (mode === 'driving' && !vehicleType) {
       setPendingNavigationData({ start: selectedStart, end: selectedEnd, mode });
       setShowVehicleSelector(true);

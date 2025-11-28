@@ -20,7 +20,7 @@ interface GetDirectionsDialogProps {
   destination: Building | null;
   buildings: Building[];
   onClose: () => void;
-  onNavigate: (startId: string, waypointIds: string[], mode: 'walking' | 'driving', vehicleType?: VehicleType) => void;
+  onNavigate: (startId: string, waypointIds: string[], mode: 'walking' | 'driving' | 'accessible', vehicleType?: VehicleType) => void;
   selectedRoom?: { id: string; name: string; buildingName: string } | null;
 }
 
@@ -34,7 +34,7 @@ export default function GetDirectionsDialog({
 }: GetDirectionsDialogProps) {
   const [selectedStart, setSelectedStart] = React.useState<string>("kiosk");
   const [waypoints, setWaypoints] = React.useState<string[]>([]);
-  const [mode, setMode] = React.useState<'walking' | 'driving'>('walking');
+  const [mode, setMode] = React.useState<'walking' | 'driving' | 'accessible'>('walking');
   const [showVehicleSelector, setShowVehicleSelector] = React.useState(false);
   const [selectedVehicle, setSelectedVehicle] = React.useState<VehicleType | null>(null);
 
@@ -85,6 +85,7 @@ export default function GetDirectionsDialog({
       // Filter out empty waypoints
       const validWaypoints = waypoints.filter(w => w !== '');
       
+      // Skip vehicle selector for accessible mode - it uses PWD-friendly walkpaths only
       if (mode === 'driving' && !selectedVehicle) {
         setShowVehicleSelector(true);
       } else {
@@ -275,13 +276,16 @@ export default function GetDirectionsDialog({
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Travel Mode
                 </label>
-                <Tabs value={mode} onValueChange={(v) => setMode(v as 'walking' | 'driving')}>
+                <Tabs value={mode} onValueChange={(v) => setMode(v as 'walking' | 'driving' | 'accessible')}>
                   <TabsList className="w-full">
                     <TabsTrigger value="walking" className="flex-1" data-testid="dialog-tab-walking">
                       Walking
                     </TabsTrigger>
                     <TabsTrigger value="driving" className="flex-1" data-testid="dialog-tab-driving">
                       Driving
+                    </TabsTrigger>
+                    <TabsTrigger value="accessible" className="flex-1" data-testid="dialog-tab-accessible">
+                      Accessible
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
