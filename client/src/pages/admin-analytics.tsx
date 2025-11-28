@@ -597,7 +597,17 @@ export default function AdminAnalytics() {
                               <p className="text-xs text-muted-foreground mt-1">
                                 {formatDuration(device.sessionStart, device.sessionEnd)} • Started: {device.sessionStart ? (() => {
                                   try {
-                                    const date = new Date(device.sessionStart);
+                                    let date: Date;
+                                    
+                                    // Handle Firestore Timestamp objects ({_seconds, _nanoseconds})
+                                    if (device.sessionStart && typeof device.sessionStart === 'object' && '_seconds' in device.sessionStart) {
+                                      date = new Date((device.sessionStart as any)._seconds * 1000);
+                                    } else if (device.sessionStart instanceof Date) {
+                                      date = device.sessionStart;
+                                    } else {
+                                      date = new Date(device.sessionStart);
+                                    }
+                                    
                                     if (isNaN(date.getTime())) return 'Invalid Date';
                                     const formatter = new Intl.DateTimeFormat('en-US', {
                                       timeZone: 'Asia/Manila',
