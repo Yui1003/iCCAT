@@ -7,6 +7,9 @@ import { apiRequest, requestCounter } from './queryClient';
 export function useKioskUptime() {
   const deviceIdRef = useRef<string | null>(null);
   const sessionStartRef = useRef<number>(Date.now());
+  const sessionInitializedRef = useRef<boolean>(false); // Track if session is already initialized
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isPageVisibleRef = useRef<boolean>(!document.hidden);
   const [location] = useLocation();
 
   useEffect(() => {
@@ -17,8 +20,15 @@ export function useKioskUptime() {
       return;
     }
 
+    // Only initialize session once (on first mount)
+    if (sessionInitializedRef.current) {
+      console.log('[UPTIME] Session already initialized, skipping re-initialization');
+      return;
+    }
+
     // Initialize device ID and start session
     sessionStartRef.current = Date.now();
+    sessionInitializedRef.current = true;
 
     const initializeSession = async () => {
       try {
@@ -38,9 +48,9 @@ export function useKioskUptime() {
 
     initializeSession();
 
-    // Send heartbeat every 30 seconds to keep session alive
-    const heartbeatInterval = setInterval(async () => {
-      if (!deviceIdRef.current) return;
+    // Send heartbeat every 30 seconds to keep session alive (but only when page is visible)
+    const sendHeartbeat = async () => {
+      if (!deviceIdRef.current || !isPageVisibleRef.current) return;
 
       try {
         const uptimePercentage =
@@ -63,7 +73,23 @@ export function useKioskUptime() {
       } catch (err) {
         console.warn('[UPTIME] Heartbeat failed:', err);
       }
-    }, 30000); // 30 seconds
+    };
+
+    heartbeatIntervalRef.current = setInterval(sendHeartbeat, 30000); // 30 seconds
+
+    // Handle visibility changes (screensaver, tab switch, etc.)
+    const handleVisibilityChange = () => {
+      isPageVisibleRef.current = !document.hidden;
+      if (isPageVisibleRef.current) {
+        console.log('[UPTIME] Page visible again - resuming heartbeats');
+        // Send heartbeat immediately when page becomes visible
+        sendHeartbeat();
+      } else {
+        console.log('[UPTIME] Page hidden - pausing heartbeats');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Handle page unload - end the session
     const handleBeforeUnload = async () => {
@@ -90,7 +116,8 @@ export function useKioskUptime() {
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      clearInterval(heartbeatInterval);
+      if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [location]);
