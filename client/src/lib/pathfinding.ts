@@ -258,20 +258,16 @@ function buildGraph(paths: (Walkpath | Drivepath)[], mode?: 'walking' | 'driving
   // Filter paths based on travel mode
   let filteredPaths = paths;
   if (mode === 'accessible') {
-    // Accessible mode: ONLY use PWD-friendly walkpaths
-    filteredPaths = paths.filter(path => {
-      return (path as any).isPwdFriendly === true;
-    });
-    console.log(`[CLIENT] Accessible mode: filtered to ${filteredPaths.length}/${paths.length} PWD-friendly paths`);
+    // Accessible mode: Can use ALL walkpaths (no restrictions)
+    console.log(`[CLIENT] Accessible mode: using all ${filteredPaths.length} walkpaths`);
   } else if (mode === 'walking') {
-    // Walking mode: EXCLUDE strictly PWD-only paths AND all PWD-specific paths
+    // Walking mode: EXCLUDE only paths marked as strictly PWD-only
     filteredPaths = paths.filter(path => {
       const strictlyPwdOnly = (path as any).strictlyPwdOnly === true;
-      const isPwdFriendly = (path as any).isPwdFriendly === true;
-      // Exclude if: (1) strictly PWD only, OR (2) PWD-friendly paths
-      return !strictlyPwdOnly && !isPwdFriendly;
+      // Exclude only if: strictly PWD only (walking mode cannot use wheelchair-only paths)
+      return !strictlyPwdOnly;
     });
-    console.log(`[CLIENT] Walking mode: filtered to ${filteredPaths.length}/${paths.length} regular walkpaths (excluded PWD-specific and strictly-PWD-only paths)`);
+    console.log(`[CLIENT] Walking mode: filtered to ${filteredPaths.length}/${paths.length} walkpaths (excluded ${paths.length - filteredPaths.length} strictly-PWD-only paths)`);
   }
 
   console.log(`[CLIENT] Building graph from ${filteredPaths.length} paths`);
