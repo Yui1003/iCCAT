@@ -14,6 +14,7 @@ import {
   notifyRoomsChange, 
   notifyWalkpathsChange, 
   notifyDrivepathsChange, 
+  notifyPwdPathsChange,
   notifyIndoorNodesChange, 
   notifyRoomPathsChange, 
   notifySettingsChange,
@@ -28,6 +29,7 @@ import {
   insertEventSchema,
   insertWalkpathSchema,
   insertDrivepathSchema,
+  insertPwdPathSchema,
   insertSettingSchema,
   insertFeedbackSchema,
   insertSavedRouteSchema,
@@ -911,6 +913,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PWD Paths routes - for wheelchair-accessible navigation
+  app.get('/api/pwd-paths', async (req, res) => {
+    try {
+      const pwdPaths = await storage.getPwdPaths();
+      res.json(pwdPaths);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch PWD paths' });
+    }
+  });
+
+  app.get('/api/pwd-paths/:id', async (req, res) => {
+    try {
+      const pwdPath = await storage.getPwdPath(req.params.id);
+      if (!pwdPath) {
+        return res.status(404).json({ error: 'PWD path not found' });
+      }
+      res.json(pwdPath);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch PWD path' });
+    }
+  });
+
+  app.post('/api/pwd-paths', async (req, res) => {
+    try {
+      const data = insertPwdPathSchema.parse(req.body);
+      const pwdPath = await storage.createPwdPath(data);
+      const pwdPaths = await storage.getPwdPaths();
+      notifyPwdPathsChange(pwdPaths);
+      res.status(201).json(pwdPath);
+    } catch (error) {
+      res.status(400).json({ error: 'Invalid PWD path data' });
+    }
+  });
+
+  app.put('/api/pwd-paths/:id', async (req, res) => {
+    try {
+      const data = insertPwdPathSchema.parse(req.body);
+      const pwdPath = await storage.updatePwdPath(req.params.id, data);
+      if (!pwdPath) {
+        return res.status(404).json({ error: 'PWD path not found' });
+      }
+      const pwdPaths = await storage.getPwdPaths();
+      notifyPwdPathsChange(pwdPaths);
+      res.json(pwdPath);
+    } catch (error) {
+      res.status(400).json({ error: 'Invalid PWD path data' });
+    }
+  });
+
+  app.delete('/api/pwd-paths/:id', async (req, res) => {
+    try {
+      const success = await storage.deletePwdPath(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: 'PWD path not found' });
+      }
+      const pwdPaths = await storage.getPwdPaths();
+      notifyPwdPathsChange(pwdPaths);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete PWD path' });
+    }
+  });
+
   // Indoor Nodes routes - for indoor navigation
   app.get('/api/indoor-nodes', async (req, res) => {
     try {
@@ -1430,6 +1495,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       listenerManager.registerClient('drivepaths', res, clientId);
     } catch (error) {
       console.error('[LISTENER] Drivepaths listener error:', error);
+      res.write(`data: ${JSON.stringify([])}\n\n`);
+      res.end();
+    }
+  });
+
+  app.get('/api/listen/pwd-paths', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+      const pwdPaths = await storage.getPwdPaths();
+      res.write(`data: ${JSON.stringify(pwdPaths)}\n\n`);
+      
+      const clientId = `pwd-paths-${Date.now()}-${Math.random()}`;
+      listenerManager.registerClient('pwd-paths', res, clientId);
+    } catch (error) {
+      console.error('[LISTENER] PWD-paths listener error:', error);
       res.write(`data: ${JSON.stringify([])}\n\n`);
       res.end();
     }

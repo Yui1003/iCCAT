@@ -10,6 +10,7 @@ import type {
   Event, InsertEvent,
   Walkpath, InsertWalkpath,
   Drivepath, InsertDrivepath,
+  PwdPath, InsertPwdPath,
   AdminUser, InsertAdminUser,
   Setting, InsertSetting,
   Feedback, InsertFeedback,
@@ -111,6 +112,13 @@ export interface IStorage {
   createDrivepath(drivepath: InsertDrivepath): Promise<Drivepath>;
   updateDrivepath(id: string, drivepath: InsertDrivepath): Promise<Drivepath | undefined>;
   deleteDrivepath(id: string): Promise<boolean>;
+
+  // PWD Paths - wheelchair-accessible paths
+  getPwdPaths(): Promise<PwdPath[]>;
+  getPwdPath(id: string): Promise<PwdPath | undefined>;
+  createPwdPath(pwdPath: InsertPwdPath): Promise<PwdPath>;
+  updatePwdPath(id: string, pwdPath: InsertPwdPath): Promise<PwdPath | undefined>;
+  deletePwdPath(id: string): Promise<boolean>;
 
   getAdminByUsername(username: string): Promise<AdminUser | undefined>;
   createAdmin(admin: InsertAdminUser): Promise<AdminUser>;
@@ -657,6 +665,67 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Firestore error:', error);
       throw new Error('Cannot delete drivepath in fallback mode');
+    }
+  }
+
+  // PWD Paths - wheelchair-accessible paths
+  async getPwdPaths(): Promise<PwdPath[]> {
+    if (FORCE_FALLBACK_MODE) {
+      const data = loadFallbackData();
+      return data.pwdPaths || [];
+    }
+    try {
+      const snapshot = await db.collection('pwdPaths').get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PwdPath));
+    } catch (error) {
+      console.error('Firestore error, using fallback:', error);
+      const data = loadFallbackData();
+      return data.pwdPaths || [];
+    }
+  }
+
+  async getPwdPath(id: string): Promise<PwdPath | undefined> {
+    try {
+      const doc = await db.collection('pwdPaths').doc(id).get();
+      if (!doc.exists) return undefined;
+      return { id: doc.id, ...doc.data() } as PwdPath;
+    } catch (error) {
+      console.error('Firestore error, using fallback:', error);
+      const data = loadFallbackData();
+      return data.pwdPaths?.find((p: PwdPath) => p.id === id);
+    }
+  }
+
+  async createPwdPath(insertPwdPath: InsertPwdPath): Promise<PwdPath> {
+    try {
+      const id = randomUUID();
+      const pwdPath = { ...insertPwdPath, id } as PwdPath;
+      await db.collection('pwdPaths').doc(id).set(pwdPath);
+      return pwdPath;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      throw new Error('Cannot create PWD path in fallback mode');
+    }
+  }
+
+  async updatePwdPath(id: string, insertPwdPath: InsertPwdPath): Promise<PwdPath | undefined> {
+    try {
+      const pwdPath = { ...insertPwdPath, id } as PwdPath;
+      await db.collection('pwdPaths').doc(id).set(pwdPath);
+      return pwdPath;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      throw new Error('Cannot update PWD path in fallback mode');
+    }
+  }
+
+  async deletePwdPath(id: string): Promise<boolean> {
+    try {
+      await db.collection('pwdPaths').doc(id).delete();
+      return true;
+    } catch (error) {
+      console.error('Firestore error:', error);
+      throw new Error('Cannot delete PWD path in fallback mode');
     }
   }
 

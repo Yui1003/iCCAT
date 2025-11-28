@@ -209,6 +209,7 @@ export const walkpaths = pgTable("walkpaths", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name"),
   nodes: jsonb("nodes").notNull(), // Array of {lat, lng} objects
+  isPwdFriendly: boolean("is_pwd_friendly").default(true), // Whether path is wheelchair-accessible (paved, no stairs)
 });
 
 export const insertWalkpathSchema = createInsertSchema(walkpaths).omit({ id: true });
@@ -225,6 +226,21 @@ export const drivepaths = pgTable("drivepaths", {
 export const insertDrivepathSchema = createInsertSchema(drivepaths).omit({ id: true });
 export type InsertDrivepath = z.infer<typeof insertDrivepathSchema>;
 export type Drivepath = typeof drivepaths.$inferSelect;
+
+// PWD Paths table - wheelchair-accessible paths (ramps, accessible corridors)
+// These connect to walkpaths at accessible building entrances
+export const pwdPaths = pgTable("pwd_paths", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name"),
+  nodes: jsonb("nodes").notNull(), // Array of {lat, lng} objects
+  connectedWalkpathId: varchar("connected_walkpath_id"), // Walkpath this connects to (at ramp/entrance)
+  connectedNodeIndex: integer("connected_node_index"), // Index of the node in the walkpath where connection occurs
+  description: text("description"), // Description of the accessible path (e.g., "Ramp to building entrance")
+});
+
+export const insertPwdPathSchema = createInsertSchema(pwdPaths).omit({ id: true });
+export type InsertPwdPath = z.infer<typeof insertPwdPathSchema>;
+export type PwdPath = typeof pwdPaths.$inferSelect;
 
 // Admin users table
 export const adminUsers = pgTable("admin_users", {
@@ -285,8 +301,11 @@ export interface RouteStep {
 
 export type VehicleType = 'car' | 'motorcycle' | 'bike';
 
+// Navigation modes - walking, driving, or accessible (wheelchair-friendly)
+export type NavigationMode = 'walking' | 'driving' | 'accessible';
+
 export interface RoutePhase {
-  mode: 'walking' | 'driving';
+  mode: NavigationMode;
   polyline: LatLng[];
   steps: RouteStep[];
   distance: string;
@@ -301,7 +320,7 @@ export interface RoutePhase {
 export interface NavigationRoute {
   start: Building;
   end: Building;
-  mode: 'walking' | 'driving';
+  mode: NavigationMode;
   polyline: LatLng[];
   steps: RouteStep[];
   totalDistance: string;

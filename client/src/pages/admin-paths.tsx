@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Route as RouteIcon, Plus, Pencil, Trash2 } from "lucide-react";
+import { Route as RouteIcon, Plus, Pencil, Trash2, Accessibility } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
@@ -29,6 +31,7 @@ export default function AdminPaths() {
   const [deletingPath, setDeletingPath] = useState<any | null>(null);
   const [pathName, setPathName] = useState("");
   const [pathNodes, setPathNodes] = useState<PathNode[]>([]);
+  const [isPwdFriendly, setIsPwdFriendly] = useState(true); // PWD-friendly by default
   const [walkpathSearch, setWalkpathSearch] = useState("");
   const [drivepathSearch, setDrivepathSearch] = useState("");
   const { toast } = useToast();
@@ -115,11 +118,14 @@ export default function AdminPaths() {
       setEditingPathType(pathType ?? (activeTab === 'walkpaths' ? 'walkpath' : 'drivepath'));
       setPathName(path.name || "");
       setPathNodes(Array.isArray(path.nodes) ? path.nodes : []);
+      // Set isPwdFriendly for walkpaths (default to true if not set)
+      setIsPwdFriendly(path.isPwdFriendly !== false);
     } else {
       setEditingPath(null);
       setEditingPathType(null);
       setPathName("");
       setPathNodes([]);
+      setIsPwdFriendly(true); // Default to PWD-friendly for new paths
     }
     setIsDialogOpen(true);
   };
@@ -130,6 +136,7 @@ export default function AdminPaths() {
     setEditingPathType(null);
     setPathName("");
     setPathNodes([]);
+    setIsPwdFriendly(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -140,22 +147,29 @@ export default function AdminPaths() {
       return;
     }
 
-    const data = {
+    // Base data for all path types
+    const baseData = {
       name: pathName,
       nodes: pathNodes
     };
 
+    // Add isPwdFriendly only for walkpaths
+    const walkpathData = {
+      ...baseData,
+      isPwdFriendly
+    };
+
     if (editingPath) {
       if (editingPathType === "walkpath") {
-        updateWalkpath.mutate({ id: editingPath.id, data });
+        updateWalkpath.mutate({ id: editingPath.id, data: walkpathData });
       } else {
-        updateDrivepath.mutate({ id: editingPath.id, data });
+        updateDrivepath.mutate({ id: editingPath.id, data: baseData });
       }
     } else {
       if (activeTab === "walkpaths") {
-        createWalkpath.mutate(data);
+        createWalkpath.mutate(walkpathData);
       } else {
-        createDrivepath.mutate(data);
+        createDrivepath.mutate(baseData);
       }
     }
   };
@@ -193,6 +207,30 @@ export default function AdminPaths() {
                     data-testid="input-path-name"
                   />
                 </div>
+                
+                {/* PWD Friendly toggle - only show for walkpaths */}
+                {(activeTab === "walkpaths" || editingPathType === "walkpath") && (
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Accessibility className="w-5 h-5 text-orange-500" />
+                      <div>
+                        <Label htmlFor="pwd-friendly" className="text-sm font-medium cursor-pointer">
+                          PWD Accessible
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Mark as wheelchair-friendly (paved, no stairs)
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="pwd-friendly"
+                      checked={isPwdFriendly}
+                      onCheckedChange={setIsPwdFriendly}
+                      data-testid="switch-pwd-friendly"
+                    />
+                  </div>
+                )}
+
                 <div className="w-full">
                   <Label>Draw Path on Map</Label>
                   <p className="text-xs text-muted-foreground mb-2">
@@ -280,9 +318,21 @@ export default function AdminPaths() {
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1">
-                                  <p className="font-medium text-foreground">
-                                    {path.name || `Path ${index + 1}`}
-                                  </p>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="font-medium text-foreground">
+                                      {path.name || `Path ${index + 1}`}
+                                    </p>
+                                    {path.isPwdFriendly !== false ? (
+                                      <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                                        <Accessibility className="w-3 h-3 mr-1" />
+                                        PWD
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-xs text-muted-foreground">
+                                        Not PWD
+                                      </Badge>
+                                    )}
+                                  </div>
                                   <p className="text-sm text-muted-foreground">
                                     {Array.isArray(path.nodes) ? path.nodes.length : 0} waypoints
                                   </p>

@@ -6,7 +6,7 @@
 
 import { EventEmitter } from 'events';
 
-type ListenerType = 'buildings' | 'events' | 'staff' | 'floors' | 'rooms' | 'walkpaths' | 'drivepaths' | 'indoor-nodes' | 'room-paths' | 'settings' | 'kiosk-uptime';
+type ListenerType = 'buildings' | 'events' | 'staff' | 'floors' | 'rooms' | 'walkpaths' | 'drivepaths' | 'pwd-paths' | 'indoor-nodes' | 'room-paths' | 'settings' | 'kiosk-uptime';
 
 interface ClientConnection {
   res: any;
@@ -155,6 +155,13 @@ export function notifyWalkpathsChange(walkpaths: any[]) {
  */
 export function notifyDrivepathsChange(drivepaths: any[]) {
   listenerManager.broadcastUpdate('drivepaths', drivepaths);
+}
+
+/**
+ * Helper: Notify all listeners when PWD paths change
+ */
+export function notifyPwdPathsChange(pwdPaths: any[]) {
+  listenerManager.broadcastUpdate('pwd-paths', pwdPaths);
 }
 
 /**
