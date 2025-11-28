@@ -258,12 +258,13 @@ function buildGraph(paths: (Walkpath | Drivepath)[], mode?: 'walking' | 'driving
   // Filter paths based on travel mode
   let filteredPaths = paths;
   if (mode === 'accessible') {
-    // Accessible mode: ONLY PWD-friendly and strictly PWD paths (all paths marked isPwdFriendly)
+    // Accessible mode: Include PWD-friendly paths OR strictly PWD-only paths
     filteredPaths = paths.filter(path => {
-      const isPwdFriendly = (path as any).isPwdFriendly !== false;
-      return isPwdFriendly;
+      const isPwdFriendly = (path as any).isPwdFriendly === true;
+      const strictlyPwdOnly = (path as any).strictlyPwdOnly === true;
+      return isPwdFriendly || strictlyPwdOnly;
     });
-    console.log(`[CLIENT] Accessible mode: filtered to ${filteredPaths.length}/${paths.length} PWD-friendly paths (including strictly PWD-only)`);
+    console.log(`[CLIENT] Accessible mode: filtered to ${filteredPaths.length}/${paths.length} accessible paths (PWD-friendly OR strictly PWD-only)`);
   } else if (mode === 'walking') {
     // Walking mode: PWD-friendly AND regular paths, but CANNOT use strictly PWD-only paths
     filteredPaths = paths.filter(path => {
