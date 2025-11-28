@@ -301,9 +301,10 @@ function buildGraph(paths: (Walkpath | Drivepath)[], mode?: 'walking' | 'driving
 export function findShortestPath(
   start: Building,
   end: Building,
-  paths: (Walkpath | Drivepath)[]
+  paths: (Walkpath | Drivepath)[],
+  mode?: 'walking' | 'driving' | 'accessible'
 ): LatLng[] | null {
-  const { nodes, edges } = buildGraph(paths);
+  const { nodes, edges } = buildGraph(paths, mode);
 
   console.log(`[CLIENT] Pathfinding from "${start.name}" to "${end.name}"`);
   console.log(`[CLIENT] Graph has ${nodes.size} nodes and ${edges.length} edges`);

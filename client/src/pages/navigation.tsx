@@ -40,10 +40,10 @@ export default function Navigation() {
   const [, navigate] = useLocation();
   const [selectedStart, setSelectedStart] = useState<Building | null | typeof KIOSK_LOCATION>(null);
   const [selectedEnd, setSelectedEnd] = useState<Building | null>(null);
-  const [mode, setMode] = useState<'walking' | 'driving'>('walking');
+  const [mode, setMode] = useState<'walking' | 'driving' | 'accessible'>('walking');
   const [vehicleType, setVehicleType] = useState<VehicleType | null>(null);
   const [showVehicleSelector, setShowVehicleSelector] = useState(false);
-  const [pendingNavigationData, setPendingNavigationData] = useState<{start: any, end: Building, mode: 'walking' | 'driving'} | null>(null);
+  const [pendingNavigationData, setPendingNavigationData] = useState<{start: any, end: Building, mode: 'walking' | 'driving' | 'accessible'} | null>(null);
   const [route, setRoute] = useState<NavigationRoute | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
@@ -496,11 +496,13 @@ export default function Navigation() {
   const calculateRouteClientSide = async (
     startBuilding: Building | typeof KIOSK_LOCATION,
     endBuilding: Building,
-    travelMode: 'walking' | 'driving'
+    travelMode: 'walking' | 'driving' | 'accessible'
   ): Promise<Array<{ lat: number; lng: number }> | null> => {
     try {
       // For route calculations, always fetch fresh paths data to ensure pathfinding uses latest updates
-      const endpoint = travelMode === 'walking' ? '/api/walkpaths' : '/api/drivepaths';
+      // For accessible mode, use walkpaths (will be filtered by isPwdFriendly in pathfinding)
+      const pathMode = travelMode === 'driving' ? 'driving' : 'walking';
+      const endpoint = pathMode === 'walking' ? '/api/walkpaths' : '/api/drivepaths';
       const response = await fetch(endpoint, { 
         credentials: "include",
         cache: 'no-cache'
@@ -523,7 +525,8 @@ export default function Navigation() {
       const route = findShortestPath(
         startBuilding as Building,
         endBuilding,
-        paths
+        paths,
+        travelMode
       );
 
       return route;
@@ -2243,13 +2246,16 @@ export default function Navigation() {
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Travel Mode
                 </label>
-                <Tabs value={mode} onValueChange={(v) => setMode(v as 'walking' | 'driving')}>
+                <Tabs value={mode} onValueChange={(v) => setMode(v as 'walking' | 'driving' | 'accessible')}>
                   <TabsList className="w-full">
                     <TabsTrigger value="walking" className="flex-1" data-testid="tab-walking">
                       Walking
                     </TabsTrigger>
                     <TabsTrigger value="driving" className="flex-1" data-testid="tab-driving">
                       Driving
+                    </TabsTrigger>
+                    <TabsTrigger value="accessible" className="flex-1" data-testid="tab-accessible">
+                      Accessible
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
