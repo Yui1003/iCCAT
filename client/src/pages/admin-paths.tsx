@@ -32,6 +32,7 @@ export default function AdminPaths() {
   const [pathName, setPathName] = useState("");
   const [pathNodes, setPathNodes] = useState<PathNode[]>([]);
   const [isPwdFriendly, setIsPwdFriendly] = useState(true); // PWD-friendly by default
+  const [strictlyPwdOnly, setStrictlyPwdOnly] = useState(false); // Strictly PWD-only by default
   const [walkpathSearch, setWalkpathSearch] = useState("");
   const [drivepathSearch, setDrivepathSearch] = useState("");
   const { toast } = useToast();
@@ -120,12 +121,15 @@ export default function AdminPaths() {
       setPathNodes(Array.isArray(path.nodes) ? path.nodes : []);
       // Set isPwdFriendly for walkpaths (default to true if not set)
       setIsPwdFriendly(path.isPwdFriendly !== false);
+      // Set strictlyPwdOnly for walkpaths (default to false if not set)
+      setStrictlyPwdOnly(path.strictlyPwdOnly === true);
     } else {
       setEditingPath(null);
       setEditingPathType(null);
       setPathName("");
       setPathNodes([]);
       setIsPwdFriendly(true); // Default to PWD-friendly for new paths
+      setStrictlyPwdOnly(false); // Default to not strictly PWD-only
     }
     setIsDialogOpen(true);
   };
@@ -137,6 +141,7 @@ export default function AdminPaths() {
     setPathName("");
     setPathNodes([]);
     setIsPwdFriendly(true);
+    setStrictlyPwdOnly(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -153,10 +158,11 @@ export default function AdminPaths() {
       nodes: pathNodes
     };
 
-    // Add isPwdFriendly only for walkpaths
+    // Add isPwdFriendly and strictlyPwdOnly only for walkpaths
     const walkpathData = {
       ...baseData,
-      isPwdFriendly
+      isPwdFriendly,
+      strictlyPwdOnly
     };
 
     if (editingPath) {
@@ -208,26 +214,48 @@ export default function AdminPaths() {
                   />
                 </div>
                 
-                {/* PWD Friendly toggle - only show for walkpaths */}
+                {/* PWD Friendly and Strictly PWD Only toggles - only show for walkpaths */}
                 {(activeTab === "walkpaths" || editingPathType === "walkpath") && (
-                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Accessibility className="w-5 h-5 text-orange-500" />
-                      <div>
-                        <Label htmlFor="pwd-friendly" className="text-sm font-medium cursor-pointer">
-                          PWD Accessible
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          Mark as wheelchair-friendly (paved, no stairs)
-                        </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Accessibility className="w-5 h-5 text-orange-500" />
+                        <div>
+                          <Label htmlFor="pwd-friendly" className="text-sm font-medium cursor-pointer">
+                            PWD Accessible
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Mark as wheelchair-friendly (paved, no stairs)
+                          </p>
+                        </div>
                       </div>
+                      <Switch
+                        id="pwd-friendly"
+                        checked={isPwdFriendly}
+                        onCheckedChange={setIsPwdFriendly}
+                        data-testid="switch-pwd-friendly"
+                      />
                     </div>
-                    <Switch
-                      id="pwd-friendly"
-                      checked={isPwdFriendly}
-                      onCheckedChange={setIsPwdFriendly}
-                      data-testid="switch-pwd-friendly"
-                    />
+                    
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Accessibility className="w-5 h-5 text-red-500" />
+                        <div>
+                          <Label htmlFor="strictly-pwd-only" className="text-sm font-medium cursor-pointer">
+                            Strictly PWD Only
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Only for accessible mode, not for walking routes
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        id="strictly-pwd-only"
+                        checked={strictlyPwdOnly}
+                        onCheckedChange={setStrictlyPwdOnly}
+                        data-testid="switch-strictly-pwd-only"
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -322,14 +350,19 @@ export default function AdminPaths() {
                                     <p className="font-medium text-foreground">
                                       {path.name || `Path ${index + 1}`}
                                     </p>
-                                    {path.isPwdFriendly !== false ? (
+                                    {path.strictlyPwdOnly === true ? (
+                                      <Badge variant="secondary" className="text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                        <Accessibility className="w-3 h-3 mr-1" />
+                                        PWD Only
+                                      </Badge>
+                                    ) : path.isPwdFriendly !== false ? (
                                       <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
                                         <Accessibility className="w-3 h-3 mr-1" />
-                                        PWD
+                                        PWD Friendly
                                       </Badge>
                                     ) : (
                                       <Badge variant="outline" className="text-xs text-muted-foreground">
-                                        Not PWD
+                                        Regular
                                       </Badge>
                                     )}
                                   </div>
