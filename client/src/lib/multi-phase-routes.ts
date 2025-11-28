@@ -30,7 +30,7 @@ function calculateBearing(lat1: number, lng1: number, lat2: number, lng2: number
  */
 function getTurnInstruction(angleDiff: number, travelMode: string): { instruction: string; icon: string } {
   const absAngle = Math.abs(angleDiff);
-  const isWalking = travelMode === 'walking';
+  const isWalking = travelMode === 'walking' || travelMode === 'accessible';
   const road = isWalking ? 'pathway' : 'road';
 
   if (absAngle < 20) {
@@ -78,7 +78,7 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
  */
 function generateSmartSteps(
   routePolyline: LatLng[],
-  travelMode: 'walking' | 'driving',
+  travelMode: 'walking' | 'driving' | 'accessible',
   startName: string,
   endName: string
 ): { steps: RouteStep[]; totalDistance: string } {
@@ -163,9 +163,10 @@ export async function calculateMultiPhaseRoute(
   start: Building | typeof KIOSK_LOCATION,
   waypoints: Building[],
   destination: Building,
-  mode: 'walking' | 'driving'
+  mode: 'walking' | 'driving' | 'accessible'
 ): Promise<MultiStopRoute | null> {
-  const paths = mode === 'walking' ? await getWalkpaths() : await getDrivepaths();
+  // For accessible mode, use walkpaths (will be filtered by isPwdFriendly in pathfinding)
+  const paths = mode === 'driving' ? await getDrivepaths() : await getWalkpaths();
   const phases: RoutePhase[] = [];
   
   // Create array of all stops: [start, ...waypoints, destination]
@@ -177,7 +178,7 @@ export async function calculateMultiPhaseRoute(
     const segmentEnd = allStops[i + 1];
     
     // Find shortest path for this segment
-    const polyline = findShortestPath(segmentStart, segmentEnd, paths);
+    const polyline = findShortestPath(segmentStart, segmentEnd, paths, mode);
     
     if (!polyline) {
       console.error(`No route found for segment ${i + 1}: ${segmentStart.name} → ${segmentEnd.name}`);
@@ -236,7 +237,7 @@ export function multiPhaseToNavigationRoute(
   multiPhase: MultiStopRoute,
   start: Building,
   destination: Building,
-  mode: 'walking' | 'driving'
+  mode: 'walking' | 'driving' | 'accessible'
 ): NavigationRoute {
   // For display purposes, use the complete route
   // But store phases for multi-stop navigation
