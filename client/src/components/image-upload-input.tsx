@@ -3,6 +3,7 @@ import { Upload, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { getProxiedImageUrl } from "./proxied-image";
 
 interface ImageUploadInputProps {
   label: string;
@@ -23,7 +24,7 @@ export default function ImageUploadInput({
 }: ImageUploadInputProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState<string | null>(value || null);
+  const [preview, setPreview] = useState<string | null>(value ? getProxiedImageUrl(value) : null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,13 +48,6 @@ export default function ImageUploadInput({
     setIsUploading(true);
 
     try {
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setPreview(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-
       // Upload to backend
       const formData = new FormData();
       formData.append('file', file);
@@ -72,6 +66,8 @@ export default function ImageUploadInput({
 
       const { url } = await response.json();
       onChange(url);
+      // Show the Firebase URL proxied through our endpoint for caching
+      setPreview(getProxiedImageUrl(url));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
