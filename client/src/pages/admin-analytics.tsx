@@ -42,8 +42,25 @@ export default function AdminAnalytics() {
   const [isOnline, setIsOnline] = useState(isAnalyticsAvailable());
   const [resetConfirm, setResetConfirm] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [currentDeviceId] = useState(() => getDeviceId() || '');
+  const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
   const { toast } = useToast();
+
+  // Initialize device ID from IP address
+  useEffect(() => {
+    const initDeviceId = async () => {
+      try {
+        const response = await fetch('/api/get-device-ip');
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentDeviceId(data.ip || 'unknown');
+        }
+      } catch (err) {
+        console.warn('Failed to get device ID:', err);
+        setCurrentDeviceId('unknown');
+      }
+    };
+    initDeviceId();
+  }, []);
 
   // Listen for online/offline status
   useEffect(() => {

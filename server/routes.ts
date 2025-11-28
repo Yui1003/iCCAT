@@ -50,6 +50,19 @@ const updateSettingSchema = z.object({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Get device IP endpoint - returns the client IP for kiosk device identification
+  app.get('/api/get-device-ip', (req, res) => {
+    try {
+      const ip = req.ip || req.socket.remoteAddress || 'unknown';
+      return res.json({ ip });
+    } catch (error) {
+      console.error('Error getting device IP:', error);
+      if (!res.headersSent) {
+        return res.status(500).json({ error: 'Failed to get device IP', ip: 'unknown' });
+      }
+    }
+  });
+
   // Image upload endpoint
   app.post('/api/upload-image', upload.single('file'), async (req, res) => {
     try {

@@ -9,24 +9,25 @@ export function useKioskUptime() {
 
   useEffect(() => {
     // Initialize device ID and start session
-    deviceIdRef.current = getOrCreateDeviceId();
     sessionStartRef.current = Date.now();
 
-    console.log('[UPTIME] Kiosk session started with device ID:', deviceIdRef.current);
-
-    // Start the session on server
-    const startSession = async () => {
+    const initializeSession = async () => {
       try {
+        // Get device ID (IP-based for consistent kiosk identification)
+        deviceIdRef.current = await getOrCreateDeviceId();
+        console.log('[UPTIME] Kiosk session started with device ID:', deviceIdRef.current);
+
+        // Start the session on server
         await apiRequest('POST', '/api/analytics/kiosk-uptime/start', {
           deviceId: deviceIdRef.current,
         });
         console.log('[UPTIME] Session started on server');
       } catch (err) {
-        console.warn('[UPTIME] Failed to start session on server:', err);
+        console.warn('[UPTIME] Failed to initialize session:', err);
       }
     };
 
-    startSession();
+    initializeSession();
 
     // Send heartbeat every 30 seconds to keep session alive
     const heartbeatInterval = setInterval(async () => {
