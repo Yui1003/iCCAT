@@ -47,7 +47,7 @@ interface CampusMapProps {
   onBuildingClick?: (building: Building) => void;
   selectedBuilding?: Building | null;
   routePolyline?: Array<{ lat: number; lng: number }>;
-  routeMode?: 'walking' | 'driving';
+  routeMode?: 'walking' | 'driving' | 'accessible';
   routePhases?: RoutePhase[];
   parkingLocation?: Building | null;
   className?: string;

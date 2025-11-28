@@ -387,7 +387,7 @@ export default function Navigation() {
 
   const getTurnInstruction = (angleDiff: number, travelMode: string): { instruction: string; icon: string } => {
     const absAngle = Math.abs(angleDiff);
-    const isWalking = travelMode === 'walking';
+    const isWalking = travelMode === 'walking' || travelMode === 'accessible';
     const road = isWalking ? 'pathway' : 'road';
 
     if (absAngle < 20) {
@@ -412,7 +412,7 @@ export default function Navigation() {
     }
   };
 
-  const generateSmartSteps = (routePolyline: Array<{ lat: number; lng: number }>, travelMode: 'walking' | 'driving', startName: string, endName: string) => {
+  const generateSmartSteps = (routePolyline: Array<{ lat: number; lng: number }>, travelMode: 'walking' | 'driving' | 'accessible', startName: string, endName: string) => {
     const steps = [];
     let totalDist = 0;
 
@@ -476,7 +476,7 @@ export default function Navigation() {
 
     // Add final segment if there's accumulated distance
     if (accumulatedDistance > 0) {
-      const isWalking = travelMode === 'walking';
+      const isWalking = travelMode === 'walking' || travelMode === 'accessible';
       steps.push({
         instruction: `Continue to destination on the ${isWalking ? 'pathway' : 'road'}`,
         distance: `${Math.round(accumulatedDistance)} m`,
