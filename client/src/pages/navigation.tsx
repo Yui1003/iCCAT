@@ -1722,7 +1722,7 @@ export default function Navigation() {
   const handleNavigateFromDialog = async (
     startId: string,
     waypointIds: string[],
-    travelMode: 'walking' | 'driving',
+    travelMode: 'walking' | 'driving' | 'accessible',
     selectedVehicle?: VehicleType
   ) => {
     if (!directionsDestination) return;
