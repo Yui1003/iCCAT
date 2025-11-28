@@ -264,11 +264,14 @@ function buildGraph(paths: (Walkpath | Drivepath)[], mode?: 'walking' | 'driving
     });
     console.log(`[CLIENT] Accessible mode: filtered to ${filteredPaths.length}/${paths.length} PWD-friendly paths`);
   } else if (mode === 'walking') {
-    // Walking mode: EXCLUDE PWD-specific paths, use only regular walkpaths
+    // Walking mode: EXCLUDE strictly PWD-only paths AND all PWD-specific paths
     filteredPaths = paths.filter(path => {
-      return (path as any).isPwdFriendly !== true;
+      const strictlyPwdOnly = (path as any).strictlyPwdOnly === true;
+      const isPwdFriendly = (path as any).isPwdFriendly === true;
+      // Exclude if: (1) strictly PWD only, OR (2) PWD-friendly paths
+      return !strictlyPwdOnly && !isPwdFriendly;
     });
-    console.log(`[CLIENT] Walking mode: filtered to ${filteredPaths.length}/${paths.length} regular walkpaths (excluded PWD-specific paths)`);
+    console.log(`[CLIENT] Walking mode: filtered to ${filteredPaths.length}/${paths.length} regular walkpaths (excluded PWD-specific and strictly-PWD-only paths)`);
   }
 
   console.log(`[CLIENT] Building graph from ${filteredPaths.length} paths`);

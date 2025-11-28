@@ -210,6 +210,7 @@ export const walkpaths = pgTable("walkpaths", {
   name: text("name"),
   nodes: jsonb("nodes").notNull(), // Array of {lat, lng} objects
   isPwdFriendly: boolean("is_pwd_friendly").default(true), // Whether path is wheelchair-accessible (paved, no stairs)
+  strictlyPwdOnly: boolean("strictly_pwd_only").default(false), // If true, ONLY accessible mode can use this path
 });
 
 export const insertWalkpathSchema = createInsertSchema(walkpaths).omit({ id: true });
