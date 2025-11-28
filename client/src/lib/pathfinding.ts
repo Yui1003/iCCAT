@@ -255,14 +255,20 @@ function buildGraph(paths: (Walkpath | Drivepath)[], mode?: 'walking' | 'driving
   const nodes = new Map<string, GraphNode>();
   const edges: Edge[] = [];
 
-  // Filter paths for accessible mode: only use PWD-friendly walkpaths
+  // Filter paths based on travel mode
   let filteredPaths = paths;
   if (mode === 'accessible') {
+    // Accessible mode: ONLY use PWD-friendly walkpaths
     filteredPaths = paths.filter(path => {
-      // For walkpaths, check isPwdFriendly flag
-      return (path as any).isPwdFriendly !== false;
+      return (path as any).isPwdFriendly === true;
     });
     console.log(`[CLIENT] Accessible mode: filtered to ${filteredPaths.length}/${paths.length} PWD-friendly paths`);
+  } else if (mode === 'walking') {
+    // Walking mode: EXCLUDE PWD-specific paths, use only regular walkpaths
+    filteredPaths = paths.filter(path => {
+      return (path as any).isPwdFriendly !== true;
+    });
+    console.log(`[CLIENT] Walking mode: filtered to ${filteredPaths.length}/${paths.length} regular walkpaths (excluded PWD-specific paths)`);
   }
 
   console.log(`[CLIENT] Building graph from ${filteredPaths.length} paths`);
