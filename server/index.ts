@@ -17,6 +17,10 @@ try {
 
 const app = express();
 
+// Trust proxy headers for production environments (Render, etc.)
+// This ensures req.ip and req.socket.remoteAddress properly reflect the client IP
+app.set('trust proxy', true);
+
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown

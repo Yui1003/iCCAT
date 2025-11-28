@@ -57,9 +57,34 @@ interface UploadRequestBody {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get device IP endpoint - returns the client IP for kiosk device identification
+  // Handles proxy headers for production environments (Render, etc.)
   app.get('/api/get-device-ip', (req, res) => {
     try {
-      const ip = req.ip || req.socket.remoteAddress || 'unknown';
+      let ip = 'unknown';
+      
+      // Check proxy headers first (for reverse proxy environments like Render)
+      const xForwardedFor = req.headers['x-forwarded-for'];
+      if (xForwardedFor) {
+        // x-forwarded-for can contain multiple IPs, take the first one
+        ip = Array.isArray(xForwardedFor) ? xForwardedFor[0] : xForwardedFor.split(',')[0].trim();
+      } else if (req.headers['cf-connecting-ip']) {
+        // Cloudflare header
+        ip = req.headers['cf-connecting-ip'] as string;
+      } else if (req.headers['x-real-ip']) {
+        // Nginx header
+        ip = req.headers['x-real-ip'] as string;
+      } else if (req.socket.remoteAddress) {
+        // Direct connection
+        ip = req.socket.remoteAddress;
+      }
+      
+      console.log('[IP-DETECTION] Client IP detected:', ip, 'Headers:', {
+        'x-forwarded-for': req.headers['x-forwarded-for'],
+        'cf-connecting-ip': req.headers['cf-connecting-ip'],
+        'x-real-ip': req.headers['x-real-ip'],
+        'socket.remoteAddress': req.socket.remoteAddress
+      });
+      
       return res.json({ ip });
     } catch (error) {
       console.error('Error getting device IP:', error);
