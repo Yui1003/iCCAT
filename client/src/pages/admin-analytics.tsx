@@ -591,7 +591,7 @@ export default function AdminAnalytics() {
                     <div className="grid gap-3">
                       {otherDevices.map((device) => (
                         <Card key={device.id} className="p-4 hover-elevate active-elevate-2">
-                          <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-start justify-between gap-4 mb-3">
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-foreground truncate">{device.deviceId}</p>
                               <p className="text-xs text-muted-foreground mt-1">
@@ -616,14 +616,22 @@ export default function AdminAnalytics() {
                                 })() : 'N/A'}
                               </p>
                             </div>
-                            <div className="flex items-center gap-6">
-                              <div className="text-right">
-                                <p className="text-sm font-semibold text-foreground">{device.uptimePercentage.toFixed(1)}%</p>
-                                <p className="text-xs text-muted-foreground">{device.totalRequests} req</p>
-                              </div>
-                              <Badge variant={device.isActive ? "default" : "secondary"} className="shrink-0">
-                                {device.isActive ? 'Active' : 'Inactive'}
-                              </Badge>
+                            <Badge variant={device.isActive ? "default" : "secondary"} className="shrink-0">
+                              {device.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-3 gap-3 text-sm">
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Uptime %</p>
+                              <p className="font-semibold text-foreground">{device.uptimePercentage.toFixed(1)}%</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Total Requests</p>
+                              <p className="font-semibold text-foreground">{device.totalRequests}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Successful</p>
+                              <p className="font-semibold text-green-600">{device.successfulRequests}</p>
                             </div>
                           </div>
                         </Card>
