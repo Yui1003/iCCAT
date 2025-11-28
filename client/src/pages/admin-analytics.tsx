@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, AlertCircle, BarChart3, RotateCcw, Wifi, WifiOff, Download, Cpu, Clock } from "lucide-react";
+import { ArrowLeft, AlertCircle, BarChart3, RotateCcw, Wifi, WifiOff, Download, Cpu, Clock, Info } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnalyticsEventType } from "@shared/analytics-schema";
 import { isAnalyticsAvailable } from "@/lib/analytics-tracker";
 import { useToast } from "@/hooks/use-toast";
@@ -20,7 +21,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
   LineChart,
@@ -78,6 +79,7 @@ export default function AdminAnalytics() {
   });
 
   const [kioskUptimes, setKioskUptimes] = useState<KioskUptime[]>([]);
+  const [liveTime, setLiveTime] = useState<number>(Date.now());
 
   // Real-time listener for kiosk uptime changes
   useEffect(() => {
@@ -101,6 +103,14 @@ export default function AdminAnalytics() {
     return () => {
       eventSource.close();
     };
+  }, []);
+
+  // Update live time every second for session duration counting
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLiveTime(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const handleReset = async () => {
@@ -192,7 +202,7 @@ export default function AdminAnalytics() {
         return 'N/A';
       }
 
-      // Parse end time - handle all formats
+      // Parse end time - use liveTime if no endTime (active session)
       if (endTime) {
         if (typeof endTime === 'number') {
           end = endTime;
@@ -206,10 +216,10 @@ export default function AdminAnalytics() {
           // Firestore Timestamp
           end = (endTime._seconds * 1000) + Math.floor(endTime._nanoseconds / 1000000);
         } else {
-          end = Date.now();
+          end = liveTime; // Use live time for ongoing sessions
         }
       } else {
-        end = Date.now();
+        end = liveTime; // Use live time for ongoing sessions
       }
 
       const diffMs = end - start;
@@ -217,8 +227,11 @@ export default function AdminAnalytics() {
       
       const hours = Math.floor(diffMs / 3600000);
       const minutes = Math.floor((diffMs % 3600000) / 60000);
-      if (hours > 0) return `${hours}h ${minutes}m`;
-      return `${minutes}m`;
+      const seconds = Math.floor((diffMs % 60000) / 1000);
+      
+      if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+      if (minutes > 0) return `${minutes}m ${seconds}s`;
+      return `${seconds}s`;
     } catch (err) {
       console.error('Error formatting duration:', err, startTime, endTime);
       return 'N/A';
@@ -377,7 +390,7 @@ export default function AdminAnalytics() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                     <XAxis dataKey="name" stroke="var(--color-muted-foreground)" />
                     <YAxis stroke="var(--color-muted-foreground)" />
-                    <Tooltip 
+                    <RechartsTooltip 
                       contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}
                       labelStyle={{ color: 'var(--color-foreground)' }}
                     />
@@ -408,7 +421,7 @@ export default function AdminAnalytics() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip 
+                    <RechartsTooltip 
                       contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}
                       labelStyle={{ color: 'var(--color-foreground)' }}
                     />
