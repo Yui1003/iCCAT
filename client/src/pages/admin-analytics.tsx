@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, AlertCircle, BarChart3, RotateCcw, Wifi, WifiOff, Download, Cpu, Clock, Info } from "lucide-react";
+import { ArrowLeft, AlertCircle, BarChart3, RotateCcw, Wifi, WifiOff, Download, Cpu, Clock, Info, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -44,6 +44,8 @@ export default function AdminAnalytics() {
   const [resetConfirm, setResetConfirm] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   // Initialize device ID from IP address
@@ -173,6 +175,34 @@ export default function AdminAnalytics() {
       });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleDeleteDevice = async (deviceId: string) => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/analytics/kiosk-uptime/${encodeURIComponent(deviceId)}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete device record');
+      }
+
+      setDeleteConfirmId(null);
+      toast({
+        title: "Success",
+        description: "Device record deleted successfully"
+      });
+    } catch (error) {
+      console.error('Error deleting device:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete device record",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -626,9 +656,42 @@ export default function AdminAnalytics() {
                                 })() : 'N/A'}
                               </p>
                             </div>
-                            <Badge variant={device.isActive ? "default" : "secondary"} className="shrink-0">
-                              {device.isActive ? 'Active' : 'Inactive'}
-                            </Badge>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Badge variant={device.isActive ? "default" : "secondary"}>
+                                {device.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                              {deleteConfirmId === device.id ? (
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleDeleteDevice(device.id)}
+                                    disabled={isDeleting}
+                                    data-testid={`button-confirm-delete-device-${device.id}`}
+                                  >
+                                    {isDeleting ? 'Deleting...' : 'Confirm'}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setDeleteConfirmId(null)}
+                                    disabled={isDeleting}
+                                    data-testid={`button-cancel-delete-device-${device.id}`}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => setDeleteConfirmId(device.id)}
+                                  data-testid={`button-delete-device-${device.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4 text-muted-foreground" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                           <div className="grid grid-cols-3 gap-3 text-sm">
                             <div className="space-y-1">

@@ -1369,6 +1369,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/analytics/kiosk-uptime/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteKioskUptime(id);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Kiosk uptime record not found' });
+      }
+      // Broadcast real-time update to all listeners - this updates all connected clients
+      const allUptimes = await storage.getAllKioskUptimes();
+      notifyKioskUptimeChange(allUptimes);
+      console.log(`[KIOSK-UPTIME] Broadcasted update after deletion, ${allUptimes.length} records remaining`);
+      res.json({ success: true, message: `Kiosk uptime record ${id} deleted` });
+    } catch (error: any) {
+      console.error('Error deleting kiosk uptime:', error);
+      // Storage throws on Firestore errors, so this is a server error
+      res.status(500).json({ error: error.message || 'Failed to delete kiosk uptime record' });
+    }
+  });
+
   // Firebase Real-Time Listener Endpoints (Server-Sent Events)
   // These endpoints stream data changes instead of requiring polling
   // Cost: ~1-5K reads/day instead of 100K with polling

@@ -162,6 +162,7 @@ export interface IStorage {
   endKioskSession(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined>;
   getAllKioskUptimes(): Promise<KioskUptime[]>;
   deleteAllKioskUptimes(): Promise<void>;
+  deleteKioskUptime(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1479,6 +1480,21 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Firestore error:', error);
       throw new Error('Failed to delete kiosk uptime records');
+    }
+  }
+
+  async deleteKioskUptime(id: string): Promise<boolean> {
+    try {
+      const doc = await db.collection('kioskUptimes').doc(id).get();
+      if (!doc.exists) {
+        return false;
+      }
+      await db.collection('kioskUptimes').doc(id).delete();
+      console.log(`[KIOSK-UPTIME] Deleted kiosk uptime record: ${id}`);
+      return true;
+    } catch (error) {
+      console.error('Firestore error deleting kiosk uptime:', error);
+      throw new Error('Failed to delete kiosk uptime record');
     }
   }
 }
