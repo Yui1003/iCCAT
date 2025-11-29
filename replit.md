@@ -52,7 +52,11 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 - **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
 
 ## Recent Changes (November 29, 2025)
-- **Fixed accessible route fallback issue**: Modified `findShortestPath` to prevent drawing direct lines to unreachable destinations in accessible mode. When a building is not connected to the accessible path network, the function now returns `null` instead of a direct line, allowing the pre-check to properly detect unreachability and show the fallback dialog.
+- **Fixed accessible route fallback to use nearest endpoint**: When a destination building has no connected PWD-friendly path:
+  - Removed distance threshold approach
+  - Created new `findNearestAccessibleEndpoint()` function that finds the closest endpoint of any accessible path to the unreachable destination
+  - Navigation now offers users the option to navigate to this nearest accessible endpoint instead
+  - Updated both route generation and directions dialog to use this smarter fallback logic
 - **Fixed accessible route detection logic**: Corrected pre-check logic that was incorrectly showing "No Accessible Path Available" dialog when a complete accessible path actually existed. Now:
   - If complete PWD-friendly path exists → proceeds with normal routing (no dialog)
   - If partial path exists → shows dialog with furthest reachable endpoint

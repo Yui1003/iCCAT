@@ -349,13 +349,6 @@ export function findShortestPath(
   console.log(`[CLIENT] Closest start node: ${startNodeData.distance.toFixed(1)}m away`);
   console.log(`[CLIENT] Closest end node: ${endNodeData.distance.toFixed(1)}m away`);
 
-  // In accessible mode, reject destinations that are too far from the path network
-  // This prevents drawing direct lines from waypoints to buildings not actually served by accessible paths
-  if (mode === 'accessible' && endNodeData.distance > 10) {
-    console.warn(`[CLIENT] ACCESSIBLE MODE: Destination building is ${endNodeData.distance.toFixed(1)}m from nearest accessible path node - treating as unreachable`);
-    return null;
-  }
-
   const startKey = startNodeData.key;
   const endKey = endNodeData.key;
 
@@ -629,5 +622,59 @@ export function findFurthestAccessiblePoint(
   }
 
   console.log('[CLIENT] ❌ No accessible endpoints found toward destination');
+  return null;
+}
+
+/**
+ * Find the nearest endpoint of any accessible path to an unreachable destination building
+ * This is used when a building has no connected accessible path - we navigate to the closest path endpoint instead
+ */
+export function findNearestAccessibleEndpoint(
+  destination: Building,
+  paths: (Walkpath | Drivepath)[]
+): LatLng | null {
+  // Filter to only accessible paths
+  const accessiblePaths = paths.filter(path => {
+    const isPwdFriendly = (path as any).isPwdFriendly === true;
+    const strictlyPwdOnly = (path as any).strictlyPwdOnly === true;
+    return isPwdFriendly || strictlyPwdOnly;
+  });
+
+  if (accessiblePaths.length === 0) {
+    console.log('[CLIENT] No accessible paths available');
+    return null;
+  }
+
+  // Collect all endpoints from all accessible paths
+  let nearestEndpoint: LatLng | null = null;
+  let minDistance = Infinity;
+
+  for (const path of accessiblePaths) {
+    const pathNodes = path.nodes as LatLng[];
+    if (pathNodes.length < 2) continue;
+
+    // Check first node
+    const firstNode = pathNodes[0];
+    const distToFirst = calculateDistance(destination.lat, destination.lng, firstNode.lat, firstNode.lng);
+    if (distToFirst < minDistance) {
+      minDistance = distToFirst;
+      nearestEndpoint = firstNode;
+    }
+
+    // Check last node
+    const lastNode = pathNodes[pathNodes.length - 1];
+    const distToLast = calculateDistance(destination.lat, destination.lng, lastNode.lat, lastNode.lng);
+    if (distToLast < minDistance) {
+      minDistance = distToLast;
+      nearestEndpoint = lastNode;
+    }
+  }
+
+  if (nearestEndpoint) {
+    console.log(`[CLIENT] ✅ Nearest accessible endpoint found: (${nearestEndpoint.lat.toFixed(5)}, ${nearestEndpoint.lng.toFixed(5)}), ${minDistance.toFixed(1)}m from destination`);
+    return nearestEndpoint;
+  }
+
+  console.log('[CLIENT] ❌ No accessible path endpoints found');
   return null;
 }

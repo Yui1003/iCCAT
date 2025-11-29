@@ -25,7 +25,7 @@ import SearchableWaypointSelect from "@/components/searchable-waypoint-select";
 import type { Building, NavigationRoute, Staff, Floor, Room, VehicleType, RouteStep, RoutePhase, IndoorNode, RoomPath, LatLng } from "@shared/schema";
 import { poiTypes, KIOSK_LOCATION } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
-import { findShortestPath, findFurthestAccessiblePoint } from "@/lib/pathfinding";
+import { findShortestPath, findNearestAccessibleEndpoint } from "@/lib/pathfinding";
 import { buildIndoorGraph, findRoomPath, connectOutdoorToIndoor } from "@/lib/indoor-pathfinding";
 import { getWalkpaths, getDrivepaths } from "@/lib/offline-data";
 import { calculateMultiPhaseRoute, multiPhaseToNavigationRoute } from "@/lib/multi-phase-routes";
@@ -964,9 +964,9 @@ export default function Navigation() {
         );
       }
 
-      // Fallback for accessible mode: if no route found or pre-check failed, find furthest accessible endpoint
+      // Fallback for accessible mode: if no route found or pre-check failed, find nearest accessible endpoint
       if ((!routePolyline || needsAccessibleFallback) && mode === 'accessible') {
-        console.log('[ACCESSIBLE] No route found to destination. Finding furthest accessible endpoint...');
+        console.log('[ACCESSIBLE] No route found to destination. Finding nearest accessible endpoint...');
         
         try {
           const walkpathsRes = await fetch('/api/walkpaths', { 
@@ -976,24 +976,23 @@ export default function Navigation() {
           if (!walkpathsRes.ok) throw new Error('Failed to fetch accessible paths');
           const walkpaths = await walkpathsRes.json();
           
-          const furthestEndpoint = findFurthestAccessiblePoint(
-            selectedStart as Building,
+          const nearestEndpoint = findNearestAccessibleEndpoint(
             selectedEnd,
             walkpaths
           );
           
-          if (furthestEndpoint) {
-            console.log(`[ACCESSIBLE] ✅ Found furthest accessible endpoint at (${furthestEndpoint.lat.toFixed(5)}, ${furthestEndpoint.lng.toFixed(5)})`);
+          if (nearestEndpoint) {
+            console.log(`[ACCESSIBLE] ✅ Found nearest accessible endpoint at (${nearestEndpoint.lat.toFixed(5)}, ${nearestEndpoint.lng.toFixed(5)})`);
             setOriginalDestinationName(selectedEnd.name);
-            setAccessibleFallbackEndpoint(furthestEndpoint);
+            setAccessibleFallbackEndpoint(nearestEndpoint);
             setShowAccessibleFallbackDialog(true);
             
             // Create synthetic building at endpoint for routing
             const endpointBuilding: Building = {
               id: 'accessible-endpoint',
               name: 'Accessible Path End',
-              lat: furthestEndpoint.lat,
-              lng: furthestEndpoint.lng,
+              lat: nearestEndpoint.lat,
+              lng: nearestEndpoint.lng,
               polygon: null,
               polygonColor: null,
               description: '',
@@ -2002,28 +2001,27 @@ export default function Navigation() {
               console.log('[ACCESSIBLE] Complete accessible path exists, proceeding with normal routing');
               // Fall through to normal routing below
             } else {
-              // No complete path - check if we can get partway there
-              console.log('[ACCESSIBLE] No complete path, checking for furthest accessible point');
-              const furthestPoint = findFurthestAccessiblePoint(
-                start as Building,
+              // No complete path - find nearest accessible path endpoint to destination
+              console.log('[ACCESSIBLE] No complete path, finding nearest accessible endpoint to destination');
+              const nearestEndpoint = findNearestAccessibleEndpoint(
                 directionsDestination,
                 walkpaths
               );
               
-              if (furthestPoint) {
-                // Partial path exists - show fallback dialog with endpoint
-                console.log('[ACCESSIBLE] Furthest accessible point found, showing fallback dialog');
+              if (nearestEndpoint) {
+                // Accessible endpoint found - show fallback dialog with endpoint
+                console.log('[ACCESSIBLE] Nearest accessible endpoint found, showing fallback dialog');
                 setOriginalDestinationName(directionsDestination.name);
                 setSelectedStart(start);
                 setSelectedEnd(directionsDestination);
                 setMode(travelMode);
-                setAccessibleFallbackEndpoint(furthestPoint);
+                setAccessibleFallbackEndpoint(nearestEndpoint);
                 setShowAccessibleFallbackDialog(true);
                 const duration = performance.now() - routeStartTime;
-                trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'partial', source: 'dialog' });
+                trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'endpoint', source: 'dialog' });
                 return;
               } else {
-                // Completely unreachable
+                // Completely unreachable - no accessible paths available
                 console.log('[ACCESSIBLE] Destination completely unreachable, showing fallback dialog with no endpoint');
                 setOriginalDestinationName(directionsDestination.name);
                 setSelectedStart(start);
