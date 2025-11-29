@@ -52,10 +52,10 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 - **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
 
 ## Recent Changes (November 29, 2025)
-- **Fixed lingering path markers on floor transitions**: Added `key={currentIndoorFloor.id}` to FloorPlanViewer component to force remount when changing floors, preventing canvas state persistence
-- **Added accessible navigation fallback**: Implemented `findNearestAccessibleBuilding` function that automatically routes to nearest PWD-accessible building when direct route unavailable in accessible mode
-- **Added fallback dialog**: Users are informed when no accessible path exists to destination and shown nearest alternative with option to continue navigation
-- **Enhanced analytics**: Added ability to delete specific kiosk device records from analytics dashboard with confirmation flow
+- **Fixed cache loader performance**: Changed cache verification loader to close immediately when caching completes instead of waiting for full 30-second timer. Now detects cached resources every 200ms and closes as soon as all caches are populated (max ~3 seconds). Fixes issue where loader paused when browser tabs were inactive.
+- **Added version display**: Added "version:1.8.1" text to homepage footer bottom right for user visibility
+- **Improved accessible endpoint navigation**: Enhanced `handleNavigateToAccessibleEndpoint` with comprehensive logging and error messages. Now shows error toast if required data (start location, destination, or endpoint) is missing. Includes detailed console logging at each step to diagnose route calculation issues.
+- **Previous fixes**: Fixed lingering path markers on floor transitions, added accessible navigation fallback with dialog, enhanced analytics with kiosk device deletion
 
 ## External Dependencies
 - **Frontend Framework**: React 18

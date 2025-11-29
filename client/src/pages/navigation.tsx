@@ -1227,7 +1227,26 @@ export default function Navigation() {
   };
 
   const handleNavigateToAccessibleEndpoint = async () => {
-    if (!selectedStart || !selectedEnd || !accessibleFallbackEndpoint) return;
+    console.log('[ACCESSIBLE-ENDPOINT] Button clicked', {
+      selectedStart: !!selectedStart,
+      selectedEnd: !!selectedEnd,
+      accessibleFallbackEndpoint: accessibleFallbackEndpoint,
+      originalDestinationName
+    });
+    
+    if (!selectedStart || !selectedEnd || !accessibleFallbackEndpoint) {
+      console.error('[ACCESSIBLE-ENDPOINT] Missing required data to navigate', {
+        selectedStart: selectedStart ? selectedStart.name : 'null',
+        selectedEnd: selectedEnd ? selectedEnd.name : 'null',
+        endpoint: accessibleFallbackEndpoint
+      });
+      toast({
+        title: "Navigation Error",
+        description: "Unable to navigate: Missing destination or endpoint data.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setShowAccessibleFallbackDialog(false);
     
@@ -1248,17 +1267,29 @@ export default function Navigation() {
         departments: null
       };
       
+      console.log('[ACCESSIBLE-ENDPOINT] Calculating route to endpoint', {
+        from: selectedStart.name,
+        to: endpointBuilding.name,
+        coords: { lat: accessibleFallbackEndpoint.lat, lng: accessibleFallbackEndpoint.lng }
+      });
+      
       // Generate route to the accessible endpoint
       const routePolyline = await calculateRouteClientSide(selectedStart, endpointBuilding, 'accessible');
       
       if (!routePolyline) {
+        console.error('[ACCESSIBLE-ENDPOINT] Route calculation returned null');
         toast({
           title: "Route Calculation Failed",
           description: "Unable to calculate route to accessible endpoint.",
           variant: "destructive"
         });
+        setShowAccessibleFallbackDialog(true);
         return;
       }
+      
+      console.log('[ACCESSIBLE-ENDPOINT] Route calculated successfully', { 
+        pointsCount: routePolyline.length 
+      });
       
       const { steps, totalDistance } = generateSmartSteps(
         routePolyline,
@@ -1276,6 +1307,8 @@ export default function Navigation() {
         totalDistance
       });
       
+      console.log('[ACCESSIBLE-ENDPOINT] Route set successfully');
+      
       trackEvent(AnalyticsEventType.ROUTE_GENERATION, 0, { 
         mode: 'accessible', 
         routeType: 'accessible-endpoint', 
@@ -1283,12 +1316,13 @@ export default function Navigation() {
         source: 'fallback-dialog' 
       });
     } catch (error) {
-      console.error('Error generating accessible endpoint route:', error);
+      console.error('[ACCESSIBLE-ENDPOINT] Error generating accessible endpoint route:', error);
       toast({
         title: "Navigation Error",
         description: "Unable to navigate to accessible endpoint.",
         variant: "destructive"
       });
+      setShowAccessibleFallbackDialog(true);
     }
   };
 
