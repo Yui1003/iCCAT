@@ -36,41 +36,15 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
         const isHardRefresh = !localStorage.getItem('sw_install_complete');
         
         if (!isHardRefresh) {
-          console.log('[CACHE-LOADER] Normal refresh - caches exist, skipping verification');
+          console.log('[CACHE-LOADER] Normal refresh - caches exist, closing loader immediately');
           setIsComplete(true);
           return;
         }
         
-        console.log('[CACHE-LOADER] Hard refresh - waiting for fresh data to cache...');
-        setProgressMessage('Fetching fresh data from server...');
-        
-        const maxWaitTime = 30000;
-        const checkInterval = 200;
-        let elapsedTime = 0;
-        let swInstallComplete = false;
+        console.log('[CACHE-LOADER] Hard refresh - verifying caches are populated...');
+        setProgressMessage('Setting up offline mode...');
 
-        while (elapsedTime < maxWaitTime && !swInstallComplete) {
-          const swInstalled = localStorage.getItem('sw_install_complete') === 'true';
-          if (swInstalled) {
-            console.log('[CACHE-LOADER] Service Worker install complete');
-            swInstallComplete = true;
-            break;
-          }
-          
-          if (elapsedTime % 2000 === 0) {
-            setProgressMessage(`Loading... ${Math.round(elapsedTime / 1000)}s`);
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, checkInterval));
-          elapsedTime += checkInterval;
-        }
-
-        if (!swInstallComplete) {
-          console.warn('[CACHE-LOADER] Timeout waiting for SW - proceeding anyway');
-        }
-
-        setProgressMessage('Verifying cached data...');
-
+        // Register service worker if not already registered
         if ('serviceWorker' in navigator) {
           try {
             const registrations = await navigator.serviceWorker.getRegistrations();
@@ -85,62 +59,67 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
           }
         }
 
-        if (window.caches) {
+        // Verify all caches are populated (with quick timeout checks)
+        let allReady = false;
+        const maxAttempts = 15; // ~3 seconds max wait with 200ms intervals
+        let attempts = 0;
+
+        while (attempts < maxAttempts && !allReady) {
           const cacheNames = await caches.keys();
           const hasStaticCache = cacheNames.some(name => name.startsWith('iccat-v'));
+          const hasDataCache = cacheNames.includes('iccat-data-v7');
+
+          let dataItems = 0;
+          let tilesCached = 0;
+          let apiEndpointsCached = 0;
+
+          if (hasDataCache) {
+            const dataCache = await caches.open('iccat-data-v7');
+            const cachedRequests = await dataCache.keys();
+            dataItems = cachedRequests.length;
+
+            const apiEndpoints = ['/api/buildings', '/api/walkpaths', '/api/floors', '/api/rooms'];
+            const cachedEndpoints = await Promise.all(
+              apiEndpoints.map(endpoint => dataCache.match(endpoint).then(response => !!response))
+            );
+            apiEndpointsCached = cachedEndpoints.filter(Boolean).length;
+          }
+
+          if (hasStaticCache) {
+            const staticCache = await caches.open('iccat-v7');
+            const allCached = await staticCache.keys();
+            tilesCached = allCached.filter(req => req.url.includes('tile.openstreetmap.org')).length;
+          }
+
+          // Update status
           setStatus(prev => ({
             ...prev,
-            staticCache: hasStaticCache ? 'verified' : 'failed'
+            staticCache: hasStaticCache ? 'verified' : 'checking',
+            dataCache: dataItems > 0 ? 'verified' : 'checking',
+            mapTiles: tilesCached > 0 ? 'verified' : 'checking',
+            apiEndpoints: apiEndpointsCached === 4 ? 'verified' : 'checking'
           }));
+
+          // Check if all caches are populated
+          const allPopulated = hasStaticCache && dataItems > 0 && tilesCached > 0 && apiEndpointsCached === 4;
+          if (allPopulated) {
+            console.log('[CACHE-LOADER] All caches populated - closing immediately');
+            allReady = true;
+            break;
+          }
+
+          // Wait a bit before rechecking
+          await new Promise(resolve => setTimeout(resolve, 200));
+          attempts++;
         }
 
-        if (window.caches) {
-          const dataCache = await caches.open('iccat-data-v7');
-          const cachedRequests = await dataCache.keys();
-          setStatus(prev => ({
-            ...prev,
-            dataCache: cachedRequests.length > 0 ? 'verified' : 'failed'
-          }));
-          console.log(`[CACHE-LOADER] Data cache: ${cachedRequests.length} items`);
-        }
-
-        if (window.caches) {
-          const staticCache = await caches.open('iccat-v7');
-          const allCached = await staticCache.keys();
-          const tilesCached = allCached.filter(req =>
-            req.url.includes('tile.openstreetmap.org')
-          ).length;
-          setStatus(prev => ({
-            ...prev,
-            mapTiles: tilesCached > 0 ? 'verified' : 'failed'
-          }));
-          console.log(`[CACHE-LOADER] Map tiles: ${tilesCached} tiles cached`);
-        }
-
-        if (window.caches) {
-          const dataCache = await caches.open('iccat-data-v7');
-          const apiEndpoints = [
-            '/api/buildings',
-            '/api/walkpaths',
-            '/api/floors',
-            '/api/rooms'
-          ];
-          
-          const cachedEndpoints = await Promise.all(
-            apiEndpoints.map(endpoint =>
-              dataCache.match(endpoint).then(response => !!response)
-            )
-          );
-          
-          const allCached = cachedEndpoints.every(cached => cached);
-          setStatus(prev => ({
-            ...prev,
-            apiEndpoints: allCached ? 'verified' : 'failed'
-          }));
+        if (!allReady) {
+          console.log('[CACHE-LOADER] Cache verification timeout - proceeding anyway');
+        } else {
+          console.log('[CACHE-LOADER] Cache verification complete - closing loader');
         }
 
         setIsComplete(true);
-        console.log('[CACHE-LOADER] Verification complete - app ready!');
       } catch (err) {
         console.error('[CACHE-LOADER] Verification error:', err);
         setIsComplete(true);
