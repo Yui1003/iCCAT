@@ -1989,38 +1989,53 @@ export default function Navigation() {
           if (response.ok) {
             const walkpaths = await response.json();
             
-            // Check if destination is accessible
-            const furthestPoint = findFurthestAccessiblePoint(
+            // Check if destination is accessible by attempting to find a complete route
+            const completeRoute = findShortestPath(
               start as Building,
               directionsDestination,
-              walkpaths
+              walkpaths,
+              'accessible'
             );
             
-            // If no furthest point found, destination is completely unreachable
-            if (!furthestPoint) {
-              console.log('[ACCESSIBLE] Destination completely unreachable, showing fallback dialog');
-              setOriginalDestinationName(directionsDestination.name);
-              setSelectedStart(start);
-              setSelectedEnd(directionsDestination);
-              setMode(travelMode);
-              setAccessibleFallbackEndpoint(null); // Null means completely unreachable
-              setShowAccessibleFallbackDialog(true);
-              const duration = performance.now() - routeStartTime;
-              trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'unreachable', source: 'dialog' });
-              return;
+            // If complete route found, proceed with normal routing (don't show fallback dialog)
+            if (completeRoute && completeRoute.length > 0) {
+              console.log('[ACCESSIBLE] Complete accessible path exists, proceeding with normal routing');
+              // Fall through to normal routing below
+            } else {
+              // No complete path - check if we can get partway there
+              console.log('[ACCESSIBLE] No complete path, checking for furthest accessible point');
+              const furthestPoint = findFurthestAccessiblePoint(
+                start as Building,
+                directionsDestination,
+                walkpaths
+              );
+              
+              if (furthestPoint) {
+                // Partial path exists - show fallback dialog with endpoint
+                console.log('[ACCESSIBLE] Furthest accessible point found, showing fallback dialog');
+                setOriginalDestinationName(directionsDestination.name);
+                setSelectedStart(start);
+                setSelectedEnd(directionsDestination);
+                setMode(travelMode);
+                setAccessibleFallbackEndpoint(furthestPoint);
+                setShowAccessibleFallbackDialog(true);
+                const duration = performance.now() - routeStartTime;
+                trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'partial', source: 'dialog' });
+                return;
+              } else {
+                // Completely unreachable
+                console.log('[ACCESSIBLE] Destination completely unreachable, showing fallback dialog with no endpoint');
+                setOriginalDestinationName(directionsDestination.name);
+                setSelectedStart(start);
+                setSelectedEnd(directionsDestination);
+                setMode(travelMode);
+                setAccessibleFallbackEndpoint(null); // Null means completely unreachable
+                setShowAccessibleFallbackDialog(true);
+                const duration = performance.now() - routeStartTime;
+                trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'unreachable', source: 'dialog' });
+                return;
+              }
             }
-            
-            // Furthest point found - route to it instead of destination
-            console.log('[ACCESSIBLE] Furthest accessible point found, routing to endpoint');
-            setOriginalDestinationName(directionsDestination.name);
-            setSelectedStart(start);
-            setSelectedEnd(directionsDestination);
-            setMode(travelMode);
-            setAccessibleFallbackEndpoint(furthestPoint);
-            setShowAccessibleFallbackDialog(true);
-            const duration = performance.now() - routeStartTime;
-            trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'partial', source: 'dialog' });
-            return;
           }
         }
 

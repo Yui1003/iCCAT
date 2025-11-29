@@ -1,0 +1,87 @@
+SW-BG] Background tile caching complete: 184 succeeded, 0 failed
+22:35:23.921 index-DGN2Uabs.js:477 [CLIENT] Accessible mode: filtered to 26/39 accessible paths (PWD-friendly OR strictly PWD-only)
+22:35:23.921 index-DGN2Uabs.js:477 [CLIENT] Building graph from 26 paths
+22:35:23.923 index-DGN2Uabs.js:477 [CLIENT] Final graph: 437 nodes, 888 edges
+22:35:23.924 index-DGN2Uabs.js:477 [CLIENT] ✅ NO node merging - using exact paths you created
+22:35:23.924 index-DGN2Uabs.js:477 [CLIENT] Pathfinding from "Your Location (Kiosk)" to "Hostel Building"
+22:35:23.924 index-DGN2Uabs.js:477 [CLIENT] Graph has 437 nodes and 888 edges
+22:35:23.925 index-DGN2Uabs.js:477 [CLIENT] Closest start node: 2.5m away
+22:35:23.925 index-DGN2Uabs.js:477 [CLIENT] Closest end node: 5.3m away
+22:35:23.930 index-DGN2Uabs.js:477 [CLIENT] Dijkstra found 27 key nodes
+22:35:23.936 index-DGN2Uabs.js:477 [CLIENT] ✅ Route found: Dijkstra 27 nodes → Expanded 27 waypoints → Final 28 with buildings
+22:35:23.936 index-DGN2Uabs.js:477 [CLIENT] Complete accessible path exists to destination
+22:35:23.936 index-DGN2Uabs.js:477 [ACCESSIBLE] Destination completely unreachable, showing fallback dialog
+22:35:23.936 index-DGN2Uabs.js:412 [Analytics] trackEvent called: {eventType: 'route_generation', responseTime: 490.5, isOnline: true}
+22:35:23.936 index-DGN2Uabs.js:412 [Analytics] sendEvent: Attempting to send: {eventType: 'route_generation', url: '/api/analytics'}
+22:35:23.982 sw.js?1764426911675:179 [SW] Cached API: /api/floors
+22:35:24.019 sw.js?1764426911675:179 [SW] Cached API: /api/indoor-nodes
+22:35:24.082 sw.js?1764426911675:179 [SW] Cached API: /api/rooms
+22:35:24.159 index-DGN2Uabs.js:412 [Analytics] sendEvent: Response received, status: 200
+22:35:24.159 index-DGN2Uabs.js:412 [Analytics] Event sent successfully: route_generation
+22:35:24.159 index-DGN2Uabs.js:412 [Analytics] Response body: {success: true}
+22:35:24.306 sw.js?1764426911675:179 [SW] Cached API: /api/settings/home_inactivity_timeout
+22:35:24.322 sw.js?1764426911675:179 [SW] Cached API: /api/room-paths
+22:35:24.340 sw.js?1764426911675:179 [SW] Cached API: /api/settings/global_inactivity_timeout
+22:35:24.369 sw.js?1764426911675:191 [SW] API data cached: 11/11 endpoints
+22:35:24.370 sw.js?1764426911675:196 [SW] Step 3/3: Caching essential map tiles (zoom 17-18)...
+22:35:24.370 sw.js?1764426911675:57 [SW] Generating ESSENTIAL tile URLs (zoom 17-18 only)...
+22:35:24.370 sw.js?1764426911675:63 [SW] Zoom 17: tiles from (109540,60234) to (109543,60237)
+22:35:24.370 sw.js?1764426911675:63 [SW] Zoom 18: tiles from (219081,120468) to (219086,120475)
+22:35:24.371 sw.js?1764426911675:75 [SW] Generated 64 ESSENTIAL map tile URLs for pre-caching
+22:35:24.690 sw.js?1764426911675:211 [SW] Essential tiles cached: 64/64
+22:35:24.691 sw.js?1764426911675:214 [SW] ========================================
+22:35:24.691 sw.js?1764426911675:215 [SW] INSTALL COMPLETE - App ready to use!
+22:35:24.691 sw.js?1764426911675:216 [SW] ========================================
+22:35:24.691 sw.js?1764426911675:217 [SW] Background: Will cache extra tiles (zoom 16, 19) after activation
+22:35:24.699 index-DGN2Uabs.js:586 [SW-REG] New Service Worker available - app will update on reload
+22:35:25.496 index-DGN2Uabs.js:477 [ACCESSIBLE-ENDPOINT] Button clicked {selectedStart: true, selectedEnd: true, accessibleFallbackEndpoint: null, originalDestinationName: 'Hostel Building'}
+22:35:25.496 index-DGN2Uabs.js:477  [ACCESSIBLE-ENDPOINT] Missing required data to navigate {selectedStart: 'Your Location (Kiosk)', selectedEnd: 'Hostel Building', endpoint: null}
+fn @ index-DGN2Uabs.js:477
+hX @ index-DGN2Uabs.js:37
+mX @ index-DGN2Uabs.js:37
+gX @ index-DGN2Uabs.js:37
+$A @ index-DGN2Uabs.js:37
+_8 @ index-DGN2Uabs.js:37
+(anonymous) @ index-DGN2Uabs.js:37
+YP @ index-DGN2Uabs.js:40
+t8 @ index-DGN2Uabs.js:37
+$1 @ index-DGN2Uabs.js:37
+jP @ index-DGN2Uabs.js:37
+OX @ index-DGN2Uabs.js:37
+22:35:25.720 sw.js?1764426911675:233 [SW] Activating and cleaning old caches...
+22:35:25.720 sw.js?1764426911675:246 [SW] Starting background tile caching...
+22:35:25.720 sw.js?1764426911675:110 [SW-BG] Starting background caching of 184 extra tiles (zoom 16, 19)...
+22:35:25.841 sw.js?1764426911675:138 [SW-BG] Background tile caching complete: 184 succeeded, 0 failed
+22:35:26.875 index-DGN2Uabs.js:368 [OFFLINE] Network check successful - back online
+22:35:27.928 index-DGN2Uabs.js:477 [ACCESSIBLE-ENDPOINT] Button clicked {selectedStart: true, selectedEnd: true, accessibleFallbackEndpoint: null, originalDestinationName: 'Hostel Building'}
+22:35:27.928 index-DGN2Uabs.js:477  [ACCESSIBLE-ENDPOINT] Missing required data to navigate {selectedStart: 'Your Location (Kiosk)', selectedEnd: 'Hostel Building', endpoint: null}
+fn @ index-DGN2Uabs.js:477
+hX @ index-DGN2Uabs.js:37
+mX @ index-DGN2Uabs.js:37
+gX @ index-DGN2Uabs.js:37
+$A @ index-DGN2Uabs.js:37
+_8 @ index-DGN2Uabs.js:37
+(anonymous) @ index-DGN2Uabs.js:37
+YP @ index-DGN2Uabs.js:40
+t8 @ index-DGN2Uabs.js:37
+$1 @ index-DGN2Uabs.js:37
+jP @ index-DGN2Uabs.js:37
+OX @ index-DGN2Uabs.js:37
+22:35:29.764 index-DGN2Uabs.js:586   GET https://iccat.onrender.com/api/proxy-image?url=https%3A%2F%2Fcvsu.edu.ph%2Fwp-content%2Fuploads%2F2022%2F08%2FCCAT-Campus-scaled.jpg 504 (Gateway Timeout)
+(anonymous) @ index-DGN2Uabs.js:586
+oLe @ index-DGN2Uabs.js:586
+await in oLe
+fLe @ index-DGN2Uabs.js:586
+TY.n.onmessage @ index-DGN2Uabs.js:586
+22:35:29.764 index-DGN2Uabs.js:586  [IMAGE-PRECACHE] ✗ Failed to cache image (HTTP 504): https://cvsu.edu.ph/wp-content/uploads/2022/08/CCAT-Campus-s...
+(anonymous) @ index-DGN2Uabs.js:586
+Promise.then
+(anonymous) @ index-DGN2Uabs.js:586
+oLe @ index-DGN2Uabs.js:586
+await in oLe
+fLe @ index-DGN2Uabs.js:586
+TY.n.onmessage @ index-DGN2Uabs.js:586
+22:35:31.874 index-DGN2Uabs.js:368 [OFFLINE] Network check successful - back online
+22:35:36.884 index-DGN2Uabs.js:368 [OFFLINE] Network check successful - back online
+22:35:41.875 index-DGN2Uabs.js:368 [OFFLINE] Network check successful - back online
+22:35:47.819 index-DGN2Uabs.js:368 [OFFLINE] Network check successful - back online
