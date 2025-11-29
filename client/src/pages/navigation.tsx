@@ -2970,12 +2970,12 @@ export default function Navigation() {
               No Accessible Path Available
             </DialogTitle>
             <DialogDescription>
-              There's no wheelchair-accessible path to <strong>{originalDestinationName}</strong>.
+              No PWD friendly path to <strong>{originalDestinationName}</strong>, you are navigated to the nearest pwd path of the building.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
             <p className="text-sm text-foreground">
-              You can navigate to the end of the accessible path:
+              Endpoint location:
             </p>
             <Card className="p-3 bg-muted/50">
               <p className="font-medium text-foreground">Accessible Path Endpoint</p>
