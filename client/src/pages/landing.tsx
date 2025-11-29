@@ -1,11 +1,14 @@
 import { Link } from "wouter";
-import { Map, Calendar, Users, Info, Clock, ClipboardList } from "lucide-react";
+import { Map, Calendar, Users, Info, Clock, ClipboardList, HelpCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useHomeInactivity } from "@/hooks/use-inactivity";
 import logoImage from "@assets/logo.png";
+import { Button } from "@/components/ui/button";
+import { Walkthrough, useWalkthrough } from "@/components/walkthrough";
 
 export default function Landing() {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { isOpen, openWalkthrough, closeWalkthrough } = useWalkthrough();
   
   // Activate screensaver after 30 seconds of inactivity
   useHomeInactivity();
@@ -39,17 +42,28 @@ export default function Landing() {
     <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-accent/10 flex flex-col">
       <header className="p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <img 
-              src={logoImage} 
-              alt="iCCAT Logo" 
-              className="w-16 h-16 rounded-lg"
-              data-testid="img-logo"
-            />
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">iCCAT</h1>
-              <p className="text-sm text-muted-foreground">Interactive Campus Companion & Assistance Terminal</p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <img 
+                src={logoImage} 
+                alt="iCCAT Logo" 
+                className="w-16 h-16 rounded-lg"
+                data-testid="img-logo"
+              />
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">iCCAT</h1>
+                <p className="text-sm text-muted-foreground">Interactive Campus Companion & Assistance Terminal</p>
+              </div>
             </div>
+            <Button
+              variant="outline"
+              onClick={openWalkthrough}
+              className="flex items-center gap-2"
+              data-testid="button-help-guide"
+            >
+              <HelpCircle className="w-5 h-5" />
+              <span className="hidden sm:inline">How to Use</span>
+            </Button>
           </div>
         </div>
       </header>
@@ -161,6 +175,8 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      <Walkthrough isOpen={isOpen} onClose={closeWalkthrough} />
     </div>
   );
 }
