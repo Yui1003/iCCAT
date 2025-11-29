@@ -1096,6 +1096,36 @@ export default function MobileNavigation() {
                   </div>
                 </div>
 
+                {/* Directions for Indoor Navigation */}
+                {route.phases && route.phases.length > 0 && navigationPhase === 'indoor' && (
+                  <div>
+                    <h3 className="text-sm font-medium text-foreground mb-2">Directions</h3>
+                    <div className="space-y-2">
+                      {route.phases
+                        .filter(phase => phase.color === '#ef4444') // Only show indoor phases
+                        .map((phase, phaseIndex) => (
+                          phase.steps && phase.steps.map((step, stepIndex) => (
+                            <div
+                              key={`${phaseIndex}-${stepIndex}`}
+                              className="flex gap-2 text-xs"
+                              data-testid={`indoor-step-${phaseIndex}-${stepIndex}`}
+                            >
+                              <div className="flex-shrink-0 w-5 h-5 bg-card border border-border rounded-full flex items-center justify-center text-xs font-medium text-muted-foreground">
+                                {stepIndex + 1}
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-medium text-foreground">{step.instruction}</p>
+                                {step.distance && step.distance !== '0 m' && (
+                                  <p className="text-muted-foreground text-xs">{step.distance}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Floor Navigation Controls */}
                 <div>
                   <h3 className="text-sm font-medium text-foreground mb-2">Floor Navigation</h3>
