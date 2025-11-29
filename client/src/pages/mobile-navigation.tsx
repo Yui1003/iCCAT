@@ -769,6 +769,7 @@ export default function MobileNavigation() {
           <div className="absolute inset-0 bg-background z-10" data-testid="indoor-navigation-container">
             {currentIndoorFloor && (
               <FloorPlanViewer
+                key={currentIndoorFloor.id}
                 floor={currentIndoorFloor}
                 rooms={indoorNodes
                   .filter(n => n.floorId === currentIndoorFloor.id && n.type === 'room')
