@@ -25,7 +25,7 @@ import SearchableWaypointSelect from "@/components/searchable-waypoint-select";
 import type { Building, NavigationRoute, Staff, Floor, Room, VehicleType, RouteStep, RoutePhase, IndoorNode, RoomPath, LatLng } from "@shared/schema";
 import { poiTypes, KIOSK_LOCATION } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
-import { findShortestPath, findNearestAccessibleEndpoint, isDestinationConnectedToAccessibleNetwork } from "@/lib/pathfinding";
+import { findShortestPath, findNearestAccessibleEndpoint } from "@/lib/pathfinding";
 import { buildIndoorGraph, findRoomPath, connectOutdoorToIndoor } from "@/lib/indoor-pathfinding";
 import { getWalkpaths, getDrivepaths } from "@/lib/offline-data";
 import { calculateMultiPhaseRoute, multiPhaseToNavigationRoute } from "@/lib/multi-phase-routes";
@@ -1988,39 +1988,41 @@ export default function Navigation() {
           if (response.ok) {
             const walkpaths = await response.json();
             
-            // Check if destination is actually connected to accessible network (nodes within 3m)
-            const isConnected = isDestinationConnectedToAccessibleNetwork(
+            // Check if destination is connected by attempting to find a complete accessible route
+            const completeRoute = findShortestPath(
+              start as Building,
               directionsDestination,
-              walkpaths
+              walkpaths,
+              'accessible'
             );
             
-            // If destination is connected, proceed with normal routing
-            if (isConnected) {
-              console.log('[ACCESSIBLE] Destination IS connected to accessible network, proceeding with normal routing');
+            // If complete route found, proceed with normal routing (no dialog)
+            if (completeRoute && completeRoute.length > 0) {
+              console.log('[ACCESSIBLE] Connected accessible path exists, proceeding with normal routing');
               // Fall through to normal routing below
             } else {
-              // Destination not connected - find nearest accessible path endpoint to destination
-              console.log('[ACCESSIBLE] Destination NOT connected to accessible network, finding nearest accessible endpoint');
-              const nearestEndpoint = findNearestAccessibleEndpoint(
+              // No connected path - find nearest accessible path waypoint to destination
+              console.log('[ACCESSIBLE] NO connected accessible path, finding nearest accessible waypoint');
+              const nearestWaypoint = findNearestAccessibleEndpoint(
                 directionsDestination,
                 walkpaths
               );
               
-              if (nearestEndpoint) {
-                // Accessible endpoint found - show fallback dialog with endpoint
-                console.log('[ACCESSIBLE] Nearest accessible endpoint found, showing fallback dialog');
+              if (nearestWaypoint) {
+                // Accessible waypoint found - show fallback dialog
+                console.log('[ACCESSIBLE] Nearest accessible waypoint found, showing fallback dialog');
                 setOriginalDestinationName(directionsDestination.name);
                 setSelectedStart(start);
                 setSelectedEnd(directionsDestination);
                 setMode(travelMode);
-                setAccessibleFallbackEndpoint(nearestEndpoint);
+                setAccessibleFallbackEndpoint(nearestWaypoint);
                 setShowAccessibleFallbackDialog(true);
                 const duration = performance.now() - routeStartTime;
-                trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'endpoint', source: 'dialog' });
+                trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'waypoint', source: 'dialog' });
                 return;
               } else {
                 // Completely unreachable - no accessible paths available
-                console.log('[ACCESSIBLE] Destination completely unreachable, no accessible paths available');
+                console.log('[ACCESSIBLE] NO accessible paths available on campus');
                 setOriginalDestinationName(directionsDestination.name);
                 setSelectedStart(start);
                 setSelectedEnd(directionsDestination);

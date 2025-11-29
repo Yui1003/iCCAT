@@ -53,15 +53,14 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 
 ## Recent Changes (November 29, 2025)
 - **CRITICAL FIX - Accessible mode now correctly detects unreachable buildings and offers nearest waypoint fallback**:
-  - Problem: Pre-check used `findShortestPath()` which snaps destinations to nearby nodes (even 17m away), falsely claiming connection exists. Users got fake complete routes to disconnected buildings.
+  - Problem: Pre-check incorrectly showed complete routes to buildings with no connected PWD-friendly paths
   - Solution: Two-part fix:
-    1. Created `isDestinationConnectedToAccessibleNetwork()` - only considers buildings "connected" if accessible path nodes exist within 3 meters (true connection, not just snappable)
-    2. Updated `findNearestAccessibleEndpoint()` to find nearest ANY waypoint on accessible paths (not just endpoints) - gives users the closest point on the network
+    1. Use `findShortestPath()` directly to determine if destination is connected (no artificial thresholds)
+    2. Updated `findNearestAccessibleEndpoint()` to find nearest ANY waypoint on accessible paths (not just endpoints) - gives users the closest point on the entire network
   - Logic Flow:
-    - IF destination connected (3m threshold) → navigate as usual (no dialog)
-    - IF NOT connected → find nearest waypoint on any PWD-friendly/strictly PWD path → show dialog with option to navigate there instead
+    - IF `findShortestPath` returns complete route → destination IS connected → navigate as usual (no dialog)
+    - IF `findShortestPath` returns nothing → destination NOT connected → find nearest waypoint on any PWD-friendly/strictly PWD path → show dialog with option to navigate there instead
   - Result: Buildings with no connected PWD path now correctly trigger fallback dialog with nearest accessible waypoint instead of showing fake complete routes
-  - Implementation: Updated pre-check in navigation.tsx to use `isDestinationConnectedToAccessibleNetwork()` instead of `findShortestPath()`
 - **Fixed cache loader performance**: Changed cache verification loader to close immediately when caching completes instead of waiting for full 30-second timer. Now detects cached resources every 200ms and closes as soon as all caches are populated (max ~5 seconds). Fixes issue where loader paused when browser tabs were inactive.
 - **Added version display**: Added "version:1.8.1" text to homepage footer bottom right for user visibility
 
