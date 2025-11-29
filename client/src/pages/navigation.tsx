@@ -3126,25 +3126,33 @@ export default function Navigation() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MapPin className="w-5 h-5 text-primary" />
-              No Accessible Path Available
+              Accessible Route Unavailable
             </DialogTitle>
             <DialogDescription>
-              No PWD friendly path to <strong>{originalDestinationName}</strong>, you are navigated to the nearest pwd friendly path of the building.
+              There is no wheelchair-accessible path connecting to <strong>{originalDestinationName}</strong>. 
+              {accessibleFallbackEndpoint ? (
+                <>
+                  We found the nearest accessible path endpoint and can navigate you there instead.
+                </>
+              ) : (
+                <>
+                  Unfortunately, there are no accessible paths available on campus.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-4">
-            <p className="text-sm text-foreground">
-              Endpoint location:
-            </p>
-            <Card className="p-3 bg-muted/50">
-              <p className="font-medium text-foreground">Accessible Path Endpoint</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {accessibleFallbackEndpoint ? 
-                  `${accessibleFallbackEndpoint.lat.toFixed(4)}°, ${accessibleFallbackEndpoint.lng.toFixed(4)}°` 
-                  : 'Loading...'}
+          {accessibleFallbackEndpoint && (
+            <div className="space-y-3 py-4">
+              <p className="text-sm text-foreground font-medium">
+                Nearest Accessible Endpoint:
               </p>
-            </Card>
-          </div>
+              <Card className="p-3 bg-muted/50">
+                <p className="text-xs text-muted-foreground">
+                  Coordinates: {accessibleFallbackEndpoint.lat.toFixed(4)}°, {accessibleFallbackEndpoint.lng.toFixed(4)}°
+                </p>
+              </Card>
+            </div>
+          )}
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -3152,15 +3160,17 @@ export default function Navigation() {
               onClick={() => setShowAccessibleFallbackDialog(false)}
               data-testid="button-close-fallback"
             >
-              Close
+              Cancel
             </Button>
-            <Button
-              className="flex-1"
-              onClick={handleNavigateToAccessibleEndpoint}
-              data-testid="button-navigate-fallback"
-            >
-              Navigate to Endpoint
-            </Button>
+            {accessibleFallbackEndpoint && (
+              <Button
+                className="flex-1"
+                onClick={handleNavigateToAccessibleEndpoint}
+                data-testid="button-navigate-fallback"
+              >
+                Navigate to Endpoint
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
