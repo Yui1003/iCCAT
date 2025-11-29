@@ -349,6 +349,14 @@ export function findShortestPath(
   console.log(`[CLIENT] Closest start node: ${startNodeData.distance.toFixed(1)}m away`);
   console.log(`[CLIENT] Closest end node: ${endNodeData.distance.toFixed(1)}m away`);
 
+  // VALIDATION: For accessible mode, destination building MUST be very close to an actual path node
+  // If the closest node is >4m away, the building is NOT truly connected to the accessible network
+  if (mode === 'accessible' && endNodeData.distance > 4) {
+    console.warn(`[CLIENT] ACCESSIBLE MODE: Destination building is ${endNodeData.distance.toFixed(1)}m away from closest path node`);
+    console.warn(`[CLIENT] Building is NOT truly connected to accessible network (threshold: 4m) - treating as unreachable`);
+    return null;
+  }
+
   const startKey = startNodeData.key;
   const endKey = endNodeData.key;
 

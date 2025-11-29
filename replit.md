@@ -53,14 +53,14 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 
 ## Recent Changes (November 29, 2025)
 - **CRITICAL FIX - Accessible mode now correctly detects unreachable buildings and offers nearest waypoint fallback**:
-  - Problem: Pre-check incorrectly showed complete routes to buildings with no connected PWD-friendly paths
-  - Solution: Two-part fix:
-    1. Use `findShortestPath()` directly to determine if destination is connected (no artificial thresholds)
-    2. Updated `findNearestAccessibleEndpoint()` to find nearest ANY waypoint on accessible paths (not just endpoints) - gives users the closest point on the entire network
+  - Root Cause: `findShortestPath()` was snapping destination building to closest graph node even if 17m away, then claiming "connected" based on route through that snapped node
+  - Solution: Added validation check in `findShortestPath()`:
+    - For accessible mode: If closest end node is >4m from destination building, return `null` (building is NOT truly connected to accessible network)
+    - This rejects false connections where building is far from any actual path node
   - Logic Flow:
-    - IF `findShortestPath` returns complete route → destination IS connected → navigate as usual (no dialog)
-    - IF `findShortestPath` returns nothing → destination NOT connected → find nearest waypoint on any PWD-friendly/strictly PWD path → show dialog with option to navigate there instead
-  - Result: Buildings with no connected PWD path now correctly trigger fallback dialog with nearest accessible waypoint instead of showing fake complete routes
+    - IF `findShortestPath` returns complete route AND destination is <4m from path → navigate as usual (no dialog)
+    - IF `findShortestPath` returns null (destination >4m from any path) → find nearest waypoint on accessible paths → show dialog with option to navigate there instead
+  - Result: Buildings with no connected PWD path (like DMS TCR 1-3 at 17m away) now correctly trigger fallback dialog instead of showing fake complete routes
 - **Fixed cache loader performance**: Changed cache verification loader to close immediately when caching completes instead of waiting for full 30-second timer. Now detects cached resources every 200ms and closes as soon as all caches are populated (max ~5 seconds). Fixes issue where loader paused when browser tabs were inactive.
 - **Added version display**: Added "version:1.8.1" text to homepage footer bottom right for user visibility
 
