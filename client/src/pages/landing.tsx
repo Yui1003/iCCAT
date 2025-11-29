@@ -142,16 +142,23 @@ export default function Landing() {
       </main>
 
       <footer className="p-6">
-        <div className="max-w-7xl mx-auto text-center space-y-4">
-          <Link href="/feedback">
-            <button
-              data-testid="button-feedback"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover-elevate active-elevate-2 transition-all"
-            >
-              <ClipboardList className="w-5 h-5" />
-              <span className="font-medium">Provide Feedback</span>
-            </button>
-          </Link>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="text-center flex-1">
+              <Link href="/feedback">
+                <button
+                  data-testid="button-feedback"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover-elevate active-elevate-2 transition-all"
+                >
+                  <ClipboardList className="w-5 h-5" />
+                  <span className="font-medium">Provide Feedback</span>
+                </button>
+              </Link>
+            </div>
+            <div className="text-xs text-muted-foreground" data-testid="text-version">
+              version:1.8.1
+            </div>
+          </div>
         </div>
       </footer>
     </div>
