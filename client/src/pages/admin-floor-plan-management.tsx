@@ -679,7 +679,7 @@ export default function AdminFloorPlanManagement() {
                       <div>
                         <Label>Place Node on Floor Plan</Label>
                         <p className="text-xs text-muted-foreground mb-2">
-                          Click on the floor plan to place the node. Rooms (blue R) and existing nodes are shown.
+                          Click on the floor plan to place the node. Existing nodes (E=Entrance, S=Stairway, EL=Elevator, H=Hallway) are shown.
                         </p>
                         <FloorPlanNodePlacer
                           floorPlanImage={selectedNodeFloor.floorPlanImage}
@@ -689,7 +689,7 @@ export default function AdminFloorPlanManagement() {
                             setX(coordX.toString());
                             setY(coordY.toString());
                           }}
-                          rooms={rooms.filter(r => r.floorId === nodeSelectedFloorId)}
+                          rooms={[]}
                           existingNodes={indoorNodes.filter(n => n.floorId === nodeSelectedFloorId && n.id !== editingNode?.id)}
                           currentFloorId={nodeSelectedFloorId}
                           className="h-[350px] border rounded-lg"
