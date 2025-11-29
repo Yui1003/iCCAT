@@ -52,6 +52,15 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 - **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
 
 ## Recent Changes (November 29, 2025)
+- **ADDED: Interactive Walkthrough/Guide Feature**:
+  - Created comprehensive walkthrough component (`client/src/components/walkthrough.tsx`) with 5 interactive steps
+  - Steps cover: Welcome/Home, Campus Navigation, Events & Announcements, Staff Directory, and Completion
+  - Visual previews use actual shadcn Card and Button components for UI consistency
+  - Each step includes feature highlights with icons and helpful tips
+  - Added "How to Use" button in landing page header for easy access
+  - Auto-shows for first-time visitors (localStorage-based detection)
+  - Proper accessibility support with DialogTitle and DialogDescription for screen readers
+
 - **FIXED: Floor plan lingering path artifacts**:
   - Issue: When navigating between floors, path from previous floor lingered at bottom-right corner as unknown dotted line
   - Root Cause: Canvas drawing code plotted waypoints outside visible canvas bounds; canvas wasn't filtering coordinates
