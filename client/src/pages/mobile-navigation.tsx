@@ -1096,32 +1096,51 @@ export default function MobileNavigation() {
                   </div>
                 </div>
 
-                {/* Directions for Indoor Navigation */}
+                {/* Directions for Indoor Navigation - Show ALL phases like desktop */}
                 {route.phases && route.phases.length > 0 && navigationPhase === 'indoor' && (
                   <div>
-                    <h3 className="text-sm font-medium text-foreground mb-2">Directions</h3>
-                    <div className="space-y-2">
-                      {route.phases
-                        .filter(phase => phase.color === '#ef4444') // Only show indoor phases
-                        .map((phase, phaseIndex) => (
-                          phase.steps && phase.steps.map((step, stepIndex) => (
-                            <div
-                              key={`${phaseIndex}-${stepIndex}`}
-                              className="flex gap-2 text-xs"
-                              data-testid={`indoor-step-${phaseIndex}-${stepIndex}`}
-                            >
-                              <div className="flex-shrink-0 w-5 h-5 bg-card border border-border rounded-full flex items-center justify-center text-xs font-medium text-muted-foreground">
-                                {stepIndex + 1}
+                    <h3 className="text-sm font-medium text-foreground mb-3">All Directions</h3>
+                    <div className="space-y-4">
+                      {route.phases.map((phase, phaseIndex) => {
+                        const isIndoorPhase = phase.color === '#ef4444';
+                        return (
+                          <div key={phaseIndex}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div 
+                                className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                                style={{ backgroundColor: phase.color }}
+                                data-testid={`phase-badge-indoor-${phaseIndex}`}
+                              >
+                                {phaseIndex + 1}
                               </div>
-                              <div className="flex-1">
-                                <p className="font-medium text-foreground">{step.instruction}</p>
-                                {step.distance && step.distance !== '0 m' && (
-                                  <p className="text-muted-foreground text-xs">{step.distance}</p>
-                                )}
-                              </div>
+                              <h4 className="text-xs font-semibold text-foreground">
+                                {phase.mode === 'driving' 
+                                  ? `Drive to ${phase.endName}`
+                                  : `Walk to ${phase.endName}`}
+                              </h4>
                             </div>
-                          ))
-                        ))}
+                            <div className="space-y-2 pl-7">
+                              {phase.steps.map((step, stepIndex) => (
+                                <div
+                                  key={`${phaseIndex}-${stepIndex}`}
+                                  className="flex gap-2 text-xs"
+                                  data-testid={`step-${phaseIndex}-${stepIndex}`}
+                                >
+                                  <div className="flex-shrink-0 w-5 h-5 bg-card border border-border rounded-full flex items-center justify-center text-xs font-medium text-muted-foreground">
+                                    {stepIndex + 1}
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="font-medium text-foreground">{step.instruction}</p>
+                                    {!isIndoorPhase && step.distance && (
+                                      <p className="text-muted-foreground text-xs">{step.distance}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
