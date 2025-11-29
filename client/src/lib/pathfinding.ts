@@ -402,6 +402,14 @@ export function findShortestPath(
   if (distances.get(endKey) === Infinity || (previous.get(endKey) === undefined && endKey !== startKey)) {
     console.warn(`[CLIENT] WARNING: No road connection found between "${start.name}" and "${end.name}" - paths are not connected!`);
     console.warn('[CLIENT] TIP: Make sure your paths share common waypoints to form junctions.');
+    
+    // In accessible mode, do NOT allow fallback direct line - the destination must be reachable via actual paths
+    if (mode === 'accessible') {
+      console.warn(`[CLIENT] ACCESSIBLE MODE: Destination building is not connected to accessible path network - treating as unreachable`);
+      return null;
+    }
+    
+    // For other modes, allow fallback to direct line (legacy behavior for walking/driving)
     return [startPoint, endPoint];
   }
 

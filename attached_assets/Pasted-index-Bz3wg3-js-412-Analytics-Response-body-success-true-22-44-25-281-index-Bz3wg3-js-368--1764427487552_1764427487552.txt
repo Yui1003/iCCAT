@@ -1,0 +1,30 @@
+index-Bz3wg3_-.js:412 [Analytics] Response body: {success: true}
+22:44:25.281 index-Bz3wg3_-.js:368 [OFFLINE] Network check successful - back online
+22:44:25.626 index-Bz3wg3_-.js:477 [CLIENT] Accessible mode: filtered to 26/39 accessible paths (PWD-friendly OR strictly PWD-only)
+22:44:25.627 index-Bz3wg3_-.js:477 [CLIENT] Building graph from 26 paths
+22:44:25.628 index-Bz3wg3_-.js:477 [CLIENT] Final graph: 437 nodes, 888 edges
+22:44:25.628 index-Bz3wg3_-.js:477 [CLIENT] ✅ NO node merging - using exact paths you created
+22:44:25.628 index-Bz3wg3_-.js:477 [CLIENT] Pathfinding from "Your Location (Kiosk)" to "DMS TCR 1-3 BUILDING"
+22:44:25.628 index-Bz3wg3_-.js:477 [CLIENT] Graph has 437 nodes and 888 edges
+22:44:25.628 index-Bz3wg3_-.js:477 [CLIENT] Closest start node: 2.5m away
+22:44:25.628 index-Bz3wg3_-.js:477 [CLIENT] Closest end node: 17.0m away
+22:44:25.632 index-Bz3wg3_-.js:477 [CLIENT] Dijkstra found 23 key nodes
+22:44:25.643 index-Bz3wg3_-.js:477 [CLIENT] ✅ Route found: Dijkstra 23 nodes → Expanded 23 waypoints → Final 24 with buildings
+22:44:25.643 index-Bz3wg3_-.js:477 [ACCESSIBLE] Complete accessible path exists, proceeding with normal routing
+22:44:25.877 index-Bz3wg3_-.js:477 [CLIENT] Fetched fresh accessible paths for route calculation: 39
+22:44:25.877 index-Bz3wg3_-.js:477 [CLIENT] Accessible mode: filtered to 26/39 accessible paths (PWD-friendly OR strictly PWD-only)
+22:44:25.877 index-Bz3wg3_-.js:477 [CLIENT] Building graph from 26 paths
+22:44:25.878 index-Bz3wg3_-.js:477 [CLIENT] Final graph: 437 nodes, 888 edges
+22:44:25.878 index-Bz3wg3_-.js:477 [CLIENT] ✅ NO node merging - using exact paths you created
+22:44:25.878 index-Bz3wg3_-.js:477 [CLIENT] Pathfinding from "Your Location (Kiosk)" to "DMS TCR 1-3 BUILDING"
+22:44:25.879 index-Bz3wg3_-.js:477 [CLIENT] Graph has 437 nodes and 888 edges
+22:44:25.879 index-Bz3wg3_-.js:477 [CLIENT] Closest start node: 2.5m away
+22:44:25.879 index-Bz3wg3_-.js:477 [CLIENT] Closest end node: 17.0m away
+22:44:25.882 index-Bz3wg3_-.js:477 [CLIENT] Dijkstra found 23 key nodes
+22:44:25.891 index-Bz3wg3_-.js:477 [CLIENT] ✅ Route found: Dijkstra 23 nodes → Expanded 23 waypoints → Final 24 with buildings
+22:44:26.144 index-Bz3wg3_-.js:412 [Analytics] trackEvent called: {eventType: 'route_generation', responseTime: 751.4000000357628, isOnline: true}
+22:44:26.144 index-Bz3wg3_-.js:412 [Analytics] sendEvent: Attempting to send: {eventType: 'route_generation', url: '/api/analytics'}
+22:44:26.865 index-Bz3wg3_-.js:412 [Analytics] sendEvent: Response received, status: 200
+22:44:26.866 index-Bz3wg3_-.js:412 [Analytics] Event sent successfully: route_generation
+22:44:26.866 index-Bz3wg3_-.js:412 [Analytics] Response body: {success: true}
+22:44:30.280 index-Bz3wg3_-.js:368 [OFFLINE] Network check successful - back online
