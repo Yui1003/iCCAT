@@ -22,7 +22,7 @@ import RoomFinderDialog from "@/components/room-finder-dialog";
 import SearchableStartingPointSelect from "@/components/searchable-starting-point-select";
 import SearchableDestinationSelect from "@/components/searchable-destination-select";
 import SearchableWaypointSelect from "@/components/searchable-waypoint-select";
-import type { Building, NavigationRoute, Staff, Floor, Room, VehicleType, RouteStep, RoutePhase, IndoorNode, RoomPath } from "@shared/schema";
+import type { Building, NavigationRoute, Staff, Floor, Room, VehicleType, RouteStep, RoutePhase, IndoorNode, RoomPath, LatLng } from "@shared/schema";
 import { poiTypes, KIOSK_LOCATION } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
 import { findShortestPath, findFurthestAccessiblePoint } from "@/lib/pathfinding";
@@ -931,14 +931,41 @@ export default function Navigation() {
 
       // For walking and accessible, use regular routing
       let finalEnd = selectedEnd;
-      let routePolyline = await calculateRouteClientSide(
-        selectedStart,
-        selectedEnd,
-        mode
-      );
+      let routePolyline: LatLng[] | null = null;
+      let needsAccessibleFallback = false;
 
-      // Fallback for accessible mode: if no route found, find furthest accessible endpoint
-      if (!routePolyline && mode === 'accessible') {
+      // Pre-check for accessible mode: verify destination is actually reachable via accessible paths
+      if (mode === 'accessible') {
+        try {
+          const walkpathsRes = await fetch('/api/walkpaths', { 
+            credentials: "include",
+            cache: 'no-cache'
+          });
+          if (walkpathsRes.ok) {
+            const walkpaths = await walkpathsRes.json();
+            const testRoute = findShortestPath(selectedStart as Building, selectedEnd, walkpaths, 'accessible');
+            
+            if (!testRoute || testRoute.length === 0) {
+              console.log('[ACCESSIBLE] Destination not reachable via accessible paths - triggering fallback');
+              needsAccessibleFallback = true;
+            }
+          }
+        } catch (error) {
+          console.error('[ACCESSIBLE] Pre-check failed:', error);
+        }
+      }
+
+      // If pre-check passed or not accessible mode, attempt normal routing
+      if (!needsAccessibleFallback) {
+        routePolyline = await calculateRouteClientSide(
+          selectedStart,
+          selectedEnd,
+          mode
+        );
+      }
+
+      // Fallback for accessible mode: if no route found or pre-check failed, find furthest accessible endpoint
+      if ((!routePolyline || needsAccessibleFallback) && mode === 'accessible') {
         console.log('[ACCESSIBLE] No route found to destination. Finding furthest accessible endpoint...');
         
         try {
@@ -971,15 +998,10 @@ export default function Navigation() {
               polygonColor: null,
               description: '',
               image: null,
-              poiType: 'other',
-              buildingType: 'other',
-              pwdFriendly: true,
-              strictlyPwdOnly: false,
+              type: 'building',
               markerIcon: null,
               departments: null,
-              polygonOpacity: null,
-              type: 'building',
-              indoor: false
+              polygonOpacity: null
             };
             
             finalEnd = endpointBuilding;
