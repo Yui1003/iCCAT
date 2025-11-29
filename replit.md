@@ -22,14 +22,18 @@ The system tracks interface action response times, loading speeds for maps/image
 ### Pathfinding Architecture
 The pathfinding system uses a purely manual connection model. Admins manually connect path waypoints by clicking existing nodes. There is no automatic node merging, ensuring precise control over the navigation network. Dijkstra's algorithm finds the shortest path through connected nodes, and the route expands to include all intermediate waypoints, tracing the complete manually-created paths. Connections occur path-to-path via overlapping waypoints, and building-to-path by clicking building markers.
 
+### Accessible Navigation Fallback
+When a user selects accessible mode and there is no PWD-friendly path to the requested destination, the system automatically finds the nearest building that IS reachable via accessible paths. The app displays a dialog informing the user that no accessible path exists to the original destination, and offers navigation to the nearest accessible alternative. This ensures accessibility mode users always have a viable route option.
+
 ### Feature Specifications
 - **Campus Maps**: Interactive, multi-zoom level (up to 22), stable tile loading, visualization of existing paths.
-- **Admin Tools**: Search and filter for events, buildings, and paths; robust analytics dashboard with visual charts; CSV/JSON export of analytics data; data reset functionality.
+- **Admin Tools**: Search and filter for events, buildings, and paths; robust analytics dashboard with visual charts; CSV/JSON export of analytics data; data reset functionality; ability to delete specific kiosk device records.
 - **Path Drawing**: Building markers and existing waypoints are clickable for path creation and connection, with visual feedback on nearby elements.
 - **Navigation**: Multi-phase route generation using manually-created path network, color-coded paths, ETA display.
+- **Accessible Navigation**: PWD-friendly and strictly PWD-only paths for wheelchair navigation with automatic fallback to nearest accessible building when direct route unavailable.
 - **Analytics**: Tracks interface actions, loading speeds, route generation; offline data queuing and syncing; Firebase persistence.
 - **Data Export**: Formatted CSV with Philippine Timezone and separate date/time columns; JSON export.
-- **Multi-Floor Navigation**: Generic floor-agnostic algorithm for unlimited floors, dynamic floor sequencing, automatic stairway connection logic, and independent path calculation per floor.
+- **Multi-Floor Navigation**: Generic floor-agnostic algorithm for unlimited floors, dynamic floor sequencing, automatic stairway connection logic, and independent path calculation per floor. Floor transitions properly remount UI components to prevent lingering visual artifacts.
 - **Two-Phase Indoor Navigation**: Phase 1 (Outdoor) for campus map routing to building entrance, Phase 2 (Indoor) for turn-by-turn navigation on floor plans. Uses Dijkstra graph building for rooms, indoor nodes, and path waypoints, with cross-floor connections via stairways/elevators.
 
 ### System Design Choices
@@ -38,6 +42,7 @@ The pathfinding system uses a purely manual connection model. Admins manually co
 - **Offline Resilience**: Mechanisms to queue and sync data collected while offline.
 - **Modularity**: Codebase structured with clear separation of concerns (client, server, shared).
 - **Pathfinding Purity**: Zero automatic node merging; routes reflect user's manual path creation exactly.
+- **Accessibility First**: Fallback routing ensures no accessible-mode user is left without navigation options.
 
 ### Caching and Image Handling
 - **Service Worker Optimization**: Essential map tiles (zoom 17-18) cached upfront, extra zoom levels (16, 19) cached in background for faster initial load.
@@ -45,6 +50,12 @@ The pathfinding system uses a purely manual connection model. Admins manually co
 - **ProxiedImage Component**: Reusable component (`client/src/components/proxied-image.tsx`) automatically handles image proxying for consistent offline caching.
 - **Precaching Strategy**: Images detected from API responses are pre-fetched through the proxy and cached for offline availability.
 - **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
+
+## Recent Changes (November 29, 2025)
+- **Fixed lingering path markers on floor transitions**: Added `key={currentIndoorFloor.id}` to FloorPlanViewer component to force remount when changing floors, preventing canvas state persistence
+- **Added accessible navigation fallback**: Implemented `findNearestAccessibleBuilding` function that automatically routes to nearest PWD-accessible building when direct route unavailable in accessible mode
+- **Added fallback dialog**: Users are informed when no accessible path exists to destination and shown nearest alternative with option to continue navigation
+- **Enhanced analytics**: Added ability to delete specific kiosk device records from analytics dashboard with confirmation flow
 
 ## External Dependencies
 - **Frontend Framework**: React 18

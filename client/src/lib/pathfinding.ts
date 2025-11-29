@@ -502,3 +502,44 @@ export function findShortestPath(
   
   return finalRoute;
 }
+
+/**
+ * Find the nearest building reachable via accessible paths when direct routing fails
+ * Used as fallback when accessible mode cannot reach the requested destination
+ */
+export function findNearestAccessibleBuilding(
+  start: Building,
+  buildings: Building[],
+  paths: (Walkpath | Drivepath)[]
+): Building | null {
+  let nearestBuilding: Building | null = null;
+  let nearestDistance = Infinity;
+
+  for (const building of buildings) {
+    if (building.id === start.id) continue; // Skip starting building
+    
+    // Try to find a route to this building in accessible mode
+    const route = findShortestPath(start, building, paths, 'accessible');
+    
+    if (route && route.length > 0) {
+      // Calculate distance from start to this building
+      const distance = calculateDistance(
+        start.lat,
+        start.lng,
+        building.lat,
+        building.lng
+      );
+      
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestBuilding = building;
+      }
+    }
+  }
+
+  if (nearestBuilding) {
+    console.log(`[CLIENT] Accessible route not found to original destination. Nearest accessible building: ${nearestBuilding.name} (${nearestDistance.toFixed(0)}m away)`);
+  }
+  
+  return nearestBuilding;
+}
