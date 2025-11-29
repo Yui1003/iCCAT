@@ -349,6 +349,13 @@ export function findShortestPath(
   console.log(`[CLIENT] Closest start node: ${startNodeData.distance.toFixed(1)}m away`);
   console.log(`[CLIENT] Closest end node: ${endNodeData.distance.toFixed(1)}m away`);
 
+  // In accessible mode, reject destinations that are too far from the path network
+  // This prevents drawing direct lines from waypoints to buildings not actually served by accessible paths
+  if (mode === 'accessible' && endNodeData.distance > 10) {
+    console.warn(`[CLIENT] ACCESSIBLE MODE: Destination building is ${endNodeData.distance.toFixed(1)}m from nearest accessible path node - treating as unreachable`);
+    return null;
+  }
+
   const startKey = startNodeData.key;
   const endKey = endNodeData.key;
 
