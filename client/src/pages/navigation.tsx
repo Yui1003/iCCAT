@@ -25,7 +25,7 @@ import SearchableWaypointSelect from "@/components/searchable-waypoint-select";
 import type { Building, NavigationRoute, Staff, Floor, Room, VehicleType, RouteStep, RoutePhase, IndoorNode, RoomPath } from "@shared/schema";
 import { poiTypes, KIOSK_LOCATION } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
-import { findShortestPath, findNearestAccessibleBuilding } from "@/lib/pathfinding";
+import { findShortestPath, findFurthestAccessiblePoint } from "@/lib/pathfinding";
 import { buildIndoorGraph, findRoomPath, connectOutdoorToIndoor } from "@/lib/indoor-pathfinding";
 import { getWalkpaths, getDrivepaths } from "@/lib/offline-data";
 import { calculateMultiPhaseRoute, multiPhaseToNavigationRoute } from "@/lib/multi-phase-routes";
@@ -64,8 +64,8 @@ export default function Navigation() {
   const [floorsInRoute, setFloorsInRoute] = useState<string[]>([]);
   const [outdoorRouteSnapshot, setOutdoorRouteSnapshot] = useState<NavigationRoute | null>(null);
   const [showAccessibleFallbackDialog, setShowAccessibleFallbackDialog] = useState(false);
-  const [accessibleFallbackBuilding, setAccessibleFallbackBuilding] = useState<Building | null>(null);
-  const [originalDestination, setOriginalDestination] = useState<Building | null>(null);
+  const [accessibleFallbackEndpoint, setAccessibleFallbackEndpoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [originalDestinationName, setOriginalDestinationName] = useState<string | null>(null);
 
   const { data: buildings = [] } = useQuery<Building[]>({
     queryKey: ['/api/buildings']
@@ -937,9 +937,9 @@ export default function Navigation() {
         mode
       );
 
-      // Fallback for accessible mode: if no route found, try nearest accessible building
+      // Fallback for accessible mode: if no route found, find furthest accessible endpoint
       if (!routePolyline && mode === 'accessible') {
-        console.log('[ACCESSIBLE] No route found to destination. Finding nearest accessible building...');
+        console.log('[ACCESSIBLE] No route found to destination. Finding furthest accessible endpoint...');
         
         try {
           const walkpathsRes = await fetch('/api/walkpaths', { 
@@ -949,29 +949,50 @@ export default function Navigation() {
           if (!walkpathsRes.ok) throw new Error('Failed to fetch accessible paths');
           const walkpaths = await walkpathsRes.json();
           
-          const nearestBuilding = findNearestAccessibleBuilding(
+          const furthestEndpoint = findFurthestAccessiblePoint(
             selectedStart as Building,
-            buildings,
+            selectedEnd,
             walkpaths
           );
           
-          if (nearestBuilding) {
-            console.log(`[ACCESSIBLE] ✅ Found nearest accessible building: ${nearestBuilding.name}`);
-            setOriginalDestination(selectedEnd);
-            setAccessibleFallbackBuilding(nearestBuilding);
+          if (furthestEndpoint) {
+            console.log(`[ACCESSIBLE] ✅ Found furthest accessible endpoint at (${furthestEndpoint.lat.toFixed(5)}, ${furthestEndpoint.lng.toFixed(5)})`);
+            setOriginalDestinationName(selectedEnd.name);
+            setAccessibleFallbackEndpoint(furthestEndpoint);
             setShowAccessibleFallbackDialog(true);
             
-            finalEnd = nearestBuilding;
+            // Create synthetic building at endpoint for routing
+            const endpointBuilding: Building = {
+              id: 'accessible-endpoint',
+              name: 'Accessible Path End',
+              lat: furthestEndpoint.lat,
+              lng: furthestEndpoint.lng,
+              polygon: null,
+              polygonColor: null,
+              description: '',
+              image: null,
+              poiType: 'other',
+              buildingType: 'other',
+              pwdFriendly: true,
+              strictlyPwdOnly: false,
+              markerIcon: null,
+              departments: null,
+              polygonOpacity: null,
+              type: 'building',
+              indoor: false
+            };
+            
+            finalEnd = endpointBuilding;
             routePolyline = await calculateRouteClientSide(
               selectedStart,
-              nearestBuilding,
+              endpointBuilding,
               mode
             );
           } else {
-            console.log('[ACCESSIBLE] ❌ No accessible buildings found as fallback');
+            console.log('[ACCESSIBLE] ❌ No accessible endpoints found');
           }
         } catch (fallbackError) {
-          console.error('[ACCESSIBLE] Error searching for fallback building:', fallbackError);
+          console.error('[ACCESSIBLE] Error searching for accessible endpoint:', fallbackError);
         }
       }
 
@@ -2927,16 +2948,20 @@ export default function Navigation() {
               No Accessible Path Available
             </DialogTitle>
             <DialogDescription>
-              There's no wheelchair-accessible path to <strong>{originalDestination?.name}</strong>.
+              There's no wheelchair-accessible path to <strong>{originalDestinationName}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
             <p className="text-sm text-foreground">
-              We found the nearest accessible building:
+              You can navigate to the end of the accessible path:
             </p>
             <Card className="p-3 bg-muted/50">
-              <p className="font-medium text-foreground">{accessibleFallbackBuilding?.name}</p>
-              <p className="text-xs text-muted-foreground mt-1">{accessibleFallbackBuilding?.type}</p>
+              <p className="font-medium text-foreground">Accessible Path Endpoint</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {accessibleFallbackEndpoint ? 
+                  `${accessibleFallbackEndpoint.lat.toFixed(4)}°, ${accessibleFallbackEndpoint.lng.toFixed(4)}°` 
+                  : 'Loading...'}
+              </p>
             </Card>
           </div>
           <div className="flex gap-2">
@@ -2953,7 +2978,7 @@ export default function Navigation() {
               onClick={() => setShowAccessibleFallbackDialog(false)}
               data-testid="button-navigate-fallback"
             >
-              Continue to {accessibleFallbackBuilding?.name}
+              Navigate to Endpoint
             </Button>
           </div>
         </DialogContent>

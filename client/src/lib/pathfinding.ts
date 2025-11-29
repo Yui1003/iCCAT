@@ -504,70 +504,115 @@ export function findShortestPath(
 }
 
 /**
- * Find the nearest building reachable via accessible paths when direct routing fails
- * Optimized with 1.5s timeout to prevent UI freeze
+ * Find the furthest accessible endpoint along paths toward a destination
+ * When no complete accessible path exists to the destination building,
+ * trace as far as possible and return the final reachable endpoint
  */
-export function findNearestAccessibleBuilding(
+export function findFurthestAccessiblePoint(
   start: Building,
-  buildings: Building[],
-  paths: (Walkpath | Drivepath)[],
-  timeoutMs: number = 1500
-): Building | null {
-  const startTime = performance.now();
-  let nearestBuilding: Building | null = null;
-  let nearestDistance = Infinity;
+  destination: Building,
+  paths: (Walkpath | Drivepath)[]
+): LatLng | null {
+  // Try to find complete route first
+  const completeRoute = findShortestPath(start, destination, paths, 'accessible');
+  if (completeRoute && completeRoute.length > 0) {
+    // Complete path exists, so this function shouldn't be called
+    console.log('[CLIENT] Complete accessible path exists to destination');
+    return null;
+  }
 
-  // Build accessible paths graph once (reuse for all buildings)
-  const { nodes: accessibleNodes } = buildGraph(paths, 'accessible');
+  // No complete route - trace accessible paths as far as possible
+  const { nodes: accessibleNodes, edges: accessibleEdges } = buildGraph(paths, 'accessible');
   
-  // If no accessible nodes found, no point searching
   if (accessibleNodes.size === 0) {
     console.log('[CLIENT] No accessible paths available');
     return null;
   }
 
-  // Sort buildings by distance to prioritize closer ones
-  const sortedBuildings = buildings
-    .filter(b => b.id !== start.id)
-    .sort((a, b) => {
-      const distA = calculateDistance(start.lat, start.lng, a.lat, a.lng);
-      const distB = calculateDistance(start.lat, start.lng, b.lat, b.lng);
-      return distA - distB;
-    });
+  // Find the starting node (closest to start building)
+  const nodeArray = Array.from(accessibleNodes.values());
+  let startNode = nodeArray[0];
+  let startNodeDist = calculateDistance(start.lat, start.lng, startNode.lat, startNode.lng);
+  
+  for (const node of nodeArray) {
+    const dist = calculateDistance(start.lat, start.lng, node.lat, node.lng);
+    if (dist < startNodeDist) {
+      startNodeDist = dist;
+      startNode = node;
+    }
+  }
 
-  // Check buildings in order of proximity, with timeout
-  for (const building of sortedBuildings) {
-    // Stop if timeout exceeded
-    if (performance.now() - startTime > timeoutMs) {
-      console.log(`[CLIENT] Fallback search timeout after ${(performance.now() - startTime).toFixed(0)}ms`);
-      break;
+  // Use Dijkstra to find paths from start within accessible network
+  const distances = new Map<string, number>();
+  const previous = new Map<string, string | null>();
+  const unvisited = new Set<string>();
+
+  const nodeIds = Array.from(accessibleNodes.keys());
+  for (const nodeId of nodeIds) {
+    distances.set(nodeId, Infinity);
+    unvisited.add(nodeId);
+  }
+
+  const startNodeId = nodeKey(startNode.lat, startNode.lng);
+  distances.set(startNodeId, 0);
+
+  while (unvisited.size > 0) {
+    let current: string | null = null;
+    let minDist = Infinity;
+
+    const unvisitedArray = Array.from(unvisited);
+    for (const nodeId of unvisitedArray) {
+      const dist = distances.get(nodeId) ?? Infinity;
+      if (dist < minDist) {
+        minDist = dist;
+        current = nodeId;
+      }
     }
 
-    // Try to find a route to this building
-    const route = findShortestPath(start, building, paths, 'accessible');
-    
-    if (route && route.length > 0) {
-      // Calculate distance from start to this building
-      const distance = calculateDistance(
-        start.lat,
-        start.lng,
-        building.lat,
-        building.lng
-      );
-      
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearestBuilding = building;
+    if (current === null || minDist === Infinity) break;
+    unvisited.delete(current);
+
+    // Check edges from current node
+    for (const edge of accessibleEdges) {
+      if (edge.from === current && unvisited.has(edge.to)) {
+        const newDist = (distances.get(current) ?? Infinity) + edge.distance;
+        if (newDist < (distances.get(edge.to) ?? Infinity)) {
+          distances.set(edge.to, newDist);
+          previous.set(edge.to, current);
+        }
       }
     }
   }
 
-  if (nearestBuilding) {
-    const searchTime = (performance.now() - startTime).toFixed(0);
-    console.log(`[CLIENT] ✅ Fallback: Nearest accessible building "${nearestBuilding.name}" found in ${searchTime}ms (${nearestDistance.toFixed(0)}m away)`);
-  } else {
-    console.log(`[CLIENT] ❌ No accessible buildings found`);
+  // Find the accessible node furthest toward destination
+  let furthestNode: GraphNode | null = null;
+  let maxProgress = -1;
+
+  for (const node of nodeArray) {
+    const nodeId = nodeKey(node.lat, node.lng);
+    if (!distances.has(nodeId) || distances.get(nodeId) === Infinity) continue;
+
+    // Calculate progress toward destination
+    const distToNode = calculateDistance(start.lat, start.lng, node.lat, node.lng);
+    const distNodeToDest = calculateDistance(node.lat, node.lng, destination.lat, destination.lng);
+    const distStartToDest = calculateDistance(start.lat, start.lng, destination.lat, destination.lng);
+    
+    // Progress is: (distance we traveled toward destination) / (total distance to destination)
+    const directDist = calculateDistance(start.lat, start.lng, node.lat, node.lng);
+    const distToDestFromNode = calculateDistance(node.lat, node.lng, destination.lat, destination.lng);
+    const progress = 1 - (distToDestFromNode / distStartToDest); // Higher = closer to destination
+
+    if (progress > maxProgress) {
+      maxProgress = progress;
+      furthestNode = node;
+    }
   }
-  
-  return nearestBuilding;
+
+  if (furthestNode) {
+    console.log(`[CLIENT] ✅ Furthest accessible endpoint found: (${furthestNode.lat.toFixed(5)}, ${furthestNode.lng.toFixed(5)}), progress to destination: ${(maxProgress * 100).toFixed(0)}%`);
+    return { lat: furthestNode.lat, lng: furthestNode.lng };
+  }
+
+  console.log('[CLIENT] ❌ No accessible endpoints found toward destination');
+  return null;
 }
