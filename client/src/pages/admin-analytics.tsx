@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, AlertCircle, BarChart3, RotateCcw, Wifi, WifiOff, Download, Cpu, Clock, Info, Trash2 } from "lucide-react";
+import { ArrowLeft, AlertCircle, BarChart3, RotateCcw, Wifi, WifiOff, Download, Cpu, Clock, Info, Trash2, Smartphone } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -78,6 +78,16 @@ export default function AdminAnalytics() {
 
   const { data: analytics = [], isLoading, refetch } = useQuery<AnalyticsSummary[]>({
     queryKey: ['/api/admin/analytics']
+  });
+
+  // Dedicated query for mobile navigation usage count
+  const { data: mobileNavData } = useQuery<{ count: number }>({
+    queryKey: ['/api/admin/analytics', 'mobile-navigation-count'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/analytics/mobile-navigation-count');
+      if (!response.ok) throw new Error('Failed to fetch mobile navigation count');
+      return response.json();
+    }
   });
 
   const [kioskUptimes, setKioskUptimes] = useState<KioskUptime[]>([]);
@@ -285,8 +295,8 @@ export default function AdminAnalytics() {
     [AnalyticsEventType.ROUTE_GENERATION]: "Route Generation"
   };
 
-  // Calculate mobile navigation usage from analytics
-  const mobileNavigationUsage = analytics.find(stat => stat.eventType === AnalyticsEventType.INTERFACE_ACTION)?.totalCount || 0;
+  // Get dedicated mobile navigation usage count from backend query
+  const mobileNavigationUsage = mobileNavData?.count || 0;
 
   // Prepare data for charts
   const chartData = analytics.map((stat) => ({
@@ -492,6 +502,37 @@ export default function AdminAnalytics() {
                   />
                 </LineChart>
               </ResponsiveContainer>
+            </Card>
+
+            {/* Mobile Navigation Usage Card */}
+            <Card className="p-6 mb-8 border-2 border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-950/30">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-16 h-16 rounded-full bg-green-500 flex items-center justify-center">
+                  <Smartphone className="w-8 h-8 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    Mobile Navigation Usage
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button className="p-0 h-4 w-4 rounded-full hover:bg-muted flex items-center justify-center">
+                          <Info className="w-3 h-3 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Number of times users have scanned the QR code to continue navigation on their mobile device. This tracks unique page loads of the mobile navigation interface.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </h3>
+                  <p className="text-sm text-muted-foreground">QR code scans / mobile navigation page loads</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-4xl font-bold text-green-600 dark:text-green-400" data-testid="text-mobile-nav-count">
+                    {mobileNavigationUsage.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Total scans</p>
+                </div>
+              </div>
             </Card>
 
             {/* Analytics Cards */}

@@ -39,7 +39,7 @@ import {
   canHaveStaff,
   type POIType
 } from "@shared/schema";
-import { analyticsEventSchema } from "@shared/analytics-schema";
+import { analyticsEventSchema, AnalyticsEventType } from "@shared/analytics-schema";
 import { z } from "zod";
 import { findShortestPath } from "./pathfinding";
 
@@ -1242,6 +1242,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get mobile navigation count (QR scans / page loads)
+  app.get('/api/admin/analytics/mobile-navigation-count', async (req, res) => {
+    try {
+      const count = await storage.getMobileNavigationCount();
+      res.json({ count });
+    } catch (error) {
+      console.error('Error getting mobile navigation count:', error);
+      res.status(500).json({ error: 'Failed to get mobile navigation count' });
+    }
+  });
+
   // Export analytics as CSV or JSON
   app.get('/api/admin/analytics/export/:format', async (req, res) => {
     try {
@@ -1255,12 +1266,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (format === 'csv') {
         // Convert to CSV with proper formatting in Philippine Time (UTC+8)
         const csvHeader = 'ID,EventType,ResponseTime(ms),Date,Time,Mobile_Navigation_Usage\n';
-        const mobileNavEvents = events.filter(e => e.eventType === AnalyticsEventType.INTERFACE_ACTION && (e as any).action === 'mobile_navigation_opened');
+        const mobileNavEvents = events.filter(e => 
+          e.eventType === AnalyticsEventType.INTERFACE_ACTION && 
+          e.metadata && 
+          e.metadata.action === 'mobile_navigation_opened'
+        );
         const mobileNavCount = mobileNavEvents.length;
         const mobileNavInfo = mobileNavCount > 0 ? `${mobileNavCount}` : '0';
         
         const csvRows = events
-          .map((event, idx) => {
+          .map((event) => {
             const eventDate = new Date(event.timestamp);
             // Format using Philippine timezone (Asia/Manila - UTC+8)
             const dateFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -1275,7 +1290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             const dateStr = dateFormatter.format(eventDate);
             const timeStr = timeFormatter.format(eventDate);
-            const isMobileNavEvent = (event as any).action === 'mobile_navigation_opened';
+            const isMobileNavEvent = event.metadata && event.metadata.action === 'mobile_navigation_opened';
             return `"${event.id}","${event.eventType}",${event.responseTime},"${dateStr}","${timeStr}","${isMobileNavEvent ? 'Yes' : ''}"`;
           })
           .join('\n');

@@ -135,6 +135,7 @@ export interface IStorage {
   addAnalyticsEvent(event: AnalyticsEvent): Promise<void>;
   getAnalyticsSummary(): Promise<AnalyticsSummary[]>;
   getAnalyticsExport(): Promise<AnalyticsEvent[]>;
+  getMobileNavigationCount(): Promise<number>;
   resetAnalytics(): Promise<void>;
 
   exportToJSON(): Promise<void>;
@@ -962,6 +963,28 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error exporting analytics from Firestore:', error);
       return [];
+    }
+  }
+
+  async getMobileNavigationCount(): Promise<number> {
+    try {
+      // Count all INTERFACE_ACTION events with action 'mobile_navigation_opened'
+      const snapshot = await db.collection('analytics')
+        .where('eventType', '==', AnalyticsEventType.INTERFACE_ACTION)
+        .get();
+      
+      let count = 0;
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.metadata && data.metadata.action === 'mobile_navigation_opened') {
+          count++;
+        }
+      });
+      
+      return count;
+    } catch (error) {
+      console.error('Error getting mobile navigation count from Firestore:', error);
+      return 0;
     }
   }
 

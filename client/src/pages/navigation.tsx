@@ -1308,6 +1308,47 @@ export default function Navigation() {
       
       console.log('[ACCESSIBLE-ENDPOINT] Route set successfully');
       
+      // Save route for QR code / Track on Phone functionality
+      try {
+        const routeData = {
+          startId: selectedStart.id,
+          endId: selectedEnd.id, // Use original destination ID for tracking
+          waypoints: [],
+          mode: 'accessible',
+          vehicleType: null,
+          phases: [{
+            mode: 'accessible',
+            polyline: routePolyline,
+            steps,
+            distance: totalDistance,
+            startName: (selectedStart as Building).name || 'Your Location',
+            endName: `Accessible Endpoint (${selectedEnd.name})`,
+            color: '#3B82F6',
+            phaseIndex: 0,
+            startId: selectedStart.id,
+            endId: 'accessible-endpoint-temp'
+          }],
+          expiresAt: null,
+          metadata: {
+            isAccessibleEndpoint: true,
+            originalDestinationName: selectedEnd.name,
+            accessibleEndpointLat: accessibleFallbackEndpoint.lat,
+            accessibleEndpointLng: accessibleFallbackEndpoint.lng
+          }
+        };
+
+        const res = await apiRequest('POST', '/api/routes', routeData);
+        const response = await res.json();
+
+        if (response.id) {
+          setSavedRouteId(response.id);
+          console.log('[ACCESSIBLE-ENDPOINT] Route saved for QR tracking:', response.id);
+        }
+      } catch (saveError) {
+        console.error('[ACCESSIBLE-ENDPOINT] Error saving route for QR:', saveError);
+        // Don't block navigation even if save fails
+      }
+      
       trackEvent(AnalyticsEventType.ROUTE_GENERATION, 0, { 
         mode: 'accessible', 
         routeType: 'accessible-endpoint', 
@@ -1857,8 +1898,23 @@ export default function Navigation() {
     
     if (!prevFloor) return;
     
-    // Update current floor without mutating the route phases
-    // The floor plan viewer will recalculate the path based on the current floor
+    // Remove the last indoor phase from the route to prevent accumulation
+    // Each floor adds a new phase, so when going back we need to remove it
+    if (route.phases && route.phases.length > 1) {
+      // Find how many indoor phases we have (color #ef4444 indicates indoor)
+      const indoorPhases = route.phases.filter(p => p.color === '#ef4444');
+      if (indoorPhases.length > 1) {
+        // Remove the last indoor phase (the one for current floor)
+        const updatedPhases = route.phases.slice(0, -1);
+        const updatedRoute: NavigationRoute = {
+          ...route,
+          phases: updatedPhases
+        };
+        setRoute(updatedRoute);
+        console.log('[FLOOR-BACK] Removed last indoor phase, remaining phases:', updatedPhases.length);
+      }
+    }
+    
     setCurrentIndoorFloor(prevFloor);
     setSelectedFloor(prevFloor);
     
