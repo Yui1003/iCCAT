@@ -13,10 +13,15 @@ export function useKioskUptime() {
   const [location] = useLocation();
 
   useEffect(() => {
-    // Don't track heartbeats on admin pages - only track user-facing pages (kiosk usage)
+    // Don't track heartbeats on admin pages or mobile navigation - only track kiosk pages
     const isAdminPage = location?.startsWith('/admin/');
+    const isMobileNavigation = location?.startsWith('/navigate/');
     if (isAdminPage) {
       console.log('[UPTIME] Admin page detected - skipping kiosk heartbeat tracking');
+      return;
+    }
+    if (isMobileNavigation) {
+      console.log('[UPTIME] Mobile navigation detected - skipping kiosk heartbeat tracking');
       return;
     }
 
