@@ -58,16 +58,18 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
   - Solution: Added bounds checking in `floor-plan-viewer.tsx` - only draws path waypoints within canvas bounds + safe margin (±100px)
   - Result: Paths now properly clear when floor changes, no more lingering artifacts at screen edges
   
-- **ADDED: QR Code Usage Tracking & Analytics**:
-  - Track on Phone (QR) button now logs analytics event when clicked with mode and route details
-  - Admin analytics dashboard counts all QR code opens under "Interface Actions (incl. QR Code Clicks)"
-  - CSV export now includes QR_Code_Usage column and summary line showing total QR clicks
-  - Mobile navigation automatically tracks accessible endpoint fallback routes when loaded
+- **ADDED: Mobile Navigation Usage Tracking & Analytics**:
+  - Tracks when users ACTUALLY open mobile navigation after scanning QR code (not just button clicks)
+  - When mobile-navigation page loads (`/navigate/:routeId`), logs `mobile_navigation_opened` event
+  - Admin analytics dashboard counts mobile usage under "Interface Actions (incl. Mobile Navigation Usage)"
+  - CSV export includes `Mobile_Navigation_Usage` column marking each mobile nav session
+  - Summary line in CSV shows total count of actual mobile navigation uses
+  - Tracks which users accessed accessible endpoint fallback routes on mobile
 
-- **ADDED: Mobile tracking for accessible endpoints**:
-  - Routes marked with `metadata.isAccessibleEndpoint = true` when saved from accessible fallback dialog
-  - Mobile app detects this flag on route load and logs tracking event
-  - Ensures accessible waypoint fallback usage is measurable and counted in analytics
+- **IMPROVED: Accurate mobile metrics**:
+  - Previous approach tracked button clicks (inaccurate - includes users who clicked but didn't scan)
+  - New approach tracks actual `/navigate/*` page loads (accurate - only counts real mobile usage)
+  - Mobile usage data now reliable for understanding how many users actually used QR to navigate
 
 - **Previous: CRITICAL FIX - Accessible mode detection**:
   - `findShortestPath()` validates closest end node is truly connected (within 1m) to building

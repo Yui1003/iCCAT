@@ -278,15 +278,15 @@ export default function AdminAnalytics() {
   const otherDevices = kioskUptimes.filter(k => k.deviceId !== currentDeviceId);
 
   const eventTypeLabels: Record<AnalyticsEventType, string> = {
-    [AnalyticsEventType.INTERFACE_ACTION]: "Interface Actions (incl. QR Code Clicks)",
+    [AnalyticsEventType.INTERFACE_ACTION]: "Interface Actions (incl. Mobile Navigation Usage)",
     [AnalyticsEventType.MAP_LOAD]: "Map Loading",
     [AnalyticsEventType.IMAGE_LOAD]: "Image Loading",
     [AnalyticsEventType.MENU_RENDER]: "Menu Rendering",
     [AnalyticsEventType.ROUTE_GENERATION]: "Route Generation"
   };
 
-  // Calculate QR code clicks from analytics
-  const qrCodeClicks = analytics.find(stat => stat.eventType === AnalyticsEventType.INTERFACE_ACTION)?.totalCount || 0;
+  // Calculate mobile navigation usage from analytics
+  const mobileNavigationUsage = analytics.find(stat => stat.eventType === AnalyticsEventType.INTERFACE_ACTION)?.totalCount || 0;
 
   // Prepare data for charts
   const chartData = analytics.map((stat) => ({

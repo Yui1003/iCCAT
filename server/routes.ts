@@ -1254,10 +1254,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(events);
       } else if (format === 'csv') {
         // Convert to CSV with proper formatting in Philippine Time (UTC+8)
-        const csvHeader = 'ID,EventType,ResponseTime(ms),Date,Time,QR_Code_Usage\n';
-        const qrCodeEvents = events.filter(e => e.eventType === AnalyticsEventType.INTERFACE_ACTION && (e as any).action === 'qr_code_opened');
-        const qrCodeCount = qrCodeEvents.length;
-        const qrCodeInfo = qrCodeCount > 0 ? `${qrCodeCount}` : '0';
+        const csvHeader = 'ID,EventType,ResponseTime(ms),Date,Time,Mobile_Navigation_Usage\n';
+        const mobileNavEvents = events.filter(e => e.eventType === AnalyticsEventType.INTERFACE_ACTION && (e as any).action === 'mobile_navigation_opened');
+        const mobileNavCount = mobileNavEvents.length;
+        const mobileNavInfo = mobileNavCount > 0 ? `${mobileNavCount}` : '0';
         
         const csvRows = events
           .map((event, idx) => {
@@ -1275,13 +1275,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             const dateStr = dateFormatter.format(eventDate);
             const timeStr = timeFormatter.format(eventDate);
-            const isQREvent = (event as any).action === 'qr_code_opened';
-            return `"${event.id}","${event.eventType}",${event.responseTime},"${dateStr}","${timeStr}","${isQREvent ? 'Yes' : ''}"`;
+            const isMobileNavEvent = (event as any).action === 'mobile_navigation_opened';
+            return `"${event.id}","${event.eventType}",${event.responseTime},"${dateStr}","${timeStr}","${isMobileNavEvent ? 'Yes' : ''}"`;
           })
           .join('\n');
         
         // Add summary line
-        const summaryLine = `"SUMMARY - QR Code Clicks","INTERFACE_ACTION",0,"","","${qrCodeInfo}"`;
+        const summaryLine = `"SUMMARY - Mobile Navigation Usage","INTERFACE_ACTION",0,"","","${mobileNavInfo}"`;
 
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename="analytics-export-${Date.now()}.csv"`);

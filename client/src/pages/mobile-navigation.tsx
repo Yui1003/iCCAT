@@ -45,19 +45,17 @@ export default function MobileNavigation() {
     enabled: !!params?.routeId,
   });
 
-  // Track route load on mobile (especially accessible endpoints)
+  // Track mobile navigation page load (when user actually opens mobile nav after scanning QR)
   useEffect(() => {
     if (route && params?.routeId) {
+      console.log('[MOBILE] User navigating on phone - tracking mobile usage');
       const isAccessibleEndpoint = (route as any).metadata?.isAccessibleEndpoint === true;
-      if (isAccessibleEndpoint) {
-        console.log('[MOBILE] Loaded accessible endpoint fallback route');
-        trackEvent(AnalyticsEventType.ROUTE_GENERATION, 0, { 
-          mode: 'accessible', 
-          routeType: 'fallback', 
-          accessible: 'endpoint',
-          source: 'mobile_load'
-        });
-      }
+      trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, { 
+        action: 'mobile_navigation_opened',
+        routeId: params.routeId,
+        mode: route.mode,
+        isAccessibleEndpoint: isAccessibleEndpoint ? 'yes' : 'no'
+      });
     }
   }, [route, params?.routeId]);
 
