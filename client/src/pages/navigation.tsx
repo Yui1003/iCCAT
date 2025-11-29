@@ -25,7 +25,7 @@ import SearchableWaypointSelect from "@/components/searchable-waypoint-select";
 import type { Building, NavigationRoute, Staff, Floor, Room, VehicleType, RouteStep, RoutePhase, IndoorNode, RoomPath, LatLng } from "@shared/schema";
 import { poiTypes, KIOSK_LOCATION } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
-import { findShortestPath, findNearestAccessibleEndpoint } from "@/lib/pathfinding";
+import { findShortestPath, findNearestAccessibleEndpoint, isDestinationConnectedToAccessibleNetwork } from "@/lib/pathfinding";
 import { buildIndoorGraph, findRoomPath, connectOutdoorToIndoor } from "@/lib/indoor-pathfinding";
 import { getWalkpaths, getDrivepaths } from "@/lib/offline-data";
 import { calculateMultiPhaseRoute, multiPhaseToNavigationRoute } from "@/lib/multi-phase-routes";
@@ -1988,21 +1988,19 @@ export default function Navigation() {
           if (response.ok) {
             const walkpaths = await response.json();
             
-            // Check if destination is accessible by attempting to find a complete route
-            const completeRoute = findShortestPath(
-              start as Building,
+            // Check if destination is actually connected to accessible network (nodes within 3m)
+            const isConnected = isDestinationConnectedToAccessibleNetwork(
               directionsDestination,
-              walkpaths,
-              'accessible'
+              walkpaths
             );
             
-            // If complete route found, proceed with normal routing (don't show fallback dialog)
-            if (completeRoute && completeRoute.length > 0) {
-              console.log('[ACCESSIBLE] Complete accessible path exists, proceeding with normal routing');
+            // If destination is connected, proceed with normal routing
+            if (isConnected) {
+              console.log('[ACCESSIBLE] Destination IS connected to accessible network, proceeding with normal routing');
               // Fall through to normal routing below
             } else {
-              // No complete path - find nearest accessible path endpoint to destination
-              console.log('[ACCESSIBLE] No complete path, finding nearest accessible endpoint to destination');
+              // Destination not connected - find nearest accessible path endpoint to destination
+              console.log('[ACCESSIBLE] Destination NOT connected to accessible network, finding nearest accessible endpoint');
               const nearestEndpoint = findNearestAccessibleEndpoint(
                 directionsDestination,
                 walkpaths
@@ -2022,7 +2020,7 @@ export default function Navigation() {
                 return;
               } else {
                 // Completely unreachable - no accessible paths available
-                console.log('[ACCESSIBLE] Destination completely unreachable, showing fallback dialog with no endpoint');
+                console.log('[ACCESSIBLE] Destination completely unreachable, no accessible paths available');
                 setOriginalDestinationName(directionsDestination.name);
                 setSelectedStart(start);
                 setSelectedEnd(directionsDestination);

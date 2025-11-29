@@ -52,18 +52,18 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 - **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
 
 ## Recent Changes (November 29, 2025)
+- **CRITICAL FIX - Accessible route pre-check was showing complete routes to disconnected buildings**: 
+  - Problem: Pre-check used `findShortestPath` which snaps destinations to nearby nodes (even 17m away), falsely claiming connection exists
+  - Solution: Created new `isDestinationConnectedToAccessibleNetwork()` function that only considers buildings "connected" if they have accessible path nodes within 3 meters
+  - Result: Buildings with no connected PWD path now correctly trigger fallback dialog instead of showing fake complete routes
+  - Implementation: Updated pre-check in navigation.tsx to use connection check instead of route-finding logic
 - **Fixed accessible route fallback to use nearest endpoint**: When a destination building has no connected PWD-friendly path:
   - Removed distance threshold approach
   - Created new `findNearestAccessibleEndpoint()` function that finds the closest endpoint of any accessible path to the unreachable destination
   - Navigation now offers users the option to navigate to this nearest accessible endpoint instead
   - Updated both route generation and directions dialog to use this smarter fallback logic
-- **Fixed accessible route detection logic**: Corrected pre-check logic that was incorrectly showing "No Accessible Path Available" dialog when a complete accessible path actually existed. Now:
-  - If complete PWD-friendly path exists → proceeds with normal routing (no dialog)
-  - If partial path exists → shows dialog with furthest reachable endpoint
-  - If completely unreachable → shows dialog with navigation to nearest accessible building
 - **Fixed cache loader performance**: Changed cache verification loader to close immediately when caching completes instead of waiting for full 30-second timer. Now detects cached resources every 200ms and closes as soon as all caches are populated (max ~5 seconds). Fixes issue where loader paused when browser tabs were inactive.
 - **Added version display**: Added "version:1.8.1" text to homepage footer bottom right for user visibility
-- **Improved accessible endpoint navigation**: Enhanced `handleNavigateToAccessibleEndpoint` with comprehensive logging and error messages. Now shows error toast if required data (start location, destination, or endpoint) is missing. Includes detailed console logging at each step.
 
 ## External Dependencies
 - **Frontend Framework**: React 18

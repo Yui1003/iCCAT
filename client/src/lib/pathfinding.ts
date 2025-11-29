@@ -626,6 +626,45 @@ export function findFurthestAccessiblePoint(
 }
 
 /**
+ * Check if a destination building is actually connected to the accessible path network
+ * A building is "connected" if there are accessible path nodes within 3 meters of it
+ * (not just nearby, but actually AT the building location)
+ */
+export function isDestinationConnectedToAccessibleNetwork(
+  destination: Building,
+  paths: (Walkpath | Drivepath)[]
+): boolean {
+  const CONNECTION_THRESHOLD = 3; // meters - building is "connected" if nodes within this distance
+
+  // Filter to only accessible paths
+  const accessiblePaths = paths.filter(path => {
+    const isPwdFriendly = (path as any).isPwdFriendly === true;
+    const strictlyPwdOnly = (path as any).strictlyPwdOnly === true;
+    return isPwdFriendly || strictlyPwdOnly;
+  });
+
+  if (accessiblePaths.length === 0) {
+    console.log('[CLIENT] ❌ No accessible paths available at all');
+    return false;
+  }
+
+  // Check if any accessible path node is actually AT the destination building
+  for (const path of accessiblePaths) {
+    const pathNodes = path.nodes as LatLng[];
+    for (const node of pathNodes) {
+      const distToNode = calculateDistance(destination.lat, destination.lng, node.lat, node.lng);
+      if (distToNode <= CONNECTION_THRESHOLD) {
+        console.log(`[CLIENT] ✅ Destination IS connected to accessible network: node ${distToNode.toFixed(1)}m away`);
+        return true;
+      }
+    }
+  }
+
+  console.log(`[CLIENT] ❌ Destination is NOT connected to accessible network (closest node >3m away)`);
+  return false;
+}
+
+/**
  * Find the nearest endpoint of any accessible path to an unreachable destination building
  * This is used when a building has no connected accessible path - we navigate to the closest path endpoint instead
  */
