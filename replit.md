@@ -56,7 +56,7 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
   - If complete PWD-friendly path exists → proceeds with normal routing (no dialog)
   - If partial path exists → shows dialog with furthest reachable endpoint
   - If completely unreachable → shows dialog with navigation to nearest accessible building
-- **Fixed cache loader performance**: Changed cache verification loader to close immediately when caching completes instead of waiting for full 30-second timer. Now detects cached resources every 200ms and closes as soon as all caches are populated (max ~3 seconds). Fixes issue where loader paused when browser tabs were inactive.
+- **Fixed cache loader performance**: Changed cache verification loader to close immediately when caching completes instead of waiting for full 30-second timer. Now detects cached resources every 200ms and closes as soon as all caches are populated (max ~5 seconds). Fixes issue where loader paused when browser tabs were inactive.
 - **Added version display**: Added "version:1.8.1" text to homepage footer bottom right for user visibility
 - **Improved accessible endpoint navigation**: Enhanced `handleNavigateToAccessibleEndpoint` with comprehensive logging and error messages. Now shows error toast if required data (start location, destination, or endpoint) is missing. Includes detailed console logging at each step.
 

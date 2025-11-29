@@ -61,7 +61,7 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
 
         // Verify all caches are populated (with quick timeout checks)
         let allReady = false;
-        const maxAttempts = 15; // ~3 seconds max wait with 200ms intervals
+        const maxAttempts = 25; // ~5 seconds max wait with 200ms intervals
         let attempts = 0;
 
         while (attempts < maxAttempts && !allReady) {
