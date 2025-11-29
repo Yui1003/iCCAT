@@ -941,30 +941,37 @@ export default function Navigation() {
       if (!routePolyline && mode === 'accessible') {
         console.log('[ACCESSIBLE] No route found to destination. Finding nearest accessible building...');
         
-        const walkpathsRes = await fetch('/api/walkpaths', { 
-          credentials: "include",
-          cache: 'no-cache'
-        });
-        const walkpaths = await walkpathsRes.json();
-        
-        const nearestBuilding = findNearestAccessibleBuilding(
-          selectedStart as Building,
-          buildings,
-          walkpaths
-        );
-        
-        if (nearestBuilding) {
-          console.log(`[ACCESSIBLE] Found nearest accessible building: ${nearestBuilding.name}`);
-          setOriginalDestination(selectedEnd);
-          setAccessibleFallbackBuilding(nearestBuilding);
-          setShowAccessibleFallbackDialog(true);
+        try {
+          const walkpathsRes = await fetch('/api/walkpaths', { 
+            credentials: "include",
+            cache: 'no-cache'
+          });
+          if (!walkpathsRes.ok) throw new Error('Failed to fetch accessible paths');
+          const walkpaths = await walkpathsRes.json();
           
-          finalEnd = nearestBuilding;
-          routePolyline = await calculateRouteClientSide(
-            selectedStart,
-            nearestBuilding,
-            mode
+          const nearestBuilding = findNearestAccessibleBuilding(
+            selectedStart as Building,
+            buildings,
+            walkpaths
           );
+          
+          if (nearestBuilding) {
+            console.log(`[ACCESSIBLE] ✅ Found nearest accessible building: ${nearestBuilding.name}`);
+            setOriginalDestination(selectedEnd);
+            setAccessibleFallbackBuilding(nearestBuilding);
+            setShowAccessibleFallbackDialog(true);
+            
+            finalEnd = nearestBuilding;
+            routePolyline = await calculateRouteClientSide(
+              selectedStart,
+              nearestBuilding,
+              mode
+            );
+          } else {
+            console.log('[ACCESSIBLE] ❌ No accessible buildings found as fallback');
+          }
+        } catch (fallbackError) {
+          console.error('[ACCESSIBLE] Error searching for fallback building:', fallbackError);
         }
       }
 

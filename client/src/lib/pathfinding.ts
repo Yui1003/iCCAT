@@ -505,20 +505,45 @@ export function findShortestPath(
 
 /**
  * Find the nearest building reachable via accessible paths when direct routing fails
- * Used as fallback when accessible mode cannot reach the requested destination
+ * Optimized with 1.5s timeout to prevent UI freeze
  */
 export function findNearestAccessibleBuilding(
   start: Building,
   buildings: Building[],
-  paths: (Walkpath | Drivepath)[]
+  paths: (Walkpath | Drivepath)[],
+  timeoutMs: number = 1500
 ): Building | null {
+  const startTime = performance.now();
   let nearestBuilding: Building | null = null;
   let nearestDistance = Infinity;
 
-  for (const building of buildings) {
-    if (building.id === start.id) continue; // Skip starting building
-    
-    // Try to find a route to this building in accessible mode
+  // Build accessible paths graph once (reuse for all buildings)
+  const { nodes: accessibleNodes } = buildGraph(paths, 'accessible');
+  
+  // If no accessible nodes found, no point searching
+  if (accessibleNodes.size === 0) {
+    console.log('[CLIENT] No accessible paths available');
+    return null;
+  }
+
+  // Sort buildings by distance to prioritize closer ones
+  const sortedBuildings = buildings
+    .filter(b => b.id !== start.id)
+    .sort((a, b) => {
+      const distA = calculateDistance(start.lat, start.lng, a.lat, a.lng);
+      const distB = calculateDistance(start.lat, start.lng, b.lat, b.lng);
+      return distA - distB;
+    });
+
+  // Check buildings in order of proximity, with timeout
+  for (const building of sortedBuildings) {
+    // Stop if timeout exceeded
+    if (performance.now() - startTime > timeoutMs) {
+      console.log(`[CLIENT] Fallback search timeout after ${(performance.now() - startTime).toFixed(0)}ms`);
+      break;
+    }
+
+    // Try to find a route to this building
     const route = findShortestPath(start, building, paths, 'accessible');
     
     if (route && route.length > 0) {
@@ -538,7 +563,10 @@ export function findNearestAccessibleBuilding(
   }
 
   if (nearestBuilding) {
-    console.log(`[CLIENT] Accessible route not found to original destination. Nearest accessible building: ${nearestBuilding.name} (${nearestDistance.toFixed(0)}m away)`);
+    const searchTime = (performance.now() - startTime).toFixed(0);
+    console.log(`[CLIENT] ✅ Fallback: Nearest accessible building "${nearestBuilding.name}" found in ${searchTime}ms (${nearestDistance.toFixed(0)}m away)`);
+  } else {
+    console.log(`[CLIENT] ❌ No accessible buildings found`);
   }
   
   return nearestBuilding;
