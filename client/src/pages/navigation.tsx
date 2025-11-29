@@ -2970,7 +2970,7 @@ export default function Navigation() {
               No Accessible Path Available
             </DialogTitle>
             <DialogDescription>
-              No PWD friendly path to <strong>{originalDestinationName}</strong>, you are navigated to the nearest pwd path of the building.
+              No PWD friendly path to <strong>{originalDestinationName}</strong>, you are navigated to the nearest pwd friendly path of the building.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
