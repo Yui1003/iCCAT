@@ -2106,8 +2106,15 @@ export default function Navigation() {
               startId: start.id,
               endId: endpointId
             }],
-            expiresAt: null
+            expiresAt: null,
+            metadata: {}
           };
+
+          // Mark as accessible endpoint fallback if this is the accessible fallback dialog
+          if (accessibleFallbackEndpoint && directionsDestination.id !== selectedEnd?.id) {
+            routeData.metadata.isAccessibleEndpoint = true;
+            console.log('[NAVIGATION] Marked route as accessible endpoint fallback for mobile tracking');
+          }
 
           // Include destination room info for indoor navigation on mobile
           if (destinationRoomData) {

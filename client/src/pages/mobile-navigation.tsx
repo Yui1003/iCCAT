@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useToast } from "@/hooks/use-toast";
 import type { SavedRoute, Building, RoutePhase, RouteStep, IndoorNode, Floor, RoomPath, Room } from "@shared/schema";
 import { getPhaseColor } from "@shared/phase-colors";
+import { trackEvent } from "@/lib/analytics-tracker";
+import { AnalyticsEventType } from "@shared/analytics-schema";
 import FloorPlanViewer from "@/components/floor-plan-viewer";
 import { buildIndoorGraph } from "@/lib/indoor-pathfinding";
 
@@ -42,6 +44,22 @@ export default function MobileNavigation() {
     queryKey: ['/api/routes', params?.routeId],
     enabled: !!params?.routeId,
   });
+
+  // Track route load on mobile (especially accessible endpoints)
+  useEffect(() => {
+    if (route && params?.routeId) {
+      const isAccessibleEndpoint = (route as any).metadata?.isAccessibleEndpoint === true;
+      if (isAccessibleEndpoint) {
+        console.log('[MOBILE] Loaded accessible endpoint fallback route');
+        trackEvent(AnalyticsEventType.ROUTE_GENERATION, 0, { 
+          mode: 'accessible', 
+          routeType: 'fallback', 
+          accessible: 'endpoint',
+          source: 'mobile_load'
+        });
+      }
+    }
+  }, [route, params?.routeId]);
 
   // Fetch buildings for indoor navigation
   const { data: buildings = [] } = useQuery<Building[]>({

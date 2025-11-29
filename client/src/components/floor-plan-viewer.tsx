@@ -82,10 +82,13 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Force canvas to match container dimensions
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
 
+    // Completely clear canvas including style
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setLineDash([]);
 
     ctx.save();
     ctx.scale(zoom, zoom);
