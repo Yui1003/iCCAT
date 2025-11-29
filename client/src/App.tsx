@@ -66,6 +66,41 @@ function AppContent() {
   const [location] = useLocation();
   useKioskUptime(); // Start tracking kiosk uptime
 
+  // Disable context menu (right-click and long-press) globally
+  useEffect(() => {
+    const disableContextMenu = (e: Event) => {
+      e.preventDefault();
+      return false;
+    };
+
+    // Prevent right-click context menu on desktop
+    document.addEventListener('contextmenu', disableContextMenu, { passive: false });
+
+    // Prevent long-press context menu on mobile/touch devices
+    // Some browsers fire contextmenu on long-press, but we also handle touchend with timer
+    let touchStartTime = 0;
+    const handleTouchStart = () => {
+      touchStartTime = Date.now();
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      const touchDuration = Date.now() - touchStartTime;
+      // If touch was held for more than 500ms (long-press), prevent default
+      if (touchDuration > 500) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+    return () => {
+      document.removeEventListener('contextmenu', disableContextMenu);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []);
+
   // Check if current route is an admin route
   const isAdminRoute = location?.startsWith('/admin/');
 
