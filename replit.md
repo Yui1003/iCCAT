@@ -55,11 +55,11 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 - **CRITICAL FIX - Accessible mode now correctly detects unreachable buildings and offers nearest waypoint fallback**:
   - Root Cause: `findShortestPath()` was snapping destination building to closest graph node even if 17m away, then claiming "connected" based on route through that snapped node
   - Solution: Added validation check in `findShortestPath()`:
-    - For accessible mode: If closest end node is >4m from destination building, return `null` (building is NOT truly connected to accessible network)
-    - This rejects false connections where building is far from any actual path node
+    - For accessible mode: If closest end node is NOT CONNECTED TO the destination building (i.e., not within ~1m), return `null`
+    - This validates that the closest path node is actually AT the building, not just proximate
   - Logic Flow:
-    - IF `findShortestPath` returns complete route AND destination is <4m from path → navigate as usual (no dialog)
-    - IF `findShortestPath` returns null (destination >4m from any path) → find nearest waypoint on accessible paths → show dialog with option to navigate there instead
+    - IF closest path node IS connected (within 1m) AND `findShortestPath` returns complete route → navigate as usual (no dialog)
+    - IF closest path node NOT connected (>1m away) → `findShortestPath` returns null → find nearest waypoint on accessible paths → show dialog with option to navigate there instead
   - Result: Buildings with no connected PWD path (like DMS TCR 1-3 at 17m away) now correctly trigger fallback dialog instead of showing fake complete routes
 - **Fixed cache loader performance**: Changed cache verification loader to close immediately when caching completes instead of waiting for full 30-second timer. Now detects cached resources every 200ms and closes as soon as all caches are populated (max ~5 seconds). Fixes issue where loader paused when browser tabs were inactive.
 - **Added version display**: Added "version:1.8.1" text to homepage footer bottom right for user visibility
