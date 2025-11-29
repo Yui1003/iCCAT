@@ -52,16 +52,16 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 - **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
 
 ## Recent Changes (November 29, 2025)
-- **CRITICAL FIX - Accessible route pre-check was showing complete routes to disconnected buildings**: 
-  - Problem: Pre-check used `findShortestPath` which snaps destinations to nearby nodes (even 17m away), falsely claiming connection exists
-  - Solution: Created new `isDestinationConnectedToAccessibleNetwork()` function that only considers buildings "connected" if they have accessible path nodes within 3 meters
-  - Result: Buildings with no connected PWD path now correctly trigger fallback dialog instead of showing fake complete routes
-  - Implementation: Updated pre-check in navigation.tsx to use connection check instead of route-finding logic
-- **Fixed accessible route fallback to use nearest endpoint**: When a destination building has no connected PWD-friendly path:
-  - Removed distance threshold approach
-  - Created new `findNearestAccessibleEndpoint()` function that finds the closest endpoint of any accessible path to the unreachable destination
-  - Navigation now offers users the option to navigate to this nearest accessible endpoint instead
-  - Updated both route generation and directions dialog to use this smarter fallback logic
+- **CRITICAL FIX - Accessible mode now correctly detects unreachable buildings and offers nearest waypoint fallback**:
+  - Problem: Pre-check used `findShortestPath()` which snaps destinations to nearby nodes (even 17m away), falsely claiming connection exists. Users got fake complete routes to disconnected buildings.
+  - Solution: Two-part fix:
+    1. Created `isDestinationConnectedToAccessibleNetwork()` - only considers buildings "connected" if accessible path nodes exist within 3 meters (true connection, not just snappable)
+    2. Updated `findNearestAccessibleEndpoint()` to find nearest ANY waypoint on accessible paths (not just endpoints) - gives users the closest point on the network
+  - Logic Flow:
+    - IF destination connected (3m threshold) → navigate as usual (no dialog)
+    - IF NOT connected → find nearest waypoint on any PWD-friendly/strictly PWD path → show dialog with option to navigate there instead
+  - Result: Buildings with no connected PWD path now correctly trigger fallback dialog with nearest accessible waypoint instead of showing fake complete routes
+  - Implementation: Updated pre-check in navigation.tsx to use `isDestinationConnectedToAccessibleNetwork()` instead of `findShortestPath()`
 - **Fixed cache loader performance**: Changed cache verification loader to close immediately when caching completes instead of waiting for full 30-second timer. Now detects cached resources every 200ms and closes as soon as all caches are populated (max ~5 seconds). Fixes issue where loader paused when browser tabs were inactive.
 - **Added version display**: Added "version:1.8.1" text to homepage footer bottom right for user visibility
 
