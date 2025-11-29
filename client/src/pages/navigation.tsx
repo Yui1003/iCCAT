@@ -1226,6 +1226,72 @@ export default function Navigation() {
     setOutdoorRouteSnapshot(null);
   };
 
+  const handleNavigateToAccessibleEndpoint = async () => {
+    if (!selectedStart || !selectedEnd || !accessibleFallbackEndpoint) return;
+    
+    setShowAccessibleFallbackDialog(false);
+    
+    try {
+      // Create synthetic endpoint building at the accessible coordinates
+      const endpointBuilding: Building = {
+        id: 'accessible-endpoint-temp',
+        name: `Accessible Endpoint (${selectedEnd.name})`,
+        type: 'Building',
+        lat: accessibleFallbackEndpoint.lat,
+        lng: accessibleFallbackEndpoint.lng,
+        description: 'Furthest accessible point toward destination',
+        polygon: null,
+        polygonColor: null,
+        polygonOpacity: null,
+        image: null,
+        markerIcon: null,
+        departments: null
+      };
+      
+      // Generate route to the accessible endpoint
+      const routePolyline = await calculateRouteClientSide(selectedStart, endpointBuilding, 'accessible');
+      
+      if (!routePolyline) {
+        toast({
+          title: "Route Calculation Failed",
+          description: "Unable to calculate route to accessible endpoint.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const { steps, totalDistance } = generateSmartSteps(
+        routePolyline,
+        'accessible',
+        (selectedStart as Building).name || 'Your Location',
+        `Accessible Endpoint (${selectedEnd.name})`
+      );
+      
+      setRoute({
+        start: selectedStart as Building,
+        end: endpointBuilding,
+        mode: 'accessible',
+        polyline: routePolyline,
+        steps,
+        totalDistance
+      });
+      
+      trackEvent(AnalyticsEventType.ROUTE_GENERATION, 0, { 
+        mode: 'accessible', 
+        routeType: 'accessible-endpoint', 
+        destinationName: selectedEnd.name, 
+        source: 'fallback-dialog' 
+      });
+    } catch (error) {
+      console.error('Error generating accessible endpoint route:', error);
+      toast({
+        title: "Navigation Error",
+        description: "Unable to navigate to accessible endpoint.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleReachedBuilding = () => {
     if (!selectedEnd || !destinationRoom || !route) return;
     
@@ -1896,16 +1962,31 @@ export default function Navigation() {
               walkpaths
             );
             
-            // If no furthest point found, destination is unreachable
+            // If no furthest point found, destination is completely unreachable
             if (!furthestPoint) {
-              console.log('[ACCESSIBLE] Destination unreachable, showing fallback dialog');
+              console.log('[ACCESSIBLE] Destination completely unreachable, showing fallback dialog');
               setOriginalDestinationName(directionsDestination.name);
-              setAccessibleFallbackEndpoint(null); // Will show "no accessible path" message
+              setSelectedStart(start);
+              setSelectedEnd(directionsDestination);
+              setMode(travelMode);
+              setAccessibleFallbackEndpoint(null); // Null means completely unreachable
               setShowAccessibleFallbackDialog(true);
               const duration = performance.now() - routeStartTime;
               trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'unreachable', source: 'dialog' });
               return;
             }
+            
+            // Furthest point found - route to it instead of destination
+            console.log('[ACCESSIBLE] Furthest accessible point found, routing to endpoint');
+            setOriginalDestinationName(directionsDestination.name);
+            setSelectedStart(start);
+            setSelectedEnd(directionsDestination);
+            setMode(travelMode);
+            setAccessibleFallbackEndpoint(furthestPoint);
+            setShowAccessibleFallbackDialog(true);
+            const duration = performance.now() - routeStartTime;
+            trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'partial', source: 'dialog' });
+            return;
           }
         }
 
@@ -3028,7 +3109,7 @@ export default function Navigation() {
             </Button>
             <Button
               className="flex-1"
-              onClick={() => setShowAccessibleFallbackDialog(false)}
+              onClick={handleNavigateToAccessibleEndpoint}
               data-testid="button-navigate-fallback"
             >
               Navigate to Endpoint
