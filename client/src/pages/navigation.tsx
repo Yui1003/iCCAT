@@ -1878,6 +1878,37 @@ export default function Navigation() {
     // Single destination without waypoints
     if (waypointBuildings.length === 0) {
       try {
+        // Pre-check for accessible routes to detect unreachable destinations
+        if (travelMode === 'accessible') {
+          // Fetch walkpaths for accessible route checking
+          const response = await fetch('/api/walkpaths', { 
+            credentials: "include",
+            cache: 'no-cache'
+          });
+          
+          if (response.ok) {
+            const walkpaths = await response.json();
+            
+            // Check if destination is accessible
+            const furthestPoint = findFurthestAccessiblePoint(
+              start as Building,
+              directionsDestination,
+              walkpaths
+            );
+            
+            // If no furthest point found, destination is unreachable
+            if (!furthestPoint) {
+              console.log('[ACCESSIBLE] Destination unreachable, showing fallback dialog');
+              setOriginalDestinationName(directionsDestination.name);
+              setAccessibleFallbackEndpoint(null); // Will show "no accessible path" message
+              setShowAccessibleFallbackDialog(true);
+              const duration = performance.now() - routeStartTime;
+              trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'unreachable', source: 'dialog' });
+              return;
+            }
+          }
+        }
+
         const routePolyline = await calculateRouteClientSide(start, directionsDestination, travelMode);
         
         if (!routePolyline) {
