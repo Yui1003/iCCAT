@@ -103,25 +103,38 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
       // Draw path if destination room is set using the polyline from route phase
       if (pathPolyline && pathPolyline.length > 0) {
         console.log('[FLOOR-PLAN] Drawing path with', pathPolyline.length, 'waypoints');
-        ctx.strokeStyle = '#10b981';
-        ctx.lineWidth = 3 / zoom;
-        ctx.setLineDash([5 / zoom, 5 / zoom]);
-        ctx.beginPath();
         
-        // Start from first waypoint
-        const firstWp = pathPolyline[0];
-        console.log('[FLOOR-PLAN] First waypoint:', firstWp, 'scaled:', { x: x + firstWp.lat * scale, y: y + firstWp.lng * scale });
-        ctx.moveTo(x + firstWp.lat * scale, y + firstWp.lng * scale);
+        // Filter waypoints to only those within canvas bounds with safe margins
+        const imageWidth = image.width * scale;
+        const imageHeight = image.height * scale;
+        const validWaypoints = pathPolyline.filter(wp => {
+          const px = x + wp.lat * scale;
+          const py = y + wp.lng * scale;
+          // Only draw if waypoint is reasonably close to visible canvas
+          return px >= x - 100 && px <= x + imageWidth + 100 &&
+                 py >= y - 100 && py <= y + imageHeight + 100;
+        });
         
-        // Draw through all waypoints
-        for (let i = 1; i < pathPolyline.length; i++) {
-          const wp = pathPolyline[i];
-          ctx.lineTo(x + wp.lat * scale, y + wp.lng * scale);
+        if (validWaypoints.length > 0) {
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 3 / zoom;
+          ctx.setLineDash([5 / zoom, 5 / zoom]);
+          ctx.beginPath();
+          
+          // Start from first valid waypoint
+          const firstWp = validWaypoints[0];
+          ctx.moveTo(x + firstWp.lat * scale, y + firstWp.lng * scale);
+          
+          // Draw through all valid waypoints
+          for (let i = 1; i < validWaypoints.length; i++) {
+            const wp = validWaypoints[i];
+            ctx.lineTo(x + wp.lat * scale, y + wp.lng * scale);
+          }
+          
+          ctx.stroke();
+          ctx.setLineDash([]);
+          console.log('[FLOOR-PLAN] Path drawn with', validWaypoints.length, 'valid waypoints');
         }
-        
-        ctx.stroke();
-        ctx.setLineDash([]);
-        console.log('[FLOOR-PLAN] Path drawn successfully');
       } else {
         console.log('[FLOOR-PLAN] No polyline or empty polyline, pathPolyline:', pathPolyline);
       }

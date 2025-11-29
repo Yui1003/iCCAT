@@ -1254,9 +1254,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(events);
       } else if (format === 'csv') {
         // Convert to CSV with proper formatting in Philippine Time (UTC+8)
-        const csvHeader = 'ID,EventType,ResponseTime(ms),Date,Time\n';
+        const csvHeader = 'ID,EventType,ResponseTime(ms),Date,Time,QR_Code_Usage\n';
+        const qrCodeEvents = events.filter(e => e.eventType === AnalyticsEventType.INTERFACE_ACTION && (e as any).action === 'qr_code_opened');
+        const qrCodeCount = qrCodeEvents.length;
+        const qrCodeInfo = qrCodeCount > 0 ? `${qrCodeCount}` : '0';
+        
         const csvRows = events
-          .map(event => {
+          .map((event, idx) => {
             const eventDate = new Date(event.timestamp);
             // Format using Philippine timezone (Asia/Manila - UTC+8)
             const dateFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -1271,13 +1275,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             const dateStr = dateFormatter.format(eventDate);
             const timeStr = timeFormatter.format(eventDate);
-            return `"${event.id}","${event.eventType}",${event.responseTime},"${dateStr}","${timeStr}"`;
+            const isQREvent = (event as any).action === 'qr_code_opened';
+            return `"${event.id}","${event.eventType}",${event.responseTime},"${dateStr}","${timeStr}","${isQREvent ? 'Yes' : ''}"`;
           })
           .join('\n');
+        
+        // Add summary line
+        const summaryLine = `"SUMMARY - QR Code Clicks","INTERFACE_ACTION",0,"","","${qrCodeInfo}"`;
 
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename="analytics-export-${Date.now()}.csv"`);
-        res.send(csvHeader + csvRows);
+        res.send(csvHeader + csvRows + '\n' + summaryLine);
       } else {
         res.status(400).json({ error: 'Invalid format. Use "json" or "csv"' });
       }

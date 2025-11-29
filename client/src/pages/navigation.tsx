@@ -2601,7 +2601,10 @@ export default function Navigation() {
                 <Button
                   className="w-full"
                   variant="default"
-                  onClick={() => setShowQRCode(true)}
+                  onClick={() => {
+                    trackEvent(AnalyticsEventType.INTERFACE_ACTION, 0, { action: 'qr_code_opened', routeId: savedRouteId, mode: mode });
+                    setShowQRCode(true);
+                  }}
                   data-testid="button-track-on-phone"
                 >
                   <QrCode className="w-4 h-4 mr-2" />

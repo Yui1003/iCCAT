@@ -52,17 +52,27 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 - **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
 
 ## Recent Changes (November 29, 2025)
-- **CRITICAL FIX - Accessible mode now correctly detects unreachable buildings and offers nearest waypoint fallback**:
-  - Root Cause: `findShortestPath()` was snapping destination building to closest graph node even if 17m away, then claiming "connected" based on route through that snapped node
-  - Solution: Added validation check in `findShortestPath()`:
-    - For accessible mode: If closest end node is NOT CONNECTED TO the destination building (i.e., not within ~1m), return `null`
-    - This validates that the closest path node is actually AT the building, not just proximate
-  - Logic Flow:
-    - IF closest path node IS connected (within 1m) AND `findShortestPath` returns complete route → navigate as usual (no dialog)
-    - IF closest path node NOT connected (>1m away) → `findShortestPath` returns null → find nearest waypoint on accessible paths → show dialog with option to navigate there instead
-  - Result: Buildings with no connected PWD path (like DMS TCR 1-3 at 17m away) now correctly trigger fallback dialog instead of showing fake complete routes
-- **Fixed cache loader performance**: Changed cache verification loader to close immediately when caching completes instead of waiting for full 30-second timer. Now detects cached resources every 200ms and closes as soon as all caches are populated (max ~5 seconds). Fixes issue where loader paused when browser tabs were inactive.
-- **Added version display**: Added "version:1.8.1" text to homepage footer bottom right for user visibility
+- **FIXED: Floor plan lingering path artifacts**:
+  - Issue: When navigating between floors, path from previous floor lingered at bottom-right corner as unknown dotted line
+  - Root Cause: Canvas drawing code plotted waypoints outside visible canvas bounds; canvas wasn't filtering coordinates
+  - Solution: Added bounds checking in `floor-plan-viewer.tsx` - only draws path waypoints within canvas bounds + safe margin (±100px)
+  - Result: Paths now properly clear when floor changes, no more lingering artifacts at screen edges
+  
+- **ADDED: QR Code Usage Tracking & Analytics**:
+  - Track on Phone (QR) button now logs analytics event when clicked with mode and route details
+  - Admin analytics dashboard counts all QR code opens under "Interface Actions (incl. QR Code Clicks)"
+  - CSV export now includes QR_Code_Usage column and summary line showing total QR clicks
+  - Mobile navigation automatically tracks accessible endpoint fallback routes when loaded
+
+- **ADDED: Mobile tracking for accessible endpoints**:
+  - Routes marked with `metadata.isAccessibleEndpoint = true` when saved from accessible fallback dialog
+  - Mobile app detects this flag on route load and logs tracking event
+  - Ensures accessible waypoint fallback usage is measurable and counted in analytics
+
+- **Previous: CRITICAL FIX - Accessible mode detection**:
+  - `findShortestPath()` validates closest end node is truly connected (within 1m) to building
+  - Prevents fake routes showing for unreachable buildings like DMS TCR 1-3 (17m away)
+  - Correctly triggers fallback dialog when no actual PWD path exists to destination
 
 ## External Dependencies
 - **Frontend Framework**: React 18
