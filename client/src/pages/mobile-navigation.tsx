@@ -695,7 +695,114 @@ export default function MobileNavigation() {
     console.log('[MOBILE-PATH] Final polyline with', polylineWaypoints.length, 'waypoints');
     console.log('[MOBILE-PATH] Start:', polylineWaypoints[0], 'End:', polylineWaypoints[polylineWaypoints.length - 1]);
     return polylineWaypoints;
-  }, [navigationPhase, currentIndoorFloor, destinationRoom, roomPaths, rooms, indoorNodes]);
+  }, [navigationPhase, currentIndoorFloor, destinationRoom, roomPaths, rooms, indoorNodes, floorsInRoute]);
+
+  // Generate indoor turn-by-turn steps for current floor (matching kiosk behavior exactly)
+  const currentFloorIndoorSteps = useMemo((): RouteStep[] => {
+    if (!navigationPhase || navigationPhase !== 'indoor' || !currentIndoorFloor || !destinationRoom || floorsInRoute.length === 0) {
+      return [];
+    }
+
+    // Get floor-specific indoor nodes
+    const floorIndoorNodes = indoorNodes.filter(n => n.floorId === currentIndoorFloor.id);
+    
+    if (floorIndoorNodes.length === 0) {
+      console.log('[MOBILE-STEPS] No indoor nodes found for floor:', currentIndoorFloor.id);
+      return [];
+    }
+
+    // Find start node: entrance on first floor, or stairway/elevator on intermediate floors (matching kiosk logic)
+    let startNode: IndoorNode | undefined;
+    const floorIndex = floorsInRoute.findIndex(f => f.id === currentIndoorFloor.id);
+    const isFirstFloor = floorIndex === 0;
+    
+    if (isFirstFloor) {
+      // On entrance floor, start from the building entrance
+      startNode = floorIndoorNodes.find(n => n.type === 'entrance');
+      // Fallback: if no entrance, try stairway/elevator
+      if (!startNode) {
+        startNode = floorIndoorNodes.find(n => n.type === 'stairway' || n.type === 'elevator');
+      }
+    } else {
+      // On intermediate floors, start from the stairway/elevator we came from
+      startNode = floorIndoorNodes.find(n => n.type === 'stairway' || n.type === 'elevator');
+    }
+    
+    // Target: destination room if on destination floor, otherwise stairway/elevator to next floor
+    let targetNode: IndoorNode | undefined;
+    const isDestinationFloor = currentIndoorFloor.id === destinationRoom.floorId;
+    
+    if (isDestinationFloor) {
+      // On destination floor, target is the destination room
+      targetNode = destinationRoom;
+    } else {
+      // Not on destination floor, target is stairway/elevator to continue
+      // Try to find a different stairway/elevator than the start node
+      targetNode = floorIndoorNodes.find(n => 
+        (n.type === 'stairway' || n.type === 'elevator') && n.id !== startNode?.id
+      );
+      // Fallback: use the same stairway if only one exists
+      if (!targetNode) {
+        targetNode = floorIndoorNodes.find(n => n.type === 'stairway' || n.type === 'elevator');
+      }
+    }
+
+    if (!startNode || !targetNode) {
+      console.log('[MOBILE-STEPS] Missing start or target node:', { 
+        startNode: !!startNode, 
+        targetNode: !!targetNode, 
+        isFirstFloor,
+        isDestinationFloor 
+      });
+      return [];
+    }
+
+    // Calculate distance from the indoor path polyline (which is already computed per floor)
+    let totalMeterDistance = 0;
+    const scale = currentIndoorFloor.pixelToMeterScale || 0.02;
+    
+    if (indoorPathPolyline && indoorPathPolyline.length > 1) {
+      for (let i = 0; i < indoorPathPolyline.length - 1; i++) {
+        const dx = indoorPathPolyline[i + 1].lat - indoorPathPolyline[i].lat;
+        const dy = indoorPathPolyline[i + 1].lng - indoorPathPolyline[i].lng;
+        totalMeterDistance += Math.sqrt(dx * dx + dy * dy) * scale;
+      }
+    }
+    totalMeterDistance = Math.round(totalMeterDistance);
+
+    // Generate labels matching kiosk format
+    const startLabel = startNode.label || (isFirstFloor ? 'Main Entrance' : 'Stairway');
+    
+    // Get next floor name for stairway label
+    const nextFloorIndex = floorIndex + 1;
+    const nextFloor = nextFloorIndex < floorsInRoute.length ? floorsInRoute[nextFloorIndex] : null;
+    
+    const targetLabel = isDestinationFloor 
+      ? (targetNode.label || route?.destinationRoomName || 'Destination')
+      : (targetNode.label || (nextFloor ? `Stairway to ${nextFloor.floorName || `Floor ${nextFloor.floorNumber}`}` : 'Stairway'));
+
+    // Generate steps in the same format as the kiosk (navigation.tsx lines 1570-1586)
+    const steps: RouteStep[] = [
+      {
+        instruction: `Start at ${startLabel}`,
+        distance: '0 m',
+        icon: 'navigation'
+      },
+      {
+        instruction: `Walk to ${targetLabel}`,
+        distance: totalMeterDistance > 0 ? `${totalMeterDistance} m` : '',
+        icon: 'arrow-right'
+      },
+      {
+        instruction: `Arrive at ${targetLabel}`,
+        distance: '0 m',
+        icon: isDestinationFloor ? 'flag' : 'arrow-up'
+      }
+    ];
+
+    console.log('[MOBILE-STEPS] Generated indoor steps for floor:', currentIndoorFloor.floorName, steps);
+    return steps;
+  }, [navigationPhase, currentIndoorFloor, destinationRoom, indoorNodes, floorsInRoute, indoorPathPolyline, route?.destinationRoomName]);
 
   // Handle loading state (after all hooks)
   if (isLoading) {
@@ -1096,53 +1203,50 @@ export default function MobileNavigation() {
                   </div>
                 </div>
 
-                {/* Directions for Indoor Navigation - Show ALL phases like desktop */}
-                {route.phases && route.phases.length > 0 && navigationPhase === 'indoor' && (
-                  <div>
-                    <h3 className="text-sm font-medium text-foreground mb-3">All Directions</h3>
-                    <div className="space-y-4">
-                      {route.phases.map((phase, phaseIndex) => {
-                        const isIndoorPhase = phase.color === '#ef4444';
-                        return (
-                          <div key={phaseIndex}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div 
-                                className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                                style={{ backgroundColor: phase.color }}
-                                data-testid={`phase-badge-indoor-${phaseIndex}`}
-                              >
-                                {phaseIndex + 1}
-                              </div>
-                              <h4 className="text-xs font-semibold text-foreground">
-                                {phase.mode === 'driving' 
-                                  ? `Drive to ${phase.endName}`
-                                  : `Walk to ${phase.endName}`}
-                              </h4>
+                {/* Current Floor Directions - Turn-by-turn directions matching kiosk */}
+                {navigationPhase === 'indoor' && (
+                  currentFloorIndoorSteps.length > 0 ? (
+                    <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-3">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                          <span className="text-xs font-bold text-white">{currentFloorIndex + 1}</span>
+                        </div>
+                        <h3 className="text-sm font-semibold text-green-800 dark:text-green-200">
+                          {isOnDestinationFloor 
+                            ? `Walk to ${destinationRoom?.label || route.destinationRoomName || 'Destination'}`
+                            : `Walk to Stairway to ${floorsInRoute[currentFloorIndex + 1]?.floorName || 'Next Floor'}`}
+                        </h3>
+                      </div>
+                      <div className="space-y-2">
+                        {currentFloorIndoorSteps.map((step, stepIndex) => (
+                          <div
+                            key={stepIndex}
+                            className="flex gap-2 text-xs"
+                            data-testid={`indoor-step-${stepIndex}`}
+                          >
+                            <div className="flex-shrink-0 w-5 h-5 bg-white dark:bg-green-900 border border-green-300 dark:border-green-700 rounded-full flex items-center justify-center text-xs font-medium text-green-700 dark:text-green-300">
+                              {stepIndex + 1}
                             </div>
-                            <div className="space-y-2 pl-7">
-                              {phase.steps.map((step, stepIndex) => (
-                                <div
-                                  key={`${phaseIndex}-${stepIndex}`}
-                                  className="flex gap-2 text-xs"
-                                  data-testid={`step-${phaseIndex}-${stepIndex}`}
-                                >
-                                  <div className="flex-shrink-0 w-5 h-5 bg-card border border-border rounded-full flex items-center justify-center text-xs font-medium text-muted-foreground">
-                                    {stepIndex + 1}
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="font-medium text-foreground">{step.instruction}</p>
-                                    {!isIndoorPhase && step.distance && (
-                                      <p className="text-muted-foreground text-xs">{step.distance}</p>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
+                            <div className="flex-1">
+                              <p className="font-medium text-green-800 dark:text-green-200">{step.instruction}</p>
+                              {step.distance && step.distance !== '0 m' && (
+                                <p className="text-green-600 dark:text-green-400 text-xs">{step.distance}</p>
+                              )}
                             </div>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="bg-muted/50 border border-border rounded-md p-3">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-5 h-5 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">
+                          Navigate using the floor plan map. Follow the path to reach your destination.
+                        </p>
+                      </div>
+                    </div>
+                  )
                 )}
 
                 {/* Floor Navigation Controls */}
