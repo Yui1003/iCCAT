@@ -453,6 +453,10 @@ export const insertRoomPathSchema = createInsertSchema(roomPaths).omit({ id: tru
 export type InsertRoomPath = z.infer<typeof insertRoomPathSchema>;
 export type RoomPath = typeof roomPaths.$inferSelect;
 
+// Kiosk status types
+export const kioskStatusTypes = ['active', 'standby', 'inactive'] as const;
+export type KioskStatus = typeof kioskStatusTypes[number];
+
 // Kiosk Uptime table - tracks uptime per device
 export const kioskUptimes = pgTable("kiosk_uptimes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -464,7 +468,7 @@ export const kioskUptimes = pgTable("kiosk_uptimes", {
   uptimePercentage: real("uptime_percentage").notNull().default(100),
   lastHeartbeat: timestamp("last_heartbeat").notNull().defaultNow(),
   appVersion: text("app_version"),
-  isActive: boolean("is_active").notNull().default(true),
+  status: text("status").notNull().default("active"), // 'active', 'standby', 'inactive'
 });
 
 export const insertKioskUptimeSchema = createInsertSchema(kioskUptimes).omit({ id: true, sessionStart: true, lastHeartbeat: true });
