@@ -244,8 +244,11 @@ export default function Screensaver() {
   const handleExit = () => {
     // Immediately dispatch the screensaver-change event BEFORE navigation
     // This ensures the "Active" status is sent right away, not delayed until unmount
-    window.dispatchEvent(new CustomEvent('screensaver-change', { detail: false }));
-    console.log('[SCREENSAVER] Touch detected - immediately dispatching Active status');
+    // Use forceStatus: 'active' to bypass location-based detection (since location is still '/screensaver' at this point)
+    window.dispatchEvent(new CustomEvent('screensaver-change', { 
+      detail: { active: false, forceStatus: 'active' as const } 
+    }));
+    console.log('[SCREENSAVER] Touch detected - immediately dispatching Active status with forceStatus override');
     
     // Then navigate to home
     setLocation("/");

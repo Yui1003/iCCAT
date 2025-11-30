@@ -37,7 +37,8 @@ export function useKioskUptime() {
   }, [location]);
 
   // Send heartbeat with current status - uses refs to always get latest values
-  const sendHeartbeat = useCallback(async () => {
+  // Optional statusOverride parameter allows forcing a specific status (used when exiting screensaver)
+  const sendHeartbeat = useCallback(async (statusOverride?: 'active' | 'standby') => {
     if (!deviceIdRef.current) return;
 
     try {
@@ -46,17 +47,24 @@ export function useKioskUptime() {
           ? (requestCounter.successful / requestCounter.total) * 100
           : 100;
 
-      // Determine status: 'standby' if screensaver active, page hidden, or on screensaver route
-      const currentLocation = locationRef.current;
-      const isOnScreensaver = currentLocation === '/screensaver';
-      const status = isScreensaverActiveRef.current || !isPageVisibleRef.current || isOnScreensaver ? 'standby' : 'active';
+      // If status override is provided, use it directly
+      // Otherwise, determine status: 'standby' if screensaver active, page hidden, or on screensaver route
+      let status: 'active' | 'standby';
+      if (statusOverride) {
+        status = statusOverride;
+      } else {
+        const currentLocation = locationRef.current;
+        const isOnScreensaver = currentLocation === '/screensaver';
+        status = isScreensaverActiveRef.current || !isPageVisibleRef.current || isOnScreensaver ? 'standby' : 'active';
+      }
 
       console.log('[UPTIME] Heartbeat:', {
         status,
+        statusOverride: statusOverride || 'none',
         screensaverActive: isScreensaverActiveRef.current,
         pageVisible: isPageVisibleRef.current,
-        onScreensaverRoute: isOnScreensaver,
-        currentLocation,
+        onScreensaverRoute: locationRef.current === '/screensaver',
+        currentLocation: locationRef.current,
         total: requestCounter.total,
         successful: requestCounter.successful,
         uptime: uptimePercentage.toFixed(1) + '%'
@@ -85,11 +93,12 @@ export function useKioskUptime() {
       console.log('[UPTIME] Location changed to screensaver - setting status to standby');
       isScreensaverActiveRef.current = true;
       // Small delay to ensure device ID is ready
-      setTimeout(() => sendHeartbeat(), 100);
+      setTimeout(() => sendHeartbeat('standby'), 100);
     } else if (!isOnScreensaver && isScreensaverActiveRef.current) {
       console.log('[UPTIME] Location changed from screensaver - setting status to active');
       isScreensaverActiveRef.current = false;
-      setTimeout(() => sendHeartbeat(), 100);
+      // Force 'active' status since we're navigating away from screensaver
+      setTimeout(() => sendHeartbeat('active'), 100);
     }
   }, [location, sendHeartbeat]);
 
@@ -156,16 +165,32 @@ export function useKioskUptime() {
 
     // Handle screensaver state changes via custom event
     // This is a backup mechanism - location-based detection is primary
+    // The event detail can be:
+    //   - true: screensaver activated (status = standby)
+    //   - false: screensaver closed (status = active)
+    //   - { active: false, forceStatus: 'active' }: screensaver closed with forced status override
     const handleScreensaverChange = (event: Event) => {
-      const customEvent = event as CustomEvent<boolean>;
-      const newState = customEvent.detail;
+      const customEvent = event as CustomEvent<boolean | { active: boolean; forceStatus?: 'active' | 'standby' }>;
+      const detail = customEvent.detail;
+      
+      // Handle both simple boolean and object with forceStatus
+      let newState: boolean;
+      let forceStatus: 'active' | 'standby' | undefined;
+      
+      if (typeof detail === 'boolean') {
+        newState = detail;
+      } else {
+        newState = detail.active;
+        forceStatus = detail.forceStatus;
+      }
       
       // Only update if state actually changed
       if (isScreensaverActiveRef.current !== newState) {
         isScreensaverActiveRef.current = newState;
         const statusMsg = newState ? 'standby (screensaver active)' : 'active (screensaver closed)';
-        console.log('[UPTIME] Screensaver event received - new status:', statusMsg);
-        sendHeartbeat();
+        console.log('[UPTIME] Screensaver event received - new status:', statusMsg, forceStatus ? `(forced: ${forceStatus})` : '');
+        // Use force status if provided (bypasses location-based detection)
+        sendHeartbeat(forceStatus);
       }
     };
 
