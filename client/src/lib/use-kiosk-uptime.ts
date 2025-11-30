@@ -122,9 +122,10 @@ export function useKioskUptime() {
     };
 
     // Handle screensaver state changes
-    const handleScreensaverChange = (event: CustomEvent<boolean>) => {
-      isScreensaverActiveRef.current = event.detail;
-      const statusMsg = event.detail ? 'standby (screensaver active)' : 'active (screensaver closed)';
+    const handleScreensaverChange = (event: Event) => {
+      const customEvent = event as CustomEvent<boolean>;
+      isScreensaverActiveRef.current = customEvent.detail;
+      const statusMsg = customEvent.detail ? 'standby (screensaver active)' : 'active (screensaver closed)';
       console.log('[UPTIME] Screensaver status changed - new status:', statusMsg);
       sendHeartbeat();
     };
@@ -179,7 +180,7 @@ export function useKioskUptime() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('pagehide', handlePageHide);
-    window.addEventListener('screensaver-change', handleScreensaverChange as EventListener);
+    window.addEventListener('screensaver-change', handleScreensaverChange);
 
     return () => {
       if (heartbeatIntervalRef.current) {
@@ -189,7 +190,7 @@ export function useKioskUptime() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('pagehide', handlePageHide);
-      window.removeEventListener('screensaver-change', handleScreensaverChange as EventListener);
+      window.removeEventListener('screensaver-change', handleScreensaverChange);
     };
   }, [location]);
 }
