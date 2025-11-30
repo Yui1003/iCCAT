@@ -52,6 +52,15 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 - **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
 
 ## Recent Changes (November 30, 2025)
+- **FIXED: Kiosk Status Transitions (Active ↔ Standby)**:
+  - Root Cause: React parent useEffect cleanup removed event listeners before child screensaver component dispatched events
+  - Solution: Refactored `useKioskUptime` hook to use location-based detection as primary mechanism
+  - Added `locationRef` to avoid stale closures in event handlers
+  - Moved `sendHeartbeat` to stable `useCallback` that reads from refs for latest state
+  - Created separate effect for location-based status updates that fires immediately on navigation
+  - Screensaver-change custom event kept as backup/redundancy mechanism
+  - Status transitions now work reliably for repeated cycles: Active → Standby → Active → Standby...
+
 - **ENHANCED: Three-Status Kiosk Uptime System**:
   - Changed from boolean `isActive` to three-status system: Active (green), Standby (yellow), Inactive (gray)
   - **Active**: User is interacting with the kiosk (page visible)
