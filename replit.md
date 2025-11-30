@@ -52,6 +52,13 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 - **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
 
 ## Recent Changes (November 30, 2025)
+- **FIXED: Standby → Active Transition Delay**:
+  - Issue: When user touched screensaver to wake kiosk, "Active" status had a delay in the monitoring dashboard
+  - Root Cause: The 'screensaver-change' event with `detail: false` was only dispatched during component unmount cleanup, causing timing issues
+  - Solution: Modified `screensaver.tsx` to dispatch the event immediately in `handleExit()` BEFORE navigating away
+  - Removed duplicate event dispatch from cleanup effect to prevent double-firing
+  - Result: Status now updates to "Active" instantly when user touches the screensaver
+
 - **FIXED: Kiosk Status Transitions (Active ↔ Standby)**:
   - Root Cause: React parent useEffect cleanup removed event listeners before child screensaver component dispatched events
   - Solution: Refactored `useKioskUptime` hook to use location-based detection as primary mechanism
