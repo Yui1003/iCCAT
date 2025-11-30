@@ -86,13 +86,16 @@ export function useKioskUptime() {
             ? (requestCounter.successful / requestCounter.total) * 100
             : 100;
 
-        // Determine status: 'standby' if screensaver active or page hidden, otherwise 'active'
-        const status = isScreensaverActiveRef.current || !isPageVisibleRef.current ? 'standby' : 'active';
+        // Determine status: 'standby' if screensaver active, page hidden, or on screensaver route
+        const isOnScreensaver = location === '/screensaver';
+        const status = isScreensaverActiveRef.current || !isPageVisibleRef.current || isOnScreensaver ? 'standby' : 'active';
 
         console.log('[UPTIME] Heartbeat:', {
           status,
           screensaverActive: isScreensaverActiveRef.current,
           pageVisible: isPageVisibleRef.current,
+          onScreensaverRoute: isOnScreensaver,
+          currentLocation: location,
           total: requestCounter.total,
           successful: requestCounter.successful,
           uptime: uptimePercentage.toFixed(1) + '%'
