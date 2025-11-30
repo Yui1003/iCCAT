@@ -26,6 +26,7 @@ export function useKioskUptime() {
   const sessionInitializedRef = useRef<boolean>(false);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isPageVisibleRef = useRef<boolean>(!document.hidden);
+  const isScreensaverActiveRef = useRef<boolean>(false);
   const [location] = useLocation();
 
   useEffect(() => {
@@ -75,7 +76,7 @@ export function useKioskUptime() {
       }
     };
 
-    // Send heartbeat with current status (active or standby based on page visibility)
+    // Send heartbeat with current status (active or standby based on page visibility or screensaver)
     const sendHeartbeat = async () => {
       if (!deviceIdRef.current) return;
 
@@ -85,11 +86,13 @@ export function useKioskUptime() {
             ? (requestCounter.successful / requestCounter.total) * 100
             : 100;
 
-        // Determine status: 'active' if page visible, 'standby' if hidden (screensaver)
-        const status = isPageVisibleRef.current ? 'active' : 'standby';
+        // Determine status: 'standby' if screensaver active or page hidden, otherwise 'active'
+        const status = isScreensaverActiveRef.current || !isPageVisibleRef.current ? 'standby' : 'active';
 
         console.log('[UPTIME] Heartbeat:', {
           status,
+          screensaverActive: isScreensaverActiveRef.current,
+          pageVisible: isPageVisibleRef.current,
           total: requestCounter.total,
           successful: requestCounter.successful,
           uptime: uptimePercentage.toFixed(1) + '%'
@@ -107,15 +110,22 @@ export function useKioskUptime() {
       }
     };
 
-    // Handle visibility changes (screensaver, tab switch, etc.)
+    // Handle visibility changes (tab switch, etc.)
     const handleVisibilityChange = () => {
       isPageVisibleRef.current = !document.hidden;
       if (isPageVisibleRef.current) {
         console.log('[UPTIME] Page visible again - status: active');
       } else {
-        console.log('[UPTIME] Page hidden (screensaver) - status: standby');
+        console.log('[UPTIME] Page hidden - status: standby');
       }
-      // Send heartbeat immediately on visibility change to update status
+      sendHeartbeat();
+    };
+
+    // Handle screensaver state changes
+    const handleScreensaverChange = (event: CustomEvent<boolean>) => {
+      isScreensaverActiveRef.current = event.detail;
+      const statusMsg = event.detail ? 'standby (screensaver active)' : 'active (screensaver closed)';
+      console.log('[UPTIME] Screensaver status changed - new status:', statusMsg);
       sendHeartbeat();
     };
 
