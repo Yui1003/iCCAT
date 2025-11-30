@@ -102,6 +102,19 @@ export default function Screensaver() {
     return () => clearInterval(timer);
   }, []);
 
+  // Notify uptime tracker when screensaver is active
+  useEffect(() => {
+    // Dispatch custom event when screensaver mounts (becomes active)
+    window.dispatchEvent(new CustomEvent('screensaver-change', { detail: true }));
+    console.log('[SCREENSAVER] Activated - status should now be Standby');
+
+    // Cleanup: dispatch event when screensaver unmounts (user exits)
+    return () => {
+      window.dispatchEvent(new CustomEvent('screensaver-change', { detail: false }));
+      console.log('[SCREENSAVER] Closed - status should now be Active');
+    };
+  }, []);
+
   // Helper functions to format date and time
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {

@@ -179,6 +179,7 @@ export function useKioskUptime() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('screensaver-change', handleScreensaverChange as EventListener);
 
     return () => {
       if (heartbeatIntervalRef.current) {
@@ -188,6 +189,7 @@ export function useKioskUptime() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('screensaver-change', handleScreensaverChange as EventListener);
     };
   }, [location]);
 }
