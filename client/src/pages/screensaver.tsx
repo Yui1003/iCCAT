@@ -108,10 +108,11 @@ export default function Screensaver() {
     window.dispatchEvent(new CustomEvent('screensaver-change', { detail: true }));
     console.log('[SCREENSAVER] Activated - status should now be Standby');
 
-    // Cleanup: dispatch event when screensaver unmounts (user exits)
+    // Note: Cleanup event is now dispatched in handleExit() BEFORE navigation
+    // This ensures immediate status update when user touches the screen
+    // The cleanup here is kept minimal to avoid double-dispatching
     return () => {
-      window.dispatchEvent(new CustomEvent('screensaver-change', { detail: false }));
-      console.log('[SCREENSAVER] Closed - status should now be Active');
+      console.log('[SCREENSAVER] Component unmounting');
     };
   }, []);
 
@@ -241,6 +242,12 @@ export default function Screensaver() {
 
   // Exit screensaver on any touch/click
   const handleExit = () => {
+    // Immediately dispatch the screensaver-change event BEFORE navigation
+    // This ensures the "Active" status is sent right away, not delayed until unmount
+    window.dispatchEvent(new CustomEvent('screensaver-change', { detail: false }));
+    console.log('[SCREENSAVER] Touch detected - immediately dispatching Active status');
+    
+    // Then navigate to home
     setLocation("/");
   };
 
