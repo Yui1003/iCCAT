@@ -52,6 +52,17 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 - **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
 
 ## Recent Changes (November 30, 2025)
+- **ENHANCED: Three-Status Kiosk Uptime System**:
+  - Changed from boolean `isActive` to three-status system: Active (green), Standby (yellow), Inactive (gray)
+  - **Active**: User is interacting with the kiosk (page visible)
+  - **Standby**: Screensaver mode (page hidden) - session time continues accumulating
+  - **Inactive**: App/browser closed - session ended
+  - Fixed critical bug where heartbeats stopped after page navigation (useEffect early return)
+  - Heartbeats now continue every 30 seconds in both Active and Standby states
+  - Status sent with each heartbeat, server updates status in real-time
+  - Added initial fetch for kiosk uptime data in admin analytics
+  - Fixed request counting in queryClient.ts to properly track API success/failure
+
 - **ADDED: Navigation Polygon Highlighting**:
   - During navigation, shows building polygon areas for start point (green), destination (red), parking (blue), and waypoints (amber)
   - Works across all travel modes: walking, accessible, and driving (car, motorcycle, bike)
