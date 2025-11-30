@@ -2989,6 +2989,62 @@ export default function Navigation() {
                       .map(b => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng }))
                   : []
               }
+              navigationStartBuilding={
+                route && selectedStart && 'id' in selectedStart
+                  ? (() => {
+                      const startBuilding = buildings.find(b => b.id === selectedStart.id);
+                      return startBuilding ? {
+                        id: startBuilding.id,
+                        name: startBuilding.name,
+                        lat: startBuilding.lat,
+                        lng: startBuilding.lng,
+                        polygon: startBuilding.polygon as Array<{ lat: number; lng: number }> | null
+                      } : null;
+                    })()
+                  : null
+              }
+              navigationEndBuilding={
+                route && selectedEnd
+                  ? (() => {
+                      const endBuilding = buildings.find(b => b.id === selectedEnd.id);
+                      return endBuilding ? {
+                        id: endBuilding.id,
+                        name: endBuilding.name,
+                        lat: endBuilding.lat,
+                        lng: endBuilding.lng,
+                        polygon: endBuilding.polygon as Array<{ lat: number; lng: number }> | null
+                      } : null;
+                    })()
+                  : null
+              }
+              navigationParkingBuilding={
+                route?.parkingLocation
+                  ? (() => {
+                      const parkingBuilding = buildings.find(b => b.id === route.parkingLocation?.id);
+                      return parkingBuilding ? {
+                        id: parkingBuilding.id,
+                        name: parkingBuilding.name,
+                        lat: parkingBuilding.lat,
+                        lng: parkingBuilding.lng,
+                        polygon: parkingBuilding.polygon as Array<{ lat: number; lng: number }> | null
+                      } : null;
+                    })()
+                  : null
+              }
+              navigationWaypointBuildings={
+                route && waypoints.length > 0
+                  ? waypoints
+                      .map(id => buildings.find(b => b.id === id))
+                      .filter((b): b is Building => !!b)
+                      .map(b => ({
+                        id: b.id,
+                        name: b.name,
+                        lat: b.lat,
+                        lng: b.lng,
+                        polygon: b.polygon as Array<{ lat: number; lng: number }> | null
+                      }))
+                  : []
+              }
             />
           )}
         </main>

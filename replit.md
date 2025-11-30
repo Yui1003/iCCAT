@@ -52,6 +52,16 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 - **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
 
 ## Recent Changes (November 30, 2025)
+- **ADDED: Navigation Polygon Highlighting**:
+  - During navigation, shows building polygon areas for start point (green), destination (red), parking (blue), and waypoints (amber)
+  - Works across all travel modes: walking, accessible, and driving (car, motorcycle, bike)
+  - Desktop implementation passes navigation building data with polygons to CampusMap component
+  - Mobile implementation draws polygons directly using Leaflet with same color coding
+  - Added proper layer management with cleanup when navigation ends or route is cleared
+  - For accessible mode fallback, always shows original destination building polygon
+  - Parking detection for driving modes validated via phase transition (firstPhase.endId === secondPhase.startId)
+  - Added `navigationPolygonsRef` for tracking and cleaning up navigation-specific layers
+
 - **FIXED: Mobile indoor navigation distance display**:
   - Removed distance display (e.g., "8 m") from indoor navigation turn-by-turn steps on mobile
   - Reason: Floorplans are just images without real coordinates, so distances are not accurate

@@ -42,6 +42,14 @@ interface PathType {
   nodes: Array<{ lat: number; lng: number }>;
 }
 
+interface NavigationBuilding {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  polygon?: Array<{ lat: number; lng: number }> | null;
+}
+
 interface CampusMapProps {
   buildings?: Building[];
   onBuildingClick?: (building: Building) => void;
@@ -58,6 +66,10 @@ interface CampusMapProps {
   pathsColor?: string;
   hidePolygonsInNavigation?: boolean;
   waypointsData?: Array<{id: string; name: string; lat: number; lng: number}>;
+  navigationStartBuilding?: NavigationBuilding | null;
+  navigationEndBuilding?: NavigationBuilding | null;
+  navigationParkingBuilding?: NavigationBuilding | null;
+  navigationWaypointBuildings?: NavigationBuilding[];
 }
 
 declare global {
@@ -128,7 +140,11 @@ export default function CampusMap({
   existingPaths = [],
   waypointsData = [],
   pathsColor = '#8b5cf6',
-  hidePolygonsInNavigation = false
+  hidePolygonsInNavigation = false,
+  navigationStartBuilding,
+  navigationEndBuilding,
+  navigationParkingBuilding,
+  navigationWaypointBuildings = []
 }: CampusMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -136,6 +152,7 @@ export default function CampusMap({
   const routeLayerRef = useRef<any>(null);
   const routeMarkersRef = useRef<any[]>([]);
   const polygonsRef = useRef<any[]>([]);
+  const navigationPolygonsRef = useRef<any[]>([]);
   const pathsLayerRef = useRef<any>(null);
   const [currentZoom, setCurrentZoom] = useState(17.5);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -696,6 +713,106 @@ export default function CampusMap({
       }
     });
   }, [buildings, hidePolygonsInNavigation]);
+
+  // Render navigation-specific building polygons with highlight colors
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.L) return;
+
+    const L = window.L;
+
+    // Clear previous navigation polygons
+    navigationPolygonsRef.current.forEach(polygon => polygon.remove());
+    navigationPolygonsRef.current = [];
+
+    // Only render navigation polygons when we have navigation buildings
+    const hasNavigationBuildings = navigationStartBuilding || navigationEndBuilding || 
+                                   navigationParkingBuilding || navigationWaypointBuildings.length > 0;
+    
+    if (!hasNavigationBuildings) return;
+
+    // Define highlight colors for different navigation points
+    const NAVIGATION_COLORS = {
+      start: '#22c55e',      // Green for start
+      end: '#ef4444',        // Red for destination
+      parking: '#3b82f6',    // Blue for parking
+      waypoint: '#f59e0b'    // Amber/Orange for waypoints
+    };
+
+    // Helper function to render a navigation polygon
+    const renderNavigationPolygon = (
+      building: NavigationBuilding | null | undefined, 
+      color: string,
+      type: string
+    ) => {
+      if (!building?.polygon || !Array.isArray(building.polygon) || building.polygon.length < 3) {
+        return;
+      }
+
+      const latlngs = building.polygon.map(p => [p.lat, p.lng]);
+      const polygon = L.polygon(latlngs, {
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.35,
+        weight: 3,
+        className: `navigation-polygon navigation-${type}`
+      }).addTo(mapInstanceRef.current);
+
+      // Add a pulsing animation effect via CSS class
+      const element = polygon.getElement();
+      if (element) {
+        element.classList.add('navigation-polygon-highlight');
+      }
+
+      navigationPolygonsRef.current.push(polygon);
+    };
+
+    // Render start building polygon (green)
+    renderNavigationPolygon(navigationStartBuilding, NAVIGATION_COLORS.start, 'start');
+
+    // Render end/destination building polygon (red) - always show even for accessible fallback
+    renderNavigationPolygon(navigationEndBuilding, NAVIGATION_COLORS.end, 'end');
+
+    // Render parking building polygon (blue) - for driving modes
+    renderNavigationPolygon(navigationParkingBuilding, NAVIGATION_COLORS.parking, 'parking');
+
+    // Render waypoint building polygons (amber/orange)
+    navigationWaypointBuildings.forEach((waypoint) => {
+      renderNavigationPolygon(waypoint, NAVIGATION_COLORS.waypoint, 'waypoint');
+    });
+
+    console.log('[CAMPUS-MAP] Rendered navigation polygons:', {
+      start: !!navigationStartBuilding?.polygon,
+      end: !!navigationEndBuilding?.polygon,
+      parking: !!navigationParkingBuilding?.polygon,
+      waypoints: navigationWaypointBuildings.filter(w => w?.polygon).length
+    });
+
+  }, [navigationStartBuilding, navigationEndBuilding, navigationParkingBuilding, navigationWaypointBuildings]);
+
+  // Cleanup navigation polygons when navigation mode ends or when all navigation buildings are cleared
+  useEffect(() => {
+    const hasNavigationBuildings = navigationStartBuilding || navigationEndBuilding || 
+                                   navigationParkingBuilding || navigationWaypointBuildings.length > 0;
+    
+    // Clean up when:
+    // 1. No longer in navigation mode (hidePolygonsInNavigation becomes false), OR
+    // 2. All navigation building props are null/empty (route was cleared while still on navigation page)
+    if ((!hidePolygonsInNavigation || !hasNavigationBuildings) && navigationPolygonsRef.current.length > 0) {
+      console.log('[CAMPUS-MAP] Cleaning up navigation polygons', { 
+        hidePolygonsInNavigation, 
+        hasNavigationBuildings,
+        polygonCount: navigationPolygonsRef.current.length 
+      });
+      navigationPolygonsRef.current.forEach(polygon => {
+        try {
+          polygon.remove();
+        } catch (e) {
+          // Polygon may already be removed
+        }
+      });
+      navigationPolygonsRef.current = [];
+    }
+  }, [hidePolygonsInNavigation, navigationStartBuilding, navigationEndBuilding, navigationParkingBuilding, navigationWaypointBuildings]);
 
   // Render existing paths on the map
   useEffect(() => {

@@ -33,6 +33,7 @@ export default function MobileNavigation() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const touchHandlerRef = useRef<((e: TouchEvent) => void) | null>(null);
+  const navigationLayersRef = useRef<any[]>([]); // Track navigation-specific layers for cleanup
 
   // Indoor navigation states
   const [navigationPhase, setNavigationPhase] = useState<NavigationPhase>('outdoor');
@@ -397,10 +398,28 @@ export default function MobileNavigation() {
 
   // Draw route on map when it updates
   useEffect(() => {
+    // If route is undefined/null, clean up any existing navigation layers and exit
+    if (!route) {
+      if (navigationLayersRef.current.length > 0 && mapInstanceRef.current && window.L) {
+        console.log('[MOBILE-NAV] Route cleared - cleaning up navigation layers');
+        const L = window.L;
+        const map = mapInstanceRef.current;
+        navigationLayersRef.current.forEach((layer: any) => {
+          try {
+            map.removeLayer(layer);
+          } catch (e) {
+            // Layer may already be removed
+          }
+        });
+        navigationLayersRef.current = [];
+      }
+      return;
+    }
+    
     const drawRoute = () => {
       console.log("Route drawing effect triggered", { mapReady: !!mapInstanceRef.current, routeExists: !!route, leafletExists: !!window.L, navigationPhase });
       
-      if (!mapInstanceRef.current || !route || !window.L) {
+      if (!mapInstanceRef.current || !window.L) {
         console.warn("Map not ready yet, retrying in 100ms...");
         setTimeout(drawRoute, 100);
         return;
@@ -409,17 +428,78 @@ export default function MobileNavigation() {
       const L = window.L;
       const map = mapInstanceRef.current;
 
-      // Clear existing polylines and markers (keep tile layer)
-      map.eachLayer((layer: any) => {
-        if (layer instanceof L.Polyline || layer instanceof L.Marker || layer instanceof L.CircleMarker) {
+      // Clear only previously added navigation layers (preserves base map layers)
+      navigationLayersRef.current.forEach((layer: any) => {
+        try {
           map.removeLayer(layer);
+        } catch (e) {
+          // Layer may already be removed
         }
       });
+      navigationLayersRef.current = [];
 
       // Don't draw outdoor route markers if in indoor mode
       if (navigationPhase === 'indoor') {
         console.log("In indoor mode, skipping outdoor route drawing");
         return;
+      }
+
+      // Define navigation polygon colors
+      const NAVIGATION_COLORS = {
+        start: '#22c55e',      // Green for start
+        end: '#ef4444',        // Red for destination
+        parking: '#3b82f6',    // Blue for parking
+        waypoint: '#f59e0b'    // Amber/Orange for waypoints
+      };
+
+      // Helper function to draw a building polygon (tracked for cleanup)
+      const drawBuildingPolygon = (buildingId: string, color: string, label: string) => {
+        const building = buildings.find(b => b.id === buildingId);
+        if (building?.polygon && Array.isArray(building.polygon) && building.polygon.length >= 3) {
+          const latlngs = building.polygon.map((p: any) => [p.lat, p.lng]);
+          const polygon = L.polygon(latlngs, {
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.35,
+            weight: 3,
+          }).addTo(map).bindPopup(label);
+          navigationLayersRef.current.push(polygon);
+          console.log(`[MOBILE-NAV] Drew ${label} polygon for ${building.name}`);
+        }
+      };
+
+      // Draw start building polygon (green)
+      if (route.startId) {
+        drawBuildingPolygon(route.startId, NAVIGATION_COLORS.start, 'Start');
+      }
+
+      // Draw destination building polygon (red) - use destinationBuildingId or endId
+      const destinationId = route.destinationBuildingId || route.endId;
+      if (destinationId) {
+        drawBuildingPolygon(destinationId, NAVIGATION_COLORS.end, 'Destination');
+      }
+
+      // Draw waypoint building polygons (amber/orange)
+      if (route.waypoints && Array.isArray(route.waypoints)) {
+        route.waypoints.forEach((waypointId: string, index: number) => {
+          drawBuildingPolygon(waypointId, NAVIGATION_COLORS.waypoint, `Stop ${index + 1}`);
+        });
+      }
+
+      // Draw parking building polygon (blue) - for driving modes
+      // For two-phase driving routes: Phase 1 ends at parking, Phase 2 walks from parking to destination
+      if (route.mode === 'driving' && route.phases.length >= 2) {
+        const firstPhase = route.phases[0];
+        const secondPhase = route.phases[1];
+        
+        // In a two-phase driving route:
+        // - First phase: start → parking (driving)
+        // - Second phase: parking → destination (walking)
+        // The parking is the endId of first phase AND startId of second phase
+        if (firstPhase.endId && secondPhase?.startId === firstPhase.endId && firstPhase.endId !== destinationId) {
+          drawBuildingPolygon(firstPhase.endId, NAVIGATION_COLORS.parking, 'Parking');
+          console.log(`[MOBILE-NAV] Detected parking from phase transition: ${firstPhase.endId}`);
+        }
       }
 
       console.log("Drawing route with", route.phases.length, "phases");
@@ -441,7 +521,7 @@ export default function MobileNavigation() {
           phasesWithPolylines++;
           allCoordinates.push(...phase.polyline);
 
-          // Draw polyline for this phase
+          // Draw polyline for this phase (tracked for cleanup)
           const polyline = L.polyline(
             phase.polyline.map((coord: any) => [coord.lat, coord.lng]),
             {
@@ -453,6 +533,7 @@ export default function MobileNavigation() {
               lineJoin: 'round',
             }
           ).addTo(map);
+          navigationLayersRef.current.push(polyline);
 
           console.log(`Phase ${index}: ${phase.polyline.length} coordinates, color: ${color}, current: ${isCurrent}`);
         } else {
@@ -462,9 +543,9 @@ export default function MobileNavigation() {
 
       console.log(`Total phases with polylines: ${phasesWithPolylines}/${route.phases.length}`);
 
-      // Add markers for start and end
+      // Add markers for start and end (tracked for cleanup)
       if (allCoordinates.length > 0) {
-        L.circleMarker([allCoordinates[0].lat, allCoordinates[0].lng], {
+        const startMarker = L.circleMarker([allCoordinates[0].lat, allCoordinates[0].lng], {
           radius: 10,
           fillColor: '#22c55e',
           color: '#ffffff',
@@ -472,8 +553,9 @@ export default function MobileNavigation() {
           opacity: 1,
           fillOpacity: 0.9,
         }).addTo(map).bindPopup('Start');
+        navigationLayersRef.current.push(startMarker);
 
-        L.circleMarker(
+        const endMarker = L.circleMarker(
           [allCoordinates[allCoordinates.length - 1].lat, allCoordinates[allCoordinates.length - 1].lng],
           {
             radius: 10,
@@ -484,6 +566,7 @@ export default function MobileNavigation() {
             fillOpacity: 0.9,
           }
         ).addTo(map).bindPopup('End');
+        navigationLayersRef.current.push(endMarker);
 
         // Fit map to all coordinates with padding
         const bounds = L.latLngBounds(allCoordinates.map(c => [c.lat, c.lng]));
@@ -497,7 +580,7 @@ export default function MobileNavigation() {
     // Start drawing with a small delay to ensure map is ready
     const timer = setTimeout(drawRoute, 100);
     return () => clearTimeout(timer);
-  }, [route, currentPhaseIndex, completedPhases, navigationPhase]);
+  }, [route, currentPhaseIndex, completedPhases, navigationPhase, buildings]);
 
   // Calculate indoor path polyline for current floor using proper pathfinding
   // NOTE: This useMemo MUST be before any early returns to satisfy React hooks rules
