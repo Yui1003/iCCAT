@@ -51,6 +51,29 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 - **Precaching Strategy**: Images detected from API responses are pre-fetched through the proxy and cached for offline availability.
 - **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
 
+## Recent Changes (November 30, 2025)
+- **FIXED: Mobile indoor navigation distance display**:
+  - Removed distance display (e.g., "8 m") from indoor navigation turn-by-turn steps on mobile
+  - Reason: Floorplans are just images without real coordinates, so distances are not accurate
+  - Now matches kiosk behavior which doesn't show distance for indoor navigation
+
+- **FIXED: Mobile devices registering as kiosks**:
+  - Added mobile device detection (`isMobileDevice()`) in `use-kiosk-uptime.ts`
+  - Detects phones/tablets via user agent, touch capability, and screen size
+  - Mobile devices are now completely excluded from kiosk uptime monitoring
+  - Prevents QR code scans from cluttering the kiosk uptime dashboard
+
+- **FIXED: Kiosk uptime not updating when tab closed**:
+  - Replaced async fetch with `navigator.sendBeacon()` for reliable session end on tab close
+  - Added `pagehide` event listener as additional coverage
+  - Session end is now sent reliably even when browser closes quickly
+
+- **ADDED: Server-side stale device detection**:
+  - `getAllKioskUptimes()` now checks for stale heartbeats (>60 seconds without heartbeat)
+  - Automatically marks stale devices as inactive with batch database updates
+  - Serves as backup when client-side sendBeacon fails
+  - Logs which devices were marked inactive and why
+
 ## Recent Changes (November 29, 2025)
 - **ADDED: Interactive Walkthrough/Guide Feature**:
   - Created comprehensive walkthrough component (`client/src/components/walkthrough.tsx`) with 5 interactive steps
