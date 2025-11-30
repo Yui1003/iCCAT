@@ -54,9 +54,11 @@ When a user selects accessible mode and there is no PWD-friendly path to the req
 ## Recent Changes (November 30, 2025)
 - **FIXED: Standby → Active Transition Delay**:
   - Issue: When user touched screensaver to wake kiosk, "Active" status had a delay in the monitoring dashboard
-  - Root Cause: The 'screensaver-change' event with `detail: false` was only dispatched during component unmount cleanup, causing timing issues
-  - Solution: Modified `screensaver.tsx` to dispatch the event immediately in `handleExit()` BEFORE navigating away
-  - Removed duplicate event dispatch from cleanup effect to prevent double-firing
+  - Root Cause: The `sendHeartbeat()` function was calculating status based on `locationRef.current` which was still `/screensaver` at the moment of touch, before navigation completed
+  - Solution: Added `statusOverride` parameter to `sendHeartbeat()` function that bypasses location-based detection
+  - Modified `screensaver.tsx` to dispatch event with `forceStatus: 'active'` in `handleExit()` BEFORE navigation
+  - Updated event handler in `useKioskUptime` to accept both boolean and object payloads with `forceStatus`
+  - Updated location-based effect to use explicit status overrides when navigating to/from screensaver
   - Result: Status now updates to "Active" instantly when user touches the screensaver
 
 - **FIXED: Kiosk Status Transitions (Active ↔ Standby)**:
