@@ -1475,7 +1475,51 @@ export class DatabaseStorage implements IStorage {
   async getAllKioskUptimes(): Promise<KioskUptime[]> {
     try {
       const snapshot = await db.collection('kioskUptimes').get();
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as KioskUptime));
+      const now = new Date();
+      const STALE_TIMEOUT_MS = 60000; // 60 seconds - if no heartbeat in this time, mark as inactive
+      
+      const uptimes: KioskUptime[] = [];
+      const staleDevices: string[] = [];
+      
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        const uptime = { id: doc.id, ...data } as KioskUptime;
+        
+        // Check if device is marked active but hasn't sent heartbeat recently
+        if (uptime.isActive && uptime.lastHeartbeat) {
+          const lastHeartbeatTime = uptime.lastHeartbeat instanceof Date 
+            ? uptime.lastHeartbeat 
+            : (uptime.lastHeartbeat as any).toDate ? (uptime.lastHeartbeat as any).toDate() : new Date(uptime.lastHeartbeat);
+          
+          const timeSinceHeartbeat = now.getTime() - lastHeartbeatTime.getTime();
+          
+          if (timeSinceHeartbeat > STALE_TIMEOUT_MS) {
+            // Mark as stale - will update in database
+            staleDevices.push(doc.id);
+            uptime.isActive = false;
+            uptime.sessionEnd = now;
+            console.log(`[KIOSK-UPTIME] Device ${doc.id} marked inactive (no heartbeat for ${Math.round(timeSinceHeartbeat / 1000)}s)`);
+          }
+        }
+        
+        uptimes.push(uptime);
+      }
+      
+      // Update stale devices in database (batch update)
+      if (staleDevices.length > 0) {
+        const batch = db.batch();
+        for (const deviceId of staleDevices) {
+          const docRef = db.collection('kioskUptimes').doc(deviceId);
+          batch.update(docRef, {
+            isActive: false,
+            sessionEnd: now,
+          });
+        }
+        await batch.commit();
+        console.log(`[KIOSK-UPTIME] Batch updated ${staleDevices.length} stale devices to inactive`);
+      }
+      
+      return uptimes;
     } catch (error) {
       console.error('Firestore error:', error);
       return [];

@@ -1229,9 +1229,6 @@ export default function MobileNavigation() {
                             </div>
                             <div className="flex-1">
                               <p className="font-medium text-green-800 dark:text-green-200">{step.instruction}</p>
-                              {step.distance && step.distance !== '0 m' && (
-                                <p className="text-green-600 dark:text-green-400 text-xs">{step.distance}</p>
-                              )}
                             </div>
                           </div>
                         ))}

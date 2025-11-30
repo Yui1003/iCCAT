@@ -4,6 +4,22 @@ import { useLocation } from 'wouter';
 import { getOrCreateDeviceId } from './device-id';
 import { apiRequest, requestCounter } from './queryClient';
 
+// Detect if user is on a mobile device (phone or tablet)
+function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
+  
+  // Check for common mobile keywords
+  const mobileKeywords = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i;
+  
+  // Also check for touch capability combined with small screen (tablets and phones)
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isSmallScreen = window.innerWidth <= 1024; // Tablets are usually <= 1024px
+  
+  return mobileKeywords.test(userAgent) || (isTouchDevice && isSmallScreen);
+}
+
 export function useKioskUptime() {
   const deviceIdRef = useRef<string | null>(null);
   const sessionStartRef = useRef<number>(Date.now());
@@ -16,12 +32,18 @@ export function useKioskUptime() {
     // Don't track heartbeats on admin pages or mobile navigation - only track kiosk pages
     const isAdminPage = location?.startsWith('/admin/');
     const isMobileNavigation = location?.startsWith('/navigate/');
+    const isMobile = isMobileDevice();
+    
     if (isAdminPage) {
       console.log('[UPTIME] Admin page detected - skipping kiosk heartbeat tracking');
       return;
     }
     if (isMobileNavigation) {
       console.log('[UPTIME] Mobile navigation detected - skipping kiosk heartbeat tracking');
+      return;
+    }
+    if (isMobile) {
+      console.log('[UPTIME] Mobile device detected - skipping kiosk uptime tracking (phones/tablets are not kiosks)');
       return;
     }
 
@@ -96,34 +118,48 @@ export function useKioskUptime() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Handle page unload - end the session
-    const handleBeforeUnload = async () => {
+    // Handle page unload - end the session using sendBeacon for reliable delivery
+    const handleBeforeUnload = () => {
       if (!deviceIdRef.current) return;
 
-      try {
-        const uptimePercentage =
-          requestCounter.total > 0
-            ? (requestCounter.successful / requestCounter.total) * 100
-            : 100;
+      const uptimePercentage =
+        requestCounter.total > 0
+          ? (requestCounter.successful / requestCounter.total) * 100
+          : 100;
 
-        await apiRequest('POST', '/api/analytics/kiosk-uptime/end', {
-          deviceId: deviceIdRef.current,
-          totalRequests: requestCounter.total,
-          successfulRequests: requestCounter.successful,
-          uptimePercentage,
-        });
-        console.log('[UPTIME] Session ended on server');
-      } catch (err) {
-        console.warn('[UPTIME] Failed to end session:', err);
+      const payload = JSON.stringify({
+        deviceId: deviceIdRef.current,
+        totalRequests: requestCounter.total,
+        successfulRequests: requestCounter.successful,
+        uptimePercentage,
+      });
+
+      // Use sendBeacon for reliable delivery during page unload
+      // sendBeacon is specifically designed to send data as the page closes
+      const success = navigator.sendBeacon('/api/analytics/kiosk-uptime/end', 
+        new Blob([payload], { type: 'application/json' })
+      );
+      
+      if (success) {
+        console.log('[UPTIME] Session end sent via sendBeacon');
+      } else {
+        console.warn('[UPTIME] sendBeacon failed, session may not end properly');
       }
     };
 
+    // Also end session when tab/window is closed or navigated away
+    const handlePageHide = () => {
+      handleBeforeUnload();
+    };
+
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
 
     return () => {
       if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
     };
   }, [location]);
 }
