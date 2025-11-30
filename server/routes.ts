@@ -1331,11 +1331,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/analytics/kiosk-uptime/heartbeat', async (req, res) => {
     try {
-      const { deviceId, totalRequests, successfulRequests, uptimePercentage } = req.body;
+      const { deviceId, status, totalRequests, successfulRequests, uptimePercentage } = req.body;
       if (!deviceId) {
         return res.status(400).json({ error: 'Device ID is required' });
       }
-      const uptime = await storage.updateKioskHeartbeat(deviceId, totalRequests, successfulRequests, uptimePercentage);
+      // Status defaults to 'active' if not provided (backward compatibility)
+      const kioskStatus = status || 'active';
+      const uptime = await storage.updateKioskHeartbeat(deviceId, kioskStatus, totalRequests, successfulRequests, uptimePercentage);
       
       // If no session exists for this device, tell the client to start a session first
       if (!uptime) {

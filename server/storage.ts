@@ -159,7 +159,7 @@ export interface IStorage {
   // Kiosk Uptime - for tracking per-device uptime
   getKioskUptime(deviceId: string): Promise<KioskUptime | undefined>;
   startKioskSession(deviceId: string, appVersion?: string): Promise<KioskUptime>;
-  updateKioskHeartbeat(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined>;
+  updateKioskHeartbeat(deviceId: string, status: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined>;
   endKioskSession(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined>;
   getAllKioskUptimes(): Promise<KioskUptime[]>;
   deleteAllKioskUptimes(): Promise<void>;
@@ -1413,7 +1413,8 @@ export class DatabaseStorage implements IStorage {
         totalRequests: 0,
         successfulRequests: 0,
         uptimePercentage: 100,
-        isActive: true,
+        status: 'active',
+        sessionEnd: null,
       };
       if (appVersion) {
         uptimeData.appVersion = appVersion;
@@ -1426,7 +1427,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateKioskHeartbeat(deviceId: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined> {
+  async updateKioskHeartbeat(deviceId: string, status: string, totalRequests: number, successfulRequests: number, uptimePercentage: number): Promise<KioskUptime | undefined> {
     try {
       const now = new Date();
       const docRef = db.collection('kioskUptimes').doc(deviceId);
@@ -1439,13 +1440,18 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
       
+      // Update heartbeat with status - this reactivates the session when returning from standby
+      // Session continues running during standby, only ends when app is closed
       await docRef.set({
+        status: status, // 'active' or 'standby' from client
         totalRequests,
         successfulRequests,
         uptimePercentage,
         lastHeartbeat: now,
+        sessionEnd: null, // Clear session end when heartbeat received (session still active)
       }, { merge: true });
       const doc = await docRef.get();
+      console.log(`[KIOSK-UPTIME] Heartbeat received for ${deviceId}, status: ${status}`);
       return { id: doc.id, ...doc.data() } as KioskUptime;
     } catch (error) {
       console.error('Firestore error:', error);
@@ -1457,13 +1463,14 @@ export class DatabaseStorage implements IStorage {
     try {
       const now = new Date();
       await db.collection('kioskUptimes').doc(deviceId).set({
+        status: 'inactive',
         totalRequests,
         successfulRequests,
         uptimePercentage,
         lastHeartbeat: now,
         sessionEnd: now,
-        isActive: false,
       }, { merge: true });
+      console.log(`[KIOSK-UPTIME] Session ended for ${deviceId}, status: inactive`);
       const doc = await db.collection('kioskUptimes').doc(deviceId).get();
       return { id: doc.id, ...doc.data() } as KioskUptime;
     } catch (error) {
@@ -1485,8 +1492,9 @@ export class DatabaseStorage implements IStorage {
         const data = doc.data();
         const uptime = { id: doc.id, ...data } as KioskUptime;
         
-        // Check if device is marked active but hasn't sent heartbeat recently
-        if (uptime.isActive && uptime.lastHeartbeat) {
+        // Check if device is active/standby but hasn't sent heartbeat recently
+        // Both active and standby should send heartbeats, only inactive means app closed
+        if ((uptime.status === 'active' || uptime.status === 'standby') && uptime.lastHeartbeat) {
           const lastHeartbeatTime = uptime.lastHeartbeat instanceof Date 
             ? uptime.lastHeartbeat 
             : (uptime.lastHeartbeat as any).toDate ? (uptime.lastHeartbeat as any).toDate() : new Date(uptime.lastHeartbeat);
@@ -1496,7 +1504,7 @@ export class DatabaseStorage implements IStorage {
           if (timeSinceHeartbeat > STALE_TIMEOUT_MS) {
             // Mark as stale - will update in database
             staleDevices.push(doc.id);
-            uptime.isActive = false;
+            uptime.status = 'inactive';
             uptime.sessionEnd = now;
             console.log(`[KIOSK-UPTIME] Device ${doc.id} marked inactive (no heartbeat for ${Math.round(timeSinceHeartbeat / 1000)}s)`);
           }
@@ -1511,7 +1519,7 @@ export class DatabaseStorage implements IStorage {
         for (const deviceId of staleDevices) {
           const docRef = db.collection('kioskUptimes').doc(deviceId);
           batch.update(docRef, {
-            isActive: false,
+            status: 'inactive',
             sessionEnd: now,
           });
         }

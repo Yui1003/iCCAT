@@ -600,8 +600,17 @@ export default function AdminAnalytics() {
                         </h3>
                         <p className="text-sm text-muted-foreground mt-1">{currentDeviceId}</p>
                       </div>
-                      <Badge variant={currentDeviceUptime.isActive ? "default" : "secondary"}>
-                        {currentDeviceUptime.isActive ? 'Active' : 'Inactive'}
+                      <Badge 
+                        variant={currentDeviceUptime.status === 'active' ? "default" : "secondary"}
+                        className={
+                          currentDeviceUptime.status === 'active' 
+                            ? "bg-green-500 hover:bg-green-600 text-white" 
+                            : currentDeviceUptime.status === 'standby' 
+                              ? "bg-yellow-500 hover:bg-yellow-600 text-white" 
+                              : ""
+                        }
+                      >
+                        {currentDeviceUptime.status === 'active' ? 'Active' : currentDeviceUptime.status === 'standby' ? 'Standby' : 'Inactive'}
                       </Badge>
                     </div>
                     
@@ -701,8 +710,17 @@ export default function AdminAnalytics() {
                               </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <Badge variant={device.isActive ? "default" : "secondary"}>
-                                {device.isActive ? 'Active' : 'Inactive'}
+                              <Badge 
+                                variant={device.status === 'active' ? "default" : "secondary"}
+                                className={
+                                  device.status === 'active' 
+                                    ? "bg-green-500 hover:bg-green-600 text-white" 
+                                    : device.status === 'standby' 
+                                      ? "bg-yellow-500 hover:bg-yellow-600 text-white" 
+                                      : ""
+                                }
+                              >
+                                {device.status === 'active' ? 'Active' : device.status === 'standby' ? 'Standby' : 'Inactive'}
                               </Badge>
                               {deleteConfirmId === device.id ? (
                                 <div className="flex items-center gap-1">
