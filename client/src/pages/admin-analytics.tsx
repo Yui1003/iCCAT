@@ -93,8 +93,24 @@ export default function AdminAnalytics() {
   const [kioskUptimes, setKioskUptimes] = useState<KioskUptime[]>([]);
   const [liveTime, setLiveTime] = useState<number>(Date.now());
 
-  // Real-time listener for kiosk uptime changes
+  // Initial fetch and real-time listener for kiosk uptime changes
   useEffect(() => {
+    // Fetch initial data
+    const fetchInitialData = async () => {
+      try {
+        const response = await fetch('/api/analytics/kiosk-uptime');
+        if (response.ok) {
+          const data = await response.json();
+          setKioskUptimes(Array.isArray(data) ? data : []);
+          console.log('[ANALYTICS] Fetched initial kiosk uptime data');
+        }
+      } catch (err) {
+        console.warn('Error fetching initial kiosk uptime data:', err);
+      }
+    };
+    fetchInitialData();
+
+    // Set up real-time listener
     const eventSource = new EventSource('/api/listen/kiosk-uptime');
     
     eventSource.onmessage = (event) => {
