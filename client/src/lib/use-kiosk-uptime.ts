@@ -1,5 +1,5 @@
 // Hook for tracking kiosk uptime
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { getOrCreateDeviceId } from './device-id';
 import { apiRequest, requestCounter } from './queryClient';
@@ -27,12 +27,79 @@ export function useKioskUptime() {
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isPageVisibleRef = useRef<boolean>(!document.hidden);
   const isScreensaverActiveRef = useRef<boolean>(false);
+  // Use a ref for location so event handlers always have access to current value
+  const locationRef = useRef<string>('/');
   const [location] = useLocation();
 
+  // Keep locationRef in sync with current location
+  useEffect(() => {
+    locationRef.current = location || '/';
+  }, [location]);
+
+  // Send heartbeat with current status - uses refs to always get latest values
+  const sendHeartbeat = useCallback(async () => {
+    if (!deviceIdRef.current) return;
+
+    try {
+      const uptimePercentage =
+        requestCounter.total > 0
+          ? (requestCounter.successful / requestCounter.total) * 100
+          : 100;
+
+      // Determine status: 'standby' if screensaver active, page hidden, or on screensaver route
+      const currentLocation = locationRef.current;
+      const isOnScreensaver = currentLocation === '/screensaver';
+      const status = isScreensaverActiveRef.current || !isPageVisibleRef.current || isOnScreensaver ? 'standby' : 'active';
+
+      console.log('[UPTIME] Heartbeat:', {
+        status,
+        screensaverActive: isScreensaverActiveRef.current,
+        pageVisible: isPageVisibleRef.current,
+        onScreensaverRoute: isOnScreensaver,
+        currentLocation,
+        total: requestCounter.total,
+        successful: requestCounter.successful,
+        uptime: uptimePercentage.toFixed(1) + '%'
+      });
+
+      await apiRequest('POST', '/api/analytics/kiosk-uptime/heartbeat', {
+        deviceId: deviceIdRef.current,
+        status,
+        totalRequests: requestCounter.total,
+        successfulRequests: requestCounter.successful,
+        uptimePercentage,
+      });
+    } catch (err) {
+      console.warn('[UPTIME] Heartbeat failed:', err);
+    }
+  }, []);
+
+  // Effect for location-based status updates
+  // When navigating to/from screensaver, immediately update status
+  useEffect(() => {
+    const isOnScreensaver = location === '/screensaver';
+    
+    // Update screensaver state based on location
+    // This ensures status is correct even if the custom event was missed
+    if (isOnScreensaver && !isScreensaverActiveRef.current) {
+      console.log('[UPTIME] Location changed to screensaver - setting status to standby');
+      isScreensaverActiveRef.current = true;
+      // Small delay to ensure device ID is ready
+      setTimeout(() => sendHeartbeat(), 100);
+    } else if (!isOnScreensaver && isScreensaverActiveRef.current) {
+      console.log('[UPTIME] Location changed from screensaver - setting status to active');
+      isScreensaverActiveRef.current = false;
+      setTimeout(() => sendHeartbeat(), 100);
+    }
+  }, [location, sendHeartbeat]);
+
+  // Main effect for session management and event listeners
+  // This effect runs once on mount and sets up persistent listeners
   useEffect(() => {
     // Don't track heartbeats on admin pages or mobile navigation - only track kiosk pages
-    const isAdminPage = location?.startsWith('/admin/');
-    const isMobileNavigation = location?.startsWith('/navigate/');
+    const currentLocation = locationRef.current;
+    const isAdminPage = currentLocation?.startsWith('/admin/');
+    const isMobileNavigation = currentLocation?.startsWith('/navigate/');
     const isMobile = isMobileDevice();
     
     if (isAdminPage) {
@@ -76,43 +143,6 @@ export function useKioskUptime() {
       }
     };
 
-    // Send heartbeat with current status (active or standby based on page visibility or screensaver)
-    const sendHeartbeat = async () => {
-      if (!deviceIdRef.current) return;
-
-      try {
-        const uptimePercentage =
-          requestCounter.total > 0
-            ? (requestCounter.successful / requestCounter.total) * 100
-            : 100;
-
-        // Determine status: 'standby' if screensaver active, page hidden, or on screensaver route
-        const isOnScreensaver = location === '/screensaver';
-        const status = isScreensaverActiveRef.current || !isPageVisibleRef.current || isOnScreensaver ? 'standby' : 'active';
-
-        console.log('[UPTIME] Heartbeat:', {
-          status,
-          screensaverActive: isScreensaverActiveRef.current,
-          pageVisible: isPageVisibleRef.current,
-          onScreensaverRoute: isOnScreensaver,
-          currentLocation: location,
-          total: requestCounter.total,
-          successful: requestCounter.successful,
-          uptime: uptimePercentage.toFixed(1) + '%'
-        });
-
-        await apiRequest('POST', '/api/analytics/kiosk-uptime/heartbeat', {
-          deviceId: deviceIdRef.current,
-          status,
-          totalRequests: requestCounter.total,
-          successfulRequests: requestCounter.successful,
-          uptimePercentage,
-        });
-      } catch (err) {
-        console.warn('[UPTIME] Heartbeat failed:', err);
-      }
-    };
-
     // Handle visibility changes (tab switch, etc.)
     const handleVisibilityChange = () => {
       isPageVisibleRef.current = !document.hidden;
@@ -124,13 +154,19 @@ export function useKioskUptime() {
       sendHeartbeat();
     };
 
-    // Handle screensaver state changes
+    // Handle screensaver state changes via custom event
+    // This is a backup mechanism - location-based detection is primary
     const handleScreensaverChange = (event: Event) => {
       const customEvent = event as CustomEvent<boolean>;
-      isScreensaverActiveRef.current = customEvent.detail;
-      const statusMsg = customEvent.detail ? 'standby (screensaver active)' : 'active (screensaver closed)';
-      console.log('[UPTIME] Screensaver status changed - new status:', statusMsg);
-      sendHeartbeat();
+      const newState = customEvent.detail;
+      
+      // Only update if state actually changed
+      if (isScreensaverActiveRef.current !== newState) {
+        isScreensaverActiveRef.current = newState;
+        const statusMsg = newState ? 'standby (screensaver active)' : 'active (screensaver closed)';
+        console.log('[UPTIME] Screensaver event received - new status:', statusMsg);
+        sendHeartbeat();
+      }
     };
 
     // Handle page unload - end the session (mark as inactive)
@@ -169,7 +205,6 @@ export function useKioskUptime() {
     // Initialize session if not already done
     initializeSession();
 
-    // ALWAYS set up heartbeat interval (this was the bug - early return prevented this)
     // Clear any existing interval first
     if (heartbeatIntervalRef.current) {
       clearInterval(heartbeatIntervalRef.current);
@@ -179,7 +214,7 @@ export function useKioskUptime() {
     heartbeatIntervalRef.current = setInterval(sendHeartbeat, 30000);
     console.log('[UPTIME] Heartbeat interval started (every 30 seconds)');
 
-    // Set up event listeners
+    // Set up event listeners - these persist across location changes
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('pagehide', handlePageHide);
@@ -195,5 +230,5 @@ export function useKioskUptime() {
       window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('screensaver-change', handleScreensaverChange);
     };
-  }, [location]);
+  }, [sendHeartbeat]); // Only depends on sendHeartbeat, not location
 }
