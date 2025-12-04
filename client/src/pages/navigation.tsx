@@ -66,6 +66,17 @@ export default function Navigation() {
   const [showAccessibleFallbackDialog, setShowAccessibleFallbackDialog] = useState(false);
   const [accessibleFallbackEndpoint, setAccessibleFallbackEndpoint] = useState<{ lat: number; lng: number } | null>(null);
   const [originalDestinationName, setOriginalDestinationName] = useState<string | null>(null);
+  
+  // Parking selection state - for when user needs to indicate where their vehicle is parked
+  const [showParkingSelector, setShowParkingSelector] = useState(false);
+  const [parkingSelectionMode, setParkingSelectionMode] = useState(false);
+  const [selectedVehicleParking, setSelectedVehicleParking] = useState<Building | null>(null);
+  const [pendingDrivingRoute, setPendingDrivingRoute] = useState<{
+    start: Building | typeof KIOSK_LOCATION;
+    end: Building;
+    vehicleType: VehicleType;
+    waypoints: Building[];
+  } | null>(null);
 
   const { data: buildings = [] } = useQuery<Building[]>({
     queryKey: ['/api/buildings']
@@ -351,6 +362,34 @@ export default function Navigation() {
       'bike': 'Bike'
     };
     return labels[type];
+  };
+
+  // Helper predicates for building type detection
+  const isGate = (building: Building | typeof KIOSK_LOCATION | null): boolean => {
+    if (!building) return false;
+    return (building as Building).type === 'Gate';
+  };
+
+  const isParking = (building: Building | typeof KIOSK_LOCATION | null): boolean => {
+    if (!building) return false;
+    const type = (building as Building).type;
+    return type === 'Car Parking' || type === 'Motorcycle Parking' || type === 'Bike Parking';
+  };
+
+  const isParkingForVehicle = (building: Building | null, vehicleType: VehicleType): boolean => {
+    if (!building) return false;
+    const vehicleToParkingType: Record<VehicleType, string> = {
+      'car': 'Car Parking',
+      'motorcycle': 'Motorcycle Parking',
+      'bike': 'Bike Parking'
+    };
+    return building.type === vehicleToParkingType[vehicleType];
+  };
+
+  // Get all parking areas for a specific vehicle type
+  const getParkingAreasForVehicle = (vehicleType: VehicleType): Building[] => {
+    const parkingType = vehicleType === 'car' ? 'Car Parking' : vehicleType === 'motorcycle' ? 'Motorcycle Parking' : 'Bike Parking';
+    return buildings.filter(b => b.type === parkingType);
   };
 
   const findNearestParkingByType = (destination: Building, vehicleType: VehicleType): Building | null => {
