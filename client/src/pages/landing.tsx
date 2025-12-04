@@ -170,7 +170,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className="text-xs text-muted-foreground" data-testid="text-version">
-              version:2.0.5
+              version:2.0.6
             </div>
           </div>
         </div>
