@@ -169,7 +169,7 @@ export default function CampusMap({
     }
 
     const map = L.map(mapRef.current, {
-      center: [centerLat || 14.402598, centerLng || 120.866280],
+      center: [centerLat || 14.402870, centerLng || 120.865731],
       zoom: 17.5,
       minZoom: 17.5,
       maxZoom: 21,
@@ -337,8 +337,8 @@ export default function CampusMap({
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     
-    const defaultLat = 14.402598;
-    const defaultLng = 120.866280;
+    const defaultLat = 14.402870;
+    const defaultLng = 120.865731;
     const lat = centerLat || defaultLat;
     const lng = centerLng || defaultLng;
     
@@ -675,8 +675,8 @@ export default function CampusMap({
         mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 17.5 });
       }
     } else {
-      const defaultLat = 14.402598;
-      const defaultLng = 120.866280;
+      const defaultLat = 14.402870;
+      const defaultLng = 120.865731;
       const lat = centerLat || defaultLat;
       const lng = centerLng || defaultLng;
       
