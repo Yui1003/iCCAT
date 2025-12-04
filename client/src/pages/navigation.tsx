@@ -930,9 +930,8 @@ export default function Navigation() {
       // Kiosk is in database - use proper building-to-building pathfinding
       walkToCarPolyline = await calculateRouteClientSide(kioskBuilding, userSelectedParking, 'walking');
     } else {
-      // Fallback to point-based routing
-      const kioskStart = { lat: KIOSK_LOCATION.lat, lng: KIOSK_LOCATION.lng };
-      walkToCarPolyline = await calculateRouteFromPoint(kioskStart, userSelectedParking, 'walking');
+      // Fallback using KIOSK_LOCATION constant (calculateRouteClientSide accepts typeof KIOSK_LOCATION)
+      walkToCarPolyline = await calculateRouteClientSide(KIOSK_LOCATION, userSelectedParking, 'walking');
     }
     
     if (!walkToCarPolyline) {
@@ -1149,9 +1148,8 @@ export default function Navigation() {
           if (kioskBuilding) {
             initialWalkPolyline = await calculateRouteClientSide(kioskBuilding, parking, 'walking');
           } else {
-            // Fallback to point-based routing
-            const kioskPoint = { lat: KIOSK_LOCATION.lat, lng: KIOSK_LOCATION.lng };
-            initialWalkPolyline = await calculateRouteFromPoint(kioskPoint, parking, 'walking');
+            // Fallback using KIOSK_LOCATION constant (calculateRouteClientSide accepts typeof KIOSK_LOCATION)
+            initialWalkPolyline = await calculateRouteClientSide(KIOSK_LOCATION, parking, 'walking');
           }
         } else {
           initialWalkPolyline = await calculateRouteClientSide(start as Building, parking, 'walking');
