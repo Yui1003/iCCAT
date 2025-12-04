@@ -169,7 +169,7 @@ export default function CampusMap({
     }
 
     const map = L.map(mapRef.current, {
-      center: [centerLat || 14.402870, centerLng || 120.865731],
+      center: [centerLat || 14.402870, centerLng || 120.8640],
       zoom: 17.5,
       minZoom: 17.5,
       maxZoom: 21,
@@ -338,7 +338,7 @@ export default function CampusMap({
     if (!mapInstanceRef.current) return;
     
     const defaultLat = 14.402870;
-    const defaultLng = 120.865731;
+    const defaultLng = 120.8640;
     const lat = centerLat || defaultLat;
     const lng = centerLng || defaultLng;
     
@@ -676,7 +676,7 @@ export default function CampusMap({
       }
     } else {
       const defaultLat = 14.402870;
-      const defaultLng = 120.865731;
+      const defaultLng = 120.8640;
       const lat = centerLat || defaultLat;
       const lng = centerLng || defaultLng;
       
