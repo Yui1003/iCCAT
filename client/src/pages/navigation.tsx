@@ -578,9 +578,11 @@ export default function Navigation() {
     }
   };
 
-  // Check if start location can drive directly (is a gate, parking, or kiosk)
+  // Check if start location can drive directly (is a gate or parking)
+  // KIOSK_LOCATION returns FALSE because the kiosk is where the USER is standing,
+  // not where their VEHICLE is parked - user must select their parking location first
   const canStartDriving = (start: Building | typeof KIOSK_LOCATION): boolean => {
-    if (start.id === 'kiosk') return true; // Kiosk is near driveable area
+    if (start.id === 'kiosk') return false; // Kiosk requires parking selection - user's car isn't at the kiosk
     const startBuilding = start as Building;
     return isGate(startBuilding) || isParking(startBuilding);
   };
@@ -894,6 +896,151 @@ export default function Navigation() {
     };
   };
 
+  // Generate route from Kiosk location using user-selected parking
+  // Route: Kiosk (walk) -> selected parking (drive) -> destination parking (walk) -> destination
+  const generateKioskDepartureRoute = async (
+    userSelectedParking: Building,
+    end: Building,
+    vehicleType: VehicleType
+  ): Promise<NavigationRoute | null> => {
+    const phases: RoutePhase[] = [];
+    let allPolylines: LatLng[] = [];
+    let allSteps: RouteStep[] = [];
+    let totalDistanceMeters = 0;
+
+    // Phase 1: Walk from Kiosk to user's selected parking
+    const kioskStart = { lat: KIOSK_LOCATION.lat, lng: KIOSK_LOCATION.lng };
+    const walkToCarPolyline = await calculateRouteFromPoint(kioskStart, userSelectedParking, 'walking');
+    
+    if (!walkToCarPolyline) {
+      toast({
+        title: "Route Calculation Failed",
+        description: `Unable to calculate walking route to ${userSelectedParking.name}.`,
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    const walkToCarPhase = generateSmartSteps(walkToCarPolyline, 'walking', KIOSK_LOCATION.name, userSelectedParking.name);
+    phases.push({
+      mode: 'walking',
+      polyline: walkToCarPolyline,
+      steps: walkToCarPhase.steps,
+      distance: walkToCarPhase.totalDistance,
+      startName: KIOSK_LOCATION.name,
+      endName: userSelectedParking.name,
+      color: '#10B981',
+      phaseIndex: 0,
+      startId: KIOSK_LOCATION.id,
+      endId: userSelectedParking.id
+    });
+    allPolylines = [...allPolylines, ...walkToCarPolyline];
+    allSteps = [...allSteps, ...walkToCarPhase.steps];
+    totalDistanceMeters += parseInt(walkToCarPhase.totalDistance.replace(' m', ''));
+
+    // Determine driving destination and if we need final walking phase
+    let drivingDestination: Building;
+    let needsFinalWalk = false;
+
+    if (isGate(end) || isParkingForVehicle(end, vehicleType)) {
+      drivingDestination = end;
+    } else {
+      const destParking = findNearestParkingByType(end, vehicleType);
+      if (!destParking) {
+        toast({
+          title: "No Parking Available",
+          description: `No ${capitalizeVehicleType(vehicleType)} parking found near ${end.name}.`,
+          variant: "destructive"
+        });
+        return null;
+      }
+      drivingDestination = destParking;
+      needsFinalWalk = true;
+    }
+
+    // Phase 2: Drive from user's parking to driving destination
+    const drivePolyline = await calculateRouteClientSide(userSelectedParking, drivingDestination, 'driving');
+    
+    if (!drivePolyline) {
+      toast({
+        title: "Route Calculation Failed",
+        description: `Unable to calculate driving route to ${drivingDestination.name}.`,
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    const drivePhase = generateSmartSteps(drivePolyline, 'driving', userSelectedParking.name, drivingDestination.name);
+    phases.push({
+      mode: 'driving',
+      polyline: drivePolyline,
+      steps: drivePhase.steps,
+      distance: drivePhase.totalDistance,
+      startName: userSelectedParking.name,
+      endName: drivingDestination.name,
+      color: '#3B82F6',
+      phaseIndex: phases.length,
+      startId: userSelectedParking.id,
+      endId: drivingDestination.id
+    });
+    allPolylines = [...allPolylines, ...drivePolyline];
+    allSteps = [...allSteps, ...drivePhase.steps];
+    totalDistanceMeters += parseInt(drivePhase.totalDistance.replace(' m', ''));
+
+    // Phase 3 (if needed): Walk from destination parking to final building
+    if (needsFinalWalk) {
+      const finalWalkPolyline = await calculateRouteClientSide(drivingDestination, end, 'walking');
+      
+      if (!finalWalkPolyline) {
+        toast({
+          title: "Route Calculation Failed",
+          description: `Unable to calculate walking route to ${end.name}.`,
+          variant: "destructive"
+        });
+        return null;
+      }
+
+      const finalWalkPhase = generateSmartSteps(finalWalkPolyline, 'walking', drivingDestination.name, end.name);
+      phases.push({
+        mode: 'walking',
+        polyline: finalWalkPolyline,
+        steps: finalWalkPhase.steps,
+        distance: finalWalkPhase.totalDistance,
+        startName: drivingDestination.name,
+        endName: end.name,
+        color: '#10B981',
+        phaseIndex: phases.length,
+        startId: drivingDestination.id,
+        endId: end.id
+      });
+      allPolylines = [...allPolylines, ...finalWalkPolyline];
+      allSteps = [...allSteps, ...finalWalkPhase.steps];
+      totalDistanceMeters += parseInt(finalWalkPhase.totalDistance.replace(' m', ''));
+    }
+
+    const phaseDescriptions = phases.map(p => 
+      p.mode === 'walking' ? `Walk ${p.distance}` : `Drive ${p.distance}`
+    ).join(' then ');
+    
+    toast({
+      title: "Route Calculated",
+      description: phaseDescriptions,
+      variant: "default"
+    });
+
+    return {
+      start: { ...KIOSK_LOCATION as any, polygon: null, polygonColor: null },
+      end,
+      mode: 'driving',
+      vehicleType,
+      parkingLocation: userSelectedParking,
+      polyline: allPolylines,
+      steps: allSteps,
+      totalDistance: `${totalDistanceMeters} m`,
+      phases
+    };
+  };
+
   // Handler for when user selects a parking location on the map
   const handleParkingSelection = async (parking: Building) => {
     if (!pendingDrivingRoute || !vehicleType) return;
@@ -905,30 +1052,63 @@ export default function Navigation() {
     const { start, end, vehicleType: vType, waypoints: waypointBuildings } = pendingDrivingRoute;
     const waypointIds = waypointBuildings.map(w => w.id);
 
+    // Determine start name (for Kiosk, use its name property)
+    const startName = start.id === 'kiosk' ? KIOSK_LOCATION.name : (start as Building).name;
+    const isKioskStart = start.id === 'kiosk';
+
     // Route without waypoints - use simple building departure logic
     if (waypointBuildings.length === 0) {
-      const route = await generateBuildingDepartureRoute(start as Building, end, vType, parking);
-      if (route) {
-        setRoute(route);
-        
-        try {
-          const routeData = {
-            startId: start.id,
-            endId: end.id,
-            waypoints: [],
-            mode: 'driving',
-            vehicleType: vType,
-            phases: route.phases || [],
-            expiresAt: null
-          };
+      // For Kiosk start, we need to build the route manually since generateBuildingDepartureRoute expects a Building
+      if (isKioskStart) {
+        // Build route: Kiosk -> walk to parking -> drive to destination parking -> walk to destination
+        const route = await generateKioskDepartureRoute(parking, end, vType);
+        if (route) {
+          setRoute(route);
+          
+          try {
+            const routeData = {
+              startId: start.id,
+              endId: end.id,
+              waypoints: [],
+              mode: 'driving',
+              vehicleType: vType,
+              phases: route.phases || [],
+              expiresAt: null
+            };
 
-          const res = await apiRequest('POST', '/api/routes', routeData);
-          const response = await res.json();
-          if (response.id) {
-            setSavedRouteId(response.id);
+            const res = await apiRequest('POST', '/api/routes', routeData);
+            const response = await res.json();
+            if (response.id) {
+              setSavedRouteId(response.id);
+            }
+          } catch (error) {
+            console.error('Error saving kiosk departure route:', error);
           }
-        } catch (error) {
-          console.error('Error saving building departure route:', error);
+        }
+      } else {
+        const route = await generateBuildingDepartureRoute(start as Building, end, vType, parking);
+        if (route) {
+          setRoute(route);
+          
+          try {
+            const routeData = {
+              startId: start.id,
+              endId: end.id,
+              waypoints: [],
+              mode: 'driving',
+              vehicleType: vType,
+              phases: route.phases || [],
+              expiresAt: null
+            };
+
+            const res = await apiRequest('POST', '/api/routes', routeData);
+            const response = await res.json();
+            if (response.id) {
+              setSavedRouteId(response.id);
+            }
+          } catch (error) {
+            console.error('Error saving building departure route:', error);
+          }
         }
       }
     } else {
@@ -936,11 +1116,18 @@ export default function Navigation() {
       try {
         const phases: NavigationRoute['phases'] = [];
         let allPolylines: LatLng[] = [];
-        let allSteps: NavigationStep[] = [];
+        let allSteps: RouteStep[] = [];
         let totalDistanceMeters = 0;
 
-        // Phase 1: Walk from starting building to user-selected parking
-        const initialWalkPolyline = await calculateRouteClientSide(start as Building, parking, 'walking');
+        // Phase 1: Walk from starting location (building or kiosk) to user-selected parking
+        let initialWalkPolyline: LatLng[] | null;
+        if (isKioskStart) {
+          const kioskPoint = { lat: KIOSK_LOCATION.lat, lng: KIOSK_LOCATION.lng };
+          initialWalkPolyline = await calculateRouteFromPoint(kioskPoint, parking, 'walking');
+        } else {
+          initialWalkPolyline = await calculateRouteClientSide(start as Building, parking, 'walking');
+        }
+        
         if (!initialWalkPolyline) {
           toast({
             title: "Route Calculation Failed",
@@ -951,17 +1138,17 @@ export default function Navigation() {
           return;
         }
 
-        const initialWalkPhase = generateSmartSteps(initialWalkPolyline, 'walking', (start as Building).name, parking.name);
+        const initialWalkPhase = generateSmartSteps(initialWalkPolyline, 'walking', startName, parking.name);
         phases.push({
           mode: 'walking',
           polyline: initialWalkPolyline,
           steps: initialWalkPhase.steps,
           distance: initialWalkPhase.totalDistance,
-          startName: (start as Building).name,
+          startName: startName,
           endName: parking.name,
           color: '#10B981',
           phaseIndex: 0,
-          startId: (start as Building).id,
+          startId: start.id,
           endId: parking.id
         });
         allPolylines = [...allPolylines, ...initialWalkPolyline];
@@ -977,7 +1164,7 @@ export default function Navigation() {
             driveStops.push(waypoint);
           } else {
             // Find parking near waypoint building
-            const nearbyParking = findNearestBuilding(waypoint, getParkingAreasForVehicle(vType));
+            const nearbyParking = findNearestParkingByType(waypoint, vType);
             if (nearbyParking) {
               driveStops.push(nearbyParking);
             }
@@ -988,7 +1175,7 @@ export default function Navigation() {
         const needsFinalWalk = !isGate(end) && !isParkingForVehicle(end, vType);
         let finalDriveStop: Building;
         if (needsFinalWalk) {
-          const nearbyParking = findNearestBuilding(end, getParkingAreasForVehicle(vType));
+          const nearbyParking = findNearestParkingByType(end, vType);
           if (!nearbyParking) {
             toast({
               title: "No Nearby Parking",
@@ -1009,7 +1196,7 @@ export default function Navigation() {
           const segmentStart = driveStops[i];
           const segmentEnd = driveStops[i + 1];
           
-          const drivePolyline = await calculateDrivePath(segmentStart, segmentEnd);
+          const drivePolyline = await calculateRouteClientSide(segmentStart, segmentEnd, 'driving');
           if (!drivePolyline) {
             toast({
               title: "Route Calculation Failed",
@@ -1069,8 +1256,13 @@ export default function Navigation() {
           totalDistanceMeters += parseInt(finalWalkPhase.totalDistance.replace(' m', ''));
         }
 
+        // Construct start object - handle both Kiosk and Building
+        const startForRoute = isKioskStart 
+          ? { ...KIOSK_LOCATION as any, polygon: null, polygonColor: null }
+          : { ...(start as Building), polygon: null, polygonColor: null };
+
         const route: NavigationRoute = {
-          start: { ...(start as Building), polygon: null, polygonColor: null },
+          start: startForRoute,
           end,
           mode: 'driving',
           vehicleType: vType,
@@ -3555,6 +3747,38 @@ export default function Navigation() {
                       } : null;
                     })()
                   : null
+              }
+              navigationParkingBuildings={
+                route?.phases
+                  ? (() => {
+                      // Extract ALL parking locations from route phases (both origin and destination parking)
+                      const parkingTypes = ['Car Parking', 'Motorcycle Parking', 'Bike Parking'];
+                      const parkingIds = new Set<string>();
+                      
+                      // Collect all unique parking IDs from phase start/end points
+                      route.phases.forEach(phase => {
+                        if (phase.startId) parkingIds.add(phase.startId);
+                        if (phase.endId) parkingIds.add(phase.endId);
+                      });
+                      
+                      // Also include the main parkingLocation if set
+                      if (route.parkingLocation?.id) {
+                        parkingIds.add(route.parkingLocation.id);
+                      }
+                      
+                      // Filter to only actual parking buildings and convert to navigation building format
+                      return Array.from(parkingIds)
+                        .map(id => buildings.find(b => b.id === id))
+                        .filter((b): b is Building => !!b && parkingTypes.includes(b.type || ''))
+                        .map(b => ({
+                          id: b.id,
+                          name: b.name,
+                          lat: b.lat,
+                          lng: b.lng,
+                          polygon: b.polygon as Array<{ lat: number; lng: number }> | null
+                        }));
+                    })()
+                  : []
               }
               navigationWaypointBuildings={
                 route && waypoints.length > 0

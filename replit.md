@@ -34,7 +34,7 @@ If an accessible path to a requested destination is unavailable, the system auto
 - **Data Export**: Formatted CSV with Philippine Timezone; JSON export.
 - **Multi-Floor Navigation**: Generic floor-agnostic algorithm, dynamic floor sequencing, automatic stairway connection logic, independent path calculation per floor.
 - **Two-Phase Indoor Navigation**: Outdoor phase to building entrance, indoor phase for turn-by-turn navigation on floor plans.
-- **Parking Selection**: User-selectable parking locations for driving routes, dynamically adjusting multi-phase routes.
+- **Parking Selection**: User-selectable parking locations for driving routes, dynamically adjusting multi-phase routes. When starting from the kiosk location (non-driveable), users must select where their vehicle is parked. The system generates multi-phase routes: walk from kiosk to parking, drive to destination parking, walk to final destination.
 - **Kiosk Uptime Monitoring**: Three-status system (Active, Standby, Inactive) with continuous heartbeats and server-side stale device detection; excludes mobile devices.
 - **Interactive Walkthrough**: First-time user guide with 5 steps covering key features.
 
@@ -47,6 +47,11 @@ If an accessible path to a requested destination is unavailable, the system auto
 - **Accessibility First**: Fallback routing ensures navigation options for accessible-mode users.
 - **Service Worker Optimization**: Caching essential map tiles upfront.
 - **Image Proxy System**: Routes all external images through a proxy to bypass CORS and enable offline caching.
+
+## Recent Changes (December 2024)
+- **Fixed LSP Errors**: Resolved type mismatches in navigation.tsx by using correct types (`RouteStep` instead of `NavigationStep`) and proper functions (`findNearestParkingByType`, `calculateRouteClientSide`)
+- **Kiosk Parking Selection**: Added `generateKioskDepartureRoute()` function to handle multi-phase routes when starting from the kiosk location
+- **Route Building Improvements**: Updated `handleParkingSelection` to properly distinguish between kiosk and building starting points for waypoint-based routes
 
 ## External Dependencies
 - **Frontend Framework**: React 18

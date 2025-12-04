@@ -69,6 +69,7 @@ interface CampusMapProps {
   navigationStartBuilding?: NavigationBuilding | null;
   navigationEndBuilding?: NavigationBuilding | null;
   navigationParkingBuilding?: NavigationBuilding | null;
+  navigationParkingBuildings?: NavigationBuilding[];
   navigationWaypointBuildings?: NavigationBuilding[];
   parkingSelectionMode?: boolean;
   parkingTypeFilter?: 'Car Parking' | 'Motorcycle Parking' | 'Bike Parking' | null;
@@ -148,6 +149,7 @@ export default function CampusMap({
   navigationStartBuilding,
   navigationEndBuilding,
   navigationParkingBuilding,
+  navigationParkingBuildings = [],
   navigationWaypointBuildings = [],
   parkingSelectionMode = false,
   parkingTypeFilter = null,
@@ -403,6 +405,14 @@ export default function CampusMap({
 
       // Only render building markers when NOT navigating
       buildings.forEach(building => {
+        // During parking selection mode, ONLY show matching parking markers
+        // Hide all other building types to reduce clutter
+        if (parkingSelectionMode && parkingTypeFilter) {
+          if (building.type !== parkingTypeFilter) {
+            return; // Skip non-parking buildings during parking selection
+          }
+        }
+        
         const iconImage = getMarkerIconImage(building.type);
         
         // Check if this building should be highlighted for parking selection
@@ -723,21 +733,34 @@ export default function CampusMap({
     }
 
     buildings.forEach(building => {
+      // During parking selection mode, ONLY show matching parking polygons
+      // Hide all other building polygons to reduce clutter
+      if (parkingSelectionMode && parkingTypeFilter) {
+        if (building.type !== parkingTypeFilter) {
+          return; // Skip non-parking polygons during parking selection
+        }
+      }
+      
       if (building.polygon && Array.isArray(building.polygon) && building.polygon.length > 2) {
         const latlngs = building.polygon.map((p: any) => [p.lat, p.lng]);
-        const polygonColor = (building as any).polygonColor || '#FACC15';
-        const polygonOpacity = (building as any).polygonOpacity || 0.3;
+        
+        // During parking selection, use yellow highlight for parking polygons
+        const isParkingHighlighted = parkingSelectionMode && parkingTypeFilter && building.type === parkingTypeFilter;
+        const polygonColor = isParkingHighlighted ? '#FACC15' : ((building as any).polygonColor || '#FACC15');
+        const polygonOpacity = isParkingHighlighted ? 0.5 : ((building as any).polygonOpacity || 0.3);
+        
         const polygon = L.polygon(latlngs, {
           color: polygonColor,
           fillColor: polygonColor,
           fillOpacity: polygonOpacity,
-          weight: 2
+          weight: isParkingHighlighted ? 3 : 2,
+          className: isParkingHighlighted ? 'parking-polygon-selectable' : ''
         }).addTo(mapInstanceRef.current);
 
         polygonsRef.current.push(polygon);
       }
     });
-  }, [buildings, hidePolygonsInNavigation]);
+  }, [buildings, hidePolygonsInNavigation, parkingSelectionMode, parkingTypeFilter]);
 
   // Render navigation-specific building polygons with highlight colors
   useEffect(() => {
@@ -751,7 +774,8 @@ export default function CampusMap({
 
     // Only render navigation polygons when we have navigation buildings
     const hasNavigationBuildings = navigationStartBuilding || navigationEndBuilding || 
-                                   navigationParkingBuilding || navigationWaypointBuildings.length > 0;
+                                   navigationParkingBuilding || navigationParkingBuildings.length > 0 ||
+                                   navigationWaypointBuildings.length > 0;
     
     if (!hasNavigationBuildings) return;
 
@@ -797,8 +821,13 @@ export default function CampusMap({
     // Render end/destination building polygon (red) - always show even for accessible fallback
     renderNavigationPolygon(navigationEndBuilding, NAVIGATION_COLORS.end, 'end');
 
-    // Render parking building polygon (blue) - for driving modes
+    // Render parking building polygon (blue) - for driving modes (single parking for backwards compatibility)
     renderNavigationPolygon(navigationParkingBuilding, NAVIGATION_COLORS.parking, 'parking');
+
+    // Render ALL parking buildings from the array (for multi-phase routes with both origin and destination parking)
+    navigationParkingBuildings.forEach((parking) => {
+      renderNavigationPolygon(parking, NAVIGATION_COLORS.parking, 'parking');
+    });
 
     // Render waypoint building polygons (amber/orange)
     navigationWaypointBuildings.forEach((waypoint) => {
@@ -809,15 +838,17 @@ export default function CampusMap({
       start: !!navigationStartBuilding?.polygon,
       end: !!navigationEndBuilding?.polygon,
       parking: !!navigationParkingBuilding?.polygon,
+      parkingBuildings: navigationParkingBuildings.filter(p => p?.polygon).length,
       waypoints: navigationWaypointBuildings.filter(w => w?.polygon).length
     });
 
-  }, [navigationStartBuilding, navigationEndBuilding, navigationParkingBuilding, navigationWaypointBuildings]);
+  }, [navigationStartBuilding, navigationEndBuilding, navigationParkingBuilding, navigationParkingBuildings, navigationWaypointBuildings]);
 
   // Cleanup navigation polygons when navigation mode ends or when all navigation buildings are cleared
   useEffect(() => {
     const hasNavigationBuildings = navigationStartBuilding || navigationEndBuilding || 
-                                   navigationParkingBuilding || navigationWaypointBuildings.length > 0;
+                                   navigationParkingBuilding || navigationParkingBuildings.length > 0 ||
+                                   navigationWaypointBuildings.length > 0;
     
     // Clean up when:
     // 1. No longer in navigation mode (hidePolygonsInNavigation becomes false), OR
@@ -837,7 +868,7 @@ export default function CampusMap({
       });
       navigationPolygonsRef.current = [];
     }
-  }, [hidePolygonsInNavigation, navigationStartBuilding, navigationEndBuilding, navigationParkingBuilding, navigationWaypointBuildings]);
+  }, [hidePolygonsInNavigation, navigationStartBuilding, navigationEndBuilding, navigationParkingBuilding, navigationParkingBuildings, navigationWaypointBuildings]);
 
   // Render existing paths on the map
   useEffect(() => {
