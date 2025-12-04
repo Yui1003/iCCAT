@@ -1253,13 +1253,130 @@ export default function Navigation() {
         });
         return;
       } else if (drivingParkingMode === 'destination') {
-        // Step 2 complete: User selected destination parking
+        // User selected destination parking
         setSelectedDestinationParking(parking);
         setParkingSelectionMode(false);
         setShowParkingSelector(false);
         setDrivingParkingMode(null);
         
         const originParking = selectedVehicleParking;
+        const startIsGate = isGate(start);
+        
+        // If starting from a gate, no origin parking is needed - user drives directly from gate
+        if (startIsGate) {
+          // Gate start: Drive from gate to destination parking, then walk to destination
+          const drivePolyline = await calculateRouteClientSide(start as Building, parking, 'driving');
+          const walkPolyline = await calculateRouteClientSide(parking, end, 'walking');
+          
+          if (!drivePolyline) {
+            toast({
+              title: "Route Calculation Failed",
+              description: "Unable to calculate driving route from gate to parking.",
+              variant: "destructive"
+            });
+            setPendingDrivingRoute(null);
+            return;
+          }
+          
+          const phases: NavigationRoute['phases'] = [];
+          let allPolylines: LatLng[] = [...drivePolyline];
+          let allSteps: RouteStep[] = [];
+          let totalDistanceMeters = 0;
+          
+          // Phase 1: Drive from gate to destination parking
+          const { steps: driveSteps, totalDistance: driveDist } = generateSmartSteps(
+            drivePolyline, 'driving', start.name, parking.name
+          );
+          phases.push({
+            mode: 'driving',
+            startName: start.name,
+            endName: parking.name,
+            startId: start.id,
+            endId: parking.id,
+            distance: driveDist,
+            polyline: drivePolyline,
+            steps: driveSteps,
+            color: '#2563eb',
+            phaseIndex: 0
+          });
+          allSteps = [...driveSteps];
+          totalDistanceMeters += parseInt(driveDist.replace(' m', ''));
+          
+          // Phase 2: Walk from parking to final destination (if not same as parking)
+          if (parking.id !== end.id) {
+            if (!walkPolyline) {
+              toast({
+                title: "Route Calculation Failed",
+                description: "Unable to calculate walking route from parking to destination.",
+                variant: "destructive"
+              });
+              setPendingDrivingRoute(null);
+              return;
+            }
+            const { steps: walkSteps, totalDistance: walkDist } = generateSmartSteps(
+              walkPolyline, 'walking', parking.name, end.name
+            );
+            phases.push({
+              mode: 'walking',
+              startName: parking.name,
+              endName: end.name,
+              startId: parking.id,
+              endId: end.id,
+              distance: walkDist,
+              polyline: walkPolyline,
+              steps: walkSteps,
+              color: '#16a34a',
+              phaseIndex: 1
+            });
+            allPolylines = [...allPolylines, ...walkPolyline];
+            allSteps = [...allSteps, ...walkSteps];
+            totalDistanceMeters += parseInt(walkDist.replace(' m', ''));
+          }
+          
+          const route: NavigationRoute = {
+            start: { ...start, polygon: null, polygonColor: null } as Building,
+            end,
+            mode: 'driving',
+            vehicleType: vType,
+            parkingLocation: parking,
+            polyline: allPolylines,
+            steps: allSteps,
+            totalDistance: `${totalDistanceMeters} m`,
+            phases
+          };
+          
+          setRoute(route);
+          
+          try {
+            const routeData = {
+              startId: start.id,
+              endId: end.id,
+              waypoints: [],
+              mode: 'driving',
+              vehicleType: vType,
+              phases: route.phases || [],
+              expiresAt: null
+            };
+            const res = await apiRequest('POST', '/api/routes', routeData);
+            const response = await res.json();
+            if (response.id) setSavedRouteId(response.id);
+          } catch (error) {
+            console.error('Error saving gate departure route:', error);
+          }
+          
+          toast({
+            title: "Route Calculated",
+            description: `Drive ${phases[0].distance} then Walk ${phases[1]?.distance || '0 m'}`,
+            variant: "default"
+          });
+          
+          setPendingDrivingRoute(null);
+          setSelectedVehicleParking(null);
+          setSelectedDestinationParking(null);
+          return;
+        }
+        
+        // Non-gate start: require origin parking
         if (!originParking) {
           toast({
             title: "Error",
@@ -1944,8 +2061,7 @@ export default function Navigation() {
         return await generateDirectDrivingRoute(start, end, vehicleType);
       }
 
-      // SCENARIO 3: ALWAYS prompt user to choose parking location
-      // This ensures the user picks where their vehicle is parked rather than auto-selecting
+      // SCENARIO 3: Prompt user to choose parking location
       const parkingAreas = getParkingAreasForVehicle(vehicleType);
       
       if (parkingAreas.length === 0) {
@@ -1957,7 +2073,9 @@ export default function Navigation() {
         return null;
       }
 
-      // Trigger parking selection mode - Step 1: Select origin parking (where vehicle is parked)
+      // Check if starting from a Gate - user is already driving, skip origin parking
+      const startIsGate = isGate(start);
+
       setPendingDrivingRoute({
         start: start as Building,
         end,
@@ -1966,13 +2084,25 @@ export default function Navigation() {
       });
       setParkingSelectionMode(true);
       setShowParkingSelector(true);
-      setDrivingParkingMode('origin');
 
-      toast({
-        title: "Step 1: Select Your Parking Location",
-        description: `Tap on the ${capitalizeVehicleType(vehicleType)} parking area where your vehicle is currently parked.`,
-        variant: "default"
-      });
+      if (startIsGate) {
+        // Starting from a gate = user is already in a vehicle driving in
+        // Skip origin parking, go directly to destination parking selection
+        setDrivingParkingMode('destination');
+        toast({
+          title: "Select Destination Parking",
+          description: `Tap on the ${capitalizeVehicleType(vehicleType)} parking area where you want to park near ${end.name}.`,
+          variant: "default"
+        });
+      } else {
+        // Starting from a building/kiosk - user needs to walk to their parked vehicle first
+        setDrivingParkingMode('origin');
+        toast({
+          title: "Step 1: Select Your Parking Location",
+          description: `Tap on the ${capitalizeVehicleType(vehicleType)} parking area where your vehicle is currently parked.`,
+          variant: "default"
+        });
+      }
 
       // Return null - route will be generated after user selects parking
       return null;
@@ -4292,7 +4422,10 @@ export default function Navigation() {
               <div className="flex items-center gap-2 flex-1">
                 <MapPin className="w-5 h-5 flex-shrink-0" />
                 <span className="font-medium">
-                  Tap on a {capitalizeVehicleType(vehicleType)} Parking area on the map to indicate where your vehicle is parked
+                  {drivingParkingMode === 'destination' 
+                    ? `Tap on a ${capitalizeVehicleType(vehicleType)} Parking area on the map to indicate where you want to park`
+                    : `Tap on a ${capitalizeVehicleType(vehicleType)} Parking area on the map to indicate where your vehicle is parked`
+                  }
                 </span>
               </div>
               <Button 
