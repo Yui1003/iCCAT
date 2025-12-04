@@ -49,6 +49,10 @@ If an accessible path to a requested destination is unavailable, the system auto
 - **Image Proxy System**: Routes all external images through a proxy to bypass CORS and enable offline caching.
 
 ## Recent Changes (December 2024)
+- **Two-Step Parking Selection Flow**: Implemented user-selectable parking for both origin AND destination in driving mode. Users now choose where their vehicle is parked (origin) and where they want to park at the destination (Step 1 → Step 2 flow). System skips destination parking selection if destination is already a parking lot or gate.
+- **State Management for Parking Flow**: Added `drivingParkingMode` ('origin' | 'destination' | null) and `selectedDestinationParking` state variables to track the two-step parking selection process.
+- **Route Generation Updates**: Updated `generateKioskDepartureRoute` and `generateBuildingDepartureRoute` to accept optional `userSelectedDestParking` parameter instead of auto-selecting nearest parking.
+- **Type Fixes**: Added 'accessible' to travel mode union types in staff.tsx and events.tsx to fix pre-existing type errors.
 - **Fixed LSP Errors**: Resolved type mismatches in navigation.tsx by using correct types (`RouteStep` instead of `NavigationStep`) and proper functions (`findNearestParkingByType`, `calculateRouteClientSide`)
 - **Kiosk Parking Selection**: Added `generateKioskDepartureRoute()` function to handle multi-phase routes when starting from the kiosk location
 - **Route Building Improvements**: Updated `handleParkingSelection` to properly distinguish between kiosk and building starting points for waypoint-based routes
