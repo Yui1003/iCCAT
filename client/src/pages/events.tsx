@@ -488,7 +488,7 @@ export default function Events() {
             setShowDirections(false);
             setDirectionsDestination(null);
           }}
-          onNavigate={(startId: string, waypointIds: string[], mode: 'walking' | 'driving', vehicleType?: 'car' | 'motorcycle' | 'bike') => {
+          onNavigate={(startId: string, waypointIds: string[], mode: 'walking' | 'driving' | 'accessible', vehicleType?: 'car' | 'motorcycle' | 'bike') => {
             const waypointParam = waypointIds.length > 0 ? `&waypoints=${waypointIds.join(',')}` : '';
             const vehicleParam = vehicleType ? `&vehicle=${vehicleType}` : '';
             navigate(`/navigation?from=${startId}&to=${directionsDestination}&mode=${mode}${waypointParam}${vehicleParam}&autoGenerate=true`);

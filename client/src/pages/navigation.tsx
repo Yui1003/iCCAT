@@ -78,6 +78,10 @@ export default function Navigation() {
     waypoints: Building[];
   } | null>(null);
   
+  // Two-step parking selection state - origin parking then destination parking
+  const [drivingParkingMode, setDrivingParkingMode] = useState<'origin' | 'destination' | null>(null);
+  const [selectedDestinationParking, setSelectedDestinationParking] = useState<Building | null>(null);
+  
   // Waypoint parking selection state - for driving mode with waypoints
   const [waypointParkingMode, setWaypointParkingMode] = useState<'origin' | 'waypoint' | null>(null);
   const [selectedOriginParking, setSelectedOriginParking] = useState<Building | null>(null);
@@ -810,12 +814,13 @@ export default function Navigation() {
     };
   };
 
-  // Generate route from building using user-selected parking (walk to parking, drive to dest)
+  // Generate route from building using user-selected parking (walk to parking, drive to dest parking, walk to dest)
   const generateBuildingDepartureRoute = async (
     start: Building,
     end: Building,
     vehicleType: VehicleType,
-    userSelectedParking: Building
+    userSelectedParking: Building,
+    userSelectedDestParking?: Building
   ): Promise<NavigationRoute | null> => {
     const phases: RoutePhase[] = [];
     let allPolylines: LatLng[] = [];
@@ -858,8 +863,12 @@ export default function Navigation() {
     if (isGate(end) || isParkingForVehicle(end, vehicleType)) {
       // Destination is a gate or matching parking - drive directly there
       drivingDestination = end;
+    } else if (userSelectedDestParking) {
+      // User selected a destination parking - use that
+      drivingDestination = userSelectedDestParking;
+      needsFinalWalk = true;
     } else {
-      // Destination is a building - find parking near it
+      // Fallback to nearest parking (should not happen with new flow)
       const destParking = findNearestParkingByType(end, vehicleType);
       if (!destParking) {
         toast({
@@ -957,11 +966,12 @@ export default function Navigation() {
   };
 
   // Generate route from Kiosk location using user-selected parking
-  // Route: Kiosk (walk) -> selected parking (drive) -> destination parking (walk) -> destination
+  // Route: Kiosk (walk) -> selected origin parking (drive) -> selected destination parking (walk) -> destination
   const generateKioskDepartureRoute = async (
     userSelectedParking: Building,
     end: Building,
-    vehicleType: VehicleType
+    vehicleType: VehicleType,
+    userSelectedDestParking?: Building
   ): Promise<NavigationRoute | null> => {
     const phases: RoutePhase[] = [];
     let allPolylines: LatLng[] = [];
@@ -1016,8 +1026,14 @@ export default function Navigation() {
     let needsFinalWalk = false;
 
     if (isGate(end) || isParkingForVehicle(end, vehicleType)) {
+      // Destination is already a gate or parking - drive there directly
       drivingDestination = end;
+    } else if (userSelectedDestParking) {
+      // User selected a destination parking - use that
+      drivingDestination = userSelectedDestParking;
+      needsFinalWalk = true;
     } else {
+      // Fallback to nearest parking (should not happen with new flow)
       const destParking = findNearestParkingByType(end, vehicleType);
       if (!destParking) {
         toast({
@@ -1157,76 +1173,166 @@ export default function Navigation() {
       }
     }
     
-    // Original flow for non-waypoint driving routes
+    // Two-step parking selection flow for non-waypoint driving routes
     if (!pendingDrivingRoute || !vehicleType) return;
 
+    const { start, end, vehicleType: vType, waypoints: waypointBuildings } = pendingDrivingRoute;
+    const isKioskStart = start.id === 'kiosk';
+
+    // Check if destination is already a parking lot or gate (no need for destination parking selection)
+    const destIsParkingOrGate = isParkingForVehicle(end, vType) || isGate(end);
+
+    // Handle two-step parking selection for routes without waypoints
+    if (waypointBuildings.length === 0 && drivingParkingMode) {
+      if (drivingParkingMode === 'origin') {
+        // Step 1: User selected origin parking (where their vehicle is parked)
+        setSelectedVehicleParking(parking);
+        
+        // If destination is already a parking lot or gate, skip destination parking selection
+        if (destIsParkingOrGate) {
+          // Generate route directly with origin parking and destination as-is
+          setParkingSelectionMode(false);
+          setShowParkingSelector(false);
+          setDrivingParkingMode(null);
+          
+          if (isKioskStart) {
+            const route = await generateKioskDepartureRoute(parking, end, vType, end);
+            if (route) {
+              setRoute(route);
+              try {
+                const routeData = {
+                  startId: start.id,
+                  endId: end.id,
+                  waypoints: [],
+                  mode: 'driving',
+                  vehicleType: vType,
+                  phases: route.phases || [],
+                  expiresAt: null
+                };
+                const res = await apiRequest('POST', '/api/routes', routeData);
+                const response = await res.json();
+                if (response.id) setSavedRouteId(response.id);
+              } catch (error) {
+                console.error('Error saving kiosk departure route:', error);
+              }
+            }
+          } else {
+            const route = await generateBuildingDepartureRoute(start as Building, end, vType, parking, end);
+            if (route) {
+              setRoute(route);
+              try {
+                const routeData = {
+                  startId: start.id,
+                  endId: end.id,
+                  waypoints: [],
+                  mode: 'driving',
+                  vehicleType: vType,
+                  phases: route.phases || [],
+                  expiresAt: null
+                };
+                const res = await apiRequest('POST', '/api/routes', routeData);
+                const response = await res.json();
+                if (response.id) setSavedRouteId(response.id);
+              } catch (error) {
+                console.error('Error saving building departure route:', error);
+              }
+            }
+          }
+          setPendingDrivingRoute(null);
+          setSelectedVehicleParking(null);
+          setSelectedDestinationParking(null);
+          return;
+        }
+        
+        // Step 2: Now ask user to select destination parking
+        setDrivingParkingMode('destination');
+        toast({
+          title: "Step 2: Select Destination Parking",
+          description: `Tap on the ${capitalizeVehicleType(vType)} parking area where you want to park near ${end.name}.`,
+          variant: "default"
+        });
+        return;
+      } else if (drivingParkingMode === 'destination') {
+        // Step 2 complete: User selected destination parking
+        setSelectedDestinationParking(parking);
+        setParkingSelectionMode(false);
+        setShowParkingSelector(false);
+        setDrivingParkingMode(null);
+        
+        const originParking = selectedVehicleParking;
+        if (!originParking) {
+          toast({
+            title: "Error",
+            description: "Origin parking was not selected. Please try again.",
+            variant: "destructive"
+          });
+          setPendingDrivingRoute(null);
+          return;
+        }
+        
+        // Generate route with both origin and destination parking
+        if (isKioskStart) {
+          const route = await generateKioskDepartureRoute(originParking, end, vType, parking);
+          if (route) {
+            setRoute(route);
+            try {
+              const routeData = {
+                startId: start.id,
+                endId: end.id,
+                waypoints: [],
+                mode: 'driving',
+                vehicleType: vType,
+                phases: route.phases || [],
+                expiresAt: null
+              };
+              const res = await apiRequest('POST', '/api/routes', routeData);
+              const response = await res.json();
+              if (response.id) setSavedRouteId(response.id);
+            } catch (error) {
+              console.error('Error saving kiosk departure route:', error);
+            }
+          }
+        } else {
+          const route = await generateBuildingDepartureRoute(start as Building, end, vType, originParking, parking);
+          if (route) {
+            setRoute(route);
+            try {
+              const routeData = {
+                startId: start.id,
+                endId: end.id,
+                waypoints: [],
+                mode: 'driving',
+                vehicleType: vType,
+                phases: route.phases || [],
+                expiresAt: null
+              };
+              const res = await apiRequest('POST', '/api/routes', routeData);
+              const response = await res.json();
+              if (response.id) setSavedRouteId(response.id);
+            } catch (error) {
+              console.error('Error saving building departure route:', error);
+            }
+          }
+        }
+        
+        setPendingDrivingRoute(null);
+        setSelectedVehicleParking(null);
+        setSelectedDestinationParking(null);
+        return;
+      }
+    }
+
+    // Legacy fallback for routes with waypoints (uses existing logic)
     setSelectedVehicleParking(parking);
     setParkingSelectionMode(false);
     setShowParkingSelector(false);
+    setDrivingParkingMode(null);
 
-    const { start, end, vehicleType: vType, waypoints: waypointBuildings } = pendingDrivingRoute;
     const waypointIds = waypointBuildings.map(w => w.id);
-
-    // Determine start name (for Kiosk, use its name property)
     const startName = start.id === 'kiosk' ? (kioskBuilding?.name || KIOSK_LOCATION.name) : (start as Building).name;
-    const isKioskStart = start.id === 'kiosk';
 
-    // Route without waypoints - use simple building departure logic
-    if (waypointBuildings.length === 0) {
-      // For Kiosk start, we need to build the route manually since generateBuildingDepartureRoute expects a Building
-      if (isKioskStart) {
-        // Build route: Kiosk -> walk to parking -> drive to destination parking -> walk to destination
-        const route = await generateKioskDepartureRoute(parking, end, vType);
-        if (route) {
-          setRoute(route);
-          
-          try {
-            const routeData = {
-              startId: start.id,
-              endId: end.id,
-              waypoints: [],
-              mode: 'driving',
-              vehicleType: vType,
-              phases: route.phases || [],
-              expiresAt: null
-            };
-
-            const res = await apiRequest('POST', '/api/routes', routeData);
-            const response = await res.json();
-            if (response.id) {
-              setSavedRouteId(response.id);
-            }
-          } catch (error) {
-            console.error('Error saving kiosk departure route:', error);
-          }
-        }
-      } else {
-        const route = await generateBuildingDepartureRoute(start as Building, end, vType, parking);
-        if (route) {
-          setRoute(route);
-          
-          try {
-            const routeData = {
-              startId: start.id,
-              endId: end.id,
-              waypoints: [],
-              mode: 'driving',
-              vehicleType: vType,
-              phases: route.phases || [],
-              expiresAt: null
-            };
-
-            const res = await apiRequest('POST', '/api/routes', routeData);
-            const response = await res.json();
-            if (response.id) {
-              setSavedRouteId(response.id);
-            }
-          } catch (error) {
-            console.error('Error saving building departure route:', error);
-          }
-        }
-      }
-    } else {
+    // Route with waypoints only - no waypoints means we already handled it above
+    if (waypointBuildings.length > 0) {
       // Route with waypoints - build multi-phase route with user-selected parking
       try {
         const phases: NavigationRoute['phases'] = [];
@@ -1851,7 +1957,7 @@ export default function Navigation() {
         return null;
       }
 
-      // Trigger parking selection mode
+      // Trigger parking selection mode - Step 1: Select origin parking (where vehicle is parked)
       setPendingDrivingRoute({
         start: start as Building,
         end,
@@ -1860,10 +1966,11 @@ export default function Navigation() {
       });
       setParkingSelectionMode(true);
       setShowParkingSelector(true);
+      setDrivingParkingMode('origin');
 
       toast({
-        title: "Select Your Parking Location",
-        description: `Tap on the ${capitalizeVehicleType(vehicleType)} parking area where your vehicle is parked.`,
+        title: "Step 1: Select Your Parking Location",
+        description: `Tap on the ${capitalizeVehicleType(vehicleType)} parking area where your vehicle is currently parked.`,
         variant: "default"
       });
 
