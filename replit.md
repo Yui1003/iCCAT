@@ -1,7 +1,7 @@
 # CVSU CCAT Campus Navigation App
 
 ## Overview
-The CVSU CCAT Campus Navigation App is a web application for campus wayfinding, offering interactive maps, multi-phase, color-coded route navigation with ETA, and administrative tools for content, feedback, and analytics. It supports kiosk and mobile QR-code access, provides an intuitive user experience, includes offline capabilities, and is deployed on Render with a Firebase backend. The project aims to provide comprehensive campus navigation.
+The CVSU CCAT Campus Navigation App is a web application designed for comprehensive campus wayfinding. It offers interactive maps, multi-phase, color-coded route navigation with estimated time of arrival (ETA), and robust administrative tools for content management, user feedback, and analytics. The application supports access via kiosks and mobile QR codes, provides an intuitive user experience, includes offline capabilities, and is deployed on Render with a Firebase backend. Its primary purpose is to enhance campus navigation efficiency and user experience.
 
 ## User Preferences
 - Touchscreen optimized (48px+ touch targets)
@@ -14,138 +14,39 @@ The CVSU CCAT Campus Navigation App is a web application for campus wayfinding, 
 ## System Architecture
 
 ### UI/UX Decisions
-The application features interactive campus maps for path drawing, navigation, and building boundary definition, with enhanced zoom capabilities (up to 22 for path drawing, 21 for navigation and polygon drawing) and stable tile loading. Admin maps visualize existing paths with distinct colors (green dashed for walkpaths, blue dashed for drivepaths). Admin interfaces include search and filtering for Events, Buildings, and Paths.
+The application features interactive campus maps that support path drawing, navigation, and building boundary definition. It includes enhanced zoom capabilities (up to 22 for path drawing, 21 for navigation and polygon drawing) and stable tile loading. Admin maps visually distinguish between walkpaths (green dashed) and drivepaths (blue dashed). Admin interfaces incorporate search and filtering functionalities for Events, Buildings, and Paths. Navigation during routes highlights building polygons for start (green), destination (red), parking (blue), and waypoints (amber).
 
 ### Technical Implementations
-The system tracks interface action response times, loading speeds for maps/images/menus, and route-generation speed. Analytics data is collected in real-time, persisted to Firestore, and displayed on an admin dashboard using interactive Recharts (Bar, Pie, Line charts). Offline data collection queues events locally and syncs upon reconnection. CSV exports are formatted with proper date/time and timezone handling (Philippine Time). ETA calculations use predefined speeds for walking and driving.
+The system monitors interface action response times, loading speeds for maps/images/menus, and route-generation speed. Real-time analytics data is collected, persisted to Firestore, and displayed on an admin dashboard using interactive Recharts (Bar, Pie, Line charts). Offline data collection queues events locally and synchronizes upon reconnection. CSV exports are formatted with correct date/time and Philippine timezone handling. ETA calculations utilize predefined speeds for walking and driving. Mobile indoor navigation distances are not displayed due to the use of floor plans as images without real coordinates.
 
 ### Pathfinding Architecture
-The pathfinding system uses a purely manual connection model. Admins manually connect path waypoints by clicking existing nodes. There is no automatic node merging, ensuring precise control over the navigation network. Dijkstra's algorithm finds the shortest path through connected nodes, and the route expands to include all intermediate waypoints, tracing the complete manually-created paths. Connections occur path-to-path via overlapping waypoints, and building-to-path by clicking building markers.
+The pathfinding system employs a manual connection model where administrators define connections between path waypoints. Dijkstra's algorithm is used to find the shortest path, which then expands to trace the complete manually-created routes. Connections are established path-to-path via overlapping waypoints and building-to-path by clicking building markers.
 
 ### Accessible Navigation Fallback
-When a user selects accessible mode and there is no PWD-friendly path to the requested destination, the system automatically finds the nearest building that IS reachable via accessible paths. The app displays a dialog informing the user that no accessible path exists to the original destination, and offers navigation to the nearest accessible alternative. This ensures accessibility mode users always have a viable route option.
+If an accessible path to a requested destination is unavailable, the system automatically identifies the nearest accessible building. The user is informed via a dialog that the original destination is unreachable via accessible routes and is offered navigation to the nearest accessible alternative.
 
 ### Feature Specifications
-- **Campus Maps**: Interactive, multi-zoom level (up to 22), stable tile loading, visualization of existing paths.
-- **Admin Tools**: Search and filter for events, buildings, and paths; robust analytics dashboard with visual charts; CSV/JSON export of analytics data; data reset functionality; ability to delete specific kiosk device records.
-- **Path Drawing**: Building markers and existing waypoints are clickable for path creation and connection, with visual feedback on nearby elements.
-- **Navigation**: Multi-phase route generation using manually-created path network, color-coded paths, ETA display.
-- **Accessible Navigation**: PWD-friendly and strictly PWD-only paths for wheelchair navigation with automatic fallback to nearest accessible building when direct route unavailable.
-- **Analytics**: Tracks interface actions, loading speeds, route generation; offline data queuing and syncing; Firebase persistence.
-- **Data Export**: Formatted CSV with Philippine Timezone and separate date/time columns; JSON export.
-- **Multi-Floor Navigation**: Generic floor-agnostic algorithm for unlimited floors, dynamic floor sequencing, automatic stairway connection logic, and independent path calculation per floor. Floor transitions properly remount UI components to prevent lingering visual artifacts.
-- **Two-Phase Indoor Navigation**: Phase 1 (Outdoor) for campus map routing to building entrance, Phase 2 (Indoor) for turn-by-turn navigation on floor plans. Uses Dijkstra graph building for rooms, indoor nodes, and path waypoints, with cross-floor connections via stairways/elevators.
+- **Campus Maps**: Interactive, multi-zoom, stable tile loading, visualization of paths.
+- **Admin Tools**: Search, filter, robust analytics dashboard, CSV/JSON export, data reset, kiosk device record deletion.
+- **Path Drawing**: Clickable building markers and waypoints for path creation and connection.
+- **Navigation**: Multi-phase route generation, color-coded paths, ETA display, PWD-friendly and PWD-only paths, automatic fallback for accessible routes.
+- **Analytics**: Tracks interface actions, loading speeds, route generation; offline data queuing/syncing; Firebase persistence; mobile navigation usage tracking.
+- **Data Export**: Formatted CSV with Philippine Timezone; JSON export.
+- **Multi-Floor Navigation**: Generic floor-agnostic algorithm, dynamic floor sequencing, automatic stairway connection logic, independent path calculation per floor.
+- **Two-Phase Indoor Navigation**: Outdoor phase to building entrance, indoor phase for turn-by-turn navigation on floor plans.
+- **Parking Selection**: User-selectable parking locations for driving routes, dynamically adjusting multi-phase routes.
+- **Kiosk Uptime Monitoring**: Three-status system (Active, Standby, Inactive) with continuous heartbeats and server-side stale device detection; excludes mobile devices.
+- **Interactive Walkthrough**: First-time user guide with 5 steps covering key features.
 
 ### System Design Choices
-- **Client-side Performance**: React Query for data fetching/caching; measures actual performance durations for analytics.
-- **Backend Persistence**: Firebase Firestore for reliable data storage.
-- **Offline Resilience**: Mechanisms to queue and sync data collected while offline.
-- **Modularity**: Codebase structured with clear separation of concerns (client, server, shared).
-- **Pathfinding Purity**: Zero automatic node merging; routes reflect user's manual path creation exactly.
-- **Accessibility First**: Fallback routing ensures no accessible-mode user is left without navigation options.
-
-### Caching and Image Handling
-- **Service Worker Optimization**: Essential map tiles (zoom 17-18) cached upfront, extra zoom levels (16, 19) cached in background for faster initial load.
-- **Image Proxy System**: All external images (Firebase Storage, third-party URLs) routed through `/api/proxy-image` endpoint to bypass CORS restrictions.
-- **ProxiedImage Component**: Reusable component (`client/src/components/proxied-image.tsx`) automatically handles image proxying for consistent offline caching.
-- **Precaching Strategy**: Images detected from API responses are pre-fetched through the proxy and cached for offline availability.
-- **Cache Verification**: Loader (`cache-verification-loader.tsx`) waits for critical resources before showing app, ensuring offline readiness.
-
-## Recent Changes (November 30, 2025)
-- **FIXED: Standby → Active Transition Delay**:
-  - Issue: When user touched screensaver to wake kiosk, "Active" status had a delay in the monitoring dashboard
-  - Root Cause: The `sendHeartbeat()` function was calculating status based on `locationRef.current` which was still `/screensaver` at the moment of touch, before navigation completed
-  - Solution: Added `statusOverride` parameter to `sendHeartbeat()` function that bypasses location-based detection
-  - Modified `screensaver.tsx` to dispatch event with `forceStatus: 'active'` in `handleExit()` BEFORE navigation
-  - Updated event handler in `useKioskUptime` to accept both boolean and object payloads with `forceStatus`
-  - Updated location-based effect to use explicit status overrides when navigating to/from screensaver
-  - Result: Status now updates to "Active" instantly when user touches the screensaver
-
-- **FIXED: Kiosk Status Transitions (Active ↔ Standby)**:
-  - Root Cause: React parent useEffect cleanup removed event listeners before child screensaver component dispatched events
-  - Solution: Refactored `useKioskUptime` hook to use location-based detection as primary mechanism
-  - Added `locationRef` to avoid stale closures in event handlers
-  - Moved `sendHeartbeat` to stable `useCallback` that reads from refs for latest state
-  - Created separate effect for location-based status updates that fires immediately on navigation
-  - Screensaver-change custom event kept as backup/redundancy mechanism
-  - Status transitions now work reliably for repeated cycles: Active → Standby → Active → Standby...
-
-- **ENHANCED: Three-Status Kiosk Uptime System**:
-  - Changed from boolean `isActive` to three-status system: Active (green), Standby (yellow), Inactive (gray)
-  - **Active**: User is interacting with the kiosk (page visible)
-  - **Standby**: Screensaver mode (page hidden) - session time continues accumulating
-  - **Inactive**: App/browser closed - session ended
-  - Fixed critical bug where heartbeats stopped after page navigation (useEffect early return)
-  - Heartbeats now continue every 30 seconds in both Active and Standby states
-  - Status sent with each heartbeat, server updates status in real-time
-  - Added initial fetch for kiosk uptime data in admin analytics
-  - Fixed request counting in queryClient.ts to properly track API success/failure
-
-- **ADDED: Navigation Polygon Highlighting**:
-  - During navigation, shows building polygon areas for start point (green), destination (red), parking (blue), and waypoints (amber)
-  - Works across all travel modes: walking, accessible, and driving (car, motorcycle, bike)
-  - Desktop implementation passes navigation building data with polygons to CampusMap component
-  - Mobile implementation draws polygons directly using Leaflet with same color coding
-  - Added proper layer management with cleanup when navigation ends or route is cleared
-  - For accessible mode fallback, always shows original destination building polygon
-  - Parking detection for driving modes validated via phase transition (firstPhase.endId === secondPhase.startId)
-  - Added `navigationPolygonsRef` for tracking and cleaning up navigation-specific layers
-
-- **FIXED: Mobile indoor navigation distance display**:
-  - Removed distance display (e.g., "8 m") from indoor navigation turn-by-turn steps on mobile
-  - Reason: Floorplans are just images without real coordinates, so distances are not accurate
-  - Now matches kiosk behavior which doesn't show distance for indoor navigation
-
-- **FIXED: Mobile devices registering as kiosks**:
-  - Added mobile device detection (`isMobileDevice()`) in `use-kiosk-uptime.ts`
-  - Detects phones/tablets via user agent, touch capability, and screen size
-  - Mobile devices are now completely excluded from kiosk uptime monitoring
-  - Prevents QR code scans from cluttering the kiosk uptime dashboard
-
-- **FIXED: Kiosk uptime not updating when tab closed**:
-  - Replaced async fetch with `navigator.sendBeacon()` for reliable session end on tab close
-  - Added `pagehide` event listener as additional coverage
-  - Session end is now sent reliably even when browser closes quickly
-
-- **ADDED: Server-side stale device detection**:
-  - `getAllKioskUptimes()` now checks for stale heartbeats (>60 seconds without heartbeat)
-  - Automatically marks stale devices as inactive with batch database updates
-  - Serves as backup when client-side sendBeacon fails
-  - Logs which devices were marked inactive and why
-
-## Recent Changes (November 29, 2025)
-- **ADDED: Interactive Walkthrough/Guide Feature**:
-  - Created comprehensive walkthrough component (`client/src/components/walkthrough.tsx`) with 5 interactive steps
-  - Steps cover: Welcome/Home, Campus Navigation, Events & Announcements, Staff Directory, and Completion
-  - Visual previews use actual shadcn Card and Button components for UI consistency
-  - Each step includes feature highlights with icons and helpful tips
-  - Added "How to Use" button in landing page header for easy access
-  - Auto-shows for first-time visitors (localStorage-based detection)
-  - Proper accessibility support with DialogTitle and DialogDescription for screen readers
-
-- **FIXED: Floor plan lingering path artifacts**:
-  - Issue: When navigating between floors, path from previous floor lingered at bottom-right corner as unknown dotted line
-  - Root Cause: Canvas drawing code plotted waypoints outside visible canvas bounds; canvas wasn't filtering coordinates
-  - Solution: Added bounds checking in `floor-plan-viewer.tsx` - only draws path waypoints within canvas bounds + safe margin (±100px)
-  - Result: Paths now properly clear when floor changes, no more lingering artifacts at screen edges
-  
-- **ADDED: Mobile Navigation Usage Tracking & Analytics**:
-  - Tracks when users ACTUALLY open mobile navigation after scanning QR code (not just button clicks)
-  - When mobile-navigation page loads (`/navigate/:routeId`), logs `mobile_navigation_opened` event
-  - Admin analytics dashboard counts mobile usage under "Interface Actions (incl. Mobile Navigation Usage)"
-  - CSV export includes `Mobile_Navigation_Usage` column marking each mobile nav session
-  - Summary line in CSV shows total count of actual mobile navigation uses
-  - Tracks which users accessed accessible endpoint fallback routes on mobile
-
-- **IMPROVED: Accurate mobile metrics**:
-  - Previous approach tracked button clicks (inaccurate - includes users who clicked but didn't scan)
-  - New approach tracks actual `/navigate/*` page loads (accurate - only counts real mobile usage)
-  - Mobile usage data now reliable for understanding how many users actually used QR to navigate
-
-- **Previous: CRITICAL FIX - Accessible mode detection**:
-  - `findShortestPath()` validates closest end node is truly connected (within 1m) to building
-  - Prevents fake routes showing for unreachable buildings like DMS TCR 1-3 (17m away)
-  - Correctly triggers fallback dialog when no actual PWD path exists to destination
+- **Client-side Performance**: React Query for data fetching/caching.
+- **Backend Persistence**: Firebase Firestore.
+- **Offline Resilience**: Mechanisms for data queuing and syncing.
+- **Modularity**: Clear separation of concerns in codebase.
+- **Pathfinding Purity**: Zero automatic node merging for precise route control.
+- **Accessibility First**: Fallback routing ensures navigation options for accessible-mode users.
+- **Service Worker Optimization**: Caching essential map tiles upfront.
+- **Image Proxy System**: Routes all external images through a proxy to bypass CORS and enable offline caching.
 
 ## External Dependencies
 - **Frontend Framework**: React 18
