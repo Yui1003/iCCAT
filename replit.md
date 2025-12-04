@@ -49,6 +49,8 @@ If an accessible path to a requested destination is unavailable, the system auto
 - **Image Proxy System**: Routes all external images through a proxy to bypass CORS and enable offline caching.
 
 ## Recent Changes (December 2024)
+- **Gate-to-Building Navigation Logic Fix**: When navigating from a Gate to a Building in driving mode, the system now correctly skips origin parking selection (since user is already driving) and only asks where they want to park at the destination. Previously it incorrectly asked where the vehicle was parked.
+- **Dynamic Parking Banner Text**: The yellow parking selection banner now shows contextual text: "where you want to park" for destination parking, "where your vehicle is parked" for origin parking.
 - **Two-Step Parking Selection Flow**: Implemented user-selectable parking for both origin AND destination in driving mode. Users now choose where their vehicle is parked (origin) and where they want to park at the destination (Step 1 → Step 2 flow). System skips destination parking selection if destination is already a parking lot or gate.
 - **State Management for Parking Flow**: Added `drivingParkingMode` ('origin' | 'destination' | null) and `selectedDestinationParking` state variables to track the two-step parking selection process.
 - **Route Generation Updates**: Updated `generateKioskDepartureRoute` and `generateBuildingDepartureRoute` to accept optional `userSelectedDestParking` parameter instead of auto-selecting nearest parking.
