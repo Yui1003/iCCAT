@@ -113,6 +113,7 @@ const getMarkerIconImage = (poiType?: string | null) => {
     'Security Office / Campus Police': securityOfficeIcon,
     'Waste / Recycling Station': wasteStationIcon,
     'Water Fountain': waterFountainIcon,
+    'Kiosk': kioskIcon,
     'Print/Copy Center': printCenterIcon,
     'Other': otherIcon,
   };
@@ -378,6 +379,12 @@ export default function CampusMap({
     if (isNavigating) {
       // Skip marker rendering during navigation
     } else {
+      // Find Kiosk building from database, fall back to constant if not found
+      const kioskBuilding = buildings.find(b => b.type === 'Kiosk' || b.id === 'kiosk');
+      const kioskLat = kioskBuilding?.lat ?? KIOSK_LOCATION.lat;
+      const kioskLng = kioskBuilding?.lng ?? KIOSK_LOCATION.lng;
+      const kioskName = kioskBuilding?.name ?? KIOSK_LOCATION.name;
+      
       const kioskIconHtml = L.divIcon({
         html: `
           <div class="relative flex items-center justify-center">
@@ -392,9 +399,9 @@ export default function CampusMap({
         iconAnchor: [kioskSize.icon / 2, kioskSize.icon / 2],
       });
 
-      const kioskMarker = L.marker([KIOSK_LOCATION.lat, KIOSK_LOCATION.lng], { icon: kioskIconHtml })
+      const kioskMarker = L.marker([kioskLat, kioskLng], { icon: kioskIconHtml })
         .addTo(mapInstanceRef.current)
-        .bindTooltip(KIOSK_LOCATION.name, {
+        .bindTooltip(kioskName, {
           permanent: false,
           direction: 'top',
           offset: [0, -(kioskSize.icon / 2)],
@@ -405,6 +412,10 @@ export default function CampusMap({
 
       // Only render building markers when NOT navigating
       buildings.forEach(building => {
+        // Skip the Kiosk building since we render it separately with special styling
+        if (building.type === 'Kiosk' || building.id === 'kiosk') {
+          return;
+        }
         // During parking selection mode, ONLY show matching parking markers
         // Hide all other building types to reduce clutter
         if (parkingSelectionMode && parkingTypeFilter) {
@@ -439,7 +450,13 @@ export default function CampusMap({
           iconAnchor: [buildingSize.icon / 2, buildingSize.icon / 2],
         });
 
-        const marker = L.marker([building.lat, building.lng], { icon })
+        // Set high z-index for parking markers during selection mode to ensure visibility above polygons
+        const markerZIndex = isParkingMatch ? 1000 : 0;
+        
+        const marker = L.marker([building.lat, building.lng], { 
+          icon,
+          zIndexOffset: markerZIndex
+        })
           .addTo(mapInstanceRef.current)
           .bindTooltip(building.name, {
             permanent: false,

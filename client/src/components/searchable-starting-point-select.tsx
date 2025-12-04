@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { MapPin, Search } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -36,11 +36,19 @@ export default function SearchableStartingPointSelect({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen]);
 
+  // Find Kiosk building from database, fallback to constant if not found
+  const kioskBuilding = useMemo(() => 
+    buildings.find(b => b.type === 'Kiosk' || b.id === 'kiosk'),
+    [buildings]
+  );
+  const kioskName = kioskBuilding?.name || KIOSK_LOCATION.name;
+
+  // Build locations list - Kiosk first, then other buildings (excluding Kiosk from regular list)
   const locations: Array<{ id: string; name: string }> = [
-    { id: 'kiosk', name: KIOSK_LOCATION.name }
+    { id: 'kiosk', name: kioskName }
   ].concat(
     buildings
-      .filter(b => b.id !== excludeBuildingId)
+      .filter(b => b.id !== excludeBuildingId && b.type !== 'Kiosk' && b.id !== 'kiosk')
       .map(b => ({ id: b.id, name: b.name }))
   );
 

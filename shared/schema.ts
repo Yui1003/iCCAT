@@ -33,6 +33,7 @@ export const poiTypes = [
   "Waste / Recycling Station",
   "Water Fountain",
   "Print/Copy Center",
+  "Kiosk",
   "Other"
 ] as const;
 
@@ -79,6 +80,7 @@ export const descriptionOnlyTypes = new Set<POIType>([
   "Waste / Recycling Station",
   "Water Fountain",
   "Print/Copy Center",
+  "Kiosk",
   "Other"
 ]);
 
