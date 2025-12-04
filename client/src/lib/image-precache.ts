@@ -10,9 +10,9 @@
 import { getProxiedImageUrl } from '@/components/proxied-image';
 
 // MUST match service worker cache versions!
-const CACHE_NAME = 'iccat-v7';
-const DATA_CACHE_NAME = 'iccat-data-v7';
-const IMAGE_CACHE_NAME = 'iccat-images-v7';
+const CACHE_NAME = 'iccat-v8';
+const DATA_CACHE_NAME = 'iccat-data-v8';
+const IMAGE_CACHE_NAME = 'iccat-images-v8';
 
 export interface ImagePrecacheStatus {
   extracted: number;

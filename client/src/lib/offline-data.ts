@@ -1,7 +1,7 @@
 import type { Walkpath, Drivepath, Building, Staff, Floor, Room, Event } from "@shared/schema";
 import baselineData from "./baseline-data.json";
 
-const DATA_CACHE_NAME = 'iccat-data-v7';
+const DATA_CACHE_NAME = 'iccat-data-v8';
 
 let cachedBuildings: Building[] | null = null;
 let cachedWalkpaths: Walkpath[] | null = null;

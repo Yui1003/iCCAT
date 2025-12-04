@@ -67,14 +67,14 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
         while (attempts < maxAttempts && !allReady) {
           const cacheNames = await caches.keys();
           const hasStaticCache = cacheNames.some(name => name.startsWith('iccat-v'));
-          const hasDataCache = cacheNames.includes('iccat-data-v7');
+          const hasDataCache = cacheNames.includes('iccat-data-v8');
 
           let dataItems = 0;
           let tilesCached = 0;
           let apiEndpointsCached = 0;
 
           if (hasDataCache) {
-            const dataCache = await caches.open('iccat-data-v7');
+            const dataCache = await caches.open('iccat-data-v8');
             const cachedRequests = await dataCache.keys();
             dataItems = cachedRequests.length;
 
@@ -86,7 +86,7 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
           }
 
           if (hasStaticCache) {
-            const staticCache = await caches.open('iccat-v7');
+            const staticCache = await caches.open('iccat-v8');
             const allCached = await staticCache.keys();
             tilesCached = allCached.filter(req => req.url.includes('tile.openstreetmap.org')).length;
           }

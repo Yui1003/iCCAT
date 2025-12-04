@@ -212,7 +212,7 @@ function updateCache(endpoint: string, data: any) {
   
   // Update CacheStorage for offline - MUST match service worker cache version!
   if (window.caches) {
-    caches.open('iccat-data-v7').then(cache => {
+    caches.open('iccat-data-v8').then(cache => {
       const response = new Response(JSON.stringify(data), {
         headers: { 'Content-Type': 'application/json' }
       });
