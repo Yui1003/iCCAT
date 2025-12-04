@@ -70,6 +70,10 @@ interface CampusMapProps {
   navigationEndBuilding?: NavigationBuilding | null;
   navigationParkingBuilding?: NavigationBuilding | null;
   navigationWaypointBuildings?: NavigationBuilding[];
+  parkingSelectionMode?: boolean;
+  parkingTypeFilter?: 'Car Parking' | 'Motorcycle Parking' | 'Bike Parking' | null;
+  onParkingSelected?: (parking: Building) => void;
+  highlightedParkingIds?: string[];
 }
 
 declare global {
@@ -144,7 +148,11 @@ export default function CampusMap({
   navigationStartBuilding,
   navigationEndBuilding,
   navigationParkingBuilding,
-  navigationWaypointBuildings = []
+  navigationWaypointBuildings = [],
+  parkingSelectionMode = false,
+  parkingTypeFilter = null,
+  onParkingSelected,
+  highlightedParkingIds = []
 }: CampusMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -169,7 +177,7 @@ export default function CampusMap({
     }
 
     const map = L.map(mapRef.current, {
-      center: [centerLat || 14.402870, centerLng || 120.8640],
+      center: [centerLat || 14.402870, centerLng || 120.8660],
       zoom: 17.5,
       minZoom: 17.5,
       maxZoom: 21,
@@ -338,7 +346,7 @@ export default function CampusMap({
     if (!mapInstanceRef.current) return;
     
     const defaultLat = 14.402870;
-    const defaultLng = 120.8640;
+    const defaultLng = 120.8660;
     const lat = centerLat || defaultLat;
     const lng = centerLng || defaultLng;
     
@@ -396,16 +404,27 @@ export default function CampusMap({
       // Only render building markers when NOT navigating
       buildings.forEach(building => {
         const iconImage = getMarkerIconImage(building.type);
+        
+        // Check if this building should be highlighted for parking selection
+        const isParkingMatch = parkingSelectionMode && parkingTypeFilter && building.type === parkingTypeFilter;
+        const isHighlightedParking = highlightedParkingIds.includes(building.id) || isParkingMatch;
+        
+        // Determine marker styling based on selection state
+        const highlightClass = isHighlightedParking ? 'ring-4 ring-yellow-400 ring-opacity-75' : '';
+        const pulseClass = isParkingMatch ? 'animate-pulse' : '';
+        const scaleClass = selectedBuilding?.id === building.id ? 'scale-125' : (isParkingMatch ? 'scale-110' : '');
+        const pingColor = isParkingMatch ? 'bg-yellow-400/40' : 'bg-primary/20';
+        
         const icon = L.divIcon({
           html: `
-            <div class="relative flex items-center justify-center">
-              <div class="absolute ${buildingSize.ping} bg-primary/20 rounded-full animate-ping ${selectedBuilding?.id === building.id ? 'scale-125' : ''}"></div>
-              <div class="relative ${selectedBuilding?.id === building.id ? 'scale-125' : ''}">
+            <div class="relative flex items-center justify-center ${pulseClass}">
+              <div class="absolute ${buildingSize.ping} ${pingColor} rounded-full animate-ping ${scaleClass}"></div>
+              <div class="relative ${scaleClass} ${highlightClass} rounded-lg">
                 <img src="${iconImage}" alt="${building.type || 'Building'}" class="${buildingSize.img} object-contain" />
               </div>
             </div>
           `,
-          className: 'building-marker',
+          className: `building-marker ${isParkingMatch ? 'parking-selectable' : ''}`,
           iconSize: [buildingSize.icon, buildingSize.icon],
           iconAnchor: [buildingSize.icon / 2, buildingSize.icon / 2],
         });
@@ -462,19 +481,25 @@ export default function CampusMap({
           markerElement.addEventListener('touchcancel', handleTouchEnd);
         }
 
-        if (onBuildingClick) {
-          marker.on('click', () => {
-            // Only trigger click if it wasn't a long press
-            if (!isLongPressRef.current) {
+        // Handle click events - either for parking selection or regular building click
+        marker.on('click', () => {
+          // Only trigger click if it wasn't a long press
+          if (!isLongPressRef.current) {
+            // If in parking selection mode and this is a matching parking type
+            if (parkingSelectionMode && parkingTypeFilter && building.type === parkingTypeFilter) {
+              if (onParkingSelected) {
+                onParkingSelected(building);
+              }
+            } else if (onBuildingClick) {
               onBuildingClick(building);
             }
-          });
-        }
+          }
+        });
 
         markersRef.current.push(marker);
       });
     }
-  }, [buildings, onBuildingClick, selectedBuilding, currentZoom, routePolyline, routePhases]);
+  }, [buildings, onBuildingClick, selectedBuilding, currentZoom, routePolyline, routePhases, parkingSelectionMode, parkingTypeFilter, onParkingSelected, highlightedParkingIds]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
