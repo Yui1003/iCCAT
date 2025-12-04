@@ -52,6 +52,9 @@ If an accessible path to a requested destination is unavailable, the system auto
 - **Fixed LSP Errors**: Resolved type mismatches in navigation.tsx by using correct types (`RouteStep` instead of `NavigationStep`) and proper functions (`findNearestParkingByType`, `calculateRouteClientSide`)
 - **Kiosk Parking Selection**: Added `generateKioskDepartureRoute()` function to handle multi-phase routes when starting from the kiosk location
 - **Route Building Improvements**: Updated `handleParkingSelection` to properly distinguish between kiosk and building starting points for waypoint-based routes
+- **Waypoint Driving Mode**: Implemented intelligent parking selection for driving mode with waypoints. Gate starts prompt only for waypoint parking; building starts prompt for both origin and destination parking via multi-phase flow ('origin' → 'waypoint' modes)
+- **generateWaypointDrivingRoute Function**: New comprehensive route generator for driving with waypoints supporting walk-drive-walk-walk-drive segments
+- **Auto-generate URL Parameter Updates**: Updated auto-generate flow from staff/events pages to handle driving mode with waypoints via parking selection prompts
 
 ## External Dependencies
 - **Frontend Framework**: React 18
