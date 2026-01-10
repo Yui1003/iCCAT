@@ -164,28 +164,8 @@ flowchart TB
 
     class FINISH startEnd
     class ABT display
-    class FEAT,GUID eaction
+    class FEAT,GUIDE action
     class VIEW_FEAT decision
-```
-
-### User Flow 6: Section E - Feedback System Page
-```mermaid
-%%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 40, 'rankSpacing': 40}}}%%
-flowchart TB
-    classDef startEnd fill:#22c55e,stroke:#16a34a,color:#fff,stroke-width:2px,rx:20,ry:20
-    classDef display fill:#06b6d4,stroke:#0891b2,color:#fff
-    classDef action fill:#00b4d8,stroke:#0077b6,color:#fff
-    
-    E((E)) --> FEEDBACK[FEEDBACK SYSTEM PAGE]
-    FEEDBACK --> RATE[RATE CATEGORIES 1-9]
-    RATE --> COMM[ADD OPTIONAL COMMENTS]
-    COMM --> SUBMIT[SUBMIT FEEDBACK FORM]
-    SUBMIT --> THANK[/THANK YOU PAGE/]
-    THANK --> FINISH([FINISH])
-
-    class FINISH startEnd
-    class FEEDBACK,THANK display
-    class RATE,COMM,SUBMIT action
 ```
 
 ---
@@ -243,30 +223,48 @@ flowchart TB
     class MOD_BLD,MOD_PTH,MOD_FLR,MOD_STF,MOD_EVT,MOD_ANA labelStyle
 ```
 
-### Admin Flow 2: Module Details (Sub-Flows)
+### Admin Flow 2: Module Management Details
 ```mermaid
 %%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 40, 'rankSpacing': 40}}}%%
 flowchart TB
     classDef action fill:#00b4d8,stroke:#0077b6,color:#fff
     classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
     
-    MA((M_A)) --> BLD_ACT{Add or Edit?}
-    BLD_ACT -->|Add| B_ADD[Create New Building]
-    BLD_ACT -->|Edit| B_EDT[Update Existing Building]
-    B_ADD --> B_SAVE[Save to Firebase]
+    MA((M_A)) --> BLD_ACT{Add Building?}
+    BLD_ACT -->|Yes| B_ADD[CREATE NEW BUILDING]
+    BLD_ACT -->|No| B_EDT[EDIT EXISTING BUILDING]
+    B_ADD --> B_SAVE[SAVE TO FIREBASE]
     B_EDT --> B_SAVE
     
-    MB((M_B)) --> PTH_ACT{Add or Edit?}
-    PTH_ACT -->|Add| P_ADD[Draw New Path]
-    PTH_ACT -->|Edit| P_EDT[Modify Path Waypoints]
-    P_ADD --> P_SAVE[Save to Firebase]
+    MB((M_B)) --> PTH_ACT{Add New Path?}
+    PTH_ACT -->|Yes| P_ADD[DRAW NEW PATH]
+    PTH_ACT -->|No| P_EDT[MODIFY EXISTING PATH]
+    P_ADD --> P_SAVE[SAVE TO FIREBASE]
     P_EDT --> P_SAVE
     
     MC((M_C)) --> FLR_ACT{Upload Plan?}
-    FLR_ACT -->|Yes| F_UPL[Upload Floor Plan Image]
-    FLR_ACT -->|No| F_MAN[Manage Indoor Nodes]
-    F_UPL --> F_SAVE[Save to Firebase]
-    F_MAN --> F_SAVE
+    FLR_ACT -->|Yes| F_UPL[UPLOAD FLOOR PLAN]
+    FLR_ACT -->|No| F_NOD[MANAGE INDOOR NODES]
+    F_UPL --> F_SAVE[SAVE TO FIREBASE]
+    F_NOD --> F_SAVE
+    
+    MD((M_D)) --> STF_ACT{Add Staff?}
+    STF_ACT -->|Yes| S_ADD[REGISTER NEW STAFF]
+    STF_ACT -->|No| S_EDT[UPDATE STAFF PROFILE]
+    S_ADD --> S_SAVE[SAVE TO FIREBASE]
+    S_EDT --> S_SAVE
+    
+    ME((M_E)) --> EVT_ACT{Post Event?}
+    EVT_ACT -->|Yes| E_ADD[POST NEW ANNOUNCEMENT]
+    EVT_ACT -->|No| E_EDT[UPDATE EVENT DETAILS]
+    E_ADD --> E_SAVE[SAVE TO FIREBASE]
+    E_EDT --> E_SAVE
+    
+    MF((M_F)) --> ANA_ACT{Export Data?}
+    ANA_ACT -->|Yes| A_EXP[EXPORT CSV/JSON]
+    ANA_ACT -->|No| A_VEW[VIEW CHARTS/LOGS]
+    A_EXP --> A_RET[RETURN TO DASHBOARD]
+    A_VEW --> A_RET
 ```
 
 ---
@@ -280,19 +278,29 @@ flowchart TB
     classDef startEnd fill:#22c55e,stroke:#16a34a,color:#fff,stroke-width:2px,rx:20,ry:20
     classDef display fill:#06b6d4,stroke:#0891b2,color:#fff
     classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
+    classDef action fill:#00b4d8,stroke:#0077b6,color:#fff
     
-    START([BOOT SYSTEM]) --> SYNC[SYNC FIREBASE DATA]
-    SYNC --> IDLE[/SCREENSAVER ACTIVE/]
+    START([START: POWER ON]) --> INIT[SYSTEM INITIALIZATION]
+    INIT --> SYNC[FIREBASE DATA SYNC]
+    SYNC --> IDLE_CHK{Is Kiosk Idle?}
     
-    IDLE --> TOUCH{User Touch?}
-    TOUCH -->|Yes| SESSION[START USER SESSION]
-    TOUCH -->|No| IDLE
+    IDLE_CHK -->|Yes| SCR[/SCREENSAVER MODE/]
+    IDLE_CHK -->|No| NAV_CHK{Is User Navigating?}
     
-    SESSION --> TIMEOUT{Inactivity?}
-    TIMEOUT -->|Yes| IDLE
+    SCR --> WAKE{Screen Touched?}
+    WAKE -->|Yes| HOME[/HOME PAGE/]
+    WAKE -->|No| IDLE_CHK
+    
+    HOME --> SESSION[USER INTERACTION SESSION]
+    NAV_CHK -->|Yes| SESSION
+    NAV_CHK -->|No| HOME
+    
+    SESSION --> TIMEOUT{Inactivity Triggered?}
+    TIMEOUT -->|Yes| IDLE_CHK
     TIMEOUT -->|No| SESSION
     
     class START startEnd
-    class IDLE display
-    class TOUCH,TIMEOUT decision
+    class SCR,HOME display
+    class IDLE_CHK,NAV_CHK,WAKE,TIMEOUT decision
+    class INIT,SYNC,SESSION action
 ```
