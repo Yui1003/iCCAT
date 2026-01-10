@@ -262,7 +262,7 @@ flowchart TB
     
     MF((M_F)) --> ANA_ACT{Export Data?}
     ANA_ACT -->|Yes| A_EXP[EXPORT CSV/JSON]
-    ANA_ACT -->|No| A_VEW[VIEW CHARTS/LOGS]
+    ANA_ACT -->|No| A_VEW[VIEW DASHBOARD CHARTS]
     A_EXP --> A_RET[RETURN TO DASHBOARD]
     A_VEW --> A_RET
 ```
@@ -271,36 +271,113 @@ flowchart TB
 
 ## Kiosk System Flowcharts
 
-### System Flow 1: Kiosk Operational Loop
+### System Flow 1: Kiosk Startup Sequence
 ```mermaid
 %%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 50, 'rankSpacing': 50}}}%%
 flowchart TB
     classDef startEnd fill:#22c55e,stroke:#16a34a,color:#fff,stroke-width:2px,rx:20,ry:20
     classDef display fill:#06b6d4,stroke:#0891b2,color:#fff
-    classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
     classDef action fill:#00b4d8,stroke:#0077b6,color:#fff
+    classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
     
-    START([START: POWER ON]) --> INIT[SYSTEM INITIALIZATION]
-    INIT --> SYNC[FIREBASE DATA SYNC]
-    SYNC --> IDLE_CHK{Is Kiosk Idle?}
+    START([START: POWER ON]) --> INIT[HARDWARE INITIALIZATION]
+    INIT --> DISP_CHK{Displays Connected?}
+    DISP_CHK -->|No| ERR[DISPLAY ERROR]
+    DISP_CHK -->|Yes| BOOT[WINDOWS OS BOOT]
+    
+    BOOT --> BROWSER[LAUNCH KIOSK BROWSER]
+    BROWSER --> APP_INIT{Webapp Load Success?}
+    APP_INIT -->|No| CONN_C((C))
+    APP_INIT -->|Yes| SYNC[SYNC FIREBASE DATA]
+    
+    SYNC --> READY[/KIOSK READY/]
+    READY --> CONN_A((A))
+
+    class START startEnd
+    class READY display
+    class INIT,BOOT,BROWSER,SYNC action
+    class DISP_CHK,APP_INIT decision
+```
+
+### System Flow 2: Operational Loop
+```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 40, 'rankSpacing': 40}}}%%
+flowchart TB
+    classDef startEnd fill:#22c55e,stroke:#16a34a,color:#fff,stroke-width:2px,rx:20,ry:20
+    classDef display fill:#06b6d4,stroke:#0891b2,color:#fff
+    classDef action fill:#00b4d8,stroke:#0077b6,color:#fff
+    classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
+    
+    CONN_A((A)) --> IDLE_CHK{Is Inactivity Timeout?}
     
     IDLE_CHK -->|Yes| SCR[/SCREENSAVER MODE/]
-    IDLE_CHK -->|No| NAV_CHK{Is User Navigating?}
+    IDLE_CHK -->|No| ACTIVE[ACTIVE USER SESSION]
     
     SCR --> WAKE{Screen Touched?}
     WAKE -->|Yes| HOME[/HOME PAGE/]
-    WAKE -->|No| IDLE_CHK
+    WAKE -->|No| SCR
     
-    HOME --> SESSION[USER INTERACTION SESSION]
-    NAV_CHK -->|Yes| SESSION
-    NAV_CHK -->|No| HOME
+    HOME --> ACTIVE
+    ACTIVE --> SYNC_CHK{Is Online?}
     
-    SESSION --> TIMEOUT{Inactivity Triggered?}
-    TIMEOUT -->|Yes| IDLE_CHK
-    TIMEOUT -->|No| SESSION
+    SYNC_CHK -->|Yes| PUSH[PUSH ANALYTICS TO FIREBASE]
+    SYNC_CHK -->|No| QUEUE[QUEUE ANALYTICS LOCALLY]
     
-    class START startEnd
-    class SCR,HOME display
-    class IDLE_CHK,NAV_CHK,WAKE,TIMEOUT decision
-    class INIT,SYNC,SESSION action
+    PUSH --> CONN_A
+    QUEUE --> CONN_A
+
+    class HOME,SCR display
+    class ACTIVE,PUSH,QUEUE action
+    class IDLE_CHK,WAKE,SYNC_CHK decision
+```
+
+### System Flow 3: Closing Procedures
+```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 50, 'rankSpacing': 50}}}%%
+flowchart TB
+    classDef startEnd fill:#22c55e,stroke:#16a34a,color:#fff,stroke-width:2px,rx:20,ry:20
+    classDef display fill:#06b6d4,stroke:#0891b2,color:#fff
+    classDef action fill:#00b4d8,stroke:#0077b6,color:#fff
+    classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
+    
+    CLOSE_L[Closing Hours] --> SHUT_ACT{Is Admin Shutdown?}
+    
+    SHUT_ACT -->|Yes| ADMIN[ADMIN INITIATES SHUTDOWN]
+    SHUT_ACT -->|No| SCHED[SCHEDULED TASK TRIGGER]
+    
+    ADMIN --> END_DATA[SEND FINAL UPTIME DATA]
+    SCHED --> END_DATA
+    
+    END_DATA --> CLOSE_APP[CLOSE BROWSER WEBAPP]
+    CLOSE_APP --> WIN_SHUT[WINDOWS OS SHUTDOWN]
+    WIN_SHUT --> FINISH([END: POWER OFF])
+
+    class FINISH startEnd
+    class ADMIN,SCHED,END_DATA,CLOSE_APP,WIN_SHUT action
+    class SHUT_ACT decision
+```
+
+### System Flow 4: Error Handling
+```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 50, 'rankSpacing': 50}}}%%
+flowchart TB
+    classDef startEnd fill:#22c55e,stroke:#16a34a,color:#fff,stroke-width:2px,rx:20,ry:20
+    classDef display fill:#06b6d4,stroke:#0891b2,color:#fff
+    classDef action fill:#00b4d8,stroke:#0077b6,color:#fff
+    classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
+    classDef error fill:#ef4444,stroke:#dc2626,color:#fff
+    
+    CONN_C((C)) --> ERR_TYPE{Is Network Error?}
+    
+    ERR_TYPE -->|Yes| OFFLINE[LOAD FROM OFFLINE CACHE]
+    ERR_TYPE -->|No| CRASH[APP CRASH RECOVERY]
+    
+    OFFLINE --> CONN_A((A))
+    
+    CRASH --> RESTART[AUTO-RESTART BROWSER]
+    RESTART --> RELOAD[RELOAD WEBAPP URL]
+    RELOAD --> CONN_A
+
+    class OFFLINE,RESTART,RELOAD action
+    class ERR_TYPE decision
 ```
