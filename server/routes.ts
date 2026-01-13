@@ -254,22 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Shutdown kiosk endpoint
   app.post('/api/admin/shutdown', async (req, res) => {
     try {
-      // Security: Only allow shutdown requests from localhost
-      const clientIP = req.ip || req.socket.remoteAddress || '';
-      const isLocalhost = clientIP === '127.0.0.1' || 
-                         clientIP === '::1' || 
-                         clientIP === '::ffff:127.0.0.1' ||
-                         clientIP === 'localhost';
-      
-      if (!isLocalhost) {
-        console.warn('[SHUTDOWN] Unauthorized shutdown attempt from:', clientIP);
-        return res.status(403).json({ 
-          error: 'Forbidden',
-          message: 'Shutdown can only be initiated from localhost'
-        });
-      }
-      
-      console.log('[SHUTDOWN] Shutdown request received from localhost');
+      console.log('[SHUTDOWN] Shutdown request received');
       
       // 1. Trigger remote shutdown flag in Firestore for the Kiosk Listener
       try {
@@ -277,34 +262,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('[SHUTDOWN] Remote shutdown flag triggered in Firebase');
       } catch (err) {
         console.error('[SHUTDOWN] Firebase trigger failed:', err);
-        // Continue anyway to try local shutdown
       }
       
-      // 2. Execute Windows shutdown command (local fallback)
+      // 2. Execute Windows shutdown command (local fallback if running on the actual kiosk server)
       // shutdown /s /t 0
       // /s = shutdown
       // /t 0 = timeout of 0 seconds (immediate)
       exec('shutdown /s /t 0', (error, stdout, stderr) => {
         if (error) {
-          console.error('[SHUTDOWN] Error executing shutdown command:', error);
-          console.error('[SHUTDOWN] This may indicate insufficient permissions. The Node.js process may need administrator privileges.');
-          // Don't return error response as system might be shutting down
-        }
-        if (stderr) {
-          console.error('[SHUTDOWN] Shutdown stderr:', stderr);
-        }
-        if (stdout) {
-          console.log('[SHUTDOWN] Shutdown stdout:', stdout);
+          console.error('[SHUTDOWN] Local shutdown command failed (Expected if not running on Kiosk PC):', error.message);
         }
       });
       
-      // Send immediate response before shutdown completes
+      // Send immediate response
       return res.json({ 
         success: true, 
-        message: 'System shutdown initiated' 
+        message: 'System shutdown initiated via Firebase' 
       });
-      
-      console.log('[SHUTDOWN] Shutdown command executed successfully');
     } catch (error) {
       console.error('[SHUTDOWN] Failed to initiate shutdown:', error);
       if (!res.headersSent) {
