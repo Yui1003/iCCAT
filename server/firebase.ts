@@ -31,7 +31,7 @@ export function initializeFirebase() {
         privateKey: privateKey.replace(/\\n/g, '\n'),
         clientEmail,
       })
-    });
+    }, 'webapp-main'); // Using a named app to avoid collisions if multiple initializations happen
 
     firestoreDb = firebaseApp.firestore();
     
@@ -50,4 +50,26 @@ export function getFirestore(): admin.firestore.Firestore {
     return db;
   }
   return firestoreDb;
+}
+
+/**
+ * Trigger a remote shutdown by updating Firestore
+ */
+export async function triggerRemoteShutdown() {
+  try {
+    const db = getFirestore();
+    const docRef = db.collection('settings').doc('system');
+    
+    // Create document if it doesn't exist, then update the flag
+    await docRef.set({ 
+      shutdownRequested: true,
+      lastShutdownAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    
+    console.log('[FIREBASE] Shutdown flag set to true in Firestore');
+    return true;
+  } catch (error) {
+    console.error('[FIREBASE] Failed to set shutdown flag:', error);
+    throw error;
+  }
 }

@@ -42,6 +42,7 @@ import {
 import { analyticsEventSchema, AnalyticsEventType } from "@shared/analytics-schema";
 import { z } from "zod";
 import { findShortestPath } from "./pathfinding";
+import { triggerRemoteShutdown } from "./firebase";
 
 const loginSchema = z.object({
   username: z.string(),
@@ -270,7 +271,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('[SHUTDOWN] Shutdown request received from localhost');
       
-      // Execute Windows shutdown command
+      // 1. Trigger remote shutdown flag in Firestore for the Kiosk Listener
+      try {
+        await triggerRemoteShutdown();
+        console.log('[SHUTDOWN] Remote shutdown flag triggered in Firebase');
+      } catch (err) {
+        console.error('[SHUTDOWN] Firebase trigger failed:', err);
+        // Continue anyway to try local shutdown
+      }
+      
+      // 2. Execute Windows shutdown command (local fallback)
       // shutdown /s /t 0
       // /s = shutdown
       // /t 0 = timeout of 0 seconds (immediate)
