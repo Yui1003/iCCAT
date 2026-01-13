@@ -1,0 +1,241 @@
+# KIOSK SYSTEM FLOWCHARTS
+
+---
+
+## System Flow 1: Startup Sequence
+
+**Purpose:** Shows the hardware initialization and webapp launch process.
+
+**Entry:** START - Campus opening hours
+**Exit:** Connector A (Operational Loop) or Connector C (Error Handling)
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 50, 'rankSpacing': 50}}}%%
+flowchart TB
+    %% Style definitions first
+    classDef startEnd fill:#22c55e,stroke:#16a34a,color:#fff,stroke-width:2px
+    classDef connector fill:#8b5cf6,stroke:#7c3aed,color:#fff,stroke-width:2px
+    classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
+    classDef display fill:#06b6d4,stroke:#0891b2,color:#fff
+    classDef hardware fill:#64748b,stroke:#475569,color:#fff
+    classDef error fill:#ef4444,stroke:#dc2626,color:#fff
+    
+    START([START:<br/>Campus Opening Hours])
+    
+    START --> POWER[Power On<br/>Kiosk System]
+    
+    POWER --> HARDWARE{Hardware<br/>Initialization}
+    
+    HARDWARE --> MINIPC[Mini PC Powers On<br/>Windows OS Boot]
+    
+    MINIPC --> DISPLAYS{Check Display<br/>Connections}
+    
+    DISPLAYS -->|Both<br/>Connected| DISPLAY_OK[Touch Display +<br/>External Display<br/>Configured Duplicate]
+    DISPLAYS -->|Display<br/>Missing| DISPLAY_ERR[Display<br/>Connection Error]
+    
+    DISPLAY_ERR --> TROUBLE[Troubleshoot<br/>Connection]
+    TROUBLE --> DISPLAYS
+    
+    DISPLAY_OK --> WINDOWS[/Windows OS<br/>Boots/]
+    
+    WINDOWS --> AUTO_LOGIN[Auto-Login to<br/>Windows Account]
+    
+    AUTO_LOGIN --> STARTUP[Windows Startup<br/>Apps Execute]
+    
+    STARTUP --> BROWSER[Launch Browser<br/>in Kiosk Mode]
+    
+    BROWSER --> LOAD[Load iCCAT<br/>Webapp URL]
+    
+    LOAD --> INIT{Webapp<br/>Initialization}
+    
+    INIT -->|Success| CACHE[Cache Data<br/>from Server]
+    INIT -->|Network<br/>Error| OFFLINE[Load from<br/>Offline Cache]
+    INIT -->|Critical<br/>Error| CONN_C((C<br/>TO ERRORS))
+    
+    OFFLINE --> READY
+    
+    CACHE --> FIREBASE[Connect to Firebase<br/>Real-time Listeners]
+    
+    FIREBASE --> READY
+    
+    READY[/KIOSK READY<br/>Display Home Page/]
+    
+    READY --> CONN_A((A<br/>TO OPERATIONS))
+
+    %% Apply styles
+    class START startEnd
+    class CONN_A,CONN_C connector
+    class HARDWARE,DISPLAYS,INIT decision
+    class WINDOWS,READY display
+    class MINIPC,DISPLAY_OK hardware
+    class DISPLAY_ERR error
+```
+
+---
+
+## System Flow 2: Operational Loop
+
+**Purpose:** Shows the active/standby cycle during operation.
+
+**Entry:** From Connector A (Startup or loop back)
+**Exit:** Connector B (Closing) or back to Connector A
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 40, 'rankSpacing': 40}}}%%
+flowchart TB
+    %% Style definitions first
+    classDef startEnd fill:#22c55e,stroke:#16a34a,color:#fff,stroke-width:2px
+    classDef connector fill:#8b5cf6,stroke:#7c3aed,color:#fff,stroke-width:2px
+    classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
+    classDef display fill:#06b6d4,stroke:#0891b2,color:#fff
+    
+    CONN_A((A<br/>FROM STARTUP))
+    
+    CONN_A --> OP_STATE{Operational<br/>State}
+    
+    OP_STATE -->|User<br/>Interaction| ACTIVE[ACTIVE STATE<br/>User Using Kiosk]
+    OP_STATE -->|No<br/>Interaction| IDLE_CHECK{Inactivity<br/>Timeout?}
+    OP_STATE -->|Closing<br/>Hours| CONN_B((B<br/>TO CLOSING))
+    
+    ACTIVE --> USER_ACT[User Performs Actions<br/>Navigation, Events<br/>Staff, Feedback]
+    
+    USER_ACT --> TRACK[Track Analytics<br/>Response Times<br/>Interactions]
+    
+    TRACK --> SYNC{Sync to<br/>Server?}
+    SYNC -->|Online| PUSH[Push Analytics<br/>to Firebase]
+    SYNC -->|Offline| QUEUE[Queue Analytics<br/>Locally]
+    
+    PUSH --> LOOP_A((A<br/>LOOP BACK))
+    QUEUE --> LOOP_A
+    
+    IDLE_CHECK -->|No| WAIT[Continue Waiting<br/>for Input]
+    WAIT --> OP_STATE
+    
+    IDLE_CHECK -->|Yes| SCREENSAVER[/SCREENSAVER MODE<br/>Display Time<br/>Upcoming Events/]
+    
+    SCREENSAVER --> SCREEN_STATE{Screensaver<br/>State}
+    SCREEN_STATE -->|User<br/>Touch| WAKE[Exit<br/>Screensaver]
+    SCREEN_STATE -->|Continue<br/>Idle| UPDATE[Update Time<br/>& Events Display]
+    
+    UPDATE --> SCREEN_STATE
+    WAKE --> READY[/Return to<br/>Home Page/]
+    READY --> OP_STATE
+    
+    OP_STATE -.-> HEARTBEAT[/HEARTBEAT<br/>Every 30 Seconds/]
+    HEARTBEAT --> STATUS[Update Status<br/>Active/Standby]
+    STATUS --> UPTIME[Send Uptime<br/>to Server]
+    UPTIME -.-> OP_STATE
+
+    %% Apply styles
+    class CONN_A,CONN_B,LOOP_A connector
+    class OP_STATE,IDLE_CHECK,SYNC,SCREEN_STATE decision
+    class SCREENSAVER,READY,HEARTBEAT display
+```
+
+**Note:** Dotted lines indicate background/periodic processes running alongside main operation.
+
+---
+
+## System Flow 3: Closing Procedures
+
+**Purpose:** Shows the shutdown sequence at campus closing hours.
+
+**Entry:** From Connector B (Operational Loop)
+**Exit:** END - Campus closing hours
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 50, 'rankSpacing': 50}}}%%
+flowchart TB
+    %% Style definitions first
+    classDef startEnd fill:#22c55e,stroke:#16a34a,color:#fff,stroke-width:2px
+    classDef connector fill:#8b5cf6,stroke:#7c3aed,color:#fff,stroke-width:2px
+    classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
+    classDef display fill:#06b6d4,stroke:#0891b2,color:#fff
+    classDef hardware fill:#64748b,stroke:#475569,color:#fff
+    
+    CONN_B((B<br/>FROM OPERATIONS))
+    
+    CONN_B --> CLOSE_PROC{Closing<br/>Procedure}
+    
+    CLOSE_PROC -->|Admin<br/>Shutdown| ADMIN[Admin Initiates<br/>Shutdown via Settings]
+    CLOSE_PROC -->|Scheduled<br/>Shutdown| SCHED[Windows Task<br/>Scheduler Triggers]
+    CLOSE_PROC -->|Manual<br/>Power Off| MANUAL[Staff Powers<br/>Off Kiosk]
+    
+    ADMIN --> END_SESSION[End Kiosk Session<br/>Send Final Uptime Data]
+    SCHED --> END_SESSION
+    
+    END_SESSION --> CLOSE_APP[Close<br/>Browser/Webapp]
+    
+    CLOSE_APP --> WIN_SHUT[Windows Shutdown<br/>Command]
+    
+    WIN_SHUT --> POWER_OFF[System<br/>Powers Off]
+    
+    MANUAL --> POWER_OFF
+    
+    POWER_OFF --> DISPLAYS_OFF[Displays Power Off<br/>Touch + External]
+    
+    DISPLAYS_OFF --> MINIPC_OFF[Mini PC<br/>Powers Off]
+    
+    MINIPC_OFF --> END_DAY([END:<br/>Campus Closing Hours])
+
+    %% Apply styles
+    class CONN_B connector
+    class END_DAY startEnd
+    class CLOSE_PROC decision
+    class DISPLAYS_OFF,MINIPC_OFF hardware
+```
+
+---
+
+## System Flow 4: Error Handling
+
+**Purpose:** Shows error recovery procedures.
+
+**Entry:** From Connector C (Startup or Operation errors)
+**Exit:** Returns to Connector A (Operations) after recovery
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 50, 'rankSpacing': 50}}}%%
+flowchart TB
+    %% Style definitions first
+    classDef startEnd fill:#22c55e,stroke:#16a34a,color:#fff,stroke-width:2px
+    classDef connector fill:#8b5cf6,stroke:#7c3aed,color:#fff,stroke-width:2px
+    classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
+    classDef display fill:#06b6d4,stroke:#0891b2,color:#fff
+    classDef error fill:#ef4444,stroke:#dc2626,color:#fff
+    
+    CONN_C((C<br/>FROM STARTUP<br/>OR OPERATIONS))
+    
+    CONN_C --> ERROR_TYPE{Error<br/>Type}
+    
+    ERROR_TYPE -->|Network<br/>Offline| NET_ERR[Network<br/>Connection Lost]
+    ERROR_TYPE -->|Webapp<br/>Crash| APP_ERR[Application<br/>Error]
+    ERROR_TYPE -->|Display<br/>Issue| DISP_ERR[Display Not<br/>Responding]
+    
+    NET_ERR --> RETRY_NET{Retry<br/>Connection}
+    RETRY_NET -->|Success| CONN_A((A<br/>TO OPERATIONS))
+    RETRY_NET -->|Failed| OFFLINE_MODE[Continue in<br/>Offline Mode]
+    OFFLINE_MODE --> CONN_A
+    
+    APP_ERR --> AUTO_RESTART[Auto-Restart<br/>Browser]
+    AUTO_RESTART --> RELOAD[Reload<br/>Webapp]
+    RELOAD --> INIT_CHECK{Initialization<br/>Success?}
+    INIT_CHECK -->|Yes| CONN_A
+    INIT_CHECK -->|No| APP_ERR
+    
+    DISP_ERR --> CHECK_CABLE[Check Display<br/>Cables]
+    CHECK_CABLE --> RESTART_DRIVER[Restart Display<br/>Driver]
+    RESTART_DRIVER --> DISP_CHECK{Display<br/>Working?}
+    DISP_CHECK -->|Yes| CONN_A
+    DISP_CHECK -->|No| MANUAL_INT[Require Manual<br/>Intervention]
+    MANUAL_INT --> NOTIFY[Notify<br/>Admin/Staff]
+    NOTIFY --> END_ERR([END:<br/>Awaiting Service])
+
+    %% Apply styles
+    class CONN_C,CONN_A connector
+    class END_ERR startEnd
+    class ERROR_TYPE,RETRY_NET,INIT_CHECK,DISP_CHECK decision
+    class NET_ERR,APP_ERR,DISP_ERR error
+```
+
+---

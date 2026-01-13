@@ -49,7 +49,7 @@ flowchart TB
 
 ## Kiosk System Flowcharts
 
-### System Flow 1: Kiosk Startup Sequence
+### System Flow 1: Kiosk Hardware & Software Startup
 ```mermaid
 %%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 50, 'rankSpacing': 50}}}%%
 flowchart TB
@@ -57,25 +57,39 @@ flowchart TB
     classDef display fill:#06b6d4,stroke:#0891b2,color:#fff
     classDef action fill:#00b4d8,stroke:#0077b6,color:#fff
     classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
+    classDef hardware fill:#64748b,stroke:#475569,color:#fff
     classDef connector fill:#8b5cf6,stroke:#7c3aed,color:#fff,stroke-width:2px
     
-    START([START: POWER ON]) --> INIT[HARDWARE INITIALIZATION]
-    INIT --> DISP_CHK{Displays Connected?}
-    DISP_CHK -->|No| ERR[DISPLAY ERROR]
-    DISP_CHK -->|Yes| BOOT[WINDOWS OS BOOT]
+    START([START: POWER ON]) --> POWER[POWER ON KIOSK HARDWARE]
+    POWER --> HW_INIT{Hardware Init Success?}
     
-    BOOT --> BROWSER[LAUNCH KIOSK BROWSER]
-    BROWSER --> APP_INIT{Webapp Load Success?}
+    HW_INIT -->|Yes| BOOT[BOOT MINI PC & WINDOWS OS]
+    HW_INIT -->|No| FIX_HW[TROUBLESHOOT HARDWARE]
+    
+    FIX_HW --> POWER
+    
+    BOOT --> DISP_CHK{Are Displays Connected?}
+    DISP_CHK -->|Yes| WIN_READY[WINDOWS OS READY]
+    DISP_CHK -->|No| FIX_DISP[RECONNECT DISPLAY CABLES]
+    
+    FIX_DISP --> DISP_CHK
+    
+    WIN_READY --> AUTO_LOG[AUTO-LOGIN TO WINDOWS]
+    AUTO_LOG --> BROWSER[LAUNCH BROWSER IN KIOSK MODE]
+    
+    BROWSER --> LOAD_APP[LOAD iCCAT WEBAPP URL]
+    LOAD_APP --> APP_INIT{Webapp Load Success?}
+    
+    APP_INIT -->|Yes| FIREBASE[CONNECT TO FIREBASE LISTENERS]
     APP_INIT -->|No| CONN_C((C))
-    APP_INIT -->|Yes| SYNC[SYNC FIREBASE DATA]
     
-    SYNC --> READY[/KIOSK READY/]
+    FIREBASE --> READY[/KIOSK READY: HOME PAGE/]
     READY --> CONN_A((A))
 
     class START startEnd
     class READY display
-    class INIT,BOOT,BROWSER,SYNC action
-    class DISP_CHK,APP_INIT decision
+    class POWER,BOOT,WIN_READY,AUTO_LOG,BROWSER,LOAD_APP,FIREBASE action
+    class HW_INIT,DISP_CHK,APP_INIT decision
     class CONN_A,CONN_C connector
 ```
 
@@ -124,21 +138,21 @@ flowchart TB
     classDef decision fill:#f59e0b,stroke:#d97706,color:#fff
     classDef connector fill:#8b5cf6,stroke:#7c3aed,color:#fff,stroke-width:2px
     
-    CONN_B((B)) --> SHUT_ACT{Is Admin Shutdown?}
+    CONN_B((B)) --> SH_TYPE{Is Scheduled Shutdown?}
     
-    SHUT_ACT -->|Yes| ADMIN[ADMIN INITIATES SHUTDOWN]
-    SHUT_ACT -->|No| SCHED[SCHEDULED TASK TRIGGER]
+    SH_TYPE -->|Yes| SCHED[WINDOWS TASK TRIGGER]
+    SH_TYPE -->|No| ADMIN[ADMIN INITIATES SHUTDOWN]
     
-    ADMIN --> END_DATA[SEND FINAL UPTIME DATA]
-    SCHED --> END_DATA
+    SCHED --> END_DATA[SEND FINAL UPTIME DATA]
+    ADMIN --> END_DATA
     
     END_DATA --> CLOSE_APP[CLOSE BROWSER WEBAPP]
     CLOSE_APP --> WIN_SHUT[WINDOWS OS SHUTDOWN]
     WIN_SHUT --> FINISH([END: POWER OFF])
 
     class FINISH startEnd
-    class ADMIN,SCHED,END_DATA,CLOSE_APP,WIN_SHUT action
-    class SHUT_ACT decision
+    class SCHED,ADMIN,END_DATA,CLOSE_APP,WIN_SHUT action
+    class SH_TYPE decision
     class CONN_B connector
 ```
 
