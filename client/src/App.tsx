@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { CacheVerificationLoader } from "@/components/cache-verification-loader";
 import { useKioskUptime } from "@/lib/use-kiosk-uptime";
+import { motion, AnimatePresence } from "framer-motion";
 
 import Landing from "@/pages/landing";
 import Navigation from "@/pages/navigation";
@@ -31,33 +32,93 @@ import AdminFloorPlanManagement from "@/pages/admin-floor-plan-management";
 
 import NotFound from "@/pages/not-found";
 
-function Router() {
+function PageTransition({ children }: { children: React.ReactNode }) {
   return (
-    <Switch>
-      <Route path="/" component={Landing} />
-      <Route path="/navigation" component={Navigation} />
-      <Route path="/navigate/:routeId" component={MobileNavigation} />
-      <Route path="/events" component={Events} />
-      <Route path="/staff" component={StaffDirectory} />
-      <Route path="/about" component={About} />
-      <Route path="/feedback" component={FeedbackPage} />
-      <Route path="/thank-you" component={ThankYouPage} />
-      <Route path="/screensaver" component={Screensaver} />
-      
-      <Route path="/admin/login" component={AdminLogin} />
-      <Route path="/admin/dashboard" component={AdminDashboard} />
-      <Route path="/admin/buildings" component={AdminBuildings} />
-      <Route path="/admin/paths" component={AdminPaths} />
-      <Route path="/admin/floor-plans" component={AdminFloorPlans} />
-      <Route path="/admin/floor-plan-management" component={AdminFloorPlanManagement} />
-      <Route path="/admin/room-paths" component={AdminFloorPlanManagement} />
-      <Route path="/admin/staff" component={AdminStaff} />
-      <Route path="/admin/events" component={AdminEvents} />
-      <Route path="/admin/settings" component={AdminSettings} />
-      <Route path="/admin/analytics" component={AdminAnalytics} />
-      
-      <Route component={NotFound} />
-    </Switch>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="w-full h-full"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function Router() {
+  const [location] = useLocation();
+  
+  return (
+    <AnimatePresence mode="wait">
+      <Switch location={location} key={location}>
+        <Route path="/">
+          <PageTransition><Landing /></PageTransition>
+        </Route>
+        <Route path="/navigation">
+          <PageTransition><Navigation /></PageTransition>
+        </Route>
+        <Route path="/navigate/:routeId">
+          {(params) => <PageTransition><MobileNavigation routeId={params.routeId} /></PageTransition>}
+        </Route>
+        <Route path="/events">
+          <PageTransition><Events /></PageTransition>
+        </Route>
+        <Route path="/staff">
+          <PageTransition><StaffDirectory /></PageTransition>
+        </Route>
+        <Route path="/about">
+          <PageTransition><About /></PageTransition>
+        </Route>
+        <Route path="/feedback">
+          <PageTransition><FeedbackPage /></PageTransition>
+        </Route>
+        <Route path="/thank-you">
+          <PageTransition><ThankYouPage /></PageTransition>
+        </Route>
+        <Route path="/screensaver">
+          <PageTransition><Screensaver /></PageTransition>
+        </Route>
+        
+        <Route path="/admin/login">
+          <PageTransition><AdminLogin /></PageTransition>
+        </Route>
+        <Route path="/admin/dashboard">
+          <PageTransition><AdminDashboard /></PageTransition>
+        </Route>
+        <Route path="/admin/buildings">
+          <PageTransition><AdminBuildings /></PageTransition>
+        </Route>
+        <Route path="/admin/paths">
+          <PageTransition><AdminPaths /></PageTransition>
+        </Route>
+        <Route path="/admin/floor-plans">
+          <PageTransition><AdminFloorPlans /></PageTransition>
+        </Route>
+        <Route path="/admin/floor-plan-management">
+          <PageTransition><AdminFloorPlanManagement /></PageTransition>
+        </Route>
+        <Route path="/admin/room-paths">
+          <PageTransition><AdminFloorPlanManagement /></PageTransition>
+        </Route>
+        <Route path="/admin/staff">
+          <PageTransition><AdminStaff /></PageTransition>
+        </Route>
+        <Route path="/admin/events">
+          <PageTransition><AdminEvents /></PageTransition>
+        </Route>
+        <Route path="/admin/settings">
+          <PageTransition><AdminSettings /></PageTransition>
+        </Route>
+        <Route path="/admin/analytics">
+          <PageTransition><AdminAnalytics /></PageTransition>
+        </Route>
+        
+        <Route>
+          <PageTransition><NotFound /></PageTransition>
+        </Route>
+      </Switch>
+    </AnimatePresence>
   );
 }
 
