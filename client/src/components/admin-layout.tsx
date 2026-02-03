@@ -108,7 +108,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <SidebarMenu>
                   {menuItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={location === item.url} data-testid={`nav-${item.title.toLowerCase().replace(' ', '-')}`}>
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={location === item.url} 
+                        data-testid={`nav-${item.title.toLowerCase().replace(' ', '-')}`}
+                        className="transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                      >
                         <Link href={item.url}>
                           <item.icon className="w-5 h-5" />
                           <span>{item.title}</span>

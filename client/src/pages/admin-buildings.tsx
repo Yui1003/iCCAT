@@ -17,6 +17,22 @@ import ImageUploadInput from "@/components/image-upload-input";
 import type { Building, InsertBuilding, LatLng } from "@shared/schema";
 import { poiTypes, canHaveDepartments } from "@shared/schema";
 import { invalidateEndpointCache } from "@/lib/offline-data";
+import { motion } from "framer-motion";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -10 },
+  visible: { opacity: 1, x: 0 }
+};
 
 export default function AdminBuildings() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -519,7 +535,12 @@ export default function AdminBuildings() {
                   return matchesSearch && matchesType;
                 });
                 return (
-                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                  <motion.div 
+                    className="space-y-3 max-h-[500px] overflow-y-auto"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     {filteredBuildings.length === 0 ? (
                       <div className="text-center py-8">
                         <MapPin className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
@@ -527,42 +548,43 @@ export default function AdminBuildings() {
                       </div>
                     ) : (
                       filteredBuildings.map((building) => (
-                        <div
-                          key={building.id}
-                          className="flex items-start justify-between p-3 bg-muted/50 rounded-lg hover-elevate"
-                          data-testid={`building-item-${building.id}`}
-                        >
-                          <div className="flex-1">
-                            <h3 className="font-medium text-foreground">{building.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {building.type || "Building"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {building.lat.toFixed(4)}, {building.lng.toFixed(4)}
-                            </p>
+                        <motion.div key={building.id} variants={itemVariants}>
+                          <div
+                            className="flex items-start justify-between p-3 bg-muted/50 rounded-lg hover-elevate"
+                            data-testid={`building-item-${building.id}`}
+                          >
+                            <div className="flex-1">
+                              <h3 className="font-medium text-foreground">{building.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {building.type || "Building"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {building.lat.toFixed(4)}, {building.lng.toFixed(4)}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleOpenDialog(building)}
+                                data-testid={`button-edit-${building.id}`}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => deleteMutation.mutate(building.id)}
+                                data-testid={`button-delete-${building.id}`}
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => handleOpenDialog(building)}
-                              data-testid={`button-edit-${building.id}`}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => deleteMutation.mutate(building.id)}
-                              data-testid={`button-delete-${building.id}`}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </div>
+                        </motion.div>
                       ))
                     )}
-                  </div>
+                  </motion.div>
                 );
               })()}
             </Card>

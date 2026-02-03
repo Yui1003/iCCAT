@@ -59,7 +59,7 @@ function Router() {
           <PageTransition><Navigation /></PageTransition>
         </Route>
         <Route path="/navigate/:routeId">
-          {(params) => <PageTransition><MobileNavigation routeId={params.routeId} /></PageTransition>}
+          {(params) => <PageTransition><MobileNavigation /></PageTransition>}
         </Route>
         <Route path="/events">
           <PageTransition><Events /></PageTransition>
