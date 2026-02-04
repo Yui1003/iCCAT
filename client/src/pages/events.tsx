@@ -156,6 +156,18 @@ export default function Events() {
     queryKey: ['/api/events']
   });
 
+  // Handle direct navigation to an event via URL parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const eventId = params.get('id');
+    if (eventId && events.length > 0) {
+      const event = events.find(e => e.id === eventId);
+      if (event) {
+        setSelectedEvent(event);
+      }
+    }
+  }, [events]);
+
   const { data: buildings = [] } = useQuery<Building[]>({
     queryKey: ['/api/buildings']
   });
