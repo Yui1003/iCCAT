@@ -1,11 +1,11 @@
 /**
- * ICCAT Service Worker v8
+ * ICCAT Service Worker v9
  * Complete offline support with auto-caching of all assets
  */
 
-const CACHE_NAME = 'iccat-v8';
-const DATA_CACHE_NAME = 'iccat-data-v8';
-const IMAGE_CACHE_NAME = 'iccat-images-v8';
+const CACHE_NAME = 'iccat-v9';
+const DATA_CACHE_NAME = 'iccat-data-v9';
+const IMAGE_CACHE_NAME = 'iccat-images-v9';
 
 // Static assets to cache immediately
 const urlsToCache = [
