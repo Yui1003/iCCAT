@@ -503,7 +503,7 @@ export default function Events() {
 }
 
 // EventCard component to avoid duplication
-function EventCard({ event, onSelect }: { event: event; onSelect: (event: Event) => void }) {
+function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event) => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -580,6 +580,7 @@ function EventCard({ event, onSelect }: { event: event; onSelect: (event: Event)
           </p>
         )}
       </div>
-    </Card>
+      </Card>
+    </motion.div>
   );
 }
