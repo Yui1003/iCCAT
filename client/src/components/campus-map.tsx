@@ -180,7 +180,7 @@ export default function CampusMap({
     }
 
     const map = L.map(mapRef.current, {
-      center: [centerLat || 14.402870, centerLng || 120.8660],
+      center: [centerLat || 14.402940724441228, centerLng || 120.86516350507739],
       zoom: 17.5,
       minZoom: 17.5,
       maxZoom: 21,
@@ -348,8 +348,8 @@ export default function CampusMap({
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     
-    const defaultLat = 14.402870;
-    const defaultLng = 120.8660;
+    const defaultLat = 14.402940724441228;
+    const defaultLng = 120.86516350507739;
     const lat = centerLat || defaultLat;
     const lng = centerLng || defaultLng;
     
@@ -372,6 +372,7 @@ export default function CampusMap({
     // When zoomed out (< 18), use smaller sizes
     // When zoomed in (>= 18), use normal sizes
     const isZoomedOut = currentZoom < 18;
+    const isMaxZoom = currentZoom >= 21;
     const kioskSize = isZoomedOut ? { img: 'w-12 h-12', icon: 48, ping: 'w-8 h-8' } : { img: 'w-16 h-16', icon: 64, ping: 'w-10 h-10' };
     const buildingSize = isZoomedOut ? { img: 'w-8 h-8', icon: 32, ping: 'w-6 h-6' } : { img: 'w-12 h-12', icon: 48, ping: 'w-8 h-8' };
 
@@ -402,7 +403,7 @@ export default function CampusMap({
       const kioskMarker = L.marker([kioskLat, kioskLng], { icon: kioskIconHtml })
         .addTo(mapInstanceRef.current)
         .bindTooltip(kioskName, {
-          permanent: false,
+          permanent: isMaxZoom,
           direction: 'top',
           offset: [0, -(kioskSize.icon / 2)],
           className: 'bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
@@ -459,7 +460,7 @@ export default function CampusMap({
         })
           .addTo(mapInstanceRef.current)
           .bindTooltip(building.name, {
-            permanent: false,
+            permanent: isMaxZoom,
             direction: 'top',
             offset: [0, -(buildingSize.icon / 2)],
             className: 'bg-card text-card-foreground px-3 py-2 rounded-lg shadow-lg border border-card-border'
