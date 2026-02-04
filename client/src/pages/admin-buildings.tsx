@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import PolygonDrawingMap from "@/components/polygon-drawing-map";
 import ImageUploadInput from "@/components/image-upload-input";
-import type { Building, InsertBuilding, LatLng, PointOfInterestType } from "@shared/schema";
+import type { Building, InsertBuilding, LatLng, POIType } from "@shared/schema";
 import { poiTypes, canHaveDepartments } from "@shared/schema";
 import { invalidateEndpointCache } from "@/lib/offline-data";
 
@@ -44,9 +44,16 @@ export default function AdminBuildings() {
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>("All Types");
   const { toast } = useToast();
 
-  const { data: buildings = [], isLoading } = useQuery<Building[]>({
+  const { data: buildingsData = [], isLoading } = useQuery<Building[]>({
     queryKey: ["/api/buildings"],
   });
+
+  const buildings = useMemo(() => {
+    return (buildingsData as any[]).map(b => ({
+      ...b,
+      polygon: b.polygon as LatLng[] | null
+    })) as Building[];
+  }, [buildingsData]);
 
   const upsertMutation = useMutation({
     mutationFn: async (data: InsertBuilding) => {
@@ -99,7 +106,7 @@ export default function AdminBuildings() {
       setEditingBuilding(building);
       setFormData({
         name: building.name,
-        type: (building.type as PointOfInterestType) || "Building",
+        type: (building.type as POIType) || "Building",
         description: building.description || "",
         lat: building.lat,
         lng: building.lng,
@@ -149,9 +156,9 @@ export default function AdminBuildings() {
               <PolygonDrawingMap
                 centerLat={formData.lat}
                 centerLng={formData.lng}
-                polygon={formData.polygon}
+                polygon={formData.polygon as LatLng[] | null}
                 onPolygonChange={(polygon) => setFormData((prev) => ({ ...prev, polygon }))}
-                existingBuildings={buildings}
+                existingBuildings={buildings as Building[]}
               />
             </Card>
           </div>
@@ -341,7 +348,7 @@ export default function AdminBuildings() {
                 />
               </div>
 
-              {formData.type && canHaveDepartments(formData.type as PointOfInterestType) && (
+              {formData.type && canHaveDepartments(formData.type as POIType) && (
                 <div className="space-y-2">
                   <Label>Departments (Optional - one per line)</Label>
                   <Input
