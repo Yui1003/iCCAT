@@ -241,7 +241,7 @@ export default function Screensaver() {
   }, [carouselSlides.length]);
 
   // Exit screensaver on any touch/click
-  const handleExit = (eventId?: string) => {
+  const handleExit = () => {
     // Immediately dispatch the screensaver-change event BEFORE navigation
     // This ensures the "Active" status is sent right away, not delayed until unmount
     // Use forceStatus: 'active' to bypass location-based detection (since location is still '/screensaver' at this point)
@@ -250,19 +250,15 @@ export default function Screensaver() {
     }));
     console.log('[SCREENSAVER] Touch detected - immediately dispatching Active status with forceStatus override');
     
-    // Then navigate to home or specific event
-    if (eventId) {
-      setLocation(`/events?id=${eventId}`);
-    } else {
-      setLocation("/");
-    }
+    // Then navigate to home
+    setLocation("/");
   };
 
   return (
     <div
       className="h-screen w-full overflow-hidden relative cursor-pointer"
-      onClick={() => handleExit()}
-      onTouchStart={() => handleExit()}
+      onClick={handleExit}
+      onTouchStart={handleExit}
       style={{
         background: "linear-gradient(135deg, hsl(142, 60%, 25%) 0%, hsl(142, 50%, 35%) 50%, hsl(142, 55%, 30%) 100%)",
       }}
@@ -334,11 +330,7 @@ export default function Screensaver() {
                 {carouselSlides[currentSlide].map((item) => (
                   <div
                     key={item.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleExit(item.id);
-                    }}
-                    className="bg-white/10 backdrop-blur-md rounded-lg overflow-hidden border border-white/20 shadow-2xl transition-transform hover:scale-[1.03] active:scale-[0.98]"
+                    className="bg-white/10 backdrop-blur-md rounded-lg overflow-hidden border border-white/20 shadow-2xl"
                   >
                     {/* Image */}
                     {item.image && (
