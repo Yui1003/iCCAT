@@ -230,9 +230,14 @@ export default function StaffDirectory() {
                 animate="visible"
               >
                 {filteredDepartments.map((dept) => (
-                  <motion.div key={dept.name} variants={itemVariants}>
+                  <motion.div 
+                    key={dept.name} 
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
                     <Card
-                      className="p-6 hover-elevate active-elevate-2 cursor-pointer h-full"
+                      className="p-6 hover-elevate active-elevate-2 cursor-pointer h-full transition-shadow hover:shadow-lg"
                       data-testid={`department-card-${dept.name}`}
                       onClick={() => {
                         setDepartmentFilter(dept.name!);
@@ -283,9 +288,14 @@ export default function StaffDirectory() {
                 animate="visible"
               >
                 {filteredStaff.map((member) => (
-                  <motion.div key={member.id} variants={itemVariants}>
+                  <motion.div 
+                    key={member.id} 
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
                     <Card
-                      className="p-6 hover-elevate active-elevate-2 cursor-pointer h-full"
+                      className="p-6 hover-elevate active-elevate-2 cursor-pointer h-full transition-shadow hover:shadow-lg"
                       data-testid={`staff-card-${member.id}`}
                       onClick={() => setSelectedStaff(member)}
                     >

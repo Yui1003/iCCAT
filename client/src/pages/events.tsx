@@ -18,6 +18,7 @@ import { useGlobalInactivity } from "@/hooks/use-inactivity";
 import useEmblaCarousel from "embla-carousel-react";
 import { trackEvent } from "@/lib/analytics-tracker";
 import { AnalyticsEventType } from "@shared/analytics-schema";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Helper function to determine if event is upcoming/ongoing (green) or past (red)
 function getEventStatus(date: string, time?: string | null): 'upcoming' | 'past' {
@@ -187,297 +188,135 @@ export default function Events() {
   const ended = dateBasedEvents.filter(event => getEventStatus(event.date, event.time) === 'past');
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-card-border p-4 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto flex items-center gap-4">
-          <Link href="/">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Events & Announcements</h1>
-            <p className="text-sm text-muted-foreground">Stay updated with campus activities</p>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Tabs for Calendar and Event List Views */}
-        <Tabs defaultValue="calendar" className="mb-8" data-testid="tabs-events-view">
-          <TabsList className="grid w-full max-w-xs grid-cols-2">
-            <TabsTrigger value="calendar" data-testid="tab-calendar">Calendar</TabsTrigger>
-            <TabsTrigger value="list" data-testid="tab-event-list">Event List</TabsTrigger>
-          </TabsList>
-
-          {/* Calendar Tab */}
-          <TabsContent value="calendar" className="mt-6" data-testid="tab-content-calendar">
-            {isLoading ? (
-              <Card className="p-8">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-10 bg-muted rounded" />
-                  <div className="grid grid-cols-7 gap-2">
-                    {Array.from({ length: 35 }).map((_, i) => (
-                      <div key={i} className="aspect-square bg-muted rounded" />
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            ) : (
-              <CalendarView
-                events={filteredEvents}
-                onEventSelect={setSelectedEvent}
-              />
-            )}
-          </TabsContent>
-
-          {/* Event List Tab */}
-          <TabsContent value="list" className="mt-6" data-testid="tab-content-list">
-            {/* Classification Filter */}
-            <div className="mb-6">
-              <Label className="flex items-center gap-2 mb-2 text-foreground">
-                <Filter className="w-4 h-4" />
-                Filter by Classification
-              </Label>
-              <Select
-                value={classificationFilter}
-                onValueChange={setClassificationFilter}
-              >
-                <SelectTrigger className="max-w-xs" data-testid="select-classification-filter">
-                  <SelectValue placeholder="Select classification" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {eventClassifications.map((classification) => (
-                    <SelectItem key={classification} value={classification}>
-                      {classification}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {isLoading ? (
-          <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="h-96 animate-pulse bg-muted" />
-            ))}
-          </div>
-        ) : filteredEvents.length === 0 ? (
-          <div className="text-center py-16">
-            <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-foreground mb-2">
-              {classificationFilter === "all" ? "No Events Yet" : `No ${classificationFilter}s Found`}
-            </h3>
-            <p className="text-muted-foreground">Check back soon for upcoming events and announcements</p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {/* Ongoing/Upcoming Events - Horizontal Swipeable Carousel */}
-            {ongoingUpcoming.length > 0 && (
-              <div>
-                <div className="flex items-center gap-4 mb-6">
-                  <h2 className="text-2xl font-bold text-foreground">Ongoing & Upcoming</h2>
-                  {ended.length > 0 && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowPastEvents(!showPastEvents)}
-                      className="flex items-center gap-2"
-                      data-testid="button-toggle-past-events"
-                    >
-                      <Calendar className="w-4 h-4" />
-                      {showPastEvents ? "Hide Past Events" : "Show Past Events"} ({ended.length})
-                    </Button>
-                  )}
-                  <Separator className="flex-1" />
-                  {ongoingUpcoming.length > 1 && (
-                    <CarouselNavigation emblaApi={ongoingEmblaApi} carouselName="ongoing" />
-                  )}
-                </div>
-                <div className="overflow-hidden" ref={ongoingEmblaRef} data-testid="carousel-ongoing-upcoming">
-                  <div className="flex gap-6">
-                    {ongoingUpcoming.map((event) => (
-                      <div key={event.id} className="flex-shrink-0 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
-                        <EventCard event={event} onSelect={setSelectedEvent} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Standalone Past Events toggle when there are no ongoing events */}
-            {ongoingUpcoming.length === 0 && ended.length > 0 && (
-              <div className="flex items-center gap-4 mb-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowPastEvents(!showPastEvents)}
-                  className="flex items-center gap-2"
-                  data-testid="button-toggle-past-events-standalone"
-                >
-                  <Calendar className="w-4 h-4" />
-                  {showPastEvents ? "Hide Past Events" : "Show Past Events"} ({ended.length})
-                </Button>
-                <Separator className="flex-1" />
-              </div>
-            )}
-
-            {/* Achievements - Horizontal Swipeable Carousel */}
-            {achievements.length > 0 && (
-              <div>
-                <div className="flex items-center gap-4 mb-6">
-                  <h2 className="text-2xl font-bold text-foreground">Achievements</h2>
-                  <Separator className="flex-1" />
-                  {achievements.length > 1 && (
-                    <CarouselNavigation emblaApi={achievementsEmblaApi} carouselName="achievements" />
-                  )}
-                </div>
-                <div className="overflow-hidden" ref={achievementsEmblaRef} data-testid="carousel-achievements">
-                  <div className="flex gap-6">
-                    {achievements.map((event) => (
-                      <div key={event.id} className="flex-shrink-0 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
-                        <EventCard event={event} onSelect={setSelectedEvent} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Collapsible Past Events Section */}
-            {ended.length > 0 && showPastEvents && (
-              <div>
-                <div className="flex items-center gap-4 mb-6">
-                  <h2 className="text-2xl font-bold text-foreground">Past Events</h2>
-                  <Separator className="flex-1" />
-                </div>
-                <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
-                  {ended.map((event) => (
-                    <EventCard key={event.id} event={event} onSelect={setSelectedEvent} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-          </TabsContent>
-        </Tabs>
-      </main>
-
+    <AnimatePresence>
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <Card className="max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" data-testid="modal-event-detail">
-            <div className="sticky top-0 bg-card border-b border-card-border p-4 flex items-center justify-between z-10">
-              <h2 className="text-xl font-semibold text-foreground">Event Details</h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSelectedEvent(null)}
-                data-testid="button-close-event-modal"
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-
-            <div className="p-6">
-              {selectedEvent.image && (
-                <div className="w-full mb-6 rounded-lg bg-muted flex items-center justify-center">
-                  <ProxiedImage
-                    src={selectedEvent.image}
-                    alt={selectedEvent.title}
-                    className="w-full h-auto object-contain max-h-[min(60vh,500px)]"
-                  />
-                </div>
-              )}
-
-              <div className="mb-4">
-                <Badge variant="secondary">
-                  {selectedEvent.classification}
-                </Badge>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          >
+            <Card className="max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" data-testid="modal-event-detail">
+              <div className="sticky top-0 bg-card border-b border-card-border p-4 flex items-center justify-between z-10">
+                <h2 className="text-xl font-semibold text-foreground">Event Details</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedEvent(null)}
+                  data-testid="button-close-event-modal"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
               </div>
 
-              <h1 className="text-3xl font-bold text-foreground mb-4">
-                {selectedEvent.title}
-              </h1>
+              <div className="p-6">
+                {selectedEvent.image && (
+                  <div className="w-full mb-6 rounded-lg bg-muted flex items-center justify-center">
+                    <ProxiedImage
+                      src={selectedEvent.image}
+                      alt={selectedEvent.title}
+                      className="w-full h-auto object-contain max-h-[min(60vh,500px)]"
+                    />
+                  </div>
+                )}
 
-              {/* Only show date/time for non-Achievement events */}
-              {selectedEvent.classification !== "Achievement" && (
-                <div className="flex flex-col gap-3 text-base mb-6 pb-6 border-b border-border">
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div className={`flex items-center gap-2 ${
-                      getEventStatus(selectedEvent.date, selectedEvent.time) === 'upcoming' 
-                        ? 'text-green-600 dark:text-green-500' 
-                        : 'text-red-600 dark:text-red-500'
-                    }`}>
-                      <Calendar className="w-5 h-5" />
-                      <span>{selectedEvent.date}</span>
-                    </div>
-                    {selectedEvent.time && (
+                <div className="mb-4">
+                  <Badge variant="secondary">
+                    {selectedEvent.classification}
+                  </Badge>
+                </div>
+
+                <h1 className="text-3xl font-bold text-foreground mb-4">
+                  {selectedEvent.title}
+                </h1>
+
+                {/* Only show date/time for non-Achievement events */}
+                {selectedEvent.classification !== "Achievement" && (
+                  <div className="flex flex-col gap-3 text-base mb-6 pb-6 border-b border-border">
+                    <div className="flex flex-wrap items-center gap-4">
                       <div className={`flex items-center gap-2 ${
                         getEventStatus(selectedEvent.date, selectedEvent.time) === 'upcoming' 
                           ? 'text-green-600 dark:text-green-500' 
                           : 'text-red-600 dark:text-red-500'
                       }`}>
-                        <Clock className="w-5 h-5" />
-                        <span>{selectedEvent.time}</span>
+                        <Calendar className="w-5 h-5" />
+                        <span>{selectedEvent.date}</span>
+                      </div>
+                      {selectedEvent.time && (
+                        <div className={`flex items-center gap-2 ${
+                          getEventStatus(selectedEvent.date, selectedEvent.time) === 'upcoming' 
+                            ? 'text-green-600 dark:text-green-500' 
+                            : 'text-red-600 dark:text-red-500'
+                        }`}>
+                          <Clock className="w-5 h-5" />
+                          <span>{selectedEvent.time}</span>
+                        </div>
+                      )}
+                    </div>
+                    {selectedEvent.endDate && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground ml-7">
+                        → to {selectedEvent.endDate}
+                        {selectedEvent.endTime && (
+                          <>
+                            <span>•</span>
+                            <span>{selectedEvent.endTime}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {selectedEvent.location && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="w-5 h-5" />
+                        <span>{selectedEvent.location}</span>
                       </div>
                     )}
                   </div>
-                  {selectedEvent.endDate && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground ml-7">
-                      → to {selectedEvent.endDate}
-                      {selectedEvent.endTime && (
-                        <>
-                          <span>•</span>
-                          <span>{selectedEvent.endTime}</span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                  {selectedEvent.location && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="w-5 h-5" />
-                      <span>{selectedEvent.location}</span>
-                    </div>
-                  )}
-                </div>
-              )}
+                )}
 
-              {/* Show location separately for achievements if exists */}
-              {selectedEvent.classification === "Achievement" && selectedEvent.location && (
-                <div className="flex items-center gap-2 text-muted-foreground mb-6 pb-6 border-b border-border">
-                  <MapPin className="w-5 h-5" />
-                  <span>{selectedEvent.location}</span>
-                </div>
-              )}
+                {/* Show location separately for achievements if exists */}
+                {selectedEvent.classification === "Achievement" && selectedEvent.location && (
+                  <div className="flex items-center gap-2 text-muted-foreground mb-6 pb-6 border-b border-border">
+                    <MapPin className="w-5 h-5" />
+                    <span>{selectedEvent.location}</span>
+                  </div>
+                )}
 
-              {selectedEvent.description && (
-                <div className="prose prose-slate max-w-none mb-6">
-                  <p className="text-lg text-foreground whitespace-pre-wrap">
-                    {selectedEvent.description}
-                  </p>
-                </div>
-              )}
+                {selectedEvent.description && (
+                  <div className="prose prose-slate max-w-none mb-6">
+                    <p className="text-lg text-foreground whitespace-pre-wrap">
+                      {selectedEvent.description}
+                    </p>
+                  </div>
+                )}
 
-              {selectedEvent.buildingId && (
-                <div className="mt-6 pt-6 border-t border-border">
-                  <Button
-                    onClick={() => {
-                      setDirectionsDestination(selectedEvent.buildingId);
-                      setShowDirections(true);
-                    }}
-                    className="w-full"
-                    data-testid="button-get-directions"
-                  >
-                    <Navigation className="w-4 h-4 mr-2" />
-                    Get Directions
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
-        </div>
+                {selectedEvent.buildingId && (
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <Button
+                      onClick={() => {
+                        setDirectionsDestination(selectedEvent.buildingId);
+                        setShowDirections(true);
+                      }}
+                      className="w-full"
+                      data-testid="button-get-directions"
+                    >
+                      <Navigation className="w-4 h-4 mr-2" />
+                      Get Directions
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </motion.div>
+        </motion.div>
       )}
+    </AnimatePresence>
+  );
 
       {showDirections && directionsDestination && (
         <GetDirectionsDialog
@@ -504,11 +343,16 @@ export default function Events() {
 // EventCard component to avoid duplication
 function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event) => void }) {
   return (
-    <Card
-      className="flex flex-col overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all h-full"
-      onClick={() => onSelect(event)}
-      data-testid={`event-card-${event.id}`}
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="h-full"
     >
+      <Card
+        className="flex flex-col overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all h-full hover:shadow-lg"
+        onClick={() => onSelect(event)}
+        data-testid={`event-card-${event.id}`}
+      >
       {event.image ? (
         <div className="w-full aspect-[4/3] bg-muted">
           <ProxiedImage
