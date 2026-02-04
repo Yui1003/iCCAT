@@ -32,6 +32,67 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 }
 };
 
+// StaffCard component for consistency and animations
+function StaffCard({ member, onClick, getBuildingName }: { member: Staff; onClick: () => void; getBuildingName: (id: string | null | undefined) => string }) {
+  return (
+    <motion.div
+      variants={itemVariants}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      <Card
+        className="p-6 hover-elevate active-elevate-2 cursor-pointer h-full"
+        data-testid={`staff-card-${member.id}`}
+        onClick={onClick}
+      >
+        <div className="flex items-start gap-4 mb-4">
+          <Avatar className="w-16 h-16">
+            {member.photo ? (
+              <ProxiedImage
+                src={member.photo}
+                alt={member.name}
+                className="w-full h-full object-cover rounded-full"
+              />
+            ) : (
+              <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                {member.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+              </AvatarFallback>
+            )}
+          </Avatar>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-foreground">{member.name}</h3>
+            {member.position && (
+              <p className="text-sm text-muted-foreground">{member.position}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {member.department && (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                {member.department}
+              </Badge>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">{getBuildingName(member.buildingId)}</span>
+          </div>
+
+          {member.email && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <MapPin className="w-4 h-4 opacity-0 flex-shrink-0" /> {/* Spacer */}
+              <span className="truncate">{member.email}</span>
+            </div>
+          )}
+        </div>
+      </Card>
+    </motion.div>
+  );
+}
+
 export default function StaffDirectory() {
   // Return to home after 3 minutes of inactivity
   useGlobalInactivity();
@@ -283,57 +344,12 @@ export default function StaffDirectory() {
                 animate="visible"
               >
                 {filteredStaff.map((member) => (
-                  <motion.div key={member.id} variants={itemVariants}>
-                    <Card
-                      className="p-6 hover-elevate active-elevate-2 cursor-pointer h-full"
-                      data-testid={`staff-card-${member.id}`}
-                      onClick={() => setSelectedStaff(member)}
-                    >
-                      <div className="flex items-start gap-4 mb-4">
-                        <Avatar className="w-16 h-16">
-                          {member.photo ? (
-                            <ProxiedImage
-                              src={member.photo}
-                              alt={member.name}
-                              className="w-full h-full object-cover rounded-full"
-                            />
-                          ) : (
-                            <AvatarFallback className="bg-primary text-primary-foreground text-lg">
-                              {member.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-foreground">{member.name}</h3>
-                          {member.position && (
-                            <p className="text-sm text-muted-foreground">{member.position}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        {member.department && (
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs">
-                              {member.department}
-                            </Badge>
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">{getBuildingName(member.buildingId)}</span>
-                        </div>
-
-                        {member.email && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <MapPin className="w-4 h-4 opacity-0 flex-shrink-0" /> {/* Spacer */}
-                            <span className="truncate">{member.email}</span>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  </motion.div>
+                  <StaffCard 
+                    key={member.id} 
+                    member={member} 
+                    onClick={() => setSelectedStaff(member)} 
+                    getBuildingName={getBuildingName}
+                  />
                 ))}
               </motion.div>
             )}

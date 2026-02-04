@@ -81,37 +81,37 @@ function Router() {
         </Route>
         
         <Route path="/admin/login">
-          <PageTransition><AdminLogin /></PageTransition>
+          <AdminLogin />
         </Route>
         <Route path="/admin/dashboard">
-          <PageTransition><AdminDashboard /></PageTransition>
+          <AdminDashboard />
         </Route>
         <Route path="/admin/buildings">
-          <PageTransition><AdminBuildings /></PageTransition>
+          <AdminBuildings />
         </Route>
         <Route path="/admin/paths">
-          <PageTransition><AdminPaths /></PageTransition>
+          <AdminPaths />
         </Route>
         <Route path="/admin/floor-plans">
-          <PageTransition><AdminFloorPlans /></PageTransition>
+          <AdminFloorPlans />
         </Route>
         <Route path="/admin/floor-plan-management">
-          <PageTransition><AdminFloorPlanManagement /></PageTransition>
+          <AdminFloorPlanManagement />
         </Route>
         <Route path="/admin/room-paths">
-          <PageTransition><AdminFloorPlanManagement /></PageTransition>
+          <AdminFloorPlanManagement />
         </Route>
         <Route path="/admin/staff">
-          <PageTransition><AdminStaff /></PageTransition>
+          <AdminStaff />
         </Route>
         <Route path="/admin/events">
-          <PageTransition><AdminEvents /></PageTransition>
+          <AdminEvents />
         </Route>
         <Route path="/admin/settings">
-          <PageTransition><AdminSettings /></PageTransition>
+          <AdminSettings />
         </Route>
         <Route path="/admin/analytics">
-          <PageTransition><AdminAnalytics /></PageTransition>
+          <AdminAnalytics />
         </Route>
         
         <Route>

@@ -501,14 +501,23 @@ export default function Events() {
   );
 }
 
+import { motion, AnimatePresence } from "framer-motion";
+
 // EventCard component to avoid duplication
 function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event) => void }) {
   return (
-    <Card
-      className="flex flex-col overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all h-full"
-      onClick={() => onSelect(event)}
-      data-testid={`event-card-${event.id}`}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="h-full"
     >
+      <Card
+        className="flex flex-col overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all h-full"
+        onClick={() => onSelect(event)}
+        data-testid={`event-card-${event.id}`}
+      >
       {event.image ? (
         <div className="w-full aspect-[4/3] bg-muted">
           <ProxiedImage
@@ -584,5 +593,6 @@ function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event)
         </div>
       </div>
     </Card>
-  );
+  </motion.div>
+);
 }
