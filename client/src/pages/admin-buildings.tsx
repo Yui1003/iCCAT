@@ -34,8 +34,8 @@ export default function AdminBuildings() {
     name: "",
     type: "Building",
     description: "",
-    lat: 14.3986,
-    lng: 120.8715,
+    lat: 14.402870,
+    lng: 120.8660,
     image: null,
     departments: [],
     polygon: null,
@@ -51,7 +51,7 @@ export default function AdminBuildings() {
   const buildings = useMemo(() => {
     return (buildingsData as any[]).map(b => ({
       ...b,
-      polygon: b.polygon as LatLng[] | null
+      polygon: (b.polygon as any) || null
     })) as Building[];
   }, [buildingsData]);
 
@@ -120,8 +120,8 @@ export default function AdminBuildings() {
         name: "",
         type: "Building",
         description: "",
-        lat: 14.3986,
-        lng: 120.8715,
+        lat: 14.402870,
+        lng: 120.8660,
         image: null,
         departments: [],
         polygon: null,
