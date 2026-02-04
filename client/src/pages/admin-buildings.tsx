@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import PolygonDrawingMap from "@/components/polygon-drawing-map";
 import ImageUploadInput from "@/components/image-upload-input";
-import type { Building, InsertBuilding, LatLng } from "@shared/schema";
+import type { Building, InsertBuilding, LatLng, PointOfInterestType } from "@shared/schema";
 import { poiTypes, canHaveDepartments } from "@shared/schema";
 import { invalidateEndpointCache } from "@/lib/offline-data";
 
@@ -99,13 +99,13 @@ export default function AdminBuildings() {
       setEditingBuilding(building);
       setFormData({
         name: building.name,
-        type: building.type || "Building",
+        type: (building.type as PointOfInterestType) || "Building",
         description: building.description || "",
         lat: building.lat,
         lng: building.lng,
         image: building.image,
         departments: building.departments || [],
-        polygon: building.polygon,
+        polygon: building.polygon as LatLng[] | null,
       });
     } else {
       setEditingBuilding(null);
@@ -147,11 +147,11 @@ export default function AdminBuildings() {
           <div className="lg:col-span-2">
             <Card className="p-4 h-[600px]">
               <PolygonDrawingMap
-                buildings={buildings}
-                selectedLatLng={{ lat: formData.lat, lng: formData.lng }}
-                onMapClick={handleMapClick}
+                centerLat={formData.lat}
+                centerLng={formData.lng}
                 polygon={formData.polygon}
                 onPolygonChange={(polygon) => setFormData((prev) => ({ ...prev, polygon }))}
+                existingBuildings={buildings}
               />
             </Card>
           </div>
@@ -333,12 +333,15 @@ export default function AdminBuildings() {
               <div className="space-y-2">
                 <Label>Building Photo</Label>
                 <ImageUploadInput
+                  id="building-image"
+                  label="Building Photo"
+                  type="building"
                   value={formData.image || ""}
                   onChange={(val) => setFormData((prev) => ({ ...prev, image: val }))}
                 />
               </div>
 
-              {formData.type && canHaveDepartments(formData.type) && (
+              {formData.type && canHaveDepartments(formData.type as PointOfInterestType) && (
                 <div className="space-y-2">
                   <Label>Departments (Optional - one per line)</Label>
                   <Input
