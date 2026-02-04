@@ -323,7 +323,7 @@ export default function MobileNavigation() {
         
         // Create map with SVG renderer for better mobile support (don't use canvas on iOS)
         const map = L.map(mapRef.current, {
-          center: [14.402870, 120.8660],
+          center: [14.4022, 120.8675],
           zoom: 17,
           zoomControl: true,
           touchZoom: true,

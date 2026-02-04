@@ -71,7 +71,7 @@ export default function PathDrawingMap({
 
     // Create map instance
     const map = L.map(mapRef.current, {
-      center: [14.402940724441228, 120.86516350507739],
+      center: [14.4022, 120.8675],
       zoom: 18,
       maxZoom: 22,
       zoomControl: true,
