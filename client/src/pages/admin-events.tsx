@@ -279,7 +279,7 @@ export default function AdminEvents() {
 
                 <ImageUploadInput
                   label="Event Photo"
-                  value={formData.image}
+                  value={formData.image || ""}
                   onChange={(url) => setFormData({ ...formData, image: url })}
                   type="event"
                   id={editingEvent?.id || 'new'}
@@ -371,7 +371,7 @@ export default function AdminEvents() {
               </div>
             ) : (
               filteredEvents.map((event) => (
-                <Card key={event.id} className="flex flex-col overflow-hidden" data-testid={`event-item-${event.id}`}>
+                <Card key={event.id} className="flex flex-col overflow-hidden hover-elevate active-elevate-2 transition-all" data-testid={`event-item-${event.id}`}>
                   {event.image ? (
                     <div className="w-full aspect-[4/3] bg-muted">
                       <ProxiedImage src={event.image} alt={event.title} className="w-full h-full object-cover" />

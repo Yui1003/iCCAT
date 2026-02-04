@@ -55,7 +55,7 @@ export default function PolygonDrawingMap({
 
     const map = L.map(mapRef.current, {
       center: [centerLat, centerLng],
-      zoom: 18,
+      zoom: 17.5,
       minZoom: 17,
       maxZoom: 21,
       zoomControl: true,
@@ -207,7 +207,7 @@ export default function PolygonDrawingMap({
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
     
-    mapInstanceRef.current.setView([centerLat, centerLng], 18);
+    mapInstanceRef.current.setView([centerLat, centerLng], 17.5);
   }, [centerLat, centerLng]);
 
   useEffect(() => {

@@ -257,7 +257,7 @@ export default function AdminStaff() {
 
                 <ImageUploadInput
                   label="Staff Photo"
-                  value={formData.photo}
+                  value={formData.photo || ""}
                   onChange={(url) => setFormData({ ...formData, photo: url })}
                   type="staff"
                   id={editingStaff?.id || 'new'}
@@ -322,7 +322,7 @@ export default function AdminStaff() {
               {filteredStaff.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover-elevate"
+                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover-elevate active-elevate-2 transition-all"
                   data-testid={`staff-item-${member.id}`}
                 >
                   <div className="flex items-center gap-4 flex-1">

@@ -330,7 +330,7 @@ export default function AdminBuildings() {
 
                 <ImageUploadInput
                   label="Building Photo"
-                  value={formData.image}
+                  value={formData.image || ""}
                   onChange={(url) => setFormData({ ...formData, image: url })}
                   type="building"
                   id={editingBuilding?.id || 'new'}
@@ -474,7 +474,12 @@ export default function AdminBuildings() {
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <Card className="h-[600px] overflow-hidden">
-              <CampusMap buildings={buildings} onBuildingClick={handleOpenDialog} />
+              <CampusMap 
+                centerLat={14.402940724441228}
+                centerLng={120.86516350507739}
+                buildings={buildings} 
+                onBuildingClick={handleOpenDialog} 
+              />
             </Card>
           </div>
 
