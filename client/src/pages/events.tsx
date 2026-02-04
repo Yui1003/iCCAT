@@ -18,7 +18,6 @@ import { useGlobalInactivity } from "@/hooks/use-inactivity";
 import useEmblaCarousel from "embla-carousel-react";
 import { trackEvent } from "@/lib/analytics-tracker";
 import { AnalyticsEventType } from "@shared/analytics-schema";
-import { motion, AnimatePresence } from "framer-motion";
 
 // Helper function to determine if event is upcoming/ongoing (green) or past (red)
 function getEventStatus(date: string, time?: string | null): 'upcoming' | 'past' {
@@ -505,18 +504,11 @@ export default function Events() {
 // EventCard component to avoid duplication
 function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event) => void }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      className="h-full"
+    <Card
+      className="flex flex-col overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all h-full"
+      onClick={() => onSelect(event)}
+      data-testid={`event-card-${event.id}`}
     >
-      <Card
-        className="flex flex-col overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all h-full"
-        onClick={() => onSelect(event)}
-        data-testid={`event-card-${event.id}`}
-      >
       {event.image ? (
         <div className="w-full aspect-[4/3] bg-muted">
           <ProxiedImage
@@ -579,8 +571,18 @@ function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event)
             {event.description}
           </p>
         )}
+
+        {event.location && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-auto">
+            <MapPin className="w-4 h-4" />
+            <span>{event.location}</span>
+          </div>
+        )}
+
+        <div className="mt-4">
+          <span className="text-sm text-primary font-medium">Read More →</span>
+        </div>
       </div>
-      </Card>
-    </motion.div>
+    </Card>
   );
 }

@@ -158,21 +158,6 @@ export default function StaffDirectory() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex flex-wrap gap-4 mb-6">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex-1 min-w-[300px] bg-muted rounded-lg overflow-hidden border h-[300px]"
-          >
-            <CampusMap 
-              centerLat={14.402940724441228}
-              centerLng={120.86516350507739}
-              buildings={buildings}
-              className="h-full w-full"
-            />
-          </motion.div>
-        </div>
-
         <div className="mb-8 space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />

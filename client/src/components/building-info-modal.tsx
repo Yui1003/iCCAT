@@ -6,10 +6,10 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { ProxiedImage } from "./proxied-image";
 import type { Building, Staff, Floor } from "@shared/schema";
+import { canHaveDepartments, canHaveFloorPlan, isDescriptionOnly } from "@shared/schema";
 import { useState, useRef, useEffect } from "react";
 import { trackEvent } from "@/lib/analytics-tracker";
 import { AnalyticsEventType } from "@shared/analytics-schema";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface BuildingInfoModalProps {
   building: Building;
@@ -90,23 +90,16 @@ export default function BuildingInfoModal({
   }, [isDragging, dragOffset]);
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        >
-          <Card
-            ref={modalRef}
-            className="relative max-w-2xl w-full mx-4 shadow-2xl overflow-hidden z-[1001]"
-            style={{
-              transform: `translate(${position.x}px, ${position.y}px)`,
-              cursor: isDragging ? 'grabbing' : 'default'
-            }}
-            data-testid="modal-building-info"
-          >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <Card
+        ref={modalRef}
+        className="relative max-w-2xl w-full mx-4 shadow-2xl overflow-hidden z-[1001]"
+        style={{
+          transform: `translate(${position.x}px, ${position.y}px)`,
+          cursor: isDragging ? 'grabbing' : 'default'
+        }}
+        data-testid="modal-building-info"
+      >
         <div
           className="modal-header bg-primary p-4 flex items-center justify-between cursor-grab active:cursor-grabbing"
           onMouseDown={handleMouseDown}
@@ -289,8 +282,6 @@ export default function BuildingInfoModal({
           )}
         </Tabs>
       </Card>
-      </motion.div>
     </div>
-    </AnimatePresence>
   );
 }

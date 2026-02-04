@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
-import { Hand, Clock, X } from "lucide-react";
+import { Hand, Clock } from "lucide-react";
 import { ProxiedImage } from "@/components/proxied-image";
 
 interface Event {
@@ -240,15 +240,8 @@ export default function Screensaver() {
     return () => clearInterval(interval);
   }, [carouselSlides.length]);
 
-  const [selectedItem, setSelectedItem] = useState<Event | null>(null);
-
   // Exit screensaver on any touch/click
-  const handleExit = (e: React.MouseEvent | React.TouchEvent) => {
-    // If clicking a card or modal, don't exit to homepage
-    if ((e.target as HTMLElement).closest('.event-card') || (e.target as HTMLElement).closest('.modal-content')) {
-      return;
-    }
-
+  const handleExit = () => {
     // Immediately dispatch the screensaver-change event BEFORE navigation
     // This ensures the "Active" status is sent right away, not delayed until unmount
     // Use forceStatus: 'active' to bypass location-based detection (since location is still '/screensaver' at this point)
@@ -335,15 +328,9 @@ export default function Screensaver() {
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full"
               >
                 {carouselSlides[currentSlide].map((item) => (
-                  <motion.div
+                  <div
                     key={item.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="event-card bg-white/10 backdrop-blur-md rounded-lg overflow-hidden border border-white/20 shadow-2xl cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedItem(item);
-                    }}
+                    className="bg-white/10 backdrop-blur-md rounded-lg overflow-hidden border border-white/20 shadow-2xl"
                   >
                     {/* Image */}
                     {item.image && (
@@ -397,69 +384,8 @@ export default function Screensaver() {
                         <p className="text-xs text-white/60">📍 {item.location}</p>
                       )}
                     </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Detailed Info Modal */}
-          <AnimatePresence>
-            {selectedItem && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
-                onClick={() => setSelectedItem(null)}
-              >
-                <motion.div
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
-                  className="modal-content bg-[#1a3a1a] border border-white/20 rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {selectedItem.image && (
-                    <div className="h-64 overflow-hidden bg-black/20">
-                      <ProxiedImage
-                        src={selectedItem.image}
-                        alt={selectedItem.title}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                  )}
-                  <div className="p-8">
-                    <div className="flex justify-between items-start mb-4">
-                      <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                        selectedItem.classification === "Achievement"
-                          ? "bg-yellow-500/90 text-yellow-950"
-                          : "bg-primary/90 text-primary-foreground"
-                      }`}>
-                        {selectedItem.classification}
-                      </span>
-                      <button 
-                        onClick={() => setSelectedItem(null)}
-                        className="text-white/60 hover:text-white"
-                      >
-                        <X className="w-6 h-6" />
-                      </button>
-                    </div>
-                    <h2 className="text-3xl font-bold text-white mb-4">{selectedItem.title}</h2>
-                    {selectedItem.classification !== "Achievement" && selectedItem.date && (
-                      <p className="text-lg text-white/80 mb-4">
-                        📅 {format(parseEventDate(selectedItem.date)!, "MMMM d, yyyy")}
-                        {selectedItem.time && ` • 🕒 ${selectedItem.time}`}
-                      </p>
-                    )}
-                    {selectedItem.location && (
-                      <p className="text-lg text-white/80 mb-6">📍 {selectedItem.location}</p>
-                    )}
-                    <p className="text-white/70 text-lg leading-relaxed whitespace-pre-wrap">
-                      {selectedItem.description}
-                    </p>
                   </div>
-                </motion.div>
+                ))}
               </motion.div>
             )}
           </AnimatePresence>
