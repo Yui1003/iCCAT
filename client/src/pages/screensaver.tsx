@@ -241,7 +241,12 @@ export default function Screensaver() {
   }, [carouselSlides.length]);
 
   // Exit screensaver on any touch/click
-  const handleExit = () => {
+  const handleExit = (e?: React.MouseEvent | React.TouchEvent, eventId?: string) => {
+    // If e is provided and it's a click/touch on a card, handle accordingly
+    if (e) {
+      // Don't stop propagation yet, we want to handle the specific click if it was on a card
+    }
+
     // Immediately dispatch the screensaver-change event BEFORE navigation
     // This ensures the "Active" status is sent right away, not delayed until unmount
     // Use forceStatus: 'active' to bypass location-based detection (since location is still '/screensaver' at this point)
@@ -250,15 +255,19 @@ export default function Screensaver() {
     }));
     console.log('[SCREENSAVER] Touch detected - immediately dispatching Active status with forceStatus override');
     
-    // Then navigate to home
-    setLocation("/");
+    // Then navigate to home or event details
+    if (eventId) {
+      setLocation(`/events?selectedId=${eventId}`);
+    } else {
+      setLocation("/");
+    }
   };
 
   return (
     <div
       className="h-screen w-full overflow-hidden relative cursor-pointer"
-      onClick={handleExit}
-      onTouchStart={handleExit}
+      onClick={() => handleExit()}
+      onTouchStart={() => handleExit()}
       style={{
         background: "linear-gradient(135deg, hsl(142, 60%, 25%) 0%, hsl(142, 50%, 35%) 50%, hsl(142, 55%, 30%) 100%)",
       }}
@@ -330,7 +339,15 @@ export default function Screensaver() {
                 {carouselSlides[currentSlide].map((item) => (
                   <div
                     key={item.id}
-                    className="bg-white/10 backdrop-blur-md rounded-lg overflow-hidden border border-white/20 shadow-2xl"
+                    className="bg-white/10 backdrop-blur-md rounded-lg overflow-hidden border border-white/20 shadow-2xl transition-transform hover:scale-105 active:scale-95"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleExit(e, item.id);
+                    }}
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                      handleExit(e, item.id);
+                    }}
                   >
                     {/* Image */}
                     {item.image && (

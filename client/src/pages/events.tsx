@@ -119,12 +119,39 @@ export default function Events() {
   // Return to home after 3 minutes of inactivity
   useGlobalInactivity();
   
+  const [location] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+  const deepLinkId = searchParams.get('selectedId');
+  
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showDirections, setShowDirections] = useState(false);
   const [directionsDestination, setDirectionsDestination] = useState<string | null>(null);
   const [classificationFilter, setClassificationFilter] = useState<string>("all");
   const [showPastEvents, setShowPastEvents] = useState(false);
   const [, navigate] = useLocation();
+
+  const { data: events = [], isLoading } = useQuery<Event[]>({
+    queryKey: ['/api/events']
+  });
+
+  // Handle deep-linked event selection
+  useEffect(() => {
+    if (deepLinkId && events.length > 0) {
+      const event = events.find(e => e.id === deepLinkId);
+      if (event) {
+        setSelectedEvent(event);
+      }
+    }
+  }, [deepLinkId, events]);
+
+  const { data: buildings = [] } = useQuery<Building[]>({
+    queryKey: ['/api/buildings']
+  });
+
+  // Filter events by classification
+  const filteredEvents = classificationFilter === "all" 
+    ? events 
+    : events.filter(event => event.classification === classificationFilter);
 
   // Track filter changes
   useEffect(() => {
@@ -164,19 +191,6 @@ export default function Events() {
     containScroll: 'trimSnaps',
     skipSnaps: false,
   });
-
-  const { data: events = [], isLoading } = useQuery<Event[]>({
-    queryKey: ['/api/events']
-  });
-
-  const { data: buildings = [] } = useQuery<Building[]>({
-    queryKey: ['/api/buildings']
-  });
-
-  // Filter events by classification
-  const filteredEvents = classificationFilter === "all" 
-    ? events 
-    : events.filter(event => event.classification === classificationFilter);
 
   // Separate achievements from date-based events
   const achievements = filteredEvents.filter(event => event.classification === "Achievement");
