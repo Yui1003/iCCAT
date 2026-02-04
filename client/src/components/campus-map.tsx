@@ -438,14 +438,14 @@ export default function CampusMap({
         
         const icon = L.divIcon({
           html: `
-            <div class="relative flex items-center justify-center ${pulseClass}">
+            <div class="relative flex items-center justify-center ${pulseClass} hover-elevate active-elevate-2 transition-transform duration-200">
               <div class="absolute ${buildingSize.ping} ${pingColor} rounded-full animate-ping ${scaleClass}"></div>
               <div class="relative ${scaleClass} ${highlightClass} rounded-lg">
                 <img src="${iconImage}" alt="${building.type || 'Building'}" class="${buildingSize.img} object-contain" />
               </div>
             </div>
           `,
-          className: `building-marker ${isParkingMatch ? 'parking-selectable' : ''}`,
+          className: `building-marker ${isParkingMatch ? 'parking-selectable' : ''} cursor-pointer`,
           iconSize: [buildingSize.icon, buildingSize.icon],
           iconAnchor: [buildingSize.icon / 2, buildingSize.icon / 2],
         });
