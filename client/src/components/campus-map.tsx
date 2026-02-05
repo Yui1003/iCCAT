@@ -186,6 +186,9 @@ export default function CampusMap({
       maxZoom: 21,
       zoomControl: true,
       attributionControl: true,
+      preferCanvas: true, // Better performance for multiple polygons
+      fadeAnimation: false, // Instant tile appearance
+      inertia: false, // More responsive for touch dragging
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -194,9 +197,10 @@ export default function CampusMap({
       maxNativeZoom: 19,
       detectRetina: true,
       crossOrigin: true,
-      updateWhenIdle: false, // Updated for smoother panning
-      updateWhenZooming: true, // Updated for smoother zooming
-      keepBuffer: 4 // Increased buffer for smoother panning
+      updateWhenIdle: false, 
+      updateWhenZooming: true,
+      keepBuffer: 8, // Significantly increased buffer for kiosk panning
+      updateInterval: 50 // Very frequent updates during panning
     }).addTo(map);
 
     mapInstanceRef.current = map;
@@ -379,12 +383,13 @@ export default function CampusMap({
     const isZoomedOut = currentZoom < 18;
     const isMaxZoom = currentZoom >= 21;
     // Standardized sizes for better consistency
+    // Even smaller sizes for zoomed out view to reduce overcrowding
     const kioskSize = isZoomedOut 
-      ? { img: 'w-8 h-8', icon: 32, ping: 'w-6 h-6' } 
-      : { img: 'w-12 h-12', icon: 48, ping: 'w-8 h-8' };
-    const buildingSize = isZoomedOut 
       ? { img: 'w-6 h-6', icon: 24, ping: 'w-4 h-4' } 
-      : { img: 'w-9 h-9', icon: 36, ping: 'w-6 h-6' };
+      : { img: 'w-10 h-10', icon: 40, ping: 'w-7 h-7' };
+    const buildingSize = isZoomedOut 
+      ? { img: 'w-5 h-5', icon: 20, ping: 'w-3 h-3' } 
+      : { img: 'w-8 h-8', icon: 32, ping: 'w-6 h-6' };
 
     // During navigation, don't show any markers - only route markers will be shown
     if (isNavigating) {
