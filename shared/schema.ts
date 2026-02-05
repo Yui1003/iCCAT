@@ -94,8 +94,8 @@ export const isDescriptionOnly = (type: POIType): boolean => descriptionOnlyType
 export const KIOSK_LOCATION = {
   id: 'kiosk',
   name: 'Your Location (Kiosk)',
-  lat: 14.40290888991484,
-  lng: 120.86601644754413,
+  lat: 14.403115555479292,
+  lng: 120.86635977029803,
   type: 'Kiosk',
   description: null,
   departments: null,

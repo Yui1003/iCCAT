@@ -279,7 +279,6 @@ export default function AdminBuildings() {
                         onMapClick={handleMapClick}
                         centerLat={formData.lat}
                         centerLng={formData.lng}
-                        hidePolygonsInNavigation={mapClickEnabled}
                       />
                     </div>
 

@@ -54,7 +54,7 @@ export default function PolygonDrawingMap({
     }
 
     const map = L.map(mapRef.current, {
-      center: [centerLat || 14.40290888991484, centerLng || 120.86601644754413],
+      center: [centerLat || 14.4022, centerLng || 120.8675],
       zoom: 18,
       minZoom: 17,
       maxZoom: 21,
@@ -207,8 +207,8 @@ export default function PolygonDrawingMap({
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
     
-    const lat = centerLat || 14.40290888991484;
-    const lng = centerLng || 120.86601644754413;
+    const lat = centerLat || 14.4022;
+    const lng = centerLng || 120.8675;
     mapInstanceRef.current.setView([lat, lng], 18);
   }, [centerLat, centerLng]);
 
