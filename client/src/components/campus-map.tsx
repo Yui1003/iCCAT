@@ -192,6 +192,7 @@ export default function CampusMap({
       attribution: '© OpenStreetMap contributors',
       maxZoom: 21,
       maxNativeZoom: 19,
+      detectRetina: true,
       updateWhenIdle: true,
       updateWhenZooming: false,
       keepBuffer: 2
