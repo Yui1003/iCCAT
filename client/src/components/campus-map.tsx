@@ -187,6 +187,8 @@ export default function CampusMap({
       zoomControl: true,
       attributionControl: true,
       preferCanvas: true, // Better performance for multiple polygons
+      updateWhenIdle: false, // Update while panning
+      updateWhenZooming: true,
       fadeAnimation: false, // Instant tile appearance
       inertia: false, // More responsive for touch dragging
     });
