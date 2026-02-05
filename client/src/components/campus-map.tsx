@@ -191,6 +191,10 @@ export default function CampusMap({
       updateWhenZooming: true,
       fadeAnimation: false, // Instant tile appearance
       inertia: false, // More responsive for touch dragging
+      renderer: L.canvas({
+        padding: 1.5, // Buffer room for polygons during panning
+        tolerance: 5  // Improved click detection
+      })
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
