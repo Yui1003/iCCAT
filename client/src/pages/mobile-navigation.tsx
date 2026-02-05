@@ -336,16 +336,16 @@ export default function MobileNavigation() {
           inertiaMaxSpeed: 1500,
         });
 
-        // Use tile layer with better mobile support
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',
           maxZoom: 19,
           minZoom: 15,
           crossOrigin: 'anonymous',
           errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-          keepBuffer: 2,
+          keepBuffer: 3,
           updateWhenZooming: false,
           updateWhenIdle: true,
+          bounds: [[14.398, 120.862], [14.407, 120.870]], // Constrain tiles to campus area
         }).addTo(map);
 
         mapInstanceRef.current = map;

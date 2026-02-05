@@ -3,9 +3,9 @@
  * Complete offline support with auto-caching of all assets
  */
 
-const CACHE_NAME = 'iccat-v9';
-const DATA_CACHE_NAME = 'iccat-data-v9';
-const IMAGE_CACHE_NAME = 'iccat-images-v9';
+const CACHE_NAME = 'iccat-v10';
+const DATA_CACHE_NAME = 'iccat-data-v10';
+const IMAGE_CACHE_NAME = 'iccat-images-v10';
 
 // Static assets to cache immediately
 const urlsToCache = [
@@ -52,7 +52,7 @@ function generateEssentialTileUrls() {
     west: 120.862
   };
   
-  const essentialZooms = [17, 18];
+  const essentialZooms = [17, 18, 19];
   
   console.log('[SW] Generating ESSENTIAL tile URLs (zoom 17-18 only)...');
   
@@ -86,7 +86,7 @@ function generateBackgroundTileUrls() {
     west: 120.862
   };
   
-  const backgroundZooms = [16, 19];
+  const backgroundZooms = [16, 20];
   
   backgroundZooms.forEach(zoom => {
     const topLeft = latLngToTile(bounds.north, bounds.west, zoom);
