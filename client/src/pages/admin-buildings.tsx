@@ -257,8 +257,12 @@ export default function AdminBuildings() {
                   <div className="mt-2 space-y-3">
                     <Button
                       type="button"
-                      variant={mapClickEnabled ? "default" : "outline"}
-                      className="w-full"
+                      variant={mapClickEnabled ? "default" : "secondary"}
+                      className={`w-full transition-all duration-300 ${
+                        mapClickEnabled 
+                          ? "bg-green-600 hover:bg-green-700 text-white" 
+                          : "bg-blue-600 hover:bg-blue-700 text-white"
+                      }`}
                       onClick={toggleMapClick}
                       data-testid="button-toggle-map-click"
                     >
@@ -266,9 +270,12 @@ export default function AdminBuildings() {
                       {mapClickEnabled ? "Click map to place marker (Active)" : "Click to enable map placement"}
                     </Button>
                     
-                    <div className="h-[300px] rounded-lg overflow-hidden border">
+                    <div className={`h-[300px] rounded-lg overflow-hidden border transition-all duration-500 ${!mapClickEnabled ? "blur-sm grayscale-[0.5] opacity-80" : "blur-0 grayscale-0 opacity-100"}`}>
                       <CampusMap
-                        buildings={[{ ...formData, id: "preview", name: formData.name || "New Building", markerIcon: formData.markerIcon }] as Building[]}
+                        buildings={[
+                          ...buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id),
+                          { ...formData, id: "preview", name: formData.name || "New Building", markerIcon: formData.markerIcon }
+                        ] as Building[]}
                         onMapClick={handleMapClick}
                         centerLat={formData.lat}
                         centerLng={formData.lng}
