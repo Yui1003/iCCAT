@@ -382,6 +382,11 @@ export default function CampusMap({
     // When displaying a route (navigation mode), don't show building markers
     // to reduce clutter and make the pathway more visible
     const isNavigating = !!(routePolyline && routePolyline.length > 0) || !!(routePhases && routePhases.length > 0);
+
+    // Hide markers if requested (e.g., during building placement in admin)
+    if (hidePolygonsInNavigation) {
+      return;
+    }
     
     // Adjust marker sizes based on zoom level
     // When zoomed out (< 18), use smaller sizes to prevent overcrowding

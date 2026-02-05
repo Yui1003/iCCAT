@@ -194,9 +194,10 @@ export default function PathDrawingMap({
     // Render building markers - clickable to snap paths to buildings
     if (buildings && buildings.length > 0) {
       buildings.forEach((building) => {
+        // Building markers are now invisible but still clickable for snapping
+        // This satisfies the request to only show polygons
         const iconHtml = `
-          <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white font-bold text-xs text-white">
-            B
+          <div class="w-6 h-6 opacity-0">
           </div>
         `;
 
@@ -208,12 +209,8 @@ export default function PathDrawingMap({
         });
 
         const marker = L.marker([building.lat, building.lng], { icon })
-          .addTo(mapInstanceRef.current)
-          .bindTooltip(`Building: ${building.name}`, {
-            permanent: false,
-            direction: 'top',
-            offset: [0, -12],
-          });
+          .addTo(mapInstanceRef.current);
+        // Removed binding tooltip for cleaner UI during path drawing as requested
 
         marker.on('click', (e: any) => {
           L.DomEvent.stopPropagation(e);
