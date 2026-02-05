@@ -194,9 +194,9 @@ export default function CampusMap({
       maxNativeZoom: 19,
       detectRetina: true,
       crossOrigin: true,
-      updateWhenIdle: true,
-      updateWhenZooming: false,
-      keepBuffer: 2
+      updateWhenIdle: false, // Updated for smoother panning
+      updateWhenZooming: true, // Updated for smoother zooming
+      keepBuffer: 4 // Increased buffer for smoother panning
     }).addTo(map);
 
     mapInstanceRef.current = map;
@@ -374,12 +374,17 @@ export default function CampusMap({
     const isNavigating = !!(routePolyline && routePolyline.length > 0) || !!(routePhases && routePhases.length > 0);
     
     // Adjust marker sizes based on zoom level
-    // When zoomed out (< 18), use smaller sizes
+    // When zoomed out (< 18), use smaller sizes to prevent overcrowding
     // When zoomed in (>= 18), use normal sizes
     const isZoomedOut = currentZoom < 18;
     const isMaxZoom = currentZoom >= 21;
-    const kioskSize = isZoomedOut ? { img: 'w-12 h-12', icon: 48, ping: 'w-8 h-8' } : { img: 'w-16 h-16', icon: 64, ping: 'w-10 h-10' };
-    const buildingSize = isZoomedOut ? { img: 'w-8 h-8', icon: 32, ping: 'w-6 h-6' } : { img: 'w-12 h-12', icon: 48, ping: 'w-8 h-8' };
+    // Standardized sizes for better consistency
+    const kioskSize = isZoomedOut 
+      ? { img: 'w-8 h-8', icon: 32, ping: 'w-6 h-6' } 
+      : { img: 'w-12 h-12', icon: 48, ping: 'w-8 h-8' };
+    const buildingSize = isZoomedOut 
+      ? { img: 'w-6 h-6', icon: 24, ping: 'w-4 h-4' } 
+      : { img: 'w-9 h-9', icon: 36, ping: 'w-6 h-6' };
 
     // During navigation, don't show any markers - only route markers will be shown
     if (isNavigating) {
