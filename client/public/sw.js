@@ -3,9 +3,9 @@
  * Complete offline support with auto-caching of all assets
  */
 
-const CACHE_NAME = 'iccat-v10';
-const DATA_CACHE_NAME = 'iccat-data-v10';
-const IMAGE_CACHE_NAME = 'iccat-images-v10';
+const CACHE_NAME = 'iccat-v11';
+const DATA_CACHE_NAME = 'iccat-data-v11';
+const IMAGE_CACHE_NAME = 'iccat-images-v11';
 
 // Static assets to cache immediately
 const urlsToCache = [
@@ -46,10 +46,10 @@ function generateEssentialTileUrls() {
   const tiles = [];
   
   const bounds = {
-    north: 14.407,
-    south: 14.398,
-    east: 120.870,
-    west: 120.862
+    north: 14.408,
+    south: 14.397,
+    east: 120.872,
+    west: 120.860
   };
   
   const essentialZooms = [17, 18, 19];
@@ -80,10 +80,10 @@ function generateBackgroundTileUrls() {
   const tiles = [];
   
   const bounds = {
-    north: 14.407,
-    south: 14.398,
-    east: 120.870,
-    west: 120.862
+    north: 14.408,
+    south: 14.397,
+    east: 120.872,
+    west: 120.860
   };
   
   const backgroundZooms = [16, 20];
