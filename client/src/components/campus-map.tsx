@@ -193,6 +193,7 @@ export default function CampusMap({
       maxZoom: 21,
       maxNativeZoom: 19,
       detectRetina: true,
+      crossOrigin: true,
       updateWhenIdle: true,
       updateWhenZooming: false,
       keepBuffer: 2
