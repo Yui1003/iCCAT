@@ -181,8 +181,8 @@ export default function CampusMap({
     }
 
     const map = L.map(mapRef.current, {
-      center: [centerLat || 14.4022, centerLng || 120.8675],
-      zoom: 18,
+      center: [centerLat || 14.4025, centerLng || 120.8670],
+      zoom: 18.5,
       minZoom: 17.5,
       maxZoom: 21,
       zoomControl: true,
@@ -318,8 +318,8 @@ export default function CampusMap({
     // Define campus boundary (CCAT Campus, Cavite State University)
     // Calculated from actual campus buildings extent
     const campusBounds = L.latLngBounds(
-      L.latLng(14.3980, 120.8630),  // Southwest corner
-      L.latLng(14.4060, 120.8710)   // Northeast corner
+      L.latLng(14.3985, 120.8635),  // Southwest corner
+      L.latLng(14.4065, 120.8705)   // Northeast corner
     );
 
     const updateBoundsBasedOnZoom = () => {
@@ -327,12 +327,19 @@ export default function CampusMap({
       setCurrentZoom(zoom);
       
       // Strict constraints to keep map centered on campus
-      // Padding decreases as zoom increases to keep view contained
-      const padding = 0.002 / Math.pow(2, Math.max(0, zoom - 18));
+      // As zoom increases, the allowed boundary significantly tightens to prevent panning away
+      // We use a much smaller factor to restrict movement at high zoom levels
+      const centerLatVal = 14.4025;
+      const centerLngVal = 120.8670;
+      
+      // Zoom 18: padding ~ 0.0015
+      // Zoom 19: padding ~ 0.00075
+      // Zoom 20: padding ~ 0.00037
+      const padding = 0.0015 / Math.pow(2, Math.max(0, zoom - 18));
       
       const dynamicBounds = L.latLngBounds(
-        L.latLng(14.4022 - padding - 0.003, 120.8675 - padding - 0.004),
-        L.latLng(14.4022 + padding + 0.003, 120.8675 + padding + 0.003)
+        L.latLng(centerLatVal - padding - 0.001, centerLngVal - padding - 0.001),
+        L.latLng(centerLatVal + padding + 0.001, centerLngVal + padding + 0.001)
       );
 
       map.setMaxBounds(dynamicBounds);
@@ -362,12 +369,12 @@ export default function CampusMap({
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     
-    const defaultLat = 14.4022;
-    const defaultLng = 120.8675;
+    const defaultLat = 14.4025;
+    const defaultLng = 120.8670;
     const lat = centerLat || defaultLat;
     const lng = centerLng || defaultLng;
     
-    mapInstanceRef.current.setView([lat, lng], 18);
+    mapInstanceRef.current.setView([lat, lng], 18.5);
   }, [centerLat, centerLng]);
 
   useEffect(() => {

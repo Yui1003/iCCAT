@@ -109,7 +109,7 @@ export default function PathDrawingMap({
 
     // Create map instance
     const map = L.map(mapRef.current, {
-      center: [14.4022, 120.8675],
+      center: [14.4025, 120.8670],
       zoom: 18.5,
       minZoom: 17.5,
       maxZoom: 22,
@@ -118,10 +118,10 @@ export default function PathDrawingMap({
       dragging: true, // Will be toggled based on isDrawing
     });
 
-    const padding = 0.005;
+    const padding = 0.003;
     const dynamicBounds = L.latLngBounds(
-      L.latLng(14.4022 - padding, 120.8675 - padding),
-      L.latLng(14.4022 + padding, 120.8675 + padding)
+      L.latLng(14.4025 - padding, 120.8670 - padding),
+      L.latLng(14.4025 + padding, 120.8670 + padding)
     );
     map.setMaxBounds(dynamicBounds);
 
