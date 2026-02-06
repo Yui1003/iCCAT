@@ -186,9 +186,39 @@ export default function PolygonDrawingMap({
       onPolygonChange(null);
     });
 
+    const updateBoundsBasedOnZoom = () => {
+      if (!mapInstanceRef.current) return;
+      const map = mapInstanceRef.current;
+      const zoom = map.getZoom();
+      const L = window.L;
+      
+      const centerLatVal = 14.4025;
+      const centerLngVal = 120.8670;
+      
+      const campusBounds = L.latLngBounds(
+        L.latLng(14.3995, 120.8645),
+        L.latLng(14.4055, 120.8695)
+      );
+
+      let padding = 0.004;
+      if (zoom >= 20) padding = 0.001;
+      else if (zoom >= 19) padding = 0.002;
+      else if (zoom >= 18) padding = 0.003;
+      
+      const dynamicBounds = L.latLngBounds(
+        L.latLng(centerLatVal - padding, centerLngVal - padding),
+        L.latLng(centerLatVal + padding, centerLngVal + padding)
+      );
+      map.setMaxBounds(dynamicBounds.extend(campusBounds));
+    };
+
     mapInstanceRef.current = map;
     drawnItemsRef.current = drawnItems;
     drawControlRef.current = drawControl;
+
+    // Set initial bounds and update on zoom
+    setTimeout(updateBoundsBasedOnZoom, 350);
+    map.on('zoomend', updateBoundsBasedOnZoom);
 
     return () => {
       clearTimeout(timeoutId1);
@@ -210,18 +240,6 @@ export default function PolygonDrawingMap({
     const lat = centerLat || 14.4025;
     const lng = centerLng || 120.8670;
     mapInstanceRef.current.setView([lat, lng], 18.5);
-
-    // Apply strict bounds to drawing map as well
-    const padding = 0.005;
-    const campusBounds = window.L.latLngBounds(
-      window.L.latLng(14.3985, 120.8635),
-      window.L.latLng(14.4065, 120.8705)
-    );
-    const dynamicBounds = window.L.latLngBounds(
-      window.L.latLng(lat - padding, lng - padding),
-      window.L.latLng(lat + padding, lng + padding)
-    );
-    mapInstanceRef.current.setMaxBounds(dynamicBounds.extend(campusBounds));
   }, [centerLat, centerLng]);
 
   useEffect(() => {

@@ -330,15 +330,31 @@ export default function CampusMap({
       const centerLatVal = 14.4025;
       const centerLngVal = 120.8670;
       
-      // Padding of 0.005 allows roughly 500m of movement from center
-      const padding = 0.005; 
+      // Strict campus boundary (CCAT Campus, Cavite State University)
+      // These coordinates tightly wrap the beige/yellow campus area
+      const campusBounds = L.latLngBounds(
+        L.latLng(14.3995, 120.8645),  // Southwest corner
+        L.latLng(14.4055, 120.8695)   // Northeast corner
+      );
+
+      // Adjust padding based on zoom level
+      // Higher zoom = stricter bounds to prevent panning away from buildings
+      let padding = 0.004; // Default for zoom < 18
+      
+      if (zoom >= 20) {
+        padding = 0.001; // Very strict at high zoom
+      } else if (zoom >= 19) {
+        padding = 0.002;
+      } else if (zoom >= 18) {
+        padding = 0.003;
+      }
       
       const dynamicBounds = L.latLngBounds(
         L.latLng(centerLatVal - padding, centerLngVal - padding),
         L.latLng(centerLatVal + padding, centerLngVal + padding)
       );
 
-      // Union with campus bounds to ensure we always include the campus
+      // Combine boundaries
       const finalBounds = dynamicBounds.extend(campusBounds);
 
       map.setMaxBounds(finalBounds);
@@ -349,14 +365,12 @@ export default function CampusMap({
     map.setMaxZoom(21);
 
     // CRITICAL: Delay bounds setup to allow tiles to render first
-    // This prevents the bounds constraint from interfering with tile loading
     const boundsTimeout = setTimeout(() => {
-      // Set initial bounds after tiles have loaded
       updateBoundsBasedOnZoom();
       
       // Update bounds whenever zoom level changes
       map.on('zoomend', updateBoundsBasedOnZoom);
-    }, 350); // Reduced delay for faster tile rendering (after last invalidateSize at 250ms)
+    }, 350);
 
     return () => {
       clearTimeout(boundsTimeout);

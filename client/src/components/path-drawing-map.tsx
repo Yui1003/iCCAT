@@ -118,16 +118,30 @@ export default function PathDrawingMap({
       dragging: true, // Will be toggled based on isDrawing
     });
 
-    const padding = 0.005;
-    const campusBounds = L.latLngBounds(
-      L.latLng(14.3985, 120.8635),
-      L.latLng(14.4065, 120.8705)
-    );
-    const dynamicBounds = L.latLngBounds(
-      L.latLng(14.4025 - padding, 120.8670 - padding),
-      L.latLng(14.4025 + padding, 120.8670 + padding)
-    );
-    map.setMaxBounds(dynamicBounds.extend(campusBounds));
+    const updateBoundsBasedOnZoom = () => {
+      if (!mapInstanceRef.current) return;
+      const map = mapInstanceRef.current;
+      const zoom = map.getZoom();
+      
+      const centerLatVal = 14.4025;
+      const centerLngVal = 120.8670;
+      
+      const campusBounds = L.latLngBounds(
+        L.latLng(14.3995, 120.8645),
+        L.latLng(14.4055, 120.8695)
+      );
+
+      let padding = 0.004;
+      if (zoom >= 20) padding = 0.001;
+      else if (zoom >= 19) padding = 0.002;
+      else if (zoom >= 18) padding = 0.003;
+      
+      const dynamicBounds = L.latLngBounds(
+        L.latLng(centerLatVal - padding, centerLngVal - padding),
+        L.latLng(centerLatVal + padding, centerLngVal + padding)
+      );
+      map.setMaxBounds(dynamicBounds.extend(campusBounds));
+    };
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
@@ -136,6 +150,10 @@ export default function PathDrawingMap({
     }).addTo(map);
 
     mapInstanceRef.current = map;
+    
+    // Initial bounds setup
+    setTimeout(updateBoundsBasedOnZoom, 350);
+    map.on('zoomend', updateBoundsBasedOnZoom);
 
     // Use ResizeObserver to handle dialog resize events
     let resizeObserver: ResizeObserver | null = null;
