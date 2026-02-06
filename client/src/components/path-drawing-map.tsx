@@ -180,12 +180,9 @@ export default function PathDrawingMap({
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     
-    if (isDrawing) {
-      mapInstanceRef.current.dragging.disable();
-    } else {
-      mapInstanceRef.current.dragging.enable();
-    }
-  }, [isDrawing]);
+    // Always enable dragging to allow panning while drawing
+    mapInstanceRef.current.dragging.enable();
+  }, []);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
@@ -194,16 +191,33 @@ export default function PathDrawingMap({
     const map = mapInstanceRef.current;
 
     const handleClick = (e: any) => {
-      if (isDrawing) {
+      // Don't add waypoint if the map was dragged (panning)
+      if (isDrawing && !mapInstanceRef.current._panned) {
         const newNode = { lat: e.latlng.lat, lng: e.latlng.lng };
         onNodesChange([...nodes, newNode]);
       }
     };
 
+    const handleDragStart = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current._panned = false;
+      }
+    };
+
+    const handleDrag = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current._panned = true;
+      }
+    };
+
     map.on('click', handleClick);
+    map.on('dragstart', handleDragStart);
+    map.on('drag', handleDrag);
 
     return () => {
       map.off('click', handleClick);
+      map.off('dragstart', handleDragStart);
+      map.off('drag', handleDrag);
     };
   }, [isDrawing, nodes, onNodesChange]);
 
@@ -380,7 +394,7 @@ export default function PathDrawingMap({
             }
           );
 
-        marker.on('drag', (e: any) => {
+        marker.on('dragend', (e: any) => {
           const newLatLng = e.target.getLatLng();
           const newNodes = [...nodes];
           newNodes[index] = { lat: newLatLng.lat, lng: newLatLng.lng };
