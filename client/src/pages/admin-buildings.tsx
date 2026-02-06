@@ -49,6 +49,8 @@ export default function AdminBuildings() {
     polygon: null,
     polygonColor: "#FACC15",
     polygonOpacity: 0.3,
+    entranceLat: null,
+    entranceLng: null,
   });
   const [departmentInput, setDepartmentInput] = useState("");
   const [mapClickEnabled, setMapClickEnabled] = useState(false);
@@ -107,6 +109,8 @@ export default function AdminBuildings() {
         polygon: building.polygon || null,
         polygonColor: (building as any).polygonColor || "#FACC15",
         polygonOpacity: (building as any).polygonOpacity || 0.3,
+        entranceLat: (building as any).entranceLat || null,
+        entranceLng: (building as any).entranceLng || null,
       });
     } else {
       setEditingBuilding(null);
@@ -169,6 +173,15 @@ export default function AdminBuildings() {
       }));
       toast({ title: "Location updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
     }
+  };
+
+  const handleEntranceMapClick = (lat: number, lng: number) => {
+    setFormData(prev => ({
+      ...prev,
+      entranceLat: lat,
+      entranceLng: lng
+    }));
+    toast({ title: "Entrance location updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
   };
 
   const toggleMapClick = () => {
@@ -314,6 +327,70 @@ export default function AdminBuildings() {
                 </div>
 
                 <div>
+                  <Label>Pathfinding Entrance Location (Optional)</Label>
+                  <p className="text-sm text-muted-foreground mt-1 mb-3">
+                    Set a specific coordinate for the building's entrance. If not set, pathfinding will use the building's main marker location.
+                  </p>
+                  <div className="space-y-3">
+                    <div className="h-[300px] rounded-lg overflow-hidden border">
+                      <CampusMap
+                        buildings={[
+                          ...buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id),
+                          { 
+                            ...formData, 
+                            id: "preview-entrance", 
+                            name: "Entrance Location", 
+                            lat: formData.entranceLat ?? formData.lat,
+                            lng: formData.entranceLng ?? formData.lng,
+                            markerIcon: "school" 
+                          }
+                        ] as Building[]}
+                        onMapClick={handleEntranceMapClick}
+                        centerLat={formData.entranceLat ?? formData.lat}
+                        centerLng={formData.entranceLng ?? formData.lng}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="entranceLat" className="text-xs">Entrance Latitude</Label>
+                        <Input
+                          id="entranceLat"
+                          type="number"
+                          step="any"
+                          value={formData.entranceLat ?? ""}
+                          onChange={(e) => setFormData({ ...formData, entranceLat: e.target.value ? parseFloat(e.target.value) : null })}
+                          placeholder="Uses building lat"
+                          className="text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="entranceLng" className="text-xs">Entrance Longitude</Label>
+                        <Input
+                          id="entranceLng"
+                          type="number"
+                          step="any"
+                          value={formData.entranceLng ?? ""}
+                          onChange={(e) => setFormData({ ...formData, entranceLng: e.target.value ? parseFloat(e.target.value) : null })}
+                          placeholder="Uses building lng"
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+                    {(formData.entranceLat || formData.entranceLng) && (
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setFormData({ ...formData, entranceLat: null, entranceLng: null })}
+                        className="text-destructive"
+                      >
+                        Reset to Building Center
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div>
                   <Label htmlFor="markerIcon">Marker Icon</Label>
                   <Select
                     value={formData.markerIcon || "building"}
@@ -335,14 +412,14 @@ export default function AdminBuildings() {
                   </Select>
                 </div>
 
-                <ImageUploadInput
-                  label="Building Photo"
-                  value={formData.image}
-                  onChange={(url) => setFormData({ ...formData, image: url })}
-                  type="building"
-                  id={editingBuilding?.id || 'new'}
-                  testId="building-image"
-                />
+                  <ImageUploadInput
+                    label="Building Photo"
+                    value={formData.image ?? ""}
+                    onChange={(url) => setFormData({ ...formData, image: url })}
+                    type="building"
+                    id={editingBuilding?.id || 'new'}
+                    testId="building-image"
+                  />
 
                 <div>
                   <Label>
