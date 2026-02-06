@@ -613,7 +613,10 @@ export default function AdminBuildings() {
                   <p className="text-sm text-muted-foreground">No buildings yet</p>
                 </div>
               ) : (() => {
-                const filteredBuildings = buildings.filter((building) => {
+                const sortedBuildings = [...buildings].sort((a, b) => 
+                  (a.name || "").localeCompare(b.name || "")
+                );
+                const filteredBuildings = sortedBuildings.filter((building) => {
                   const matchesSearch = searchQuery === "" || 
                     building.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     (building.type?.toLowerCase().includes(searchQuery.toLowerCase()));
