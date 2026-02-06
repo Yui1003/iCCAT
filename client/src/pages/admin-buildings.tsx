@@ -43,6 +43,8 @@ export default function AdminBuildings() {
     description: "",
     lat: 14.402870,
     lng: 120.8640,
+    nodeLat: 14.402870,
+    nodeLng: 120.8640,
     departments: [],
     image: "",
     markerIcon: "building",
@@ -51,15 +53,15 @@ export default function AdminBuildings() {
     polygonOpacity: 0.3,
   });
   const [departmentInput, setDepartmentInput] = useState("");
-  const [mapClickEnabled, setMapClickEnabled] = useState(false);
-  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>("All Types");
+  const [mapClickMode, setMapClickMode] = useState<"marker" | "node" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const mapClickEnabledRef = useRef(false);
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>("All Types");
+  const mapClickModeRef = useRef<"marker" | "node" | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    mapClickEnabledRef.current = mapClickEnabled;
-  }, [mapClickEnabled]);
+    mapClickModeRef.current = mapClickMode;
+  }, [mapClickMode]);
 
   const { data: buildings = [], isLoading } = useQuery<Building[]>({
     queryKey: ['/api/buildings']
@@ -101,6 +103,8 @@ export default function AdminBuildings() {
         description: building.description || "",
         lat: building.lat,
         lng: building.lng,
+        nodeLat: building.nodeLat || building.lat,
+        nodeLng: building.nodeLng || building.lng,
         departments: building.departments || [],
         image: building.image || "",
         markerIcon: building.markerIcon || "building",
@@ -116,6 +120,8 @@ export default function AdminBuildings() {
         description: "",
         lat: 14.402870,
         lng: 120.8640,
+        nodeLat: 14.402870,
+        nodeLng: 120.8640,
         departments: [],
         image: "",
         markerIcon: "building",
@@ -124,7 +130,7 @@ export default function AdminBuildings() {
         polygonOpacity: 0.3,
       });
     }
-    setMapClickEnabled(false);
+    setMapClickMode(null);
     setIsDialogOpen(true);
   };
 
@@ -161,18 +167,29 @@ export default function AdminBuildings() {
   };
 
   const handleMapClick = (lat: number, lng: number) => {
-    if (mapClickEnabledRef.current) {
+    if (mapClickMode === "marker") {
       setFormData(prev => ({
         ...prev,
         lat,
         lng
       }));
-      toast({ title: "Location updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+      toast({ title: "Marker location updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+    } else if (mapClickMode === "node") {
+      setFormData(prev => ({
+        ...prev,
+        nodeLat: lat,
+        nodeLng: lng
+      }));
+      toast({ title: "Entrance node location updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
     }
   };
 
-  const toggleMapClick = () => {
-    setMapClickEnabled(!mapClickEnabled);
+  const toggleMarkerPlacement = () => {
+    setMapClickMode(prev => prev === "marker" ? null : "marker");
+  };
+
+  const toggleNodePlacement = () => {
+    setMapClickMode(prev => prev === "node" ? null : "node");
   };
 
   const markerIconOptions = [
@@ -253,61 +270,118 @@ export default function AdminBuildings() {
                 </div>
 
                 <div>
-                  <Label>Location *</Label>
-                  <div className="mt-2 space-y-3">
-                    <Button
-                      type="button"
-                      variant={mapClickEnabled ? "default" : "secondary"}
-                      className={`w-full transition-all duration-300 ${
-                        mapClickEnabled 
-                          ? "bg-green-600 hover:bg-green-700 text-white" 
-                          : "bg-blue-600 hover:bg-blue-700 text-white"
-                      }`}
-                      onClick={toggleMapClick}
-                      data-testid="button-toggle-map-click"
-                    >
-                      <MapPin className="w-4 h-4 mr-2" />
-                      {mapClickEnabled ? "Click map to place marker (Active)" : "Click to enable map placement"}
-                    </Button>
+                  <Label>Building Locations *</Label>
+                  <div className="mt-2 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button
+                        type="button"
+                        variant={mapClickMode === "marker" ? "default" : "secondary"}
+                        className={`transition-all duration-300 ${
+                          mapClickMode === "marker" 
+                            ? "bg-green-600 hover:bg-green-700 text-white" 
+                            : "bg-blue-600 hover:bg-blue-700 text-white"
+                        }`}
+                        onClick={toggleMarkerPlacement}
+                        data-testid="button-toggle-marker-click"
+                      >
+                        <MapPin className="w-4 h-4 mr-2" />
+                        {mapClickMode === "marker" ? "Click map for Marker (Active)" : "Set Marker Position"}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant={mapClickMode === "node" ? "default" : "secondary"}
+                        className={`transition-all duration-300 ${
+                          mapClickMode === "node" 
+                            ? "bg-green-600 hover:bg-green-700 text-white" 
+                            : "bg-orange-600 hover:bg-orange-700 text-white"
+                        }`}
+                        onClick={toggleNodePlacement}
+                        data-testid="button-toggle-node-click"
+                      >
+                        <Shapes className="w-4 h-4 mr-2" />
+                        {mapClickMode === "node" ? "Click map for Entrance (Active)" : "Set Entrance Node"}
+                      </Button>
+                    </div>
                     
-                    <div className={`h-[300px] rounded-lg overflow-hidden border transition-all duration-500 ${!mapClickEnabled ? "blur-sm grayscale-[0.5] opacity-80" : "blur-0 grayscale-0 opacity-100"}`}>
+                    <div className={`h-[300px] rounded-lg overflow-hidden border transition-all duration-500 ${!mapClickMode ? "blur-sm grayscale-[0.5] opacity-80" : "blur-0 grayscale-0 opacity-100"}`}>
                       <CampusMap
                         buildings={[
                           ...buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id),
-                          { ...formData, id: "preview", name: formData.name || "New Building", markerIcon: formData.markerIcon }
-                        ] as Building[]}
+                          { 
+                            ...formData, 
+                            id: "preview", 
+                            name: formData.name || "New Building", 
+                            markerIcon: formData.markerIcon,
+                            nodeLat: formData.nodeLat,
+                            nodeLng: formData.nodeLng
+                          } as any
+                        ]}
                         onMapClick={handleMapClick}
                         centerLat={formData.lat}
                         centerLng={formData.lng}
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="lat" className="text-xs">Latitude</Label>
-                        <Input
-                          id="lat"
-                          type="number"
-                          step="any"
-                          value={formData.lat}
-                          onChange={(e) => setFormData({ ...formData, lat: parseFloat(e.target.value) })}
-                          required
-                          data-testid="input-building-lat"
-                          className="text-sm"
-                        />
+                    <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Marker Position (Displays on map)</Label>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="lat" className="text-xs">Latitude</Label>
+                            <Input
+                              id="lat"
+                              type="number"
+                              step="any"
+                              value={formData.lat}
+                              onChange={(e) => setFormData({ ...formData, lat: parseFloat(e.target.value) })}
+                              required
+                              className="text-sm h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="lng" className="text-xs">Longitude</Label>
+                            <Input
+                              id="lng"
+                              type="number"
+                              step="any"
+                              value={formData.lng}
+                              onChange={(e) => setFormData({ ...formData, lng: parseFloat(e.target.value) })}
+                              required
+                              className="text-sm h-8"
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="lng" className="text-xs">Longitude</Label>
-                        <Input
-                          id="lng"
-                          type="number"
-                          step="any"
-                          value={formData.lng}
-                          onChange={(e) => setFormData({ ...formData, lng: parseFloat(e.target.value) })}
-                          required
-                          data-testid="input-building-lng"
-                          className="text-sm"
-                        />
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Entrance Node (Where paths connect)</Label>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="nodeLat" className="text-xs">Latitude</Label>
+                            <Input
+                              id="nodeLat"
+                              type="number"
+                              step="any"
+                              value={formData.nodeLat || formData.lat}
+                              onChange={(e) => setFormData({ ...formData, nodeLat: parseFloat(e.target.value) })}
+                              required
+                              className="text-sm h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="nodeLng" className="text-xs">Longitude</Label>
+                            <Input
+                              id="nodeLng"
+                              type="number"
+                              step="any"
+                              value={formData.nodeLng || formData.lng}
+                              onChange={(e) => setFormData({ ...formData, nodeLng: parseFloat(e.target.value) })}
+                              required
+                              className="text-sm h-8"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -389,16 +463,16 @@ export default function AdminBuildings() {
                     </div>
                   </div>
 
-                  <div className="h-[300px] rounded-lg overflow-hidden border">
-                    <PolygonDrawingMap
-                      centerLat={formData.lat}
-                      centerLng={formData.lng}
-                      polygon={formData.polygon as LatLng[] | null}
-                      onPolygonChange={(polygon) => setFormData({ ...formData, polygon: polygon as any })}
-                      polygonColor={formData.polygonColor || "#FACC15"}
-                      existingBuildings={buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id) as any}
-                    />
-                  </div>
+                      <div className="h-[300px] rounded-lg overflow-hidden border">
+                        <PolygonDrawingMap
+                          centerLat={formData.lat}
+                          centerLng={formData.lng}
+                          polygon={formData.polygon as any}
+                          onPolygonChange={(polygon) => setFormData({ ...formData, polygon: polygon as any })}
+                          polygonColor={formData.polygonColor || "#FACC15"}
+                          existingBuildings={buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id) as any}
+                        />
+                      </div>
                   {formData.polygon && Array.isArray(formData.polygon) && formData.polygon.length > 0 && (
                     <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                       <Shapes className="w-4 h-4" />

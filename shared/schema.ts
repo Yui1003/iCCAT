@@ -100,7 +100,12 @@ export const KIOSK_LOCATION = {
   description: null,
   departments: null,
   image: null,
-  markerIcon: null
+  markerIcon: null,
+  polygon: null,
+  polygonColor: null,
+  polygonOpacity: null,
+  nodeLat: 14.403115555479292,
+  nodeLng: 120.86635977029803
 } as const;
 
 // Buildings table
