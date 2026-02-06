@@ -31,7 +31,7 @@ export default function AdminPaths() {
   const [deletingPath, setDeletingPath] = useState<any | null>(null);
   const [pathName, setPathName] = useState("");
   const [pathNodes, setPathNodes] = useState<PathNode[]>([]);
-  const [isPwdFriendly, setIsPwdFriendly] = useState(true); // PWD-friendly by default
+  const [isPwdFriendly, setIsPwdFriendly] = useState(false); // PWD-friendly off by default
   const [strictlyPwdOnly, setStrictlyPwdOnly] = useState(false); // Strictly PWD-only by default
   const [walkpathSearch, setWalkpathSearch] = useState("");
   const [drivepathSearch, setDrivepathSearch] = useState("");
@@ -128,7 +128,7 @@ export default function AdminPaths() {
       setEditingPathType(null);
       setPathName("");
       setPathNodes([]);
-      setIsPwdFriendly(true); // Default to PWD-friendly for new paths
+      setIsPwdFriendly(false); // Default to off for new paths
       setStrictlyPwdOnly(false); // Default to not strictly PWD-only
     }
     setIsDialogOpen(true);
@@ -140,7 +140,7 @@ export default function AdminPaths() {
     setEditingPathType(null);
     setPathName("");
     setPathNodes([]);
-    setIsPwdFriendly(true);
+    setIsPwdFriendly(false);
     setStrictlyPwdOnly(false);
   };
 
@@ -327,7 +327,10 @@ export default function AdminPaths() {
                       <p className="text-sm text-muted-foreground">No walking paths yet</p>
                     </div>
                   ) : (() => {
-                    const filteredWalkpaths = walkpaths.filter((path) => 
+                    const sortedWalkpaths = [...walkpaths].sort((a, b) => 
+                      (a.name || "").localeCompare(b.name || "")
+                    );
+                    const filteredWalkpaths = sortedWalkpaths.filter((path) => 
                       walkpathSearch === "" || (path.name || "").toLowerCase().includes(walkpathSearch.toLowerCase())
                     );
                     return (
@@ -428,7 +431,10 @@ export default function AdminPaths() {
                       <p className="text-sm text-muted-foreground">No driving paths yet</p>
                     </div>
                   ) : (() => {
-                    const filteredDrivepaths = drivepaths.filter((path) => 
+                    const sortedDrivepaths = [...drivepaths].sort((a, b) => 
+                      (a.name || "").localeCompare(b.name || "")
+                    );
+                    const filteredDrivepaths = sortedDrivepaths.filter((path) => 
                       drivepathSearch === "" || (path.name || "").toLowerCase().includes(drivepathSearch.toLowerCase())
                     );
                     return (

@@ -388,6 +388,11 @@ export default function CampusMap({
     // When zoomed in (>= 18), use normal sizes
     const isZoomedOut = currentZoom < 18;
     const isMaxZoom = currentZoom >= 21;
+    
+    // Check if we are in admin view (based on URL)
+    const isAdminView = window.location.pathname.startsWith('/admin/');
+    const showBuildingTooltips = isMaxZoom && !isAdminView;
+
     // Standardized sizes for better consistency
     // Even smaller sizes for zoomed out view to reduce overcrowding
     const kioskSize = isZoomedOut 
@@ -422,13 +427,16 @@ export default function CampusMap({
       });
 
       const kioskMarker = L.marker([kioskLat, kioskLng], { icon: kioskIconHtml })
-        .addTo(mapInstanceRef.current)
-        .bindTooltip(kioskName, {
-          permanent: isMaxZoom,
+        .addTo(mapInstanceRef.current);
+        
+      if (showBuildingTooltips) {
+        kioskMarker.bindTooltip(kioskName, {
+          permanent: true,
           direction: 'top',
           offset: [0, -(kioskSize.icon / 2)],
           className: 'bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
         });
+      }
 
       markersRef.current.push(kioskMarker);
 
@@ -479,13 +487,16 @@ export default function CampusMap({
           icon,
           zIndexOffset: markerZIndex
         })
-          .addTo(mapInstanceRef.current)
-          .bindTooltip(building.name, {
-            permanent: isMaxZoom,
+          .addTo(mapInstanceRef.current);
+
+        if (showBuildingTooltips) {
+          marker.bindTooltip(building.name, {
+            permanent: true,
             direction: 'top',
             offset: [0, -(buildingSize.icon / 2)],
             className: 'bg-card text-card-foreground px-3 py-2 rounded-lg shadow-lg border border-card-border'
           });
+        }
 
         // Touchscreen-friendly interaction for kiosks
         const markerElement = marker.getElement();
