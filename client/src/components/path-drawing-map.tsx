@@ -192,9 +192,21 @@ export default function PathDrawingMap({
 
     const handleClick = (e: any) => {
       // Don't add waypoint if the map was dragged (panning)
-      if (isDrawing && !mapInstanceRef.current._panned) {
+      // Check both _panned flag and a small movement threshold to be safe
+      const wasDragged = mapInstanceRef.current._panned || 
+                        (mapInstanceRef.current._lastClickPos && 
+                         mapInstanceRef.current._lastClickPos.distanceTo(e.containerPoint) > 5);
+
+      if (isDrawing && !wasDragged) {
         const newNode = { lat: e.latlng.lat, lng: e.latlng.lng };
         onNodesChange([...nodes, newNode]);
+      }
+    };
+
+    const handleMouseDown = (e: any) => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current._panned = false;
+        mapInstanceRef.current._lastClickPos = e.containerPoint;
       }
     };
 
@@ -211,11 +223,13 @@ export default function PathDrawingMap({
     };
 
     map.on('click', handleClick);
+    map.on('mousedown', handleMouseDown);
     map.on('dragstart', handleDragStart);
     map.on('drag', handleDrag);
 
     return () => {
       map.off('click', handleClick);
+      map.off('mousedown', handleMouseDown);
       map.off('dragstart', handleDragStart);
       map.off('drag', handleDrag);
     };
@@ -393,6 +407,21 @@ export default function PathDrawingMap({
               offset: [0, -10],
             }
           );
+
+        marker.on('drag', (e: any) => {
+          const newLatLng = e.target.getLatLng();
+          const newNodes = [...nodes];
+          newNodes[index] = { lat: newLatLng.lat, lng: newLatLng.lng };
+          // Don't call onNodesChange here to avoid expensive re-renders
+          // Instead, just update the polyline visually
+          if (polylineRef.current) {
+            polylineRef.current.setLatLngs(newNodes);
+          }
+          // Also update the preview line if dragging the last node
+          if (index === nodes.length - 1 && previewLineRef.current) {
+            // Mouse move handler usually handles this, but let's be safe
+          }
+        });
 
         marker.on('dragend', (e: any) => {
           const newLatLng = e.target.getLatLng();
