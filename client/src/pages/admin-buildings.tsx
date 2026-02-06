@@ -123,6 +123,8 @@ export default function AdminBuildings() {
         description: "",
         lat: 14.402870,
         lng: 120.8640,
+        nodeLat: null,
+        nodeLng: null,
         departments: [],
         image: "",
         markerIcon: "building",
