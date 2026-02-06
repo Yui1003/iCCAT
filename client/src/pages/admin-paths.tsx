@@ -303,7 +303,12 @@ export default function AdminPaths() {
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <Card className="h-[600px] overflow-hidden">
-                  <CampusMap buildings={[]} existingPaths={walkpaths} pathsColor="#22c55e" />
+                  <CampusMap 
+                    buildings={[]} 
+                    existingPaths={walkpaths} 
+                    pathsColor="#22c55e" 
+                    onPathClick={(path) => handleOpenDialog(path, 'walkpath')}
+                  />
                 </Card>
               </div>
 
@@ -407,7 +412,12 @@ export default function AdminPaths() {
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <Card className="h-[600px] overflow-hidden">
-                  <CampusMap buildings={[]} existingPaths={drivepaths} pathsColor="#3b82f6" />
+                  <CampusMap 
+                    buildings={[]} 
+                    existingPaths={drivepaths} 
+                    pathsColor="#3b82f6" 
+                    onPathClick={(path) => handleOpenDialog(path, 'drivepath')}
+                  />
                 </Card>
               </div>
 

@@ -155,8 +155,9 @@ export default function CampusMap({
   parkingSelectionMode = false,
   parkingTypeFilter = null,
   onParkingSelected,
-  highlightedParkingIds = []
-}: CampusMapProps) {
+  highlightedParkingIds = [],
+  onPathClick
+}: CampusMapProps & { onPathClick?: (path: any) => void }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
