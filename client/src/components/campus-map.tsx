@@ -977,19 +977,45 @@ export default function CampusMap({
 
     existingPaths.forEach((path) => {
       if (path.nodes && Array.isArray(path.nodes) && path.nodes.length > 0) {
-        L.polyline(path.nodes, {
+        const polyline = L.polyline(path.nodes, {
           color: pathsColor,
-          weight: 3,
+          weight: 4,
           opacity: 0.6,
           smoothFactor: 1,
-          dashArray: '5, 5'
-        }).addTo(layerGroup);
+          dashArray: '10, 10',
+          interactive: !!onPathClick,
+          className: onPathClick ? 'cursor-pointer' : ''
+        });
+
+        if (onPathClick) {
+          polyline.on('click', (e: any) => {
+            L.DomEvent.stopPropagation(e);
+            onPathClick(path);
+          });
+          
+          polyline.on('mouseover', () => {
+            polyline.setStyle({ opacity: 1, weight: 6 });
+          });
+          polyline.on('mouseout', () => {
+            polyline.setStyle({ opacity: 0.6, weight: 4 });
+          });
+
+          if (path.name) {
+            polyline.bindTooltip(path.name, {
+              sticky: true,
+              direction: 'top',
+              className: 'bg-card text-card-foreground px-2 py-1 rounded shadow-sm border border-card-border text-xs'
+            });
+          }
+        }
+
+        polyline.addTo(layerGroup);
       }
     });
 
     layerGroup.addTo(mapInstanceRef.current);
     pathsLayerRef.current = layerGroup;
-  }, [existingPaths, pathsColor]);
+  }, [existingPaths, pathsColor, onPathClick]);
 
   return <div ref={mapRef} className={className} data-testid="map-container" />;
 }
