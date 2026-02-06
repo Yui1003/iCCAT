@@ -146,10 +146,10 @@ export default function GetDirectionsDialog({
     if (!startBuilding) return null;
 
     const distanceMeters = calculateDistance(
-      startBuilding.lat,
-      startBuilding.lng,
-      destination.lat,
-      destination.lng
+      startBuilding.nodeLat ?? startBuilding.lat,
+      startBuilding.nodeLng ?? startBuilding.lng,
+      destination.nodeLat ?? destination.lat,
+      destination.nodeLng ?? destination.lng
     );
 
     return calculateETA(distanceMeters, mode);

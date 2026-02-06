@@ -318,8 +318,8 @@ export function findShortestPath(
   console.log(`[CLIENT] Pathfinding from "${start.name}" to "${end.name}"`);
   console.log(`[CLIENT] Graph has ${nodes.size} nodes and ${edges.length} edges`);
   
-  const startPoint = { lat: start.lat, lng: start.lng };
-  const endPoint = { lat: end.lat, lng: end.lng };
+  const startPoint = { lat: start.nodeLat ?? start.lat, lng: start.nodeLng ?? start.lng };
+  const endPoint = { lat: end.nodeLat ?? end.lat, lng: end.nodeLng ?? end.lng };
 
   // Find closest path nodes to start and end buildings
   let closestStartNode: { key: string; distance: number } | null = null;

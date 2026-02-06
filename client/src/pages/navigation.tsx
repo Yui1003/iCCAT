@@ -133,12 +133,12 @@ export default function Navigation() {
   useEffect(() => {
     // Use Kiosk building from database if available, otherwise use constant
     if (kioskBuilding) {
-      setSelectedStart(kioskBuilding);
-    } else if (buildings.length === 0) {
-      // Buildings not loaded yet, use constant temporarily
-      setSelectedStart(KIOSK_LOCATION as any);
-    }
-  }, [kioskBuilding, buildings.length]);
+        setSelectedStart(kioskBuilding);
+      } else if (buildings.length === 0) {
+        // Buildings not loaded yet, use constant temporarily
+        setSelectedStart(KIOSK_LOCATION as any);
+      }
+    }, [kioskBuilding, buildings.length]);
 
   // Track building info modal open
   useEffect(() => {
@@ -178,7 +178,7 @@ export default function Navigation() {
 
     if (fromId && toId && buildings.length > 0) {
       const startBuilding = fromId === 'kiosk' 
-        ? { ...KIOSK_LOCATION, description: null, departments: null, image: null, markerIcon: null, polygon: null, polygonColor: null }
+        ? { ...KIOSK_LOCATION, description: null, departments: null, image: null, markerIcon: null, polygon: null, polygonColor: null, nodeLat: KIOSK_LOCATION.lat, nodeLng: KIOSK_LOCATION.lng }
         : buildings.find(b => b.id === fromId);
       const endBuilding = buildings.find(b => b.id === toId);
 
