@@ -43,14 +43,14 @@ export default function AdminBuildings() {
     description: "",
     lat: 14.402870,
     lng: 120.8640,
+    nodeLat: null,
+    nodeLng: null,
     departments: [],
     image: "",
     markerIcon: "building",
     polygon: null,
     polygonColor: "#FACC15",
     polygonOpacity: 0.3,
-    entranceLat: null,
-    entranceLng: null,
   });
   const [departmentInput, setDepartmentInput] = useState("");
   const [mapClickEnabled, setMapClickEnabled] = useState(false);
@@ -103,14 +103,14 @@ export default function AdminBuildings() {
         description: building.description || "",
         lat: building.lat,
         lng: building.lng,
+        nodeLat: (building as any).nodeLat || null,
+        nodeLng: (building as any).nodeLng || null,
         departments: building.departments || [],
         image: building.image || "",
         markerIcon: building.markerIcon || "building",
         polygon: building.polygon || null,
         polygonColor: (building as any).polygonColor || "#FACC15",
         polygonOpacity: (building as any).polygonOpacity || 0.3,
-        entranceLat: (building as any).entranceLat || null,
-        entranceLng: (building as any).entranceLng || null,
       });
     } else {
       setEditingBuilding(null);
@@ -175,13 +175,13 @@ export default function AdminBuildings() {
     }
   };
 
-  const handleEntranceMapClick = (lat: number, lng: number) => {
+  const handleNodeMapClick = (lat: number, lng: number) => {
     setFormData(prev => ({
       ...prev,
-      entranceLat: lat,
-      entranceLng: lng
+      nodeLat: lat,
+      nodeLng: lng
     }));
-    toast({ title: "Entrance location updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+    toast({ title: "Building Node updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
   };
 
   const toggleMapClick = () => {
@@ -327,9 +327,9 @@ export default function AdminBuildings() {
                 </div>
 
                 <div>
-                  <Label>Pathfinding Entrance Location (Optional)</Label>
+                  <Label>Building Node (Pathfinding Entrance) *</Label>
                   <p className="text-sm text-muted-foreground mt-1 mb-3">
-                    Set a specific coordinate for the building's entrance. If not set, pathfinding will use the building's main marker location.
+                    Set the specific coordinate for the pathfinding entrance. This is where paths will connect to the building.
                   </p>
                   <div className="space-y-3">
                     <div className="h-[300px] rounded-lg overflow-hidden border">
@@ -338,50 +338,52 @@ export default function AdminBuildings() {
                           ...buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id),
                           { 
                             ...formData, 
-                            id: "preview-entrance", 
-                            name: "Entrance Location", 
-                            lat: formData.entranceLat ?? formData.lat,
-                            lng: formData.entranceLng ?? formData.lng,
+                            id: "preview-node", 
+                            name: "Building Node", 
+                            lat: formData.nodeLat ?? formData.lat,
+                            lng: formData.nodeLng ?? formData.lng,
                             markerIcon: "school" 
                           }
                         ] as Building[]}
-                        onMapClick={handleEntranceMapClick}
-                        centerLat={formData.entranceLat ?? formData.lat}
-                        centerLng={formData.entranceLng ?? formData.lng}
+                        onMapClick={handleNodeMapClick}
+                        centerLat={formData.nodeLat ?? formData.lat}
+                        centerLng={formData.nodeLng ?? formData.lng}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="entranceLat" className="text-xs">Entrance Latitude</Label>
+                        <Label htmlFor="nodeLat" className="text-xs">Node Latitude</Label>
                         <Input
-                          id="entranceLat"
+                          id="nodeLat"
                           type="number"
                           step="any"
-                          value={formData.entranceLat ?? ""}
-                          onChange={(e) => setFormData({ ...formData, entranceLat: e.target.value ? parseFloat(e.target.value) : null })}
+                          value={formData.nodeLat ?? ""}
+                          onChange={(e) => setFormData({ ...formData, nodeLat: e.target.value ? parseFloat(e.target.value) : null })}
                           placeholder="Uses building lat"
                           className="text-sm"
+                          required
                         />
                       </div>
                       <div>
-                        <Label htmlFor="entranceLng" className="text-xs">Entrance Longitude</Label>
+                        <Label htmlFor="nodeLng" className="text-xs">Node Longitude</Label>
                         <Input
-                          id="entranceLng"
+                          id="nodeLng"
                           type="number"
                           step="any"
-                          value={formData.entranceLng ?? ""}
-                          onChange={(e) => setFormData({ ...formData, entranceLng: e.target.value ? parseFloat(e.target.value) : null })}
+                          value={formData.nodeLng ?? ""}
+                          onChange={(e) => setFormData({ ...formData, nodeLng: e.target.value ? parseFloat(e.target.value) : null })}
                           placeholder="Uses building lng"
                           className="text-sm"
+                          required
                         />
                       </div>
                     </div>
-                    {(formData.entranceLat || formData.entranceLng) && (
+                    {(formData.nodeLat || formData.nodeLng) && (
                       <Button 
                         type="button" 
                         variant="ghost" 
                         size="sm" 
-                        onClick={() => setFormData({ ...formData, entranceLat: null, entranceLng: null })}
+                        onClick={() => setFormData({ ...formData, nodeLat: null, nodeLng: null })}
                         className="text-destructive"
                       >
                         Reset to Building Center

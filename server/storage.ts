@@ -198,7 +198,13 @@ export class DatabaseStorage implements IStorage {
   async createBuilding(insertBuilding: InsertBuilding): Promise<Building> {
     try {
       const id = randomUUID();
-      const building = { ...insertBuilding, id, markerIcon: insertBuilding.markerIcon || "building" } as Building;
+      const building = { 
+        ...insertBuilding, 
+        id, 
+        markerIcon: insertBuilding.markerIcon || "building",
+        nodeLat: insertBuilding.nodeLat ?? null,
+        nodeLng: insertBuilding.nodeLng ?? null
+      } as Building;
       await db.collection('buildings').doc(id).set(building);
       return building;
     } catch (error) {
@@ -209,7 +215,13 @@ export class DatabaseStorage implements IStorage {
 
   async updateBuilding(id: string, insertBuilding: InsertBuilding): Promise<Building | undefined> {
     try {
-      const building = { ...insertBuilding, id, markerIcon: insertBuilding.markerIcon || "building" } as Building;
+      const building = { 
+        ...insertBuilding, 
+        id, 
+        markerIcon: insertBuilding.markerIcon || "building",
+        nodeLat: insertBuilding.nodeLat ?? null,
+        nodeLng: insertBuilding.nodeLng ?? null
+      } as Building;
       await db.collection('buildings').doc(id).set(building);
       return building;
     } catch (error) {

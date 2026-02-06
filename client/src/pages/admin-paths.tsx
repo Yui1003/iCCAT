@@ -275,8 +275,8 @@ export default function AdminPaths() {
                       buildings={buildings.map(b => ({ 
                         id: b.id, 
                         name: b.name, 
-                        lat: b.lat, 
-                        lng: b.lng,
+                        lat: (b as any).nodeLat ?? b.lat, 
+                        lng: (b as any).nodeLng ?? b.lng,
                         polygon: Array.isArray(b.polygon) ? b.polygon as any : null,
                         polygonColor: b.polygonColor || "#FACC15"
                       }))}
