@@ -43,13 +43,14 @@ export default function SearchableStartingPointSelect({
   );
   const kioskName = kioskBuilding?.name || KIOSK_LOCATION.name;
 
-  // Build locations list - Kiosk first, then other buildings (excluding Kiosk from regular list)
+  // Build locations list - Kiosk first, then other buildings (excluding Kiosk from regular list) sorted alphabetically
   const locations: Array<{ id: string; name: string }> = [
     { id: 'kiosk', name: kioskName }
   ].concat(
     buildings
       .filter(b => b.id !== excludeBuildingId && b.type !== 'Kiosk' && b.id !== 'kiosk')
       .map(b => ({ id: b.id, name: b.name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
   );
 
   const filteredLocations = locations.filter(loc =>

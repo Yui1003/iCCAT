@@ -41,7 +41,8 @@ export default function SearchableWaypointSelect({
 
   const availableBuildings = buildings
     .filter(b => !excludeIds.includes(b.id) || b.id === selectedId)
-    .map(b => ({ id: b.id, name: b.name }));
+    .map(b => ({ id: b.id, name: b.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const filteredBuildings = availableBuildings.filter(building =>
     building.name.toLowerCase().includes(searchQuery.toLowerCase())

@@ -37,7 +37,8 @@ export default function SearchableDestinationSelect({
 
   const locations = buildings
     .filter(b => b.id !== excludeBuildingId)
-    .map(b => ({ id: b.id, name: b.name }));
+    .map(b => ({ id: b.id, name: b.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const filteredLocations = locations.filter(loc =>
     loc.name.toLowerCase().includes(searchQuery.toLowerCase())
