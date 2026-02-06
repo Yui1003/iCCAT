@@ -171,16 +171,18 @@ export default function AdminBuildings() {
       setFormData(prev => ({
         ...prev,
         lat,
-        lng
+        lng,
+        nodeLat: lat, // Sync entrance node with marker by default
+        nodeLng: lng
       }));
-      toast({ title: "Marker location updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+      toast({ title: "Marker and Node updated", description: `Both set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
     } else if (mapClickMode === "node") {
       setFormData(prev => ({
         ...prev,
         nodeLat: lat,
         nodeLng: lng
       }));
-      toast({ title: "Entrance node location updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+      toast({ title: "Entrance node updated", description: `Entrance node moved to ${lat.toFixed(6)}, ${lng.toFixed(6)}. Marker remains at center.` });
     }
   };
 
@@ -285,7 +287,7 @@ export default function AdminBuildings() {
                         data-testid="button-toggle-marker-click"
                       >
                         <MapPin className="w-4 h-4 mr-2" />
-                        {mapClickMode === "marker" ? "Click map for Marker (Active)" : "Set Marker Position"}
+                        {mapClickMode === "marker" ? "Click map for Marker (Active)" : "Set Marker at Center"}
                       </Button>
 
                       <Button
@@ -300,7 +302,7 @@ export default function AdminBuildings() {
                         data-testid="button-toggle-node-click"
                       >
                         <Shapes className="w-4 h-4 mr-2" />
-                        {mapClickMode === "node" ? "Click map for Entrance (Active)" : "Set Entrance Node"}
+                        {mapClickMode === "node" ? "Click map for Node (Active)" : "Set Building Node (Entrance)"}
                       </Button>
                     </div>
                     
