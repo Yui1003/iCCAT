@@ -47,7 +47,7 @@ export default function Navigation() {
   const [route, setRoute] = useState<NavigationRoute | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(Array.from(poiTypes));
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(Array.from(poiTypes).sort());
   const sortedPoiTypes = useMemo(() => [...poiTypes].sort(), []);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showDirectionsDialog, setShowDirectionsDialog] = useState(false);

@@ -330,13 +330,17 @@ export default function CampusMap({
     const updateBoundsBasedOnZoom = () => {
       const zoom = map.getZoom();
       setCurrentZoom(zoom);
-      // At default zoom (17.5-18), use strict campus bounds
-      // When zoomed in beyond 18, use expanded bounds to allow some panning
-      if (zoom <= 18) {
-        map.setMaxBounds(campusBounds);
-      } else {
-        map.setMaxBounds(expandedBounds);
-      }
+      
+      // Calculate dynamic bounds based on zoom level
+      // As zoom increases, we can allow slightly more panning, but keep it centered
+      const basePadding = 0.002 / Math.pow(1.5, Math.max(0, zoom - 17.5));
+      
+      const dynamicBounds = L.latLngBounds(
+        L.latLng(14.4028 - basePadding - 0.003, 120.8660 - basePadding - 0.0035),
+        L.latLng(14.4028 + basePadding + 0.003, 120.8660 + basePadding + 0.0055)
+      );
+
+      map.setMaxBounds(dynamicBounds);
     };
 
     // Restrict zoom levels to stay focused on campus
@@ -508,7 +512,10 @@ export default function CampusMap({
           });
 
           // Long-press detection
-          const handleTouchStart = () => {
+          const handleTouchStart = (e: TouchEvent) => {
+            // Only handle single touch
+            if (e.touches.length > 1) return;
+            
             isLongPressRef.current = false;
             
             // Set timer for long press (500ms)
@@ -516,6 +523,10 @@ export default function CampusMap({
               isLongPressRef.current = true;
               // Show tooltip on long press
               marker.openTooltip();
+              // Vibrate if supported
+              if (window.navigator.vibrate) {
+                window.navigator.vibrate(50);
+              }
             }, 500);
           };
 
@@ -536,9 +547,33 @@ export default function CampusMap({
             }
           };
 
-          markerElement.addEventListener('touchstart', handleTouchStart);
+          const handleMouseDown = () => {
+            isLongPressRef.current = false;
+            longPressTimerRef.current = setTimeout(() => {
+              isLongPressRef.current = true;
+              marker.openTooltip();
+            }, 500);
+          };
+
+          const handleMouseUp = () => {
+            if (longPressTimerRef.current) {
+              clearTimeout(longPressTimerRef.current);
+              longPressTimerRef.current = null;
+            }
+            if (isLongPressRef.current) {
+              marker.closeTooltip();
+              setTimeout(() => {
+                isLongPressRef.current = false;
+              }, 100);
+            }
+          };
+
+          markerElement.addEventListener('touchstart', handleTouchStart, { passive: true });
           markerElement.addEventListener('touchend', handleTouchEnd);
           markerElement.addEventListener('touchcancel', handleTouchEnd);
+          markerElement.addEventListener('mousedown', handleMouseDown);
+          markerElement.addEventListener('mouseup', handleMouseUp);
+          markerElement.addEventListener('mouseleave', handleMouseUp);
         }
 
         // Handle click events - either for parking selection or regular building click
