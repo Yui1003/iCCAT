@@ -52,8 +52,46 @@ export default function PathDrawingMap({
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const polylineRef = useRef<any>(null);
+  const previewLineRef = useRef<any>(null);
   const hasInitializedBoundsRef = useRef(false);
   const [isDrawing, setIsDrawing] = useState(true);
+
+  // Handle live preview line
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.L || !isDrawing) return;
+
+    const L = window.L;
+    const map = mapInstanceRef.current;
+
+    const handleMouseMove = (e: any) => {
+      if (nodes.length === 0) return;
+
+      const lastNode = nodes[nodes.length - 1];
+      const cursorLatLng = e.latlng;
+
+      if (previewLineRef.current) {
+        previewLineRef.current.setLatLngs([lastNode, cursorLatLng]);
+      } else {
+        previewLineRef.current = L.polyline([lastNode, cursorLatLng], {
+          color: '#3b82f6',
+          weight: 2,
+          opacity: 0.5,
+          dashArray: '5, 10',
+          interactive: false
+        }).addTo(map);
+      }
+    };
+
+    map.on('mousemove', handleMouseMove);
+
+    return () => {
+      map.off('mousemove', handleMouseMove);
+      if (previewLineRef.current) {
+        previewLineRef.current.remove();
+        previewLineRef.current = null;
+      }
+    };
+  }, [nodes, isDrawing]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -76,6 +114,7 @@ export default function PathDrawingMap({
       maxZoom: 22,
       zoomControl: true,
       attributionControl: true,
+      dragging: true, // Will be toggled based on isDrawing
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -137,6 +176,16 @@ export default function PathDrawingMap({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    
+    if (isDrawing) {
+      mapInstanceRef.current.dragging.disable();
+    } else {
+      mapInstanceRef.current.dragging.enable();
+    }
+  }, [isDrawing]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
@@ -314,10 +363,13 @@ export default function PathDrawingMap({
           html: iconHtml,
           className: 'waypoint-marker',
           iconSize: isFirst || isLast ? [32, 32] : [24, 24],
-          iconAnchor: isFirst || isLast ? [16, 32] : [12, 12],
+          iconAnchor: isFirst || isLast ? [16, 16] : [12, 12], // Centered end marker
         });
 
-        const marker = L.marker([node.lat, node.lng], { icon })
+        const marker = L.marker([node.lat, node.lng], { 
+          icon,
+          draggable: isDrawing // Allow dragging while drawing
+        })
           .addTo(mapInstanceRef.current)
           .bindTooltip(
             isFirst ? 'Start' : isLast ? 'End' : `Waypoint ${index}`,
@@ -327,6 +379,13 @@ export default function PathDrawingMap({
               offset: [0, -10],
             }
           );
+
+        marker.on('drag', (e: any) => {
+          const newLatLng = e.target.getLatLng();
+          const newNodes = [...nodes];
+          newNodes[index] = { lat: newLatLng.lat, lng: newLatLng.lng };
+          onNodesChange(newNodes);
+        });
 
         marker.on('click', (e: any) => {
           L.DomEvent.stopPropagation(e);
@@ -341,10 +400,11 @@ export default function PathDrawingMap({
 
       if (nodes.length > 1) {
         polylineRef.current = L.polyline(nodes, {
-          color: color,
+          color: '#3b82f6', // blue color
           weight: 4,
-          opacity: 0.7,
-          smoothFactor: 1
+          opacity: 0.8,
+          smoothFactor: 1,
+          interactive: false
         }).addTo(mapInstanceRef.current);
       }
 
