@@ -297,97 +297,45 @@ export function findShortestPath(
   console.log(`[DEBUG] Start projection: ${startProjKey.substring(0, 30)}... on path ${startProjection.pathIndex}`);
   console.log(`[DEBUG] End projection: ${endProjKey.substring(0, 30)}... on path ${endProjection.pathIndex}`);
 
-  const snapThreshold = 10;
-  
-  nodes.forEach((node, key) => {
-    const distToStart = calculateDistance(startProjection.lat, startProjection.lng, node.lat, node.lng);
-    if (distToStart <= snapThreshold && distToStart > 0) {
-      console.log(`[DEBUG] Snapping start projection to existing node ${key.substring(0, 30)}... (${distToStart.toFixed(1)}m away)`);
-      startProjKey = key;
-    }
-    
-    const distToEnd = calculateDistance(endProjection.lat, endProjection.lng, node.lat, node.lng);
-    if (distToEnd <= snapThreshold && distToEnd > 0) {
-      console.log(`[DEBUG] Snapping end projection to existing node ${key.substring(0, 30)}... (${distToEnd.toFixed(1)}m away)`);
-      endProjKey = key;
-    }
-  });
-
+  // Use the path network directly
   const augmentedNodes = new Map(nodes);
   let augmentedEdges = [...edges];
 
+  // Add building nodes
   augmentedNodes.set(startKey, { id: startKey, lat: startPoint.lat, lng: startPoint.lng });
   augmentedNodes.set(endKey, { id: endKey, lat: endPoint.lat, lng: endPoint.lng });
 
-  const segmentProjections = new Map<string, Array<{ key: string; lat: number; lng: number; t: number }>>();
-
-  const projectionsToAdd = [
+  // Add projections to the graph if they don't exist
+  [
     { key: startProjKey, ...startProjection },
     { key: endProjKey, ...endProjection }
-  ];
-
-  projectionsToAdd.forEach(proj => {
+  ].forEach(proj => {
     if (!augmentedNodes.has(proj.key)) {
-      augmentedNodes.set(proj.key, {
-        id: proj.key,
-        lat: proj.lat,
-        lng: proj.lng
-      });
-    }
-
-    const path = paths[proj.pathIndex];
-    const pathNodes = path.nodes as LatLng[];
-    const segStart = pathNodes[proj.segmentIndex];
-    const segEnd = pathNodes[proj.segmentIndex + 1];
-    const segKey = `${proj.pathIndex}-${proj.segmentIndex}`;
-
-    const dx = segEnd.lng - segStart.lng;
-    const dy = segEnd.lat - segStart.lat;
-    const t = dx === 0 && dy === 0 ? 0 : Math.max(0, Math.min(1,
-      ((proj.lng - segStart.lng) * dx + (proj.lat - segStart.lat) * dy) /
-      (dx * dx + dy * dy)
-    ));
-
-    if (!segmentProjections.has(segKey)) {
-      segmentProjections.set(segKey, []);
-    }
-    segmentProjections.get(segKey)!.push({ key: proj.key, lat: proj.lat, lng: proj.lng, t });
-  });
-
-  segmentProjections.forEach((projs, segKey) => {
-    const [pathIndex, segmentIndex] = segKey.split('-').map(Number);
-    const path = paths[pathIndex];
-    const pathNodes = path.nodes as LatLng[];
-    const segStart = pathNodes[segmentIndex];
-    const segEnd = pathNodes[segmentIndex + 1];
-    const segStartKey = nodeKey(segStart.lat, segStart.lng);
-    const segEndKey = nodeKey(segEnd.lat, segEnd.lng);
-
-    augmentedEdges = augmentedEdges.filter(
-      e => !(e.from === segStartKey && e.to === segEndKey) &&
-           !(e.from === segEndKey && e.to === segStartKey)
-    );
-
-    projs.sort((a, b) => a.t - b.t);
-
-    const allPoints = [
-      { key: segStartKey, lat: segStart.lat, lng: segStart.lng },
-      ...projs,
-      { key: segEndKey, lat: segEnd.lat, lng: segEnd.lng }
-    ];
-
-    for (let i = 0; i < allPoints.length - 1; i++) {
-      const from = allPoints[i];
-      const to = allPoints[i + 1];
-      const dist = calculateDistance(from.lat, from.lng, to.lat, to.lng);
+      augmentedNodes.set(proj.key, { id: proj.key, lat: proj.lat, lng: proj.lng });
       
-      if (dist > 0) {
-        augmentedEdges.push({ from: from.key, to: to.key, distance: dist });
-        augmentedEdges.push({ from: to.key, to: from.key, distance: dist });
+      const path = paths[proj.pathIndex];
+      const pathNodes = path.nodes as LatLng[];
+      const segStart = pathNodes[proj.segmentIndex];
+      const segEnd = pathNodes[proj.segmentIndex + 1];
+      const segStartKey = nodeKey(segStart.lat, segStart.lng);
+      const segEndKey = nodeKey(segEnd.lat, segEnd.lng);
+
+      // Connect projection to segment endpoints
+      const distToStart = calculateDistance(proj.lat, proj.lng, segStart.lat, segStart.lng);
+      const distToEnd = calculateDistance(proj.lat, proj.lng, segEnd.lat, segEnd.lng);
+
+      if (distToStart > 0) {
+        augmentedEdges.push({ from: proj.key, to: segStartKey, distance: distToStart });
+        augmentedEdges.push({ from: segStartKey, to: proj.key, distance: distToStart });
+      }
+      if (distToEnd > 0) {
+        augmentedEdges.push({ from: proj.key, to: segEndKey, distance: distToEnd });
+        augmentedEdges.push({ from: segEndKey, to: proj.key, distance: distToEnd });
       }
     }
   });
 
+  // Connect buildings to their projections
   const startToProjDist = calculateDistance(startPoint.lat, startPoint.lng, startProjection.lat, startProjection.lng);
   const endToProjDist = calculateDistance(endPoint.lat, endPoint.lng, endProjection.lat, endProjection.lng);
 
@@ -445,18 +393,24 @@ export function findShortestPath(
     return [startPoint, endPoint];
   }
 
-  const path: string[] = [];
+  // Reconstruct Dijkstra path
+  const dijkstraPath: string[] = [];
   let current: string | null = endKey;
 
   while (current !== null) {
-    path.unshift(current);
+    dijkstraPath.unshift(current);
     current = previous.get(current) || null;
   }
 
-  const route: LatLng[] = path.map(key => {
-    const node = augmentedNodes.get(key);
-    return node ? { lat: node.lat, lng: node.lng } : null;
-  }).filter((p): p is LatLng => p !== null);
+  console.log(`[DEBUG] Dijkstra found ${dijkstraPath.length} key nodes`);
 
-  return route;
+  // Trace the route following the segments
+  const finalRoute: LatLng[] = [];
+  for (let i = 0; i < dijkstraPath.length; i++) {
+    const node = augmentedNodes.get(dijkstraPath[i]);
+    if (node) finalRoute.push({ lat: node.lat, lng: node.lng });
+  }
+
+  console.log(`[DEBUG] ✅ Route found with ${finalRoute.length} points`);
+  return finalRoute;
 }

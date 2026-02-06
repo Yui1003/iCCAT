@@ -321,50 +321,68 @@ export function findShortestPath(
   const startPoint = { lat: start.nodeLat ?? start.lat, lng: start.nodeLng ?? start.lng };
   const endPoint = { lat: end.nodeLat ?? end.lat, lng: end.nodeLng ?? end.lng };
 
-  // Find closest path nodes to start and end buildings
-  let closestStartNode: { key: string; distance: number } | null = null;
-  let closestEndNode: { key: string; distance: number } | null = null;
+  const startProjection = findClosestSegmentProjection(startPoint, paths);
+  const endProjection = findClosestSegmentProjection(endPoint, paths);
 
-  nodes.forEach((node: GraphNode, key: string) => {
-    const distToStart = calculateDistance(startPoint.lat, startPoint.lng, node.lat, node.lng);
-    const distToEnd = calculateDistance(endPoint.lat, endPoint.lng, node.lat, node.lng);
-
-    if (closestStartNode === null || distToStart < closestStartNode.distance) {
-      closestStartNode = { key, distance: distToStart };
-    }
-
-    if (closestEndNode === null || distToEnd < closestEndNode.distance) {
-      closestEndNode = { key, distance: distToEnd };
-    }
-  });
-
-  if (!closestStartNode || !closestEndNode) {
-    console.warn(`[CLIENT] Could not find path nodes: start=${closestStartNode !== null}, end=${closestEndNode !== null}`);
+  if (!startProjection || !endProjection) {
+    console.warn(`[CLIENT] Could not find projections for buildings: start=${startProjection !== null}, end=${endProjection !== null}`);
     return null;
   }
 
-  const startNodeData = closestStartNode as { key: string; distance: number };
-  const endNodeData = closestEndNode as { key: string; distance: number };
+  let startProjKey = nodeKey(startProjection.lat, startProjection.lng);
+  let endProjKey = nodeKey(endProjection.lat, endProjection.lng);
+  const startKey = nodeKey(startPoint.lat, startPoint.lng);
+  const endKey = nodeKey(endPoint.lat, endPoint.lng);
 
-  console.log(`[CLIENT] Closest start node: ${startNodeData.distance.toFixed(1)}m away`);
-  console.log(`[CLIENT] Closest end node: ${endNodeData.distance.toFixed(1)}m away`);
+  console.log(`[CLIENT] Start projection: ${startProjKey.substring(0, 30)}... on path ${startProjection.pathIndex}`);
+  console.log(`[CLIENT] End projection: ${endProjKey.substring(0, 30)}... on path ${endProjection.pathIndex}`);
 
-  // VALIDATION: For accessible mode, check if closest end node is actually CONNECTED to the building
-  // The closest end node must BE AT the building (within ~1m) to be truly connected
-  if (mode === 'accessible') {
-    if (endNodeData.distance > 1) {
-      console.warn(`[CLIENT] ACCESSIBLE MODE: Closest path node (${endNodeData.distance.toFixed(1)}m away) is NOT connected to "${end.name}"`);
-      console.warn(`[CLIENT] Destination building is not reachable via accessible paths - treating as unreachable`);
-      return null;
-    }
-  }
-
-  const startKey = startNodeData.key;
-  const endKey = endNodeData.key;
-
-  // Use the path network directly without projections
+  // Use the path network directly
   const augmentedNodes = new Map(nodes);
-  const augmentedEdges = [...edges];
+  let augmentedEdges = [...edges];
+
+  // Add building nodes
+  augmentedNodes.set(startKey, { id: startKey, lat: startPoint.lat, lng: startPoint.lng });
+  augmentedNodes.set(endKey, { id: endKey, lat: endPoint.lat, lng: endPoint.lng });
+
+  // Add projections to the graph if they don't exist
+  [
+    { key: startProjKey, ...startProjection },
+    { key: endProjKey, ...endProjection }
+  ].forEach(proj => {
+    if (!augmentedNodes.has(proj.key)) {
+      augmentedNodes.set(proj.key, { id: proj.key, lat: proj.lat, lng: proj.lng });
+      
+      const path = paths[proj.pathIndex];
+      const pathNodes = path.nodes as LatLng[];
+      const segStart = pathNodes[proj.segmentIndex];
+      const segEnd = pathNodes[proj.segmentIndex + 1];
+      const segStartKey = nodeKey(segStart.lat, segStart.lng);
+      const segEndKey = nodeKey(segEnd.lat, segEnd.lng);
+
+      // Connect projection to segment endpoints
+      const distToStart = calculateDistance(proj.lat, proj.lng, segStart.lat, segStart.lng);
+      const distToEnd = calculateDistance(proj.lat, proj.lng, segEnd.lat, segEnd.lng);
+
+      if (distToStart > 0) {
+        augmentedEdges.push({ from: proj.key, to: segStartKey, distance: distToStart });
+        augmentedEdges.push({ from: segStartKey, to: proj.key, distance: distToStart });
+      }
+      if (distToEnd > 0) {
+        augmentedEdges.push({ from: proj.key, to: segEndKey, distance: distToEnd });
+        augmentedEdges.push({ from: segEndKey, to: proj.key, distance: distToEnd });
+      }
+    }
+  });
+
+  // Connect buildings to their projections
+  const startToProjDist = calculateDistance(startPoint.lat, startPoint.lng, startProjection.lat, startProjection.lng);
+  const endToProjDist = calculateDistance(endPoint.lat, endPoint.lng, endProjection.lat, endProjection.lng);
+
+  augmentedEdges.push({ from: startKey, to: startProjKey, distance: startToProjDist });
+  augmentedEdges.push({ from: startProjKey, to: startKey, distance: startToProjDist });
+  augmentedEdges.push({ from: endKey, to: endProjKey, distance: endToProjDist });
+  augmentedEdges.push({ from: endProjKey, to: endKey, distance: endToProjDist });
 
   const distances = new Map<string, number>();
   const previous = new Map<string, string | null>();
@@ -413,17 +431,17 @@ export function findShortestPath(
     console.warn(`[CLIENT] WARNING: No road connection found between "${start.name}" and "${end.name}" - paths are not connected!`);
     console.warn('[CLIENT] TIP: Make sure your paths share common waypoints to form junctions.');
     
-    // In accessible mode, do NOT allow fallback direct line - the destination must be reachable via actual paths
+    // In accessible mode, do NOT allow fallback direct line
     if (mode === 'accessible') {
       console.warn(`[CLIENT] ACCESSIBLE MODE: Destination building is not connected to accessible path network - treating as unreachable`);
       return null;
     }
     
-    // For other modes, allow fallback to direct line (legacy behavior for walking/driving)
+    // For other modes, allow fallback to direct line
     return [startPoint, endPoint];
   }
 
-  // Reconstruct Dijkstra path (just the key nodes)
+  // Reconstruct Dijkstra path
   const dijkstraPath: string[] = [];
   let current: string | null = endKey;
 
@@ -434,90 +452,14 @@ export function findShortestPath(
 
   console.log(`[CLIENT] Dijkstra found ${dijkstraPath.length} key nodes`);
 
-  // Now expand the path to include ALL waypoints along the segments
-  const expandedRoute: LatLng[] = [];
-
-  // Helper function to find segment index for a node key
-  function findSegmentForNodeInPath(path: Walkpath | Drivepath, searchKey: string): number {
-    const pathNodes = path.nodes as LatLng[];
-    for (let i = 0; i < pathNodes.length; i++) {
-      if (nodeKey(pathNodes[i].lat, pathNodes[i].lng) === searchKey) {
-        return i;
-      }
-    }
-    return -1;
+  // Trace the route following the segments
+  const finalRoute: LatLng[] = [];
+  for (let i = 0; i < dijkstraPath.length; i++) {
+    const node = augmentedNodes.get(dijkstraPath[i]);
+    if (node) finalRoute.push({ lat: node.lat, lng: node.lng });
   }
 
-  // Helper to get all waypoints between two nodes on a path
-  function getWaypointsBetweenNodes(path: Walkpath | Drivepath, fromKey: string, toKey: string): LatLng[] {
-    const pathNodes = path.nodes as LatLng[];
-    const fromIdx = findSegmentForNodeInPath(path, fromKey);
-    const toIdx = findSegmentForNodeInPath(path, toKey);
-    
-    if (fromIdx === -1 || toIdx === -1) return [];
-    
-    const waypoints: LatLng[] = [];
-    if (fromIdx <= toIdx) {
-      for (let i = fromIdx; i <= toIdx; i++) {
-        waypoints.push(pathNodes[i]);
-      }
-    } else {
-      for (let i = fromIdx; i >= toIdx; i--) {
-        waypoints.push(pathNodes[i]);
-      }
-    }
-    return waypoints;
-  }
-
-  // For each consecutive pair of nodes in Dijkstra path, find and trace all waypoints between them
-  for (let i = 0; i < dijkstraPath.length - 1; i++) {
-    const fromKey = dijkstraPath[i];
-    const toKey = dijkstraPath[i + 1];
-
-    let segmentWaypoints: LatLng[] = [];
-    
-    // Find the path(s) that contain these nodes and get all waypoints between them
-    for (const path of paths) {
-      const pathNodes = path.nodes as LatLng[];
-      const fromIdx = findSegmentForNodeInPath(path, fromKey);
-      const toIdx = findSegmentForNodeInPath(path, toKey);
-      
-      // If both nodes are in this path, get all waypoints between them
-      if (fromIdx !== -1 && toIdx !== -1) {
-        if (fromIdx <= toIdx) {
-          // Forward direction
-          for (let k = fromIdx; k <= toIdx; k++) {
-            segmentWaypoints.push(pathNodes[k]);
-          }
-        } else {
-          // Backward direction
-          for (let k = fromIdx; k >= toIdx; k--) {
-            segmentWaypoints.push(pathNodes[k]);
-          }
-        }
-        break;
-      }
-    }
-
-    // Add all waypoints from this segment
-    for (const wp of segmentWaypoints) {
-      if (expandedRoute.length === 0 || 
-          Math.abs(wp.lat - expandedRoute[expandedRoute.length - 1].lat) > 0.00001 ||
-          Math.abs(wp.lng - expandedRoute[expandedRoute.length - 1].lng) > 0.00001) {
-        expandedRoute.push(wp);
-      }
-    }
-  }
-
-  // Add final destination
-  if (expandedRoute.length === 0) {
-    expandedRoute.push(startPoint);
-  }
-
-  const finalRoute = [startPoint, ...expandedRoute.slice(1), endPoint];
-
-  console.log(`[CLIENT] ✅ Route found: Dijkstra ${dijkstraPath.length} nodes → Expanded ${expandedRoute.length} waypoints → Final ${finalRoute.length} with buildings`);
-  
+  console.log(`[CLIENT] ✅ Route found with ${finalRoute.length} points`);
   return finalRoute;
 }
 
