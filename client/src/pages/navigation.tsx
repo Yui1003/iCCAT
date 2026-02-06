@@ -4150,8 +4150,31 @@ export default function Navigation() {
                   {selectedTypes.length === poiTypes.length ? "All Locations" : "Filtered Locations"}
                 </h3>
                 <div className="space-y-2">
-                  {filteredBuildings.length > 0 ? (
-                    filteredBuildings.map(building => (
+                  {buildings.length === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-muted-foreground">No locations available</p>
+                    </div>
+                  ) : (() => {
+                    const sortedBuildings = [...buildings].sort((a, b) => a.name.localeCompare(b.name));
+                    const filteredBuildings = sortedBuildings.filter((building) => {
+                      const matchesSearch = searchQuery === "" || 
+                        building.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (building.description || "").toLowerCase().includes(searchQuery.toLowerCase());
+                      
+                      const matchesType = selectedTypes.includes(building.type || "");
+                      
+                      return matchesSearch && matchesType;
+                    });
+                    
+                    if (filteredBuildings.length === 0) {
+                      return (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          No locations found
+                        </p>
+                      );
+                    }
+
+                    return filteredBuildings.map(building => (
                       <div
                         key={building.id}
                         className="flex items-center justify-between gap-2 p-2 rounded-lg hover-elevate cursor-pointer"
@@ -4164,12 +4187,8 @@ export default function Navigation() {
                         </div>
                         <span className="text-xs text-muted-foreground flex-shrink-0">{building.type}</span>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      No locations found
-                    </p>
-                  )}
+                    ));
+                  })()}
                 </div>
               </div>
             </div>
