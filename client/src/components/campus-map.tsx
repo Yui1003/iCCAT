@@ -330,9 +330,6 @@ export default function CampusMap({
       const centerLatVal = 14.4025;
       const centerLngVal = 120.8670;
       
-      // FIXED BOUNDS: Use fixed campus bounds regardless of zoom
-      // This allows panning across the whole campus at high zoom levels
-      // but still prevents wandering away from the campus area.
       // Padding of 0.005 allows roughly 500m of movement from center
       const padding = 0.005; 
       
@@ -341,7 +338,10 @@ export default function CampusMap({
         L.latLng(centerLatVal + padding, centerLngVal + padding)
       );
 
-      map.setMaxBounds(dynamicBounds);
+      // Union with campus bounds to ensure we always include the campus
+      const finalBounds = dynamicBounds.extend(campusBounds);
+
+      map.setMaxBounds(finalBounds);
     };
 
     // Restrict zoom levels to stay focused on campus

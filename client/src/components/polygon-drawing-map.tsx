@@ -213,11 +213,15 @@ export default function PolygonDrawingMap({
 
     // Apply strict bounds to drawing map as well
     const padding = 0.005;
+    const campusBounds = window.L.latLngBounds(
+      window.L.latLng(14.3985, 120.8635),
+      window.L.latLng(14.4065, 120.8705)
+    );
     const dynamicBounds = window.L.latLngBounds(
       window.L.latLng(lat - padding, lng - padding),
       window.L.latLng(lat + padding, lng + padding)
     );
-    mapInstanceRef.current.setMaxBounds(dynamicBounds);
+    mapInstanceRef.current.setMaxBounds(dynamicBounds.extend(campusBounds));
   }, [centerLat, centerLng]);
 
   useEffect(() => {

@@ -338,12 +338,16 @@ export default function MobileNavigation() {
         });
 
         // Strict bounds for mobile as well
-        const padding = 0.003;
+        const padding = 0.005;
+        const campusBounds = L.latLngBounds(
+          L.latLng(14.3985, 120.8635),
+          L.latLng(14.4065, 120.8705)
+        );
         const dynamicBounds = L.latLngBounds(
           L.latLng(14.4025 - padding, 120.8670 - padding),
           L.latLng(14.4025 + padding, 120.8670 + padding)
         );
-        map.setMaxBounds(dynamicBounds);
+        map.setMaxBounds(dynamicBounds.extend(campusBounds));
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',
