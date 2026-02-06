@@ -118,7 +118,7 @@ export default function PathDrawingMap({
       dragging: true, // Will be toggled based on isDrawing
     });
 
-    const padding = 0.006;
+    const padding = 0.005;
     const dynamicBounds = L.latLngBounds(
       L.latLng(14.4025 - padding, 120.8670 - padding),
       L.latLng(14.4025 + padding, 120.8670 + padding)

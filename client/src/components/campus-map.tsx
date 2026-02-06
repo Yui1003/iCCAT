@@ -326,17 +326,15 @@ export default function CampusMap({
       const zoom = map.getZoom();
       setCurrentZoom(zoom);
       
-      // Strict constraints to keep map centered on campus
-      // As zoom increases, the allowed boundary significantly tightens to prevent panning away
-      // We use a much smaller factor to restrict movement at high zoom levels
+      // Campus center coordinates
       const centerLatVal = 14.4025;
       const centerLngVal = 120.8670;
       
-      // LOOSENED BOUNDS: Increased base padding and added zoom-based expansion
-      // This allows more movement at high zoom levels while still preventing wandering too far
-      const basePadding = 0.005; 
-      const zoomFactor = Math.max(1, Math.pow(1.2, zoom - 17.5));
-      const padding = basePadding * zoomFactor;
+      // FIXED BOUNDS: Use fixed campus bounds regardless of zoom
+      // This allows panning across the whole campus at high zoom levels
+      // but still prevents wandering away from the campus area.
+      // Padding of 0.005 allows roughly 500m of movement from center
+      const padding = 0.005; 
       
       const dynamicBounds = L.latLngBounds(
         L.latLng(centerLatVal - padding, centerLngVal - padding),
