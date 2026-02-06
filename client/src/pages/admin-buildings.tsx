@@ -413,7 +413,7 @@ export default function AdminBuildings() {
 
                 <ImageUploadInput
                   label="Building Photo"
-                  value={formData.image}
+                  value={formData.image || ""}
                   onChange={(url) => setFormData({ ...formData, image: url })}
                   type="building"
                   id={editingBuilding?.id || 'new'}
