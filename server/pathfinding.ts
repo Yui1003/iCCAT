@@ -278,8 +278,8 @@ export function findShortestPath(
   const { nodes, edges } = buildGraph(paths);
 
   console.log(`[DEBUG] Pathfinding from "${start.name}" to "${end.name}"`);
-  const startPoint = { lat: start.lat, lng: start.lng };
-  const endPoint = { lat: end.lat, lng: end.lng };
+  const startPoint = { lat: start.entranceLat ?? start.lat, lng: start.entranceLng ?? start.lng };
+  const endPoint = { lat: end.entranceLat ?? end.lat, lng: end.entranceLng ?? end.lng };
 
   const startProjection = findClosestSegmentProjection(startPoint, paths);
   const endProjection = findClosestSegmentProjection(endPoint, paths);

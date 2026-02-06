@@ -117,6 +117,8 @@ export const buildings = pgTable("buildings", {
   polygon: jsonb("polygon"), // Array of {lat, lng} objects for building boundary/area
   polygonColor: text("polygon_color").default("#FACC15"), // Hex color for polygon highlight
   polygonOpacity: real("polygon_opacity").default(0.3), // Opacity of polygon (0-1)
+  entranceLat: real("entrance_lat"), // Specific coordinate for pathfinding/routing
+  entranceLng: real("entrance_lng"), // Specific coordinate for pathfinding/routing
 });
 
 export const insertBuildingSchema = createInsertSchema(buildings).omit({ id: true });
