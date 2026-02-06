@@ -323,7 +323,7 @@ export default function MobileNavigation() {
         
         // Create map with SVG renderer for better mobile support (don't use canvas on iOS)
         const map = L.map(mapRef.current, {
-          center: [14.4022, 120.8675],
+          center: [14.402840436027079, 120.86602985858919],
           zoom: 17,
           zoomControl: true,
           touchZoom: true,
@@ -345,7 +345,7 @@ export default function MobileNavigation() {
           keepBuffer: 3,
           updateWhenZooming: false,
           updateWhenIdle: true,
-          bounds: [[14.398, 120.862], [14.407, 120.870]], // Constrain tiles to campus area
+          bounds: [[14.398, 120.861], [14.408, 120.871]], // Constrain tiles to campus area
         }).addTo(map);
 
         mapInstanceRef.current = map;

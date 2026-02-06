@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, MapPin, Building2, School, Hospital, Store, Home, Shapes } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
@@ -66,6 +67,8 @@ export default function AdminBuildings() {
   const { data: buildings = [], isLoading } = useQuery<Building[]>({
     queryKey: ['/api/buildings']
   });
+
+  const sortedPoiTypes = useMemo(() => [...poiTypes].sort(), []);
 
   const createMutation = useMutation({
     mutationFn: (data: InsertBuilding) => apiRequest('POST', '/api/buildings', data),
@@ -171,7 +174,7 @@ export default function AdminBuildings() {
         lat,
         lng
       }));
-      toast({ title: "Location updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+      toast({ title: "Location updated", description: \`Set to \${lat.toFixed(6)}, \${lng.toFixed(6)}\` });
     }
   };
 
@@ -181,7 +184,7 @@ export default function AdminBuildings() {
       nodeLat: lat,
       nodeLng: lng
     }));
-    toast({ title: "Building Node updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+    toast({ title: "Building Node updated", description: \`Set to \${lat.toFixed(6)}, \${lng.toFixed(6)}\` });
   };
 
   const toggleMapClick = () => {
@@ -245,7 +248,7 @@ export default function AdminBuildings() {
                       <SelectValue placeholder="Select location type" />
                     </SelectTrigger>
                     <SelectContent className="z-[10000] max-h-[300px]">
-                      {poiTypes.map((type) => (
+                      {sortedPoiTypes.map((type) => (
                         <SelectItem key={type} value={type}>
                           {type}
                         </SelectItem>
@@ -271,11 +274,11 @@ export default function AdminBuildings() {
                     <Button
                       type="button"
                       variant={mapClickEnabled ? "default" : "secondary"}
-                      className={`w-full transition-all duration-300 ${
+                      className={\`w-full transition-all duration-300 \${
                         mapClickEnabled 
                           ? "bg-green-600 hover:bg-green-700 text-white" 
                           : "bg-blue-600 hover:bg-blue-700 text-white"
-                      }`}
+                      }\`}
                       onClick={toggleMapClick}
                       data-testid="button-toggle-map-click"
                     >
@@ -283,7 +286,7 @@ export default function AdminBuildings() {
                       {mapClickEnabled ? "Click map to place marker (Active)" : "Click to enable map placement"}
                     </Button>
                     
-                    <div className={`h-[300px] rounded-lg overflow-hidden border transition-all duration-500 ${!mapClickEnabled ? "blur-sm grayscale-[0.5] opacity-80" : "blur-0 grayscale-0 opacity-100"}`}>
+                    <div className={\`h-[300px] rounded-lg overflow-hidden border transition-all duration-500 \${!mapClickEnabled ? "blur-sm grayscale-[0.5] opacity-80" : "blur-0 grayscale-0 opacity-100"}\`}>
                       <CampusMap
                         buildings={[
                           ...buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id),
@@ -591,7 +594,7 @@ export default function AdminBuildings() {
                     </SelectTrigger>
                     <SelectContent className="z-[100] max-h-[300px]">
                       <SelectItem value="All Types">All Types</SelectItem>
-                      {poiTypes.map((type) => (
+                      {sortedPoiTypes.map((type) => (
                         <SelectItem key={type} value={type}>
                           {type}
                         </SelectItem>

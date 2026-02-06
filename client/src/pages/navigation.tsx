@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Navigation as NavigationIcon, TrendingUp, MapPin, Filter, Search, Users, Car, Bike, QrCode, Plus, X, GripVertical, Clock, ChevronDown, DoorOpen } from "lucide-react";
 import { Link } from "wouter";
@@ -48,6 +48,7 @@ export default function Navigation() {
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(Array.from(poiTypes));
+  const sortedPoiTypes = useMemo(() => [...poiTypes].sort(), []);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showDirectionsDialog, setShowDirectionsDialog] = useState(false);
   const [directionsDestination, setDirectionsDestination] = useState<Building | null>(null);
