@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
@@ -42,8 +41,8 @@ export default function AdminBuildings() {
     name: "",
     type: "Building",
     description: "",
-    lat: 14.402870,
-    lng: 120.8640,
+    lat: 14.402840436027079,
+    lng: 120.86602985858919,
     nodeLat: null,
     nodeLng: null,
     departments: [],
@@ -121,8 +120,8 @@ export default function AdminBuildings() {
         name: "",
         type: "Building",
         description: "",
-        lat: 14.402870,
-        lng: 120.8640,
+        lat: 14.402840436027079,
+        lng: 120.86602985858919,
         nodeLat: null,
         nodeLng: null,
         departments: [],
@@ -176,7 +175,7 @@ export default function AdminBuildings() {
         lat,
         lng
       }));
-      toast({ title: "Location updated", description: \`Set to \${lat.toFixed(6)}, \${lng.toFixed(6)}\` });
+      toast({ title: "Location updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
     }
   };
 
@@ -186,7 +185,7 @@ export default function AdminBuildings() {
       nodeLat: lat,
       nodeLng: lng
     }));
-    toast({ title: "Building Node updated", description: \`Set to \${lat.toFixed(6)}, \${lng.toFixed(6)}\` });
+    toast({ title: "Building Node updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
   };
 
   const toggleMapClick = () => {
@@ -276,11 +275,11 @@ export default function AdminBuildings() {
                     <Button
                       type="button"
                       variant={mapClickEnabled ? "default" : "secondary"}
-                      className={\`w-full transition-all duration-300 \${
+                      className={`w-full transition-all duration-300 ${
                         mapClickEnabled 
                           ? "bg-green-600 hover:bg-green-700 text-white" 
                           : "bg-blue-600 hover:bg-blue-700 text-white"
-                      }\`}
+                      }`}
                       onClick={toggleMapClick}
                       data-testid="button-toggle-map-click"
                     >
@@ -288,7 +287,7 @@ export default function AdminBuildings() {
                       {mapClickEnabled ? "Click map to place marker (Active)" : "Click to enable map placement"}
                     </Button>
                     
-                    <div className={\`h-[300px] rounded-lg overflow-hidden border transition-all duration-500 \${!mapClickEnabled ? "blur-sm grayscale-[0.5] opacity-80" : "blur-0 grayscale-0 opacity-100"}\`}>
+                    <div className={`h-[300px] rounded-lg overflow-hidden border transition-all duration-500 ${!mapClickEnabled ? "blur-sm grayscale-[0.5] opacity-80" : "blur-0 grayscale-0 opacity-100"}`}>
                       <CampusMap
                         buildings={[
                           ...buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id),
