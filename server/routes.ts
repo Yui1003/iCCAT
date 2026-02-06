@@ -64,18 +64,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/get-device-ip', (req, res) => {
     try {
       let ip = 'unknown';
-      // Rest of the implementation
+      
+      // Check proxy headers first (for reverse proxy environments like Render)
+      const xForwardedFor = req.headers['x-forwarded-for'];
+      if (xForwardedFor) {
+        // x-forwarded-for can contain multiple IPs, take the first one
+        ip = Array.isArray(xForwardedFor) ? xForwardedFor[0] : xForwardedFor.split(',')[0].trim();
+      } else if (req.headers['cf-connecting-ip']) {
+        // Cloudflare header
+        ip = req.headers['cf-connecting-ip'] as string;
+      } else if (req.headers['x-real-ip']) {
+        // Nginx header
+        ip = req.headers['x-real-ip'] as string;
+      } else if (req.socket.remoteAddress) {
+        // Direct connection
+        ip = req.socket.remoteAddress;
+      }
+      
+      console.log('[IP-DETECTION] Client IP detected:', ip, 'Headers:', {
+        'x-forwarded-for': req.headers['x-forwarded-for'],
+        'cf-connecting-ip': req.headers['cf-connecting-ip'],
+        'x-real-ip': req.headers['x-real-ip'],
+        'socket.remoteAddress': req.socket.remoteAddress
+      });
+      
+      return res.json({ ip });
     } catch (error) {
-      // Error handling
+      console.error('Error getting device IP:', error);
+      if (!res.headersSent) {
+        return res.status(500).json({ error: 'Failed to get device IP', ip: 'unknown' });
+      }
     }
   });
-
-  // Example fix for the missing nodeLat/nodeLng if KIOSK_LOCATION is used in a route
-  // I need to find where KIOSK_LOCATION is used to fix the LSP error.
-  // Since grep didn't find it, it might be imported but not used directly in this file
-  // or used in a way my regex didn't catch.
-  // Actually, the LSP error says it's on line 1149.
-
 
   // Image upload endpoint
   app.post('/api/upload-image', upload.single('file'), async (req: Request<{}, {}, UploadRequestBody>, res: Response) => {
@@ -1110,9 +1130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           markerIcon: null,
           polygon: null,
           polygonColor: null,
-          polygonOpacity: null,
-          nodeLat: startLat,
-          nodeLng: startLng
+          polygonOpacity: null
         };
       } else {
         startBuilding = await storage.getBuilding(startId);

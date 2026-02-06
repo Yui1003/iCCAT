@@ -100,12 +100,7 @@ export const KIOSK_LOCATION = {
   description: null,
   departments: null,
   image: null,
-  markerIcon: null,
-  polygon: null,
-  polygonColor: null,
-  polygonOpacity: null,
-  nodeLat: 14.403115555479292,
-  nodeLng: 120.86635977029803
+  markerIcon: null
 } as const;
 
 // Buildings table
@@ -122,8 +117,6 @@ export const buildings = pgTable("buildings", {
   polygon: jsonb("polygon"), // Array of {lat, lng} objects for building boundary/area
   polygonColor: text("polygon_color").default("#FACC15"), // Hex color for polygon highlight
   polygonOpacity: real("polygon_opacity").default(0.3), // Opacity of polygon (0-1)
-  nodeLat: real("node_lat"), // Separated building node latitude (entrance)
-  nodeLng: real("node_lng"), // Separated building node longitude (entrance)
 });
 
 export const insertBuildingSchema = createInsertSchema(buildings).omit({ id: true });
