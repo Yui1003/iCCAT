@@ -1,0 +1,88 @@
+Update the existing draw path / map pathway editing functionality of our web application to behave like OpenStreetMap’s way editor.
+
+⚠️ This is an enhancement of an existing feature, not a full rewrite.
+Keep the current map setup, UI layout, and data flow unless changes are required for correct behavior.
+
+Required Behavior Updates
+1. Live Connecting Line (Critical)
+
+While in Draw Path Mode, always show a live “rubber-band” connecting line
+
+This line must connect:
+the most recently placed node → the current mouse cursor
+
+The line must update in real time on mouse movement
+
+When the next node is placed, the preview line becomes a permanent segment
+
+2. Node Placement & Continuity
+
+First click creates the start node
+
+Each additional click:
+
+Adds a new node
+
+Extends the polyline from the previous node
+
+The path must always extend from the latest node, never restart from earlier nodes
+
+3. Centered End Marker
+
+The latest node (end node) must:
+
+Be visually distinct
+
+Be perfectly centered on its coordinate
+
+Not appear offset due to incorrect icon anchoring
+
+When drawing is finished, keep a final end marker centered on the last node
+
+4. Node Editing
+
+Nodes remain draggable
+
+Dragging a node updates connected line segments in real time
+
+Allow undoing the last placed node
+
+5. Finish & Cancel Behavior
+
+Double-click or press Finish Drawing to finalize the path
+
+Disable drawing interactions after finishing
+
+Re-enable normal map panning
+
+Visual & Interaction Rules
+
+Active path color similar to OpenStreetMap editor (blue)
+
+Live preview line should be lighter or dashed
+
+Disable map dragging while drawing
+
+Data Handling
+
+Continue using the current path storage logic
+
+Ensure the final path is stored/exported as a GeoJSON LineString
+
+Code Expectations
+
+Modify only what is necessary
+
+Keep the existing architecture and naming conventions
+
+Add comments explaining new or changed logic
+
+Goal
+
+The updated draw-path experience should feel nearly identical to OpenStreetMap, especially:
+
+Continuous line extension from the latest node
+
+Live cursor-connected preview line
+
+Precisely centered end marker
