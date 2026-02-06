@@ -212,7 +212,7 @@ export default function PolygonDrawingMap({
     mapInstanceRef.current.setView([lat, lng], 18.5);
 
     // Apply strict bounds to drawing map as well
-    const padding = 0.003;
+    const padding = 0.006;
     const dynamicBounds = window.L.latLngBounds(
       window.L.latLng(lat - padding, lng - padding),
       window.L.latLng(lat + padding, lng + padding)

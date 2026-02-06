@@ -332,14 +332,15 @@ export default function CampusMap({
       const centerLatVal = 14.4025;
       const centerLngVal = 120.8670;
       
-      // Zoom 18: padding ~ 0.0015
-      // Zoom 19: padding ~ 0.00075
-      // Zoom 20: padding ~ 0.00037
-      const padding = 0.0015 / Math.pow(2, Math.max(0, zoom - 18));
+      // LOOSENED BOUNDS: Increased base padding and added zoom-based expansion
+      // This allows more movement at high zoom levels while still preventing wandering too far
+      const basePadding = 0.005; 
+      const zoomFactor = Math.max(1, Math.pow(1.2, zoom - 17.5));
+      const padding = basePadding * zoomFactor;
       
       const dynamicBounds = L.latLngBounds(
-        L.latLng(centerLatVal - padding - 0.001, centerLngVal - padding - 0.001),
-        L.latLng(centerLatVal + padding + 0.001, centerLngVal + padding + 0.001)
+        L.latLng(centerLatVal - padding, centerLngVal - padding),
+        L.latLng(centerLatVal + padding, centerLngVal + padding)
       );
 
       map.setMaxBounds(dynamicBounds);
