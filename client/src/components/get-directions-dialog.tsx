@@ -140,7 +140,7 @@ export default function GetDirectionsDialog({
     if (!selectedStart || !destination) return null;
 
     const startBuilding = selectedStart === 'kiosk'
-      ? KIOSK_LOCATION
+      ? { ...KIOSK_LOCATION, nodeLat: KIOSK_LOCATION.lat, nodeLng: KIOSK_LOCATION.lng }
       : buildings.find(b => b.id === selectedStart);
 
     if (!startBuilding) return null;

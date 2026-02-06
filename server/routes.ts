@@ -1123,6 +1123,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: 'Your Location (Kiosk)',
           lat: startLat,
           lng: startLng,
+          nodeLat: startLat,
+          nodeLng: startLng,
           type: 'Kiosk',
           description: null,
           departments: null,
@@ -1130,7 +1132,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           markerIcon: null,
           polygon: null,
           polygonColor: null,
-          polygonOpacity: null
+          polygonOpacity: null,
+          entranceLat: startLat,
+          entranceLng: startLng
         };
       } else {
         startBuilding = await storage.getBuilding(startId);
