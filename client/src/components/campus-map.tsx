@@ -181,8 +181,8 @@ export default function CampusMap({
     }
 
     const map = L.map(mapRef.current, {
-      center: [centerLat || 14.402840436027079, centerLng || 120.86602985858919],
-      zoom: 17.5,
+      center: [centerLat || 14.4022, centerLng || 120.8675],
+      zoom: 18,
       minZoom: 17.5,
       maxZoom: 21,
       zoomControl: true,
@@ -318,27 +318,21 @@ export default function CampusMap({
     // Define campus boundary (CCAT Campus, Cavite State University)
     // Calculated from actual campus buildings extent
     const campusBounds = L.latLngBounds(
-      L.latLng(14.3995, 120.8625),  // Southwest corner (expanded to accommodate new center)
-      L.latLng(14.4065, 120.8715)   // Northeast corner (expanded)
-    );
-
-    // Asymmetric bounds for zoomed-in views
-    const expandedBounds = L.latLngBounds(
-      L.latLng(14.3985, 120.8615),   // Southwest corner (more left panning)
-      L.latLng(14.4070, 120.8725)    // Northeast corner
+      L.latLng(14.3980, 120.8630),  // Southwest corner
+      L.latLng(14.4060, 120.8710)   // Northeast corner
     );
 
     const updateBoundsBasedOnZoom = () => {
       const zoom = map.getZoom();
       setCurrentZoom(zoom);
       
-      // Calculate dynamic bounds based on zoom level
-      // As zoom increases, we can allow slightly more panning, but keep it centered
-      const basePadding = 0.002 / Math.pow(1.5, Math.max(0, zoom - 17.5));
+      // Strict constraints to keep map centered on campus
+      // Padding decreases as zoom increases to keep view contained
+      const padding = 0.002 / Math.pow(2, Math.max(0, zoom - 18));
       
       const dynamicBounds = L.latLngBounds(
-        L.latLng(14.4028 - basePadding - 0.003, 120.8660 - basePadding - 0.0035),
-        L.latLng(14.4028 + basePadding + 0.003, 120.8660 + basePadding + 0.0055)
+        L.latLng(14.4022 - padding - 0.003, 120.8675 - padding - 0.004),
+        L.latLng(14.4022 + padding + 0.003, 120.8675 + padding + 0.003)
       );
 
       map.setMaxBounds(dynamicBounds);
@@ -368,12 +362,12 @@ export default function CampusMap({
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     
-    const defaultLat = 14.402840436027079;
-    const defaultLng = 120.86602985858919;
+    const defaultLat = 14.4022;
+    const defaultLng = 120.8675;
     const lat = centerLat || defaultLat;
     const lng = centerLng || defaultLng;
     
-    mapInstanceRef.current.setView([lat, lng], 17.5);
+    mapInstanceRef.current.setView([lat, lng], 18);
   }, [centerLat, centerLng]);
 
   useEffect(() => {

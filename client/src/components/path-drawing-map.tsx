@@ -109,13 +109,21 @@ export default function PathDrawingMap({
 
     // Create map instance
     const map = L.map(mapRef.current, {
-      center: [14.402840436027079, 120.86602985858919],
-      zoom: 18,
+      center: [14.4022, 120.8675],
+      zoom: 18.5,
+      minZoom: 17.5,
       maxZoom: 22,
       zoomControl: true,
       attributionControl: true,
       dragging: true, // Will be toggled based on isDrawing
     });
+
+    const padding = 0.005;
+    const dynamicBounds = L.latLngBounds(
+      L.latLng(14.4022 - padding, 120.8675 - padding),
+      L.latLng(14.4022 + padding, 120.8675 + padding)
+    );
+    map.setMaxBounds(dynamicBounds);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',

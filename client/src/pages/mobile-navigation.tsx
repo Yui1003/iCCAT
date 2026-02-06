@@ -323,8 +323,9 @@ export default function MobileNavigation() {
         
         // Create map with SVG renderer for better mobile support (don't use canvas on iOS)
         const map = L.map(mapRef.current, {
-          center: [14.402840436027079, 120.86602985858919],
-          zoom: 17,
+          center: [14.4022, 120.8675],
+          zoom: 18.5,
+          minZoom: 17.5,
           zoomControl: true,
           touchZoom: true,
           bounceAtZoomLimits: false,
@@ -336,10 +337,18 @@ export default function MobileNavigation() {
           inertiaMaxSpeed: 1500,
         });
 
+        // Strict bounds for mobile as well
+        const padding = 0.005;
+        const dynamicBounds = L.latLngBounds(
+          L.latLng(14.4022 - padding, 120.8675 - padding),
+          L.latLng(14.4022 + padding, 120.8675 + padding)
+        );
+        map.setMaxBounds(dynamicBounds);
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',
           maxZoom: 19,
-          minZoom: 15,
+          minZoom: 17.5,
           crossOrigin: 'anonymous',
           errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
           keepBuffer: 3,

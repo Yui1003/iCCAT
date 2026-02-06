@@ -55,8 +55,8 @@ export default function PolygonDrawingMap({
 
     const map = L.map(mapRef.current, {
       center: [centerLat || 14.4022, centerLng || 120.8675],
-      zoom: 18,
-      minZoom: 17,
+      zoom: 18.5,
+      minZoom: 17.5,
       maxZoom: 21,
       zoomControl: true,
       attributionControl: true,
@@ -209,7 +209,15 @@ export default function PolygonDrawingMap({
     
     const lat = centerLat || 14.4022;
     const lng = centerLng || 120.8675;
-    mapInstanceRef.current.setView([lat, lng], 18);
+    mapInstanceRef.current.setView([lat, lng], 18.5);
+
+    // Apply strict bounds to drawing map as well
+    const padding = 0.005;
+    const dynamicBounds = window.L.latLngBounds(
+      window.L.latLng(lat - padding, lng - padding),
+      window.L.latLng(lat + padding, lng + padding)
+    );
+    mapInstanceRef.current.setMaxBounds(dynamicBounds);
   }, [centerLat, centerLng]);
 
   useEffect(() => {
