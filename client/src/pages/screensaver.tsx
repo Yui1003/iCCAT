@@ -445,7 +445,7 @@ export default function Screensaver() {
             <Hand className="w-16 h-16 text-white" />
           </motion.div>
           <p className="text-2xl md:text-3xl font-semibold text-white text-center">
-            Touch the kiosk screen to begin
+            Tap the kiosk screen to begin
           </p>
         </motion.div>
 
