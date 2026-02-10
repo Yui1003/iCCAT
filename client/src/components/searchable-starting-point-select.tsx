@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { MapPin, Search } from "lucide-react";
-import { VirtualKeyboardInput } from "./virtual-keyboard-input";
+import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import type { Building } from "@shared/schema";
 import { KIOSK_LOCATION } from "@shared/schema";
@@ -86,11 +86,11 @@ export default function SearchableStartingPointSelect({
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-input rounded-md shadow-lg z-[1002]">
           <div className="p-2 border-b border-input">
-            <VirtualKeyboardInput
+            <Input
+              type="text"
               placeholder="Search locations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onClear={() => setSearchQuery("")}
               autoFocus
               data-testid={`${testId}-search`}
               className="w-full"

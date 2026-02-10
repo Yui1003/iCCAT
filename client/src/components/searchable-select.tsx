@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Search, ChevronDown } from "lucide-react";
-import { VirtualKeyboardInput } from "./virtual-keyboard-input";
+import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 
 interface SearchableSelectProps {
@@ -68,11 +68,11 @@ export default function SearchableSelect({
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-input rounded-md shadow-lg z-[1010]">
           <div className="p-2 border-b border-input sticky top-0 bg-background">
-            <VirtualKeyboardInput
+            <Input
+              type="text"
               placeholder={`Search ${placeholder.toLowerCase()}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onClear={() => setSearchQuery("")}
               autoFocus
               data-testid={`${testId}-search`}
               className="w-full"

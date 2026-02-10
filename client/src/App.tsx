@@ -127,67 +127,38 @@ function AppContent() {
   const [location] = useLocation();
   useKioskUptime(); // Start tracking kiosk uptime
 
-  // Kiosk-specific behavior: Disable context menu and zooming
+  // Disable context menu (right-click and long-press) globally
   useEffect(() => {
-    let lastTouchEnd = 0;
-
     const disableContextMenu = (e: Event) => {
       e.preventDefault();
       return false;
     };
 
-    const preventZoom = (e: TouchEvent) => {
-      // Prevent multi-touch pinch zoom
-      if (e.touches.length > 1) {
-        e.preventDefault();
-      }
-    };
+    // Prevent right-click context menu on desktop
+    document.addEventListener('contextmenu', disableContextMenu, { passive: false });
 
-    const handleTouchEnd = (e: TouchEvent) => {
-      const now = Date.now();
-      const touchDuration = now - touchStartTime;
-
-      // Prevent double-tap zoom
-      if (now - lastTouchEnd <= 300) {
-        e.preventDefault();
-      }
-      
-      // If touch was held for more than 500ms (long-press), prevent default context menu
-      if (touchDuration > 500) {
-        e.preventDefault();
-      }
-
-      lastTouchEnd = now;
-    };
-
+    // Prevent long-press context menu on mobile/touch devices
+    // Some browsers fire contextmenu on long-press, but we also handle touchend with timer
     let touchStartTime = 0;
     const handleTouchStart = () => {
       touchStartTime = Date.now();
     };
 
-    const preventGesture = (e: Event) => {
-      e.preventDefault();
+    const handleTouchEnd = (e: TouchEvent) => {
+      const touchDuration = Date.now() - touchStartTime;
+      // If touch was held for more than 500ms (long-press), prevent default
+      if (touchDuration > 500) {
+        e.preventDefault();
+      }
     };
 
-    // Prevent right-click context menu on desktop
-    document.addEventListener('contextmenu', disableContextMenu, { passive: false });
-    
-    // Multi-touch and zoom prevention
-    document.addEventListener('touchstart', preventZoom, { passive: false });
     document.addEventListener('touchstart', handleTouchStart, { passive: true });
     document.addEventListener('touchend', handleTouchEnd, { passive: false });
-    
-    // Prevent gesture events (Safari/iOS)
-    document.addEventListener('gesturestart', preventGesture);
-    document.addEventListener('gesturechange', preventGesture);
 
     return () => {
       document.removeEventListener('contextmenu', disableContextMenu);
-      document.removeEventListener('touchstart', preventZoom);
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchend', handleTouchEnd);
-      document.removeEventListener('gesturestart', preventGesture);
-      document.removeEventListener('gesturechange', preventGesture);
     };
   }, []);
 
