@@ -1,3 +1,14 @@
+/* Prevent zooming and pinching for kiosk use */
+html, body {
+  touch-action: pan-x pan-y;
+  overscroll-behavior: none;
+}
+
+/* Allow map to have full touch actions if needed */
+.leaflet-container {
+  touch-action: auto !important;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
