@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { MapPin, Search } from "lucide-react";
-import { Input } from "./ui/input";
+import { VirtualKeyboardInput } from "./virtual-keyboard-input";
 import { Button } from "./ui/button";
 import type { Building } from "@shared/schema";
 
@@ -73,11 +73,11 @@ export default function SearchableDestinationSelect({
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-input rounded-md shadow-lg z-[1002]">
           <div className="p-2 border-b border-input">
-            <Input
-              type="text"
+            <VirtualKeyboardInput
               placeholder="Search destinations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onClear={() => setSearchQuery("")}
               autoFocus
               data-testid={`${testId}-search`}
               className="w-full"

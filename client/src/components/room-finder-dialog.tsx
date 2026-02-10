@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Search, MapPin, Navigation, DoorOpen, Building2, Layers, ChevronDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { VirtualKeyboardInput } from "./virtual-keyboard-input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
@@ -222,13 +222,12 @@ export default function RoomFinderDialog({
         {!selectedRoom ? (
           <>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="search"
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+              <VirtualKeyboardInput
                 placeholder="Search rooms by name, type, or building..."
-                className="pl-10"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                onClear={() => setSearchQuery("")}
                 data-testid="input-search-rooms"
               />
             </div>
