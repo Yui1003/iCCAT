@@ -195,7 +195,7 @@ export default function AdminPaths() {
                 Add Path
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingPath ? 'Edit' : 'Add'} {activeTab === "walkpaths" ? "Walking" : "Driving"} Path</DialogTitle>
                 <p className="text-sm text-muted-foreground">
