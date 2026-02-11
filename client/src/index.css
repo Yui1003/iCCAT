@@ -370,3 +370,17 @@ svg {
     transform: translate3d(0, 0, 0) !important;
   }
 }
+
+.leaflet-tooltip {
+  pointer-events: none !important;
+  z-index: 1000 !important;
+}
+
+/* Ensure tooltips don't prevent clicking the icons underneath */
+.leaflet-tooltip-pane {
+  pointer-events: none !important;
+}
+
+.leaflet-marker-icon {
+  z-index: 1001 !important;
+}

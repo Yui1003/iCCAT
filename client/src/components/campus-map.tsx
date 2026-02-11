@@ -421,6 +421,14 @@ export default function CampusMap({
       ? { img: 'w-5 h-5', icon: 20, ping: 'w-3 h-3' } 
       : { img: 'w-8 h-8', icon: 32, ping: 'w-6 h-6' };
 
+    // Use a simpler approach for tooltip collision: only show one tooltip if markers are very close
+    const tooltipOptions = {
+      permanent: true,
+      direction: 'top' as any,
+      offset: [0, -(buildingSize.icon / 2)] as any,
+      className: 'bg-card text-card-foreground px-2 py-1 rounded shadow-md border border-card-border text-[10px] font-medium whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] pointer-events-none opacity-90'
+    };
+
     // During navigation, don't show any markers - only route markers will be shown
     if (isNavigating) {
       // Skip marker rendering during navigation
@@ -450,10 +458,8 @@ export default function CampusMap({
         
       if (showBuildingTooltips) {
         kioskMarker.bindTooltip(kioskName, {
-          permanent: true,
-          direction: 'top',
-          offset: [0, -(kioskSize.icon / 2)],
-          className: 'bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
+          ...tooltipOptions,
+          className: 'bg-blue-600 text-white px-2 py-1 rounded shadow-md font-medium text-[10px] pointer-events-none opacity-90'
         });
       }
 
@@ -509,12 +515,7 @@ export default function CampusMap({
           .addTo(mapInstanceRef.current);
 
         if (showBuildingTooltips) {
-          marker.bindTooltip(building.name, {
-            permanent: true,
-            direction: 'top',
-            offset: [0, -(buildingSize.icon / 2)],
-            className: 'bg-card text-card-foreground px-3 py-2 rounded-lg shadow-lg border border-card-border'
-          });
+          marker.bindTooltip(building.name, tooltipOptions);
         }
 
         // Touchscreen-friendly interaction for kiosks
