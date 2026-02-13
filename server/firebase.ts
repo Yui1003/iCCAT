@@ -31,7 +31,7 @@ export function initializeFirebase() {
         privateKey: privateKey.replace(/\\n/g, '\n'),
         clientEmail,
       })
-    }, 'webapp-main'); // Using a named app to avoid collisions if multiple initializations happen
+    }); // Initialize as default app to avoid "default Firebase app does not exist" error
 
     firestoreDb = firebaseApp.firestore();
     

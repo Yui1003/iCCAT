@@ -17,7 +17,7 @@ export const upload = multer({
 
 export async function uploadImageToFirebase(file: Express.Multer.File, type: string, id: string): Promise<string> {
   try {
-    const bucket = admin.storage().bucket('iccat-campus-app.firebasestorage.app');
+    const bucket = admin.storage().bucket();
     
     // Generate filename
     const extension = file.originalname.split('.').pop() || 'jpg';
