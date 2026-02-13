@@ -3,9 +3,20 @@
  * Complete offline support with auto-caching of all assets
  */
 
-const CACHE_NAME = 'iccat-v11';
-const DATA_CACHE_NAME = 'iccat-data-v11';
-const IMAGE_CACHE_NAME = 'iccat-images-v11';
+const CACHE_NAME = 'iccat-v12';
+const DATA_CACHE_NAME = 'iccat-data-v12';
+const IMAGE_CACHE_NAME = 'iccat-images-v12';
+
+// Force service worker to activate immediately and aggressively cache
+self.addEventListener('install', (event) => {
+  console.log('[SW] Optimized for Edge Kiosk Mode');
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(urlsToCache);
+    })
+  );
+  self.skipWaiting();
+});
 
 // Static assets to cache immediately
 const urlsToCache = [

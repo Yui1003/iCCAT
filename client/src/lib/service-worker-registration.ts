@@ -40,7 +40,6 @@ export async function registerServiceWorker() {
 
 // Call this on app startup
 export function initializeServiceWorkerStack() {
-  if (process.env.NODE_ENV === 'production' || import.meta.env.PROD) {
-    registerServiceWorker();
-  }
+  // Register SW in all environments for kiosk testing, not just production
+  registerServiceWorker();
 }
