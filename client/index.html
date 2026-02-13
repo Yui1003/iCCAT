@@ -72,15 +72,16 @@
           navigator.serviceWorker.register('/sw.js', { scope: '/' })
             .then(reg => {
               console.log('Service Worker registered with scope: ', reg.scope);
+              
+              // Immediate activation
+              if (reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+              }
+
               // Check for updates frequently
               setInterval(() => {
                 reg.update();
               }, 10000);
-              
-              // If there's a waiting worker, skip waiting automatically
-              if (reg.waiting) {
-                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-              }
             })
             .catch(err => console.log('Service Worker registration failed:', err));
         });

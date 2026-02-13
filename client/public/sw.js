@@ -401,24 +401,26 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Handle index.html and root path - CACHE FIRST for offline reliability
-  if (url.pathname === '/' || url.pathname === '/index.html') {
+  if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname.endsWith('/')) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
+        // Always try to match the root path '/' specifically as it's the primary entry point
         return cache.match('/').then((response) => {
-          // Return cached version immediately if available
           if (response) {
             console.log('[SW] Serving index from cache for offline reliability');
-            // Update in background for next time
-            fetch(request).then((freshResponse) => {
-              if (freshResponse && freshResponse.status === 200) {
-                cache.put('/', freshResponse.clone());
-              }
-            }).catch(() => {});
+            // Update in background for next time if online
+            if (navigator.onLine) {
+              fetch('/').then((freshResponse) => {
+                if (freshResponse && freshResponse.status === 200) {
+                  cache.put('/', freshResponse.clone());
+                }
+              }).catch(() => {});
+            }
             return response;
           }
           
           // If not in cache, try network
-          return fetch(request).then((freshResponse) => {
+          return fetch('/').then((freshResponse) => {
             if (freshResponse && freshResponse.status === 200) {
               cache.put('/', freshResponse.clone());
             }
