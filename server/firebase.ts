@@ -32,7 +32,7 @@ export function initializeFirebase() {
         privateKey: privateKey.replace(/\\n/g, '\n'),
         clientEmail,
       }),
-      storageBucket: storageBucket || `${projectId}.appspot.com`
+      storageBucket: storageBucket || `${projectId}.firebasestorage.app`
     }); // Initialize as default app to avoid "default Firebase app does not exist" error
 
     firestoreDb = firebaseApp.firestore();
