@@ -14,6 +14,11 @@ export async function registerServiceWorker() {
 
     console.log('[SW-REG] Service Worker registered successfully');
 
+    // Force activation of new worker
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+
     // Listen for updates
     registration.addEventListener('updatefound', () => {
       const newWorker = registration.installing;

@@ -404,13 +404,14 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname === '/' || url.pathname === '/index.html') {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
-        return cache.match(request).then((response) => {
+        return cache.match('/').then((response) => {
           // Return cached version immediately if available
           if (response) {
+            console.log('[SW] Serving index from cache for offline reliability');
             // Update in background for next time
             fetch(request).then((freshResponse) => {
               if (freshResponse && freshResponse.status === 200) {
-                cache.put(request, freshResponse.clone());
+                cache.put('/', freshResponse.clone());
               }
             }).catch(() => {});
             return response;
@@ -419,12 +420,12 @@ self.addEventListener('fetch', (event) => {
           // If not in cache, try network
           return fetch(request).then((freshResponse) => {
             if (freshResponse && freshResponse.status === 200) {
-              cache.put(request, freshResponse.clone());
+              cache.put('/', freshResponse.clone());
             }
             return freshResponse;
           }).catch(() => {
-            // Last resort: try to match any index.html
-            return cache.match('/index.html') || cache.match('/');
+            // Last resort: try to match root
+            return cache.match('/');
           });
         });
       })
