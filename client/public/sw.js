@@ -3,9 +3,9 @@
  * Optimized for Windows 11 Kiosk Mode & Complete Offline Operation
  */
 
-const CACHE_NAME = 'iccat-v15';
-const DATA_CACHE_NAME = 'iccat-data-v15';
-const IMAGE_CACHE_NAME = 'iccat-images-v15';
+const CACHE_NAME = 'iccat-v16';
+const DATA_CACHE_NAME = 'iccat-data-v16';
+const IMAGE_CACHE_NAME = 'iccat-images-v16';
 
 const STATIC_ASSETS = [
   '/',
@@ -71,6 +71,15 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   if (request.method !== 'GET') return;
+
+  // Handle navigation requests: Network-first, then Cache, then Root
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .catch(() => caches.match('/index.html') || caches.match('/'))
+    );
+    return;
+  }
 
   // Handle API requests: Network-first, then Cache
   if (url.pathname.startsWith('/api/')) {

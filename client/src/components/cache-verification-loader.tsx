@@ -51,8 +51,15 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
             if (registrations.length > 0) {
               setStatus(prev => ({ ...prev, serviceWorker: 'registered' }));
             } else {
-              await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+              const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
               setStatus(prev => ({ ...prev, serviceWorker: 'registered' }));
+              if (reg.installing) {
+                 reg.installing.addEventListener('statechange', (e: any) => {
+                   if (e.target.state === 'activated') {
+                     console.log('[CACHE-LOADER] SW Activated - continuing...');
+                   }
+                 });
+              }
             }
           } catch (err) {
             setStatus(prev => ({ ...prev, serviceWorker: 'failed' }));
@@ -66,19 +73,19 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
 
         while (attempts < maxAttempts && !allReady) {
           const cacheNames = await caches.keys();
-          const hasStaticCache = cacheNames.some(name => name.startsWith('iccat-v11'));
-          const hasDataCache = cacheNames.includes('iccat-data-v11');
+          const hasStaticCache = cacheNames.some(name => name.startsWith('iccat-v16'));
+          const hasDataCache = cacheNames.includes('iccat-data-v16');
 
           let dataItems = 0;
           let tilesCached = 0;
           let apiEndpointsCached = 0;
 
           if (hasDataCache) {
-            const dataCache = await caches.open('iccat-data-v11');
+            const dataCache = await caches.open('iccat-data-v16');
             const cachedRequests = await dataCache.keys();
             dataItems = cachedRequests.length;
 
-            const apiEndpoints = ['/api/buildings', '/api/walkpaths', '/api/floors', '/api/rooms'];
+            const apiEndpoints = ['/api/buildings', '/api/walkpaths', '/api/floors', '/api/rooms', '/api/settings'];
             const cachedEndpoints = await Promise.all(
               apiEndpoints.map(endpoint => dataCache.match(endpoint).then(response => !!response))
             );
@@ -86,7 +93,7 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
           }
 
           if (hasStaticCache) {
-            const staticCache = await caches.open('iccat-v11');
+            const staticCache = await caches.open('iccat-v16');
             const allCached = await staticCache.keys();
             tilesCached = allCached.filter(req => req.url.includes('tile.openstreetmap.org')).length;
           }
@@ -97,7 +104,7 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
             staticCache: hasStaticCache ? 'verified' : 'checking',
             dataCache: dataItems > 0 ? 'verified' : 'checking',
             mapTiles: tilesCached > 0 ? 'verified' : 'checking',
-            apiEndpoints: apiEndpointsCached === 4 ? 'verified' : 'checking'
+            apiEndpoints: apiEndpointsCached >= 4 ? 'verified' : 'checking'
           }));
 
           // Check if all caches are populated
