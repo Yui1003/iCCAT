@@ -27,7 +27,12 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
                          window.innerWidth < 768;
         
-        if (isMobile) {
+        // Check if we are in Windows Kiosk Mode
+        const isKiosk = window.matchMedia('(display-mode: standalone)').matches || 
+                        navigator.userAgent.includes('Kiosk') ||
+                        (window as any).Windows;
+
+        if (isMobile && !isKiosk) {
           console.log('[CACHE-LOADER] Mobile device detected - skipping cache verification (requires internet)');
           setIsComplete(true);
           return;

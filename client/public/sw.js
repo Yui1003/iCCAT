@@ -3,9 +3,9 @@
  * Optimized for Windows 11 Kiosk Mode & Complete Offline Operation
  */
 
-const CACHE_NAME = 'iccat-v16';
-const DATA_CACHE_NAME = 'iccat-data-v16';
-const IMAGE_CACHE_NAME = 'iccat-images-v16';
+const CACHE_NAME = 'iccat-v17';
+const DATA_CACHE_NAME = 'iccat-data-v17';
+const IMAGE_CACHE_NAME = 'iccat-images-v17';
 
 const STATIC_ASSETS = [
   '/',
@@ -17,7 +17,10 @@ const STATIC_ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js',
+  '/src/main.tsx',
+  '/src/App.tsx',
+  '/index.css'
 ];
 
 const API_ENDPOINTS = [
