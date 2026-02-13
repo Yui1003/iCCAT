@@ -14,11 +14,6 @@ export async function registerServiceWorker() {
 
     console.log('[SW-REG] Service Worker registered successfully');
 
-    // Force activation of new worker
-    if (registration.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-
     // Listen for updates
     registration.addEventListener('updatefound', () => {
       const newWorker = registration.installing;
@@ -45,6 +40,7 @@ export async function registerServiceWorker() {
 
 // Call this on app startup
 export function initializeServiceWorkerStack() {
-  // Register SW in all environments for kiosk testing, not just production
-  registerServiceWorker();
+  if (process.env.NODE_ENV === 'production' || import.meta.env.PROD) {
+    registerServiceWorker();
+  }
 }

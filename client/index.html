@@ -13,16 +13,78 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#3b82f6" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="iCCAT" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <link rel="apple-touch-icon" href="/icon-512.png" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Prevent pinch-to-zoom on the entire document except for the map
+      document.addEventListener('touchstart', function(event) {
+        if (event.touches.length > 1) {
+          // Check if the target is part of a map
+          let target = event.target;
+          let isMap = false;
+          while (target) {
+            if (target.classList && (target.classList.contains('leaflet-container') || target.id === 'map' || target.classList.contains('zoomable-map'))) {
+              isMap = true;
+              break;
+            }
+            target = target.parentElement;
+          }
+          
+          if (!isMap) {
+            event.preventDefault();
+          }
+        }
+      }, { passive: false });
+
+      // Prevent double-tap to zoom
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', function(event) {
+        let now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+          // Check if the target is part of a map
+          let target = event.target;
+          let isMap = false;
+          while (target) {
+            if (target.classList && (target.classList.contains('leaflet-container') || target.id === 'map' || target.classList.contains('zoomable-map'))) {
+              isMap = true;
+              break;
+            }
+            target = target.parentElement;
+          }
+          
+          if (!isMap) {
+            event.preventDefault();
+          }
+        }
+        lastTouchEnd = now;
+      }, false);
+      
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          // Register Service Worker with cache busting
+          const swUrl = '/sw.js?' + new Date().getTime();
+          navigator.serviceWorker.register(swUrl)
+            .then(reg => {
+              console.log('Service Worker registered');
+              // Check for updates every 30 seconds
+              setInterval(() => {
+                reg.update();
+              }, 30000);
+            })
+            .catch(err => console.log('Service Worker registration failed:', err));
+          
+          // Also clear old caches on page load
+          if ('caches' in window) {
+            caches.keys().then(names => {
+              names.forEach(name => {
+                console.log('Found cache:', name);
+              });
+            });
+          }
+        });
+      }
+    </script>
   </body>
 </html>

@@ -8,7 +8,6 @@ import { OfflineIndicator } from "@/components/offline-indicator";
 import { CacheVerificationLoader } from "@/components/cache-verification-loader";
 import { useKioskUptime } from "@/lib/use-kiosk-uptime";
 import { motion, AnimatePresence } from "framer-motion";
-import { ErrorBoundary } from "./components/ErrorBoundary";
 
 import Landing from "@/pages/landing";
 import Navigation from "@/pages/navigation";
@@ -51,77 +50,75 @@ function Router() {
   const [location] = useLocation();
   
   return (
-    <ErrorBoundary>
-      <AnimatePresence mode="wait">
-        <Switch location={location} key={location}>
-          <Route path="/">
-            <PageTransition><Landing /></PageTransition>
-          </Route>
-          <Route path="/navigation">
-            <PageTransition><Navigation /></PageTransition>
-          </Route>
-          <Route path="/navigate/:routeId">
-            {(params) => <PageTransition><MobileNavigation /></PageTransition>}
-          </Route>
-          <Route path="/events">
-            <PageTransition><Events /></PageTransition>
-          </Route>
-          <Route path="/staff">
-            <PageTransition><StaffDirectory /></PageTransition>
-          </Route>
-          <Route path="/about">
-            <PageTransition><About /></PageTransition>
-          </Route>
-          <Route path="/feedback">
-            <PageTransition><FeedbackPage /></PageTransition>
-          </Route>
-          <Route path="/thank-you">
-            <PageTransition><ThankYouPage /></PageTransition>
-          </Route>
-          <Route path="/screensaver">
-            <PageTransition><Screensaver /></PageTransition>
-          </Route>
-          
-          <Route path="/admin/login">
-            <AdminLogin />
-          </Route>
-          <Route path="/admin/dashboard">
-            <AdminDashboard />
-          </Route>
-          <Route path="/admin/buildings">
-            <AdminBuildings />
-          </Route>
-          <Route path="/admin/paths">
-            <AdminPaths />
-          </Route>
-          <Route path="/admin/floor-plans">
-            <AdminFloorPlans />
-          </Route>
-          <Route path="/admin/floor-plan-management">
-            <AdminFloorPlanManagement />
-          </Route>
-          <Route path="/admin/room-paths">
-            <AdminFloorPlanManagement />
-          </Route>
-          <Route path="/admin/staff">
-            <AdminStaff />
-          </Route>
-          <Route path="/admin/events">
-            <AdminEvents />
-          </Route>
-          <Route path="/admin/settings">
-            <AdminSettings />
-          </Route>
-          <Route path="/admin/analytics">
-            <AdminAnalytics />
-          </Route>
-          
-          <Route>
-            <PageTransition><NotFound /></PageTransition>
-          </Route>
-        </Switch>
-      </AnimatePresence>
-    </ErrorBoundary>
+    <AnimatePresence mode="wait">
+      <Switch location={location} key={location}>
+        <Route path="/">
+          <PageTransition><Landing /></PageTransition>
+        </Route>
+        <Route path="/navigation">
+          <PageTransition><Navigation /></PageTransition>
+        </Route>
+        <Route path="/navigate/:routeId">
+          {(params) => <PageTransition><MobileNavigation /></PageTransition>}
+        </Route>
+        <Route path="/events">
+          <PageTransition><Events /></PageTransition>
+        </Route>
+        <Route path="/staff">
+          <PageTransition><StaffDirectory /></PageTransition>
+        </Route>
+        <Route path="/about">
+          <PageTransition><About /></PageTransition>
+        </Route>
+        <Route path="/feedback">
+          <PageTransition><FeedbackPage /></PageTransition>
+        </Route>
+        <Route path="/thank-you">
+          <PageTransition><ThankYouPage /></PageTransition>
+        </Route>
+        <Route path="/screensaver">
+          <PageTransition><Screensaver /></PageTransition>
+        </Route>
+        
+        <Route path="/admin/login">
+          <AdminLogin />
+        </Route>
+        <Route path="/admin/dashboard">
+          <AdminDashboard />
+        </Route>
+        <Route path="/admin/buildings">
+          <AdminBuildings />
+        </Route>
+        <Route path="/admin/paths">
+          <AdminPaths />
+        </Route>
+        <Route path="/admin/floor-plans">
+          <AdminFloorPlans />
+        </Route>
+        <Route path="/admin/floor-plan-management">
+          <AdminFloorPlanManagement />
+        </Route>
+        <Route path="/admin/room-paths">
+          <AdminFloorPlanManagement />
+        </Route>
+        <Route path="/admin/staff">
+          <AdminStaff />
+        </Route>
+        <Route path="/admin/events">
+          <AdminEvents />
+        </Route>
+        <Route path="/admin/settings">
+          <AdminSettings />
+        </Route>
+        <Route path="/admin/analytics">
+          <AdminAnalytics />
+        </Route>
+        
+        <Route>
+          <PageTransition><NotFound /></PageTransition>
+        </Route>
+      </Switch>
+    </AnimatePresence>
   );
 }
 
