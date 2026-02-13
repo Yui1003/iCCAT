@@ -51,6 +51,7 @@ export default function AdminBuildings() {
     polygon: null,
     polygonColor: "#FACC15",
     polygonOpacity: 0.3,
+    images: [],
   });
   const [departmentInput, setDepartmentInput] = useState("");
   const [mapClickEnabled, setMapClickEnabled] = useState(false);
@@ -113,6 +114,7 @@ export default function AdminBuildings() {
         polygon: building.polygon || null,
         polygonColor: (building as any).polygonColor || "#FACC15",
         polygonOpacity: (building as any).polygonOpacity || 0.3,
+        images: building.images || [],
       });
     } else {
       setEditingBuilding(null);
@@ -130,6 +132,7 @@ export default function AdminBuildings() {
         polygon: null,
         polygonColor: "#FACC15",
         polygonOpacity: 0.3,
+        images: [],
       });
     }
     setMapClickEnabled(false);
@@ -419,12 +422,22 @@ export default function AdminBuildings() {
                 </div>
 
                   <ImageUploadInput
-                    label="Building Photo"
+                    label="Building Photo (Main)"
                     value={formData.image ?? ""}
-                    onChange={(url) => setFormData({ ...formData, image: url })}
+                    onChange={(url) => setFormData({ ...formData, image: url as string })}
                     type="building"
                     id={editingBuilding?.id || 'new'}
                     testId="building-image"
+                  />
+
+                  <ImageUploadInput
+                    label="Additional Photos"
+                    value={formData.images || []}
+                    onChange={(urls) => setFormData({ ...formData, images: urls as string[] })}
+                    type="building"
+                    id={editingBuilding?.id || 'new'}
+                    testId="building-additional-images"
+                    multiple={true}
                   />
 
                 <div>

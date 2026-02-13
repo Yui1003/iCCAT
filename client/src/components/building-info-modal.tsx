@@ -1,4 +1,4 @@
-import { X, MapPin, Users as UsersIcon, Layers, Navigation } from "lucide-react";
+import { X, MapPin, Users as UsersIcon, Layers, Navigation, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -7,10 +7,11 @@ import { Badge } from "./ui/badge";
 import { ProxiedImage } from "./proxied-image";
 import type { Building, Staff, Floor } from "@shared/schema";
 import { canHaveDepartments, canHaveFloorPlan, isDescriptionOnly } from "@shared/schema";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { trackEvent } from "@/lib/analytics-tracker";
 import { AnalyticsEventType } from "@shared/analytics-schema";
 import { motion, AnimatePresence } from "framer-motion";
+import useEmblaCarousel from 'embla-carousel-react';
 
 interface BuildingInfoModalProps {
   building: Building;
@@ -34,6 +35,32 @@ export default function BuildingInfoModal({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [activeTab, setActiveTab] = useState("overview");
   const modalRef = useRef<HTMLDivElement>(null);
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+  const [prevBtnEnabled, setPrevBtnEnabled] = useState(false);
+  const [nextBtnEnabled, setNextBtnEnabled] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
+
+  const onSelect = useCallback((emblaApi: any) => {
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+    setPrevBtnEnabled(emblaApi.canScrollPrev());
+    setNextBtnEnabled(emblaApi.canScrollNext());
+  }, []);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect(emblaApi);
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+  }, [emblaApi, onSelect]);
+
+  const allPhotos = [
+    ...(building.image ? [building.image] : []),
+    ...(building.images || [])
+  ];
 
   const handleTabChange = (value: string) => {
     const startTime = performance.now();
@@ -144,13 +171,56 @@ export default function BuildingInfoModal({
           </TabsList>
 
           <TabsContent value="overview" className="p-6">
-            {building.image && (
-              <div className="w-full mb-4 rounded-lg bg-muted flex items-center justify-center">
-                <ProxiedImage
-                  src={building.image}
-                  alt={building.name}
-                  className="w-full h-auto object-contain max-h-[min(60vh,400px)]"
-                />
+            {allPhotos.length > 0 && (
+              <div className="relative w-full mb-4 rounded-lg bg-muted overflow-hidden">
+                <div className="embla overflow-hidden" ref={emblaRef}>
+                  <div className="embla__container flex">
+                    {allPhotos.map((photo, index) => (
+                      <div className="embla__slide flex-[0_0_100%] min-w-0" key={index}>
+                        <div className="flex items-center justify-center">
+                          <ProxiedImage
+                            src={photo}
+                            alt={`${building.name} - Photo ${index + 1}`}
+                            className="w-full h-auto object-contain max-h-[min(60vh,400px)]"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {allPhotos.length > 1 && (
+                  <>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur-sm z-10"
+                      onClick={scrollPrev}
+                      disabled={!prevBtnEnabled}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur-sm z-10"
+                      onClick={scrollNext}
+                      disabled={!nextBtnEnabled}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                      {allPhotos.map((_, index) => (
+                        <div
+                          key={index}
+                          className={`w-1.5 h-1.5 rounded-full transition-all ${
+                            index === selectedIndex ? "bg-primary w-3" : "bg-primary/30"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

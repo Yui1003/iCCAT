@@ -121,6 +121,7 @@ export const buildings = pgTable("buildings", {
   polygonOpacity: real("polygon_opacity").default(0.3), // Opacity of polygon (0-1)
   entranceLat: real("entrance_lat"), // Deprecated: specific coordinate for pathfinding
   entranceLng: real("entrance_lng"), // Deprecated: specific coordinate for pathfinding
+  images: text("images").array().default([]), // Array of additional building photos
 });
 
 export const insertBuildingSchema = createInsertSchema(buildings).omit({ id: true });

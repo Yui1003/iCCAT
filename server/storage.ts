@@ -203,7 +203,8 @@ export class DatabaseStorage implements IStorage {
         id, 
         markerIcon: insertBuilding.markerIcon || "building",
         nodeLat: insertBuilding.nodeLat ?? null,
-        nodeLng: insertBuilding.nodeLng ?? null
+        nodeLng: insertBuilding.nodeLng ?? null,
+        images: insertBuilding.images || []
       } as Building;
       await db.collection('buildings').doc(id).set(building);
       return building;
@@ -220,7 +221,8 @@ export class DatabaseStorage implements IStorage {
         id, 
         markerIcon: insertBuilding.markerIcon || "building",
         nodeLat: insertBuilding.nodeLat ?? null,
-        nodeLng: insertBuilding.nodeLng ?? null
+        nodeLng: insertBuilding.nodeLng ?? null,
+        images: insertBuilding.images || []
       } as Building;
       await db.collection('buildings').doc(id).set(building);
       return building;

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Upload, X, AlertCircle } from "lucide-react";
+import { Upload, X, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -7,11 +7,12 @@ import { getProxiedImageUrl } from "./proxied-image";
 
 interface ImageUploadInputProps {
   label: string;
-  value: string | null;
-  onChange: (url: string) => void;
+  value: string | string[] | null;
+  onChange: (value: string | string[]) => void;
   type: "building" | "staff" | "event" | "floor";
   id: string;
   testId?: string;
+  multiple?: boolean;
 }
 
 export default function ImageUploadInput({
@@ -20,71 +21,83 @@ export default function ImageUploadInput({
   onChange,
   type,
   id,
-  testId
+  testId,
+  multiple = false
 }: ImageUploadInputProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState<string | null>(value ? getProxiedImageUrl(value) : null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const images = multiple 
+    ? (Array.isArray(value) ? value : (value ? [value] : []))
+    : (typeof value === 'string' && value ? [value] : []);
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file size
-    if (file.size > 10 * 1024 * 1024) {
-      setError("File size must be less than 10MB");
-      return;
-    }
-
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      setError("Only JPEG, PNG, WebP, and GIF files are allowed");
-      return;
-    }
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setError(null);
     setIsUploading(true);
 
     try {
-      // Upload to backend
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', type);
-      formData.append('id', id);
+      const newUrls: string[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Validate file size
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`File ${file.name} size must be less than 10MB`);
+        }
 
-      const response = await fetch('/api/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (!allowedTypes.includes(file.type)) {
+          throw new Error(`Only JPEG, PNG, WebP, and GIF files are allowed`);
+        }
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Upload failed');
+        // Upload to backend
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', type);
+        formData.append('id', id);
+
+        const response = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Upload failed');
+        }
+
+        const { url } = await response.json();
+        newUrls.push(url);
       }
 
-      const { url } = await response.json();
-      onChange(url);
-      // Show the Firebase URL proxied through our endpoint for caching
-      setPreview(getProxiedImageUrl(url));
+      if (multiple) {
+        onChange([...images, ...newUrls]);
+      } else {
+        onChange(newUrls[0]);
+      }
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
-      setPreview(null);
+    } finally {
+      setIsUploading(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } finally {
-      setIsUploading(false);
     }
   };
 
-  const handleClear = () => {
-    onChange("");
-    setPreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  const handleRemove = (index: number) => {
+    if (multiple) {
+      const newImages = images.filter((_, i) => i !== index);
+      onChange(newImages);
+    } else {
+      onChange("");
     }
   };
 
@@ -92,23 +105,27 @@ export default function ImageUploadInput({
     <div className="space-y-2">
       <Label>{label}</Label>
       
-      {preview && (
-        <div className="relative group">
-          <img
-            src={preview}
-            alt="Preview"
-            className="w-full h-48 object-cover rounded-lg border"
-          />
-          <Button
-            type="button"
-            variant="destructive"
-            size="icon"
-            onClick={handleClear}
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-            data-testid={`button-clear-${testId}`}
-          >
-            <X className="w-4 h-4" />
-          </Button>
+      {images.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          {images.map((imgUrl, index) => (
+            <div key={index} className="relative group aspect-video">
+              <img
+                src={getProxiedImageUrl(imgUrl)}
+                alt={`Preview ${index + 1}`}
+                className="w-full h-full object-cover rounded-lg border"
+              />
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                onClick={() => handleRemove(index)}
+                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                data-testid={`button-remove-${testId}-${index}`}
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -122,24 +139,15 @@ export default function ImageUploadInput({
           data-testid={testId}
         >
           <Upload className="w-4 h-4 mr-2" />
-          {isUploading ? "Uploading..." : "Upload Image"}
+          {isUploading ? "Uploading..." : multiple ? "Add Photos" : "Upload Image"}
         </Button>
-        {preview && (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={handleClear}
-            data-testid={`button-remove-${testId}`}
-          >
-            Remove
-          </Button>
-        )}
       </div>
 
       <input
         ref={fileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif"
+        multiple={multiple}
         onChange={handleFileSelect}
         className="hidden"
         data-testid={`input-file-${testId}`}
