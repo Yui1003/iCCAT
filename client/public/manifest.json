@@ -2,7 +2,7 @@
   "name": "iCCAT",
   "short_name": "iCCAT",
   "description": "Interactive Campus Companion and Assistance Terminal",
-  "start_url": "/index.html",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",

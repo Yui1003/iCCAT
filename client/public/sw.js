@@ -79,7 +79,7 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
-        .catch(() => caches.match('/index.html') || caches.match('/'))
+        .catch(() => caches.match('/index.html') || caches.match('/') || Response.error())
     );
     return;
   }
