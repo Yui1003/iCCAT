@@ -1,10 +1,13 @@
 /**
- * ICCAT Service Worker v1
- * Complete offline support with auto-caching of all assets
+ * ICCAT Service Worker v15
+ * Optimized for Windows 11 Kiosk Mode & Complete Offline Operation
  */
 
-const CACHE_NAME = 'iccat-v1';
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'iccat-v15';
+const DATA_CACHE_NAME = 'iccat-data-v15';
+const IMAGE_CACHE_NAME = 'iccat-images-v15';
+
+const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
@@ -17,23 +20,44 @@ const ASSETS_TO_CACHE = [
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js'
 ];
 
+const API_ENDPOINTS = [
+  '/api/buildings',
+  '/api/walkpaths',
+  '/api/drivepaths',
+  '/api/events',
+  '/api/staff',
+  '/api/floors',
+  '/api/rooms',
+  '/api/indoor-nodes',
+  '/api/room-paths',
+  '/api/settings'
+];
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching assets');
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    Promise.all([
+      caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
+      caches.open(DATA_CACHE_NAME).then((cache) => {
+        return Promise.allSettled(
+          API_ENDPOINTS.map(url => 
+            fetch(url).then(res => {
+              if (res.ok) cache.put(url, res);
+            })
+          )
+        );
+      })
+    ])
   );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then((keys) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
+        keys.map((key) => {
+          if (![CACHE_NAME, DATA_CACHE_NAME, IMAGE_CACHE_NAME].includes(key)) {
+            return caches.delete(key);
           }
         })
       );
@@ -43,24 +67,57 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+  const { request } = event;
+  const url = new URL(request.url);
 
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request).then((fetchResponse) => {
-        return caches.open(CACHE_NAME).then((cache) => {
-          if (event.request.url.startsWith(self.location.origin)) {
-            cache.put(event.request, fetchResponse.clone());
+  if (request.method !== 'GET') return;
+
+  // Handle API requests: Network-first, then Cache
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(DATA_CACHE_NAME).then((cache) => cache.put(request, copy));
           }
-          return fetchResponse;
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Handle Map Tiles: Cache-first
+  if (url.origin.includes('tile.openstreetmap.org')) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        return cached || fetch(request).then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return response;
         });
+      })
+    );
+    return;
+  }
+
+  // Default: Cache-first with network fallback
+  event.respondWith(
+    caches.match(request).then((cached) => {
+      return cached || fetch(request).then((response) => {
+        if (response.ok && !url.pathname.startsWith('/api/')) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        }
+        return response;
       });
     })
   );
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
