@@ -17,6 +17,7 @@ export function initializeFirebase() {
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
 
     if (!projectId || !privateKey || !clientEmail) {
       console.warn('⚠️ Firebase credentials not found in environment variables');
@@ -30,7 +31,8 @@ export function initializeFirebase() {
         projectId,
         privateKey: privateKey.replace(/\\n/g, '\n'),
         clientEmail,
-      })
+      }),
+      storageBucket: storageBucket || `${projectId}.appspot.com`
     }); // Initialize as default app to avoid "default Firebase app does not exist" error
 
     firestoreDb = firebaseApp.firestore();
