@@ -33,6 +33,9 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Serve uploads directory statically
+app.use('/uploads', express.static(join(process.cwd(), 'server', 'public', 'uploads')));
+
 // Cache control middleware - prevent stale content from Service Worker
 app.use((req, res, next) => {
   // Mobile navigation - never cache (disable service worker for this route)
