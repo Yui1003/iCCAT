@@ -68,16 +68,30 @@
       
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          // Register Service Worker
-          navigator.serviceWorker.register('/sw.js')
+          // Register Service Worker with forced updates
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
             .then(reg => {
-              console.log('Service Worker registered');
-              // Aggressively check for updates
+              console.log('Service Worker registered with scope: ', reg.scope);
+              // Check for updates frequently
               setInterval(() => {
                 reg.update();
-              }, 15000);
+              }, 10000);
+              
+              // If there's a waiting worker, skip waiting automatically
+              if (reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+              }
             })
             .catch(err => console.log('Service Worker registration failed:', err));
+        });
+
+        // Reload the page when a new service worker takes over
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
         });
       }
     </script>

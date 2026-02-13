@@ -400,13 +400,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle index.html and root path
+  // Handle index.html and root path - CACHE FIRST for offline reliability
   if (url.pathname === '/' || url.pathname === '/index.html') {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
         return cache.match(request).then((response) => {
+          // Return cached version immediately if available
           if (response) {
-            // Return cached version but update in background
+            // Update in background for next time
             fetch(request).then((freshResponse) => {
               if (freshResponse && freshResponse.status === 200) {
                 cache.put(request, freshResponse.clone());
@@ -415,34 +416,15 @@ self.addEventListener('fetch', (event) => {
             return response;
           }
           
-          const alternateRequest = url.pathname === '/' ? '/index.html' : '/';
-          return cache.match(alternateRequest).then((altResponse) => {
-            if (altResponse) {
-              return altResponse;
+          // If not in cache, try network
+          return fetch(request).then((freshResponse) => {
+            if (freshResponse && freshResponse.status === 200) {
+              cache.put(request, freshResponse.clone());
             }
-            
-            return fetch(request)
-              .then((response) => {
-                if (response.status === 200) {
-                  try {
-                    cache.put(request, response.clone());
-                  } catch (cacheError) {
-                    console.warn(`[SW] Failed to cache HTML: ${url.pathname}`, cacheError.message);
-                  }
-                }
-                return response;
-              })
-              .catch((error) => {
-                return cache.match('/').then((rootResponse) => {
-                  if (rootResponse) return rootResponse;
-                  return cache.match('/index.html');
-                }).then((fallbackResponse) => {
-                  if (fallbackResponse) {
-                    return fallbackResponse;
-                  }
-                  throw error;
-                });
-              });
+            return freshResponse;
+          }).catch(() => {
+            // Last resort: try to match any index.html
+            return cache.match('/index.html') || cache.match('/');
           });
         });
       })
