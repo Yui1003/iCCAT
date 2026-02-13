@@ -3,9 +3,9 @@
  * Optimized for Windows 11 Kiosk Mode & Complete Offline Operation
  */
 
-const CACHE_NAME = 'iccat-v17';
-const DATA_CACHE_NAME = 'iccat-data-v17';
-const IMAGE_CACHE_NAME = 'iccat-images-v17';
+const CACHE_NAME = 'iccat-v18';
+const DATA_CACHE_NAME = 'iccat-data-v18';
+const IMAGE_CACHE_NAME = 'iccat-images-v18';
 
 const STATIC_ASSETS = [
   '/',
@@ -37,20 +37,6 @@ const API_ENDPOINTS = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    Promise.all([
-      caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
-      caches.open(DATA_CACHE_NAME).then((cache) => {
-        return Promise.allSettled(
-          API_ENDPOINTS.map(url => 
-            fetch(url).then(res => {
-              if (res.ok) cache.put(url, res);
-            })
-          )
-        );
-      })
-    ])
-  );
   self.skipWaiting();
 });
 

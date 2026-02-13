@@ -7,7 +7,11 @@ import { initializeFirebaseListeners } from "./lib/firebase-listeners";
 import { prefetchAllData } from "./lib/data-prefetcher";
 
 // Initialize offline capabilities on app startup
-initializeServiceWorkerStack();
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    initializeServiceWorkerStack();
+  });
+}
 initializeFirebaseOffline();
 
 // Initialize Firebase real-time listeners (replaces polling)
