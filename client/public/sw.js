@@ -1,17 +1,19 @@
 /**
- * ICCAT Service Worker v9
+ * ICCAT Service Worker v10
  * Complete offline support with auto-caching of all assets
+ * Optimized for Windows 11 Kiosk Mode
  */
 
-const CACHE_NAME = 'iccat-v12';
-const DATA_CACHE_NAME = 'iccat-data-v12';
-const IMAGE_CACHE_NAME = 'iccat-images-v12';
+const CACHE_NAME = 'iccat-v13';
+const DATA_CACHE_NAME = 'iccat-data-v13';
+const IMAGE_CACHE_NAME = 'iccat-images-v13';
 
 // Force service worker to activate immediately and aggressively cache
 self.addEventListener('install', (event) => {
   console.log('[SW] Optimized for Edge Kiosk Mode');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
+      console.log('[SW] Caching static assets...');
       return cache.addAll(urlsToCache);
     })
   );
@@ -22,10 +24,14 @@ self.addEventListener('install', (event) => {
 const urlsToCache = [
   '/',
   '/index.html',
+  '/manifest.json',
+  '/favicon.png',
   '/data.json',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-  'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Roboto+Mono:wght@400;500;700&display=swap'
+  'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Roboto+Mono:wght@400;500;700&display=swap',
+  'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css',
+  'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js'
 ];
 
 // API endpoints to cache for offline
