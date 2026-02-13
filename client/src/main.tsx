@@ -8,9 +8,13 @@ import { prefetchAllData } from "./lib/data-prefetcher";
 
 // Initialize offline capabilities on app startup
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+  if (document.readyState === 'complete') {
     initializeServiceWorkerStack();
-  });
+  } else {
+    window.addEventListener('load', () => {
+      initializeServiceWorkerStack();
+    });
+  }
 }
 initializeFirebaseOffline();
 
