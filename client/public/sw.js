@@ -10,11 +10,22 @@ const IMAGE_CACHE_NAME = 'iccat-images-v13';
 
 // Force service worker to activate immediately and aggressively cache
 self.addEventListener('install', (event) => {
-  console.log('[SW] Optimized for Edge Kiosk Mode');
+  console.log('[SW] Optimized for Edge Kiosk Mode - V14');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Caching static assets...');
-      return cache.addAll(urlsToCache);
+      // Use a more robust caching strategy for the initial install
+      const cachePromises = urlsToCache.map(url => {
+        return fetch(url, { cache: 'no-store' }).then(response => {
+          if (response.ok) {
+            return cache.put(url, response);
+          }
+          console.warn(`[SW] Failed to cache during install: ${url}`);
+        }).catch(err => {
+          console.error(`[SW] Error caching during install: ${url}`, err);
+        });
+      });
+      return Promise.all(cachePromises);
     })
   );
   self.skipWaiting();
@@ -410,7 +421,7 @@ self.addEventListener('fetch', (event) => {
             console.log('[SW] Serving index from cache for offline reliability');
             // Update in background for next time if online
             if (navigator.onLine) {
-              fetch('/').then((freshResponse) => {
+              fetch('/', { cache: 'no-store' }).then((freshResponse) => {
                 if (freshResponse && freshResponse.status === 200) {
                   cache.put('/', freshResponse.clone());
                 }
@@ -420,7 +431,7 @@ self.addEventListener('fetch', (event) => {
           }
           
           // If not in cache, try network
-          return fetch('/').then((freshResponse) => {
+          return fetch('/', { cache: 'no-store' }).then((freshResponse) => {
             if (freshResponse && freshResponse.status === 200) {
               cache.put('/', freshResponse.clone());
             }

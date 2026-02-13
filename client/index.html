@@ -23,6 +23,14 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Force reload on controller change
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          console.log('[SW] Controller changed, reloading...');
+          window.location.reload();
+        });
+      }
+
       // Prevent pinch-to-zoom on the entire document except for the map
       document.addEventListener('touchstart', function(event) {
         if (event.touches.length > 1) {
