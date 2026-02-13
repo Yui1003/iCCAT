@@ -1,16 +1,20 @@
 /**
- * ICCAT Service Worker v9
+ * ICCAT Service Worker v10
  * Complete offline support with auto-caching of all assets
+ * Compatible with PWABuilder
  */
 
-const CACHE_NAME = 'iccat-v11';
-const DATA_CACHE_NAME = 'iccat-data-v11';
-const IMAGE_CACHE_NAME = 'iccat-images-v11';
+const CACHE_NAME = 'iccat-v12';
+const DATA_CACHE_NAME = 'iccat-data-v12';
+const IMAGE_CACHE_NAME = 'iccat-images-v12';
 
 // Static assets to cache immediately
 const urlsToCache = [
   '/',
   '/index.html',
+  '/manifest.json',
+  '/favicon.png',
+  '/icon-512.png',
   '/data.json',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
