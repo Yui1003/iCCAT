@@ -174,8 +174,8 @@ export default function CampusMap({
     if (!mapRef.current || mapInstanceRef.current) return;
 
     const container = mapRef.current;
-    const stableCenter: [number, number] = [centerLat || 14.4025, centerLng || 120.8670];
-    const stableZoom = 18.5;
+    const stableCenter: [number, number] = [centerLat || 14.402870, centerLng || 120.8640];
+    const stableZoom = 17.5;
 
     const mapLoadStart = performance.now();
     const L = window.L;
