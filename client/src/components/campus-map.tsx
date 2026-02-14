@@ -177,6 +177,8 @@ export default function CampusMap({
     const stableCenter: [number, number] = [centerLat || 14.402870, centerLng || 120.8640];
     const stableZoom = 17.5;
 
+    container.style.opacity = '0';
+
     const mapLoadStart = performance.now();
     const L = window.L;
     if (!L) {
@@ -218,45 +220,36 @@ export default function CampusMap({
 
     mapInstanceRef.current = map;
 
-    let initialStabilizationDone = false;
-
-    const recenterIfNeeded = () => {
-      if (mapInstanceRef.current && !initialStabilizationDone) {
+    const recenter = () => {
+      if (mapInstanceRef.current) {
         mapInstanceRef.current.invalidateSize({ animate: false, pan: false });
         mapInstanceRef.current.setView(stableCenter, stableZoom, { animate: false });
       }
     };
 
-    recenterIfNeeded();
+    const rafId = requestAnimationFrame(() => {
+      recenter();
+      requestAnimationFrame(() => {
+        recenter();
+        container.style.opacity = '1';
+      });
+    });
 
-    const rafId = requestAnimationFrame(() => recenterIfNeeded());
-
-    const t1 = setTimeout(() => recenterIfNeeded(), 100);
-    const t2 = setTimeout(() => recenterIfNeeded(), 200);
-    const t3 = setTimeout(() => recenterIfNeeded(), 350);
-    const t4 = setTimeout(() => {
-      recenterIfNeeded();
-      initialStabilizationDone = true;
+    const t1 = setTimeout(recenter, 100);
+    const t2 = setTimeout(recenter, 200);
+    const t3 = setTimeout(() => {
+      recenter();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.options.zoomAnimation = true;
       }
-    }, 500);
+    }, 400);
 
-    let resizeObserver: ResizeObserver | null = null;
-    try {
-      resizeObserver = new ResizeObserver(() => {
-        if (mapInstanceRef.current) {
-          if (!initialStabilizationDone) {
-            recenterIfNeeded();
-          } else {
-            mapInstanceRef.current.invalidateSize();
-          }
-        }
-      });
-      resizeObserver.observe(container);
-    } catch (e) {
-      console.error("ResizeObserver not supported");
-    }
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    });
+    resizeObserver.observe(container);
 
     const handleResize = () => {
       if (mapInstanceRef.current) {
@@ -282,11 +275,8 @@ export default function CampusMap({
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
-      clearTimeout(t4);
       window.removeEventListener('resize', handleResize);
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
+      resizeObserver.disconnect();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
