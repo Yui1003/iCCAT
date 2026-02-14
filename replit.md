@@ -49,6 +49,7 @@ If an accessible path to a requested destination is unavailable, the system auto
 - **Image Proxy System**: Routes all external images through a proxy to bypass CORS and enable offline caching.
 
 ## Recent Changes (February 2026)
+- **Image Display Fix**: Changed all photo containers (building photos, screensaver, event photos, calendar events, admin events) from `object-cover` (which crops images) to `object-contain` (which shows the full original photo fitted within the container). Staff profile pictures remain circular with cover mode.
 - **Migrated to Replit Environment**: Project successfully imported and configured for the Replit platform. Workflow set up with `npm run dev`, serving on port 5000. Firebase Firestore backend connected and operational.
 
 ## Historical Changes (December 2024)

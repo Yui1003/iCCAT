@@ -351,11 +351,11 @@ export default function Screensaver() {
                   >
                     {/* Image */}
                     {item.image && (
-                      <div className="h-48 overflow-hidden bg-black/20">
+                      <div className="max-h-48 flex items-center justify-center overflow-hidden bg-black/20">
                         <ProxiedImage
                           src={item.image}
                           alt={item.title}
-                          className="w-full h-full object-cover"
+                          className="w-full max-h-48 object-contain"
                         />
                       </div>
                     )}

@@ -396,11 +396,11 @@ export default function Events() {
 
             <div className="p-6">
               {selectedEvent.image && (
-                <div className="w-full h-[300px] mb-6 rounded-lg bg-muted overflow-hidden">
+                <div className="w-full max-h-[300px] mb-6 rounded-lg bg-muted overflow-hidden flex items-center justify-center">
                   <ProxiedImage
                     src={selectedEvent.image}
                     alt={selectedEvent.title}
-                    className="w-full h-full object-cover"
+                    className="w-full max-h-[300px] object-contain"
                   />
                 </div>
               )}
@@ -534,11 +534,11 @@ function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event)
         data-testid={`event-card-${event.id}`}
       >
       {event.image ? (
-        <div className="w-full aspect-[4/3] bg-muted">
+        <div className="w-full aspect-[4/3] bg-muted flex items-center justify-center">
           <ProxiedImage
             src={event.image}
             alt={event.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         </div>
       ) : (
