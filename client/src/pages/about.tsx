@@ -116,12 +116,12 @@ export default function About() {
                   <GraduationCap className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-foreground mb-3">Thesis Creators</h4>
+                  <h4 className="text-lg font-semibold text-foreground mb-3">Thesis Proponents</h4>
                   <ul className="space-y-2 text-base text-muted-foreground">
-                    <li>Developer 1</li>
-                    <li>Developer 2</li>
-                    <li>Developer 3</li>
-                    <li>Developer 4</li>
+                    <li>Jomarie Avecilla</li>
+                    <li>Mico Angelo Del Rosario</li>
+                    <li>Maurice Montano</li>
+                    <li>Mc Thomy Antiniolos</li>
                   </ul>
                 </div>
               </div>
@@ -135,7 +135,7 @@ export default function About() {
                   </div>
                   <div>
                     <h4 className="text-lg font-semibold text-foreground mb-2">Thesis Adviser</h4>
-                    <p className="text-base text-muted-foreground">Adviser Name</p>
+                    <p className="text-base text-muted-foreground">Engr. Sunny May Ronas</p>
                   </div>
                 </div>
               </Card>
@@ -147,7 +147,7 @@ export default function About() {
                   </div>
                   <div>
                     <h4 className="text-lg font-semibold text-foreground mb-2">Technical Critic</h4>
-                    <p className="text-base text-muted-foreground">Technical Critic Name</p>
+                    <p className="text-base text-muted-foreground">Engr. Princess Yna Juyad</p>
                   </div>
                 </div>
               </Card>
