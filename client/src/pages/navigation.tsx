@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Navigation as NavigationIcon, TrendingUp, MapPin, Filter, Search, Users, Car, Bike, QrCode, Plus, X, GripVertical, Clock, ChevronDown, DoorOpen } from "lucide-react";
 import { Link } from "wouter";
@@ -37,6 +37,36 @@ export default function Navigation() {
   useGlobalInactivity();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const mapOverlayRef = useRef<HTMLDivElement>(null);
+  const mapMainRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const overlay = mapOverlayRef.current;
+    if (!overlay) return;
+
+    overlay.style.opacity = '1';
+    overlay.style.display = 'block';
+
+    const timer = setTimeout(() => {
+      if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+          if (overlay) {
+            overlay.style.display = 'none';
+          }
+        }, 250);
+      }
+    }, 1200);
+
+    return () => {
+      clearTimeout(timer);
+      if (overlay) {
+        overlay.style.opacity = '0';
+        overlay.style.display = 'none';
+      }
+    };
+  }, []);
+
   const [selectedStart, setSelectedStart] = useState<Building | null | typeof KIOSK_LOCATION>(null);
   const [selectedEnd, setSelectedEnd] = useState<Building | null>(null);
   const [mode, setMode] = useState<'walking' | 'driving' | 'accessible'>('walking');
@@ -4443,7 +4473,12 @@ export default function Navigation() {
           )}
         </aside>
 
-        <main className="flex-1 overflow-hidden relative">
+        <main className="flex-1 overflow-hidden relative" ref={mapMainRef}>
+          <div
+            ref={mapOverlayRef}
+            className="absolute inset-0 z-[9999] bg-background pointer-events-none"
+            style={{ transition: 'opacity 0.15s ease-out' }}
+          />
           {parkingSelectionMode && vehicleType && (
             <div className="absolute top-0 left-0 right-0 z-50 bg-yellow-500 text-yellow-900 px-4 py-3 shadow-lg flex items-center justify-between gap-3" data-testid="banner-parking-selection">
               <div className="flex items-center gap-2 flex-1">

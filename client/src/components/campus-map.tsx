@@ -177,8 +177,6 @@ export default function CampusMap({
     const stableCenter: [number, number] = [centerLat || 14.402870, centerLng || 120.8640];
     const stableZoom = 17.5;
 
-    container.style.opacity = '0';
-
     const mapLoadStart = performance.now();
     const L = window.L;
     if (!L) {
@@ -227,22 +225,19 @@ export default function CampusMap({
       }
     };
 
-    const rafId = requestAnimationFrame(() => {
-      recenter();
-      requestAnimationFrame(() => {
-        recenter();
-        container.style.opacity = '1';
-      });
-    });
-
-    const t1 = setTimeout(recenter, 100);
-    const t2 = setTimeout(recenter, 200);
-    const t3 = setTimeout(() => {
+    recenter();
+    const rafId = requestAnimationFrame(recenter);
+    const t1 = setTimeout(recenter, 50);
+    const t2 = setTimeout(recenter, 150);
+    const t3 = setTimeout(recenter, 300);
+    const t4 = setTimeout(recenter, 500);
+    const t5 = setTimeout(recenter, 800);
+    const t6 = setTimeout(() => {
       recenter();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.options.zoomAnimation = true;
       }
-    }, 400);
+    }, 1000);
 
     const resizeObserver = new ResizeObserver(() => {
       if (mapInstanceRef.current) {
@@ -275,6 +270,9 @@ export default function CampusMap({
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
+      clearTimeout(t4);
+      clearTimeout(t5);
+      clearTimeout(t6);
       window.removeEventListener('resize', handleResize);
       resizeObserver.disconnect();
       if (mapInstanceRef.current) {
