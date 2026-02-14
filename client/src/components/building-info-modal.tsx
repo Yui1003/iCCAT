@@ -191,24 +191,6 @@ export default function BuildingInfoModal({
 
                 {allPhotos.length > 1 && (
                   <>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur-sm z-10"
-                      onClick={scrollPrev}
-                      disabled={!prevBtnEnabled}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur-sm z-10"
-                      onClick={scrollNext}
-                      disabled={!nextBtnEnabled}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
                       {allPhotos.map((_, index) => (
                         <div
