@@ -42,9 +42,10 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-accent/10 flex flex-col relative">
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none"
-        style={{ backgroundImage: `url(${campusBg})`, opacity: 0.3 }}
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none z-0"
+        style={{ backgroundImage: `url(${campusBg})` }}
       />
+      <div className="absolute inset-0 bg-background/75 pointer-events-none z-[1]" />
       <header className="p-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-4">
