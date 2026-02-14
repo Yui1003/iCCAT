@@ -40,13 +40,16 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-accent/10 flex flex-col relative">
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none z-0"
-        style={{ backgroundImage: `url(${campusBg})` }}
-      />
-      <div className="absolute inset-0 bg-background/75 pointer-events-none z-[1]" />
-      <header className="p-6 relative z-10">
+    <div className="h-screen bg-background flex flex-col relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <img
+          src={campusBg}
+          alt=""
+          className="w-full h-full object-fill"
+        />
+      </div>
+      <div className="absolute inset-0 bg-background/55 pointer-events-none z-[1]" />
+      <header className="px-6 pt-4 pb-2 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -74,9 +77,9 @@ export default function Landing() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-6 pb-12 relative z-10">
+      <main className="flex-1 flex items-center justify-center px-6 pb-4 relative z-10">
         <div className="max-w-5xl w-full">
-          <div className="text-center mb-12">
+          <div className="text-center mb-6">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Clock className="w-5 h-5 text-primary" />
               <div className="text-lg text-muted-foreground">{formatDate(currentTime)}</div>
@@ -89,19 +92,19 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-4 max-w-4xl mx-auto">
             <Link href="/navigation">
               <button
                 data-testid="button-navigation"
-                className="group w-full min-h-48 bg-card border border-card-border rounded-lg p-8 hover-elevate active-elevate-2 transition-all"
+                className="group w-full bg-card/90 border border-card-border rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm"
               >
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Map className="w-12 h-12 text-primary" />
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Map className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold text-foreground mb-2">Campus Navigation</h2>
-                    <p className="text-base text-muted-foreground">Find your way around campus with turn-by-turn directions</p>
+                    <h2 className="text-xl font-semibold text-foreground mb-1">Campus Navigation</h2>
+                    <p className="text-sm text-muted-foreground">Find your way around campus with turn-by-turn directions</p>
                   </div>
                 </div>
               </button>
@@ -110,15 +113,15 @@ export default function Landing() {
             <Link href="/events">
               <button
                 data-testid="button-events"
-                className="group w-full min-h-48 bg-card border border-card-border rounded-lg p-8 hover-elevate active-elevate-2 transition-all"
+                className="group w-full bg-card/90 border border-card-border rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm"
               >
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Calendar className="w-12 h-12 text-primary" />
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Calendar className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold text-foreground mb-2">Events & Announcements</h2>
-                    <p className="text-base text-muted-foreground">Stay updated with campus activities and important notices</p>
+                    <h2 className="text-xl font-semibold text-foreground mb-1">Events & Announcements</h2>
+                    <p className="text-sm text-muted-foreground">Stay updated with campus activities and important notices</p>
                   </div>
                 </div>
               </button>
@@ -127,15 +130,15 @@ export default function Landing() {
             <Link href="/staff">
               <button
                 data-testid="button-staff"
-                className="group w-full min-h-48 bg-card border border-card-border rounded-lg p-8 hover-elevate active-elevate-2 transition-all"
+                className="group w-full bg-card/90 border border-card-border rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm"
               >
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Users className="w-12 h-12 text-primary" />
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Users className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold text-foreground mb-2">Staff Finder</h2>
-                    <p className="text-base text-muted-foreground">Locate faculty and staff members across campus</p>
+                    <h2 className="text-xl font-semibold text-foreground mb-1">Staff Finder</h2>
+                    <p className="text-sm text-muted-foreground">Locate faculty and staff members across campus</p>
                   </div>
                 </div>
               </button>
@@ -144,15 +147,15 @@ export default function Landing() {
             <Link href="/about">
               <button
                 data-testid="button-about"
-                className="group w-full min-h-48 bg-card border border-card-border rounded-lg p-8 hover-elevate active-elevate-2 transition-all"
+                className="group w-full bg-card/90 border border-card-border rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm"
               >
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Info className="w-12 h-12 text-primary" />
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Info className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold text-foreground mb-2">About the Kiosk</h2>
-                    <p className="text-base text-muted-foreground">Learn more about this information system</p>
+                    <h2 className="text-xl font-semibold text-foreground mb-1">About the Kiosk</h2>
+                    <p className="text-sm text-muted-foreground">Learn more about this information system</p>
                   </div>
                 </div>
               </button>
@@ -161,21 +164,21 @@ export default function Landing() {
         </div>
       </main>
 
-      <footer className="p-6">
+      <footer className="p-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
               <Link href="/feedback">
                 <button
                   data-testid="button-feedback"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover-elevate active-elevate-2 transition-all"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-lg hover-elevate active-elevate-2 transition-all shadow-lg text-lg"
                 >
-                  <ClipboardList className="w-5 h-5" />
-                  <span className="font-medium">Provide Feedback</span>
+                  <ClipboardList className="w-6 h-6" />
+                  <span className="font-semibold">Provide Feedback</span>
                 </button>
               </Link>
             </div>
-            <div className="text-xs text-muted-foreground" data-testid="text-version">
+            <div className="text-xs text-foreground/70" data-testid="text-version">
               version:2.5.3
             </div>
           </div>
