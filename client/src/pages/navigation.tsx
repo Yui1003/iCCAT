@@ -4478,7 +4478,12 @@ export default function Navigation() {
             ref={mapOverlayRef}
             className="absolute inset-0 z-[9999] bg-background pointer-events-none"
             style={{ transition: 'opacity 0.15s ease-out' }}
-          />
+          >
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+              <div className="w-8 h-8 rounded-full animate-spin" style={{ border: '3px solid hsl(var(--muted-foreground) / 0.2)', borderTopColor: 'hsl(var(--primary))' }} />
+              <span className="text-sm text-muted-foreground">Loading map...</span>
+            </div>
+          </div>
           {parkingSelectionMode && vehicleType && (
             <div className="absolute top-0 left-0 right-0 z-50 bg-yellow-500 text-yellow-900 px-4 py-3 shadow-lg flex items-center justify-between gap-3" data-testid="banner-parking-selection">
               <div className="flex items-center gap-2 flex-1">
