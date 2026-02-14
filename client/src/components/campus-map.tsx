@@ -169,7 +169,6 @@ export default function CampusMap({
   const [currentZoom, setCurrentZoom] = useState(17.5);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressRef = useRef(false);
-  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -177,86 +176,86 @@ export default function CampusMap({
     const container = mapRef.current;
     const stableCenter: [number, number] = [centerLat || 14.4025, centerLng || 120.8670];
     const stableZoom = 18.5;
-    let mapInitialized = false;
-    let cleaned = false;
 
-    setMapReady(false);
+    const mapLoadStart = performance.now();
+    const L = window.L;
+    if (!L) {
+      console.error("Leaflet not loaded");
+      return;
+    }
 
-    const initMap = () => {
-      if (mapInitialized || cleaned) return;
-      mapInitialized = true;
+    const map = L.map(container, {
+      center: stableCenter,
+      zoom: stableZoom,
+      minZoom: 17.5,
+      maxZoom: 21,
+      zoomControl: true,
+      attributionControl: true,
+      preferCanvas: true,
+      updateWhenIdle: false,
+      updateWhenZooming: true,
+      fadeAnimation: false,
+      zoomAnimation: false,
+      markerZoomAnimation: false,
+      inertia: false,
+      renderer: L.canvas({
+        padding: 1.5,
+        tolerance: 5
+      })
+    });
 
-      const mapLoadStart = performance.now();
-      const L = window.L;
-      if (!L) {
-        console.error("Leaflet not loaded");
-        return;
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 21,
+      maxNativeZoom: 19,
+      detectRetina: true,
+      crossOrigin: true,
+      updateWhenIdle: false,
+      updateWhenZooming: true,
+      keepBuffer: 8,
+      updateInterval: 50
+    }).addTo(map);
+
+    mapInstanceRef.current = map;
+
+    let initialStabilizationDone = false;
+
+    const recenterIfNeeded = () => {
+      if (mapInstanceRef.current && !initialStabilizationDone) {
+        mapInstanceRef.current.invalidateSize({ animate: false, pan: false });
+        mapInstanceRef.current.setView(stableCenter, stableZoom, { animate: false });
       }
-
-      const map = L.map(container, {
-        center: stableCenter,
-        zoom: stableZoom,
-        minZoom: 17.5,
-        maxZoom: 21,
-        zoomControl: true,
-        attributionControl: true,
-        preferCanvas: true,
-        updateWhenIdle: false,
-        updateWhenZooming: true,
-        fadeAnimation: false,
-        inertia: false,
-        renderer: L.canvas({
-          padding: 1.5,
-          tolerance: 5
-        })
-      });
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 21,
-        maxNativeZoom: 19,
-        detectRetina: true,
-        crossOrigin: true,
-        updateWhenIdle: false,
-        updateWhenZooming: true,
-        keepBuffer: 8,
-        updateInterval: 50
-      }).addTo(map);
-
-      mapInstanceRef.current = map;
-
-      map.invalidateSize({ animate: false });
-      map.setView(stableCenter, stableZoom, { animate: false });
-
-      setTimeout(() => {
-        if (!cleaned && mapInstanceRef.current) {
-          mapInstanceRef.current.invalidateSize({ animate: false });
-          mapInstanceRef.current.setView(stableCenter, stableZoom, { animate: false });
-          setMapReady(true);
-        }
-      }, 50);
-
-      const mapLoadDuration = performance.now() - mapLoadStart;
-      trackEvent(AnalyticsEventType.MAP_LOAD, Math.max(1, Math.round(mapLoadDuration)), {
-        action: 'campus_map_loaded',
-        buildingCount: buildings.length
-      });
     };
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (!mapInitialized && entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-          initMap();
-        }
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.invalidateSize();
-        }
-      }
-    });
-    resizeObserver.observe(container);
+    recenterIfNeeded();
 
-    if (container.offsetWidth > 0 && container.offsetHeight > 0) {
-      initMap();
+    const rafId = requestAnimationFrame(() => recenterIfNeeded());
+
+    const t1 = setTimeout(() => recenterIfNeeded(), 100);
+    const t2 = setTimeout(() => recenterIfNeeded(), 200);
+    const t3 = setTimeout(() => recenterIfNeeded(), 350);
+    const t4 = setTimeout(() => {
+      recenterIfNeeded();
+      initialStabilizationDone = true;
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.options.zoomAnimation = true;
+      }
+    }, 500);
+
+    let resizeObserver: ResizeObserver | null = null;
+    try {
+      resizeObserver = new ResizeObserver(() => {
+        if (mapInstanceRef.current) {
+          if (!initialStabilizationDone) {
+            recenterIfNeeded();
+          } else {
+            mapInstanceRef.current.invalidateSize();
+          }
+        }
+      });
+      resizeObserver.observe(container);
+    } catch (e) {
+      console.error("ResizeObserver not supported");
     }
 
     const handleResize = () => {
@@ -266,6 +265,12 @@ export default function CampusMap({
     };
     window.addEventListener('resize', handleResize);
 
+    const mapLoadDuration = performance.now() - mapLoadStart;
+    trackEvent(AnalyticsEventType.MAP_LOAD, Math.max(1, Math.round(mapLoadDuration)), {
+      action: 'campus_map_loaded',
+      buildingCount: buildings.length
+    });
+
     const disableContextMenu = (e: Event) => {
       e.preventDefault();
       return false;
@@ -273,9 +278,15 @@ export default function CampusMap({
     container.addEventListener('contextmenu', disableContextMenu);
 
     return () => {
-      cleaned = true;
+      cancelAnimationFrame(rafId);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
       window.removeEventListener('resize', handleResize);
-      resizeObserver.disconnect();
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -1040,12 +1051,5 @@ export default function CampusMap({
     pathsLayerRef.current = layerGroup;
   }, [existingPaths, pathsColor, onPathClick]);
 
-  return (
-    <div
-      ref={mapRef}
-      className={className}
-      data-testid="map-container"
-      style={{ opacity: mapReady ? 1 : 0, transition: 'none' }}
-    />
-  );
+  return <div ref={mapRef} className={className} data-testid="map-container" />;
 }
