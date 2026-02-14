@@ -61,13 +61,13 @@ export default function Landing() {
               />
               <div>
                 <h1 className="text-3xl font-bold text-foreground">iCCAT</h1>
-                <p className="text-sm text-muted-foreground">Interactive Campus Companion & Assistance Terminal</p>
+                <p className="text-sm text-foreground/80 font-medium">Interactive Campus Companion & Assistance Terminal</p>
               </div>
             </div>
             <Button
               variant="outline"
               onClick={openWalkthrough}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-card/90 backdrop-blur-sm border-card-border"
               data-testid="button-help-guide"
             >
               <HelpCircle className="w-5 h-5" />
@@ -171,10 +171,10 @@ export default function Landing() {
               <Link href="/feedback">
                 <button
                   data-testid="button-feedback"
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-lg hover-elevate active-elevate-2 transition-all shadow-lg text-lg"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover-elevate active-elevate-2 transition-all"
                 >
-                  <ClipboardList className="w-6 h-6" />
-                  <span className="font-semibold">Provide Feedback</span>
+                  <ClipboardList className="w-5 h-5" />
+                  <span className="font-medium">Provide Feedback</span>
                 </button>
               </Link>
             </div>
