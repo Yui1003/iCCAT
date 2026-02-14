@@ -116,8 +116,7 @@ export const buildings = pgTable("buildings", {
   departments: text("departments").array(),
   image: text("image"),
   markerIcon: text("marker_icon").default("building"),
-  polygon: jsonb("polygon"), // Array of {lat, lng} objects for building boundary/area (legacy single polygon)
-  polygons: jsonb("polygons"), // Array of arrays of {lat, lng} objects for multi-polygon buildings
+  polygon: jsonb("polygon"), // Array of {lat, lng} objects for building boundary/area
   polygonColor: text("polygon_color").default("#FACC15"), // Hex color for polygon highlight
   polygonOpacity: real("polygon_opacity").default(0.3), // Opacity of polygon (0-1)
   entranceLat: real("entrance_lat"), // Deprecated: specific coordinate for pathfinding
