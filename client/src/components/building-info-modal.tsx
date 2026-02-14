@@ -190,18 +190,16 @@ export default function BuildingInfoModal({
                 </div>
 
                 {allPhotos.length > 1 && (
-                  <>
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                      {allPhotos.map((_, index) => (
-                        <div
-                          key={index}
-                          className={`w-1.5 h-1.5 rounded-full transition-all ${
-                            index === selectedIndex ? "bg-primary w-3" : "bg-primary/30"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                    {allPhotos.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-1.5 h-1.5 rounded-full transition-all ${
+                          index === selectedIndex ? "bg-primary w-3" : "bg-primary/30"
+                        }`}
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
             )}
