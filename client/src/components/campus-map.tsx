@@ -365,12 +365,13 @@ export default function CampusMap({
     map.setMaxZoom(21);
 
     // CRITICAL: Delay bounds setup to allow tiles to render first
+    // Reduced delay and made it more seamless
     const boundsTimeout = setTimeout(() => {
       updateBoundsBasedOnZoom();
       
       // Update bounds whenever zoom level changes
       map.on('zoomend', updateBoundsBasedOnZoom);
-    }, 350);
+    }, 100);
 
     return () => {
       clearTimeout(boundsTimeout);
@@ -387,7 +388,19 @@ export default function CampusMap({
     const lat = centerLat || defaultLat;
     const lng = centerLng || defaultLng;
     
-    mapInstanceRef.current.setView([lat, lng], 18.5);
+    // Only set view if it's significantly different from current to avoid unnecessary jumping/animation
+    // This prevents the initial "bounce" when props match initial state
+    const currentCenter = mapInstanceRef.current.getCenter();
+    const currentZoom = mapInstanceRef.current.getZoom();
+    const latDiff = Math.abs(currentCenter.lat - lat);
+    const lngDiff = Math.abs(currentCenter.lng - lng);
+    const zoomDiff = Math.abs(currentZoom - 18.5);
+
+    if (latDiff > 0.0001 || lngDiff > 0.0001 || zoomDiff > 0.1) {
+      mapInstanceRef.current.setView([lat, lng], 18.5, {
+        animate: false // Disable animation for direct view changes
+      });
+    }
   }, [centerLat, centerLng]);
 
   useEffect(() => {
