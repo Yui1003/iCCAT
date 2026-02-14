@@ -1131,6 +1131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           image: null,
           markerIcon: null,
           polygon: null,
+          polygons: null,
           polygonColor: null,
           polygonOpacity: null,
           entranceLat: startLat,
