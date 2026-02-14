@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Map, Calendar, Users, Info, Clock, ClipboardList, HelpCircle } from "lucide-react";
+import { Map, Calendar, Users, Info, ClipboardList, HelpCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useHomeInactivity } from "@/hooks/use-inactivity";
 import logoImage from "@assets/logo.png";
@@ -80,8 +80,7 @@ export default function Landing() {
       <main className="flex-1 flex items-center justify-center px-6 pb-4 relative z-10">
         <div className="max-w-5xl w-full">
           <div className="text-center mb-6">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Clock className="w-5 h-5 text-primary" />
+            <div className="flex items-center justify-center mb-4">
               <div className="text-lg text-muted-foreground">{formatDate(currentTime)}</div>
             </div>
             <div className="text-5xl font-bold text-foreground mb-2" data-testid="text-time">
