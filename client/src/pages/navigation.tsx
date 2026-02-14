@@ -207,8 +207,9 @@ export default function Navigation() {
     const autoGenerate = params.get('autoGenerate') === 'true';
 
     if (fromId && toId && buildings.length > 0) {
+      const kioskSource = kioskBuilding || KIOSK_LOCATION;
       const startBuilding = fromId === 'kiosk' 
-        ? { ...KIOSK_LOCATION, description: null, departments: null, image: null, markerIcon: null, polygon: null, polygonColor: null, nodeLat: KIOSK_LOCATION.lat, nodeLng: KIOSK_LOCATION.lng }
+        ? { ...kioskSource, description: null, departments: null, image: null, markerIcon: null, polygon: null, polygonColor: null, nodeLat: kioskSource.lat, nodeLng: kioskSource.lng }
         : buildings.find(b => b.id === fromId);
       const endBuilding = buildings.find(b => b.id === toId);
 
@@ -3425,9 +3426,8 @@ export default function Navigation() {
 
     const routeStartTime = performance.now();
 
-    // Handle kiosk location or regular building
     const start = startId === 'kiosk' 
-      ? KIOSK_LOCATION as any
+      ? (kioskBuilding || KIOSK_LOCATION) as any
       : buildings.find(b => b.id === startId);
     
     if (!start) return;
@@ -3999,7 +3999,7 @@ export default function Navigation() {
                         </Button>
                       </div>
                       <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {poiTypes.map((type) => (
+                        {[...poiTypes].sort((a, b) => a.localeCompare(b)).map((type) => (
                           <div key={type} className="flex items-center space-x-2">
                             <Checkbox
                               id={`type-${type}`}
@@ -4035,7 +4035,7 @@ export default function Navigation() {
                   selectedId={selectedStart?.id}
                   onSelect={(id) => {
                     if (id === 'kiosk') {
-                      setSelectedStart(KIOSK_LOCATION as any);
+                      setSelectedStart((kioskBuilding || KIOSK_LOCATION) as any);
                     } else {
                       const building = buildings.find(b => b.id === id);
                       setSelectedStart(building || null);
