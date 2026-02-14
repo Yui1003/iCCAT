@@ -387,6 +387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return {
           'Timestamp': timestampDate.toLocaleString('en-US', {
+            timeZone: 'Asia/Manila',
             year: '2-digit',
             month: '2-digit',
             day: '2-digit',
