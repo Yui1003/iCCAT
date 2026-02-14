@@ -377,7 +377,7 @@ export default function AdminStaff() {
                 >
                   <div className="flex items-center gap-4 flex-1">
                     <Avatar className="w-12 h-12">
-                      <AvatarImage src={member.photo || undefined} alt={member.name} />
+                      <AvatarImage src={(member.photo as string) || undefined} alt={member.name} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
                         {member.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                       </AvatarFallback>
