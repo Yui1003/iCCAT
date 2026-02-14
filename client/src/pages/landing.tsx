@@ -3,7 +3,7 @@ import { Map, Calendar, Users, Info, ClipboardList, HelpCircle } from "lucide-re
 import { useEffect, useState } from "react";
 import { useHomeInactivity } from "@/hooks/use-inactivity";
 import logoImage from "@assets/logo.png";
-import campusBg from "@assets/image_1771059648368.png";
+import campusBg from "/generated_images/Homepage BG.png";
 import { Button } from "@/components/ui/button";
 import { Walkthrough, useWalkthrough } from "@/components/walkthrough";
 
