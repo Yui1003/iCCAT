@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Navigation as NavigationIcon, TrendingUp, MapPin, Filter, Search, Users, Car, Bike, QrCode, Plus, X, GripVertical, Clock, ChevronDown, DoorOpen } from "lucide-react";
+import { ChevronLeft, Navigation as NavigationIcon, TrendingUp, MapPin, Filter, Search, Users, Car, Bike, QrCode, Plus, X, GripVertical, Clock, ChevronDown, DoorOpen } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -3906,12 +3906,13 @@ export default function Navigation() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <header className="bg-card border-b border-card-border p-4 flex-shrink-0">
-        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
+      <header className="bg-card border-b border-card-border px-4 py-3 flex-shrink-0">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
             <Link href="/">
-              <Button variant="ghost" size="icon" data-testid="button-back">
-                <ArrowLeft className="w-5 h-5" />
+              <Button className="rounded-full bg-primary text-primary-foreground px-5 gap-1" data-testid="button-back">
+                <ChevronLeft className="w-5 h-5" />
+                Back
               </Button>
             </Link>
             <div>
@@ -4447,7 +4448,7 @@ export default function Navigation() {
                       onClick={handleGoBackToPreviousFloor}
                       data-testid="button-go-back-indoor"
                     >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      <ChevronLeft className="w-4 h-4 mr-2" />
                       Go Back
                     </Button>
                   </div>

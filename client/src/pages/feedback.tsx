@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Link, useLocation, useSearch } from "wouter";
-import { ArrowLeft, Send } from "lucide-react";
+import { ChevronLeft, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -239,13 +239,12 @@ export default function FeedbackPage() {
         {/* Header - Sticky */}
         <div className="sticky top-0 z-40 mb-6 flex items-center justify-between bg-gradient-to-br from-primary/20 via-background to-accent/10 py-3 -mx-6 px-6">
           <Button
-            variant="ghost"
             onClick={handleBackClick}
             data-testid="button-back"
-            className="gap-2"
+            className="rounded-full bg-primary text-primary-foreground px-5 gap-1"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
+            <ChevronLeft className="w-5 h-5" />
+            Back
           </Button>
           <div className="text-sm font-semibold text-muted-foreground" data-testid="text-questions-answered">
             {answeredCount} of {totalQuestions} questions answered

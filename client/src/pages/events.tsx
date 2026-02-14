@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, Clock, MapPin, X, Navigation, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, Calendar, Clock, MapPin, X, Navigation, Filter, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -202,11 +202,12 @@ export default function Events() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-card-border p-4 sticky top-0 z-10">
+      <header className="bg-card border-b border-card-border px-4 py-3 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex items-center gap-4">
           <Link href="/">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="w-5 h-5" />
+            <Button className="rounded-full bg-primary text-primary-foreground px-5 gap-1" data-testid="button-back">
+              <ChevronLeft className="w-5 h-5" />
+              Back
             </Button>
           </Link>
           <div>

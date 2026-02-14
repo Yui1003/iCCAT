@@ -1,4 +1,4 @@
-import { ArrowLeft, Map, Navigation as NavigationIcon, Users, Calendar, Smartphone, Wifi } from "lucide-react";
+import { ChevronLeft, Map, Navigation as NavigationIcon, Users, Calendar, Smartphone, Wifi, GraduationCap, BookOpen, Award } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -42,11 +42,12 @@ export default function About() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-card-border p-4 sticky top-0 z-10">
+      <header className="bg-card border-b border-card-border px-4 py-3 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex items-center gap-4">
           <Link href="/">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="w-5 h-5" />
+            <Button className="rounded-full bg-primary text-primary-foreground px-5 gap-1" data-testid="button-back">
+              <ChevronLeft className="w-5 h-5" />
+              Back
             </Button>
           </Link>
           <div>
@@ -103,6 +104,54 @@ export default function About() {
                 </div>
               </Card>
             ))}
+          </div>
+        </div>
+
+        <div className="mb-12">
+          <h3 className="text-2xl font-semibold text-foreground mb-6">Project Team</h3>
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card className="p-6" data-testid="section-thesis-creators">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <GraduationCap className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-foreground mb-3">Thesis Creators</h4>
+                  <ul className="space-y-2 text-base text-muted-foreground">
+                    <li>Developer 1</li>
+                    <li>Developer 2</li>
+                    <li>Developer 3</li>
+                    <li>Developer 4</li>
+                  </ul>
+                </div>
+              </div>
+            </Card>
+
+            <div className="space-y-6">
+              <Card className="p-6" data-testid="section-adviser">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <BookOpen className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-foreground mb-2">Thesis Adviser</h4>
+                    <p className="text-base text-muted-foreground">Adviser Name</p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6" data-testid="section-technical-critic">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Award className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-foreground mb-2">Technical Critic</h4>
+                    <p className="text-base text-muted-foreground">Technical Critic Name</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
           </div>
         </div>
 

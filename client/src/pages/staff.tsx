@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Search, MapPin, Mail, Phone, Navigation, ChevronRight } from "lucide-react";
+import { ChevronLeft, Search, MapPin, Mail, Phone, Navigation, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -202,11 +202,12 @@ export default function StaffDirectory() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-card-border p-4 sticky top-0 z-10">
+      <header className="bg-card border-b border-card-border px-4 py-3 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex items-center gap-4">
           <Link href="/">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="w-5 h-5" />
+            <Button className="rounded-full bg-primary text-primary-foreground px-5 gap-1" data-testid="button-back">
+              <ChevronLeft className="w-5 h-5" />
+              Back
             </Button>
           </Link>
           <div>
@@ -243,7 +244,7 @@ export default function StaffDirectory() {
                 }}
                 data-testid="button-back-to-departments"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                <ChevronLeft className="w-4 h-4 mr-2" />
                 Back to Departments
               </Button>
 
