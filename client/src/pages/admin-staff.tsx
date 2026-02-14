@@ -1,11 +1,10 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Users as UsersIcon, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Users as UsersIcon, Search, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +14,9 @@ import ImageUploadInput from "@/components/image-upload-input";
 import type { Staff, InsertStaff, Building } from "@shared/schema";
 import { canHaveDepartments, canHaveStaff } from "@shared/schema";
 import { invalidateEndpointCache } from "@/lib/offline-data";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 export default function AdminStaff() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -190,47 +192,95 @@ export default function AdminStaff() {
                   </div>
                   <div>
                     <Label htmlFor="department">Department</Label>
-                    <Select
-                      value={formData.department || undefined}
-                      onValueChange={(value) => setFormData({ ...formData, department: value })}
-                    >
-                      <SelectTrigger id="department" data-testid="select-staff-department">
-                        <SelectValue placeholder={availableDepartments.length > 0 ? "Select department" : "No departments available"} />
-                      </SelectTrigger>
-                      <SelectContent className="z-[1002]">
-                        {availableDepartments.length > 0 ? (
-                          availableDepartments.map(dept => (
-                            <SelectItem key={dept} value={dept}>
-                              {dept}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="none" disabled>
-                            No departments available
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className="w-full justify-between"
+                          data-testid="select-staff-department"
+                        >
+                          {formData.department || "Select department"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0 z-[1002]">
+                        <Command>
+                          <CommandInput placeholder="Search department..." />
+                          <CommandList>
+                            <CommandEmpty>No department found.</CommandEmpty>
+                            <CommandGroup>
+                              {availableDepartments.map((dept) => (
+                                <CommandItem
+                                  key={dept}
+                                  value={dept}
+                                  onSelect={(currentValue) => {
+                                    setFormData({ ...formData, department: currentValue });
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      formData.department === dept ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {dept}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 
                 <div>
                   <Label htmlFor="building">Building</Label>
-                  <Select
-                    value={formData.buildingId || undefined}
-                    onValueChange={(value) => setFormData({ ...formData, buildingId: value })}
-                  >
-                    <SelectTrigger data-testid="select-staff-building">
-                      <SelectValue placeholder="Select building" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[1002]">
-                      {staffAllowedBuildings.map(building => (
-                        <SelectItem key={building.id} value={building.id}>
-                          {building.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between"
+                        data-testid="select-staff-building"
+                      >
+                        {formData.buildingId 
+                          ? staffAllowedBuildings.find(b => b.id === formData.buildingId)?.name 
+                          : "Select building"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0 z-[1002]">
+                      <Command>
+                        <CommandInput placeholder="Search building..." />
+                        <CommandList>
+                          <CommandEmpty>No building found.</CommandEmpty>
+                          <CommandGroup>
+                            {staffAllowedBuildings
+                              .sort((a, b) => a.name.localeCompare(b.name))
+                              .map((building) => (
+                                <CommandItem
+                                  key={building.id}
+                                  value={building.name}
+                                  onSelect={() => {
+                                    setFormData({ ...formData, buildingId: building.id });
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      formData.buildingId === building.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {building.name}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -257,7 +307,7 @@ export default function AdminStaff() {
 
                 <ImageUploadInput
                   label="Staff Photo"
-                  value={formData.photo}
+                  value={formData.photo || ""}
                   onChange={(url) => setFormData({ ...formData, photo: url })}
                   type="staff"
                   id={editingStaff?.id || 'new'}

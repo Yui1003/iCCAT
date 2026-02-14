@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, Search, MapPin, Mail, Phone, Navigation, ChevronRight } from "lucide-react";
+import { ChevronLeft, Search, MapPin, Mail, Phone, Navigation, ChevronRight, Building2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -154,45 +154,51 @@ export default function StaffDirectory() {
     queryKey: ['/api/buildings']
   });
 
+  const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+
   // Filter buildings to only show those that have staff assigned
-  const buildingsWithStaff = buildings.filter(building => 
-    staff.some(member => member.buildingId === building.id)
+  const buildingsWithStaff = useMemo(() => {
+    return buildings
+      .filter(building => staff.some(member => member.buildingId === building.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [buildings, staff]);
+
+  const selectedBuilding = useMemo(() => 
+    buildings.find(b => b.id === selectedBuildingId),
+    [buildings, selectedBuildingId]
   );
 
-  const departments = Array.from(new Set(staff.map(s => s.department).filter(Boolean)));
+  const staffInSelectedBuilding = useMemo(() => 
+    staff.filter(s => s.buildingId === selectedBuildingId),
+    [staff, selectedBuildingId]
+  );
 
-  // Get staff count per department
-  const staffCountByDepartment = departments.map(dept => ({
-    name: dept,
-    count: staff.filter(s => s.department === dept).length
-  }));
+  const departmentsInSelectedBuilding = useMemo(() => {
+    const depts = Array.from(new Set(staffInSelectedBuilding.map(s => s.department).filter(Boolean)));
+    return depts.map(dept => ({
+      name: dept,
+      count: staffInSelectedBuilding.filter(s => s.department === dept).length
+    })).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }, [staffInSelectedBuilding]);
 
-  const filteredStaff = staff.filter(member => {
-    const matchesSearch = !searchQuery || 
-      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.position?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.department?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesBuilding = buildingFilter === "all" || member.buildingId === buildingFilter;
-    const matchesDepartment = departmentFilter === "all" || member.department === departmentFilter;
+  const staffWithoutDepartment = useMemo(() => 
+    staffInSelectedBuilding.filter(s => !s.department),
+    [staffInSelectedBuilding]
+  );
 
-    return matchesSearch && matchesBuilding && matchesDepartment;
-  });
+  const filteredStaff = useMemo(() => {
+    return staff.filter(member => {
+      const matchesSearch = !searchQuery || 
+        member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        member.position?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        member.department?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesBuilding = buildingFilter === "all" || member.buildingId === buildingFilter;
+      const matchesDepartment = departmentFilter === "all" || member.department === departmentFilter;
 
-  const filteredDepartments = staffCountByDepartment.filter(dept => {
-    if (!searchQuery) return true;
-    const searchLower = searchQuery.toLowerCase();
-    
-    // Search by department name
-    if (dept.name?.toLowerCase().includes(searchLower)) return true;
-    
-    // Search by staff names in this department
-    const staffInDept = staff.filter(s => s.department === dept.name);
-    return staffInDept.some(member => 
-      member.name.toLowerCase().includes(searchLower) ||
-      member.position?.toLowerCase().includes(searchLower)
-    );
-  });
+      return matchesSearch && matchesBuilding && matchesDepartment;
+    });
+  }, [staff, searchQuery, buildingFilter, departmentFilter]);
 
   const getBuildingName = (buildingId: string | null | undefined) => {
     if (!buildingId) return "Not assigned";
@@ -214,7 +220,7 @@ export default function StaffDirectory() {
             <div>
               <h1 className="text-2xl font-semibold text-foreground">Staff Directory</h1>
               <p className="text-sm text-muted-foreground">
-                {viewMode === "departments" ? "Find staff by department" : "Find faculty and staff members"}
+                {selectedBuildingId ? `Find staff in ${selectedBuilding?.name}` : "Find staff by building"}
               </p>
             </div>
           </div>
@@ -227,7 +233,7 @@ export default function StaffDirectory() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               type="search"
-              placeholder={viewMode === "departments" ? "Search departments or staff names..." : "Search by name, position, or department..."}
+              placeholder="Search by name, position, or department..."
               className="pl-10 h-12"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -235,42 +241,62 @@ export default function StaffDirectory() {
             />
           </div>
 
-          {viewMode === "staff" && (
+          {(selectedBuildingId || searchQuery) && (
             <div className="flex flex-wrap gap-4">
               <Button
                 variant="outline"
                 onClick={() => {
-                  setViewMode("departments");
+                  setSelectedBuildingId(null);
                   setDepartmentFilter("all");
+                  setBuildingFilter("all");
                   setSearchQuery("");
                 }}
-                data-testid="button-back-to-departments"
+                data-testid="button-back-to-buildings"
               >
                 <ChevronLeft className="w-4 h-4 mr-2" />
-                Back to Departments
+                Back to Buildings
               </Button>
 
-              <div className="flex-1 min-w-64">
-                <Select value={buildingFilter} onValueChange={setBuildingFilter}>
-                  <SelectTrigger data-testid="select-building-filter">
-                    <SelectValue placeholder="Filter by building" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Buildings</SelectItem>
-                    {buildingsWithStaff.map(building => (
-                      <SelectItem key={building.id} value={building.id}>
-                        {building.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {searchQuery && (
+                <div className="flex-1 min-w-64">
+                  <Select value={buildingFilter} onValueChange={setBuildingFilter}>
+                    <SelectTrigger data-testid="select-building-filter">
+                      <SelectValue placeholder="Filter by building" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Buildings</SelectItem>
+                      {buildingsWithStaff.map(building => (
+                        <SelectItem key={building.id} value={building.id}>
+                          {building.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {viewMode === "departments" ? (
-          // DEPARTMENTS VIEW
+        {searchQuery ? (
+          // SEARCH RESULTS VIEW
+          <motion.div 
+            className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {filteredStaff.map((member) => (
+              <StaffCard 
+                key={member.id} 
+                member={member} 
+                onClick={() => setSelectedStaff(member)} 
+                getBuildingName={getBuildingName}
+              />
+            ))}
+          </motion.div>
+        ) : !selectedBuildingId ? (
+          // BUILDINGS VIEW
           <>
             {isLoading ? (
               <div className="grid lg:grid-cols-4 md:grid-cols-2 grid-cols-1 gap-4">
@@ -278,13 +304,11 @@ export default function StaffDirectory() {
                   <Card key={i} className="h-32 animate-pulse bg-muted" />
                 ))}
               </div>
-            ) : filteredDepartments.length === 0 ? (
+            ) : buildingsWithStaff.length === 0 ? (
               <div className="text-center py-16">
                 <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-medium text-foreground mb-2">No Departments Found</h3>
-                <p className="text-muted-foreground">
-                  {searchQuery ? "Try adjusting your search" : "No departments have been added yet"}
-                </p>
+                <h3 className="text-xl font-medium text-foreground mb-2">No Buildings with Staff</h3>
+                <p className="text-muted-foreground">No staff members have been added to any buildings yet.</p>
               </div>
             ) : (
               <motion.div 
@@ -293,70 +317,90 @@ export default function StaffDirectory() {
                 initial="hidden"
                 animate="visible"
               >
-                {filteredDepartments.map((dept) => (
-                  <motion.div key={dept.name} variants={itemVariants}>
-                    <Card
-                      className="p-6 hover-elevate active-elevate-2 cursor-pointer h-full"
-                      data-testid={`department-card-${dept.name}`}
-                      onClick={() => {
-                        setDepartmentFilter(dept.name!);
-                        setViewMode("staff");
-                        setSearchQuery("");
-                      }}
-                    >
-                      <div className="flex flex-col items-center justify-center text-center">
-                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                          <span className="text-2xl font-bold text-primary">{dept.count}</span>
+                {buildingsWithStaff.map((building) => {
+                  const buildingStaffCount = staff.filter(s => s.buildingId === building.id).length;
+                  return (
+                    <motion.div key={building.id} variants={itemVariants}>
+                      <Card
+                        className="p-6 hover-elevate active-elevate-2 cursor-pointer h-full"
+                        data-testid={`building-card-${building.id}`}
+                        onClick={() => setSelectedBuildingId(building.id)}
+                      >
+                        <div className="flex flex-col items-center justify-center text-center">
+                          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                            <MapPin className="w-8 h-8 text-primary" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-foreground mb-1">{building.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {buildingStaffCount} staff {buildingStaffCount === 1 ? "member" : "members"}
+                          </p>
+                          <ChevronRight className="w-5 h-5 text-muted-foreground mt-4" />
                         </div>
-                        <h3 className="text-lg font-semibold text-foreground mb-1">{dept.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {dept.count} staff {dept.count === 1 ? "member" : "members"}
-                        </p>
-                        <ChevronRight className="w-5 h-5 text-muted-foreground mt-4" />
-                      </div>
-                    </Card>
-                  </motion.div>
-                ))}
+                      </Card>
+                    </motion.div>
+                  );
+                })}
               </motion.div>
             )}
           </>
         ) : (
-          // STAFF VIEW
-          <>
-            {isLoading ? (
-              <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Card key={i} className="h-40 animate-pulse bg-muted" />
-                ))}
-              </div>
-            ) : filteredStaff.length === 0 ? (
-              <div className="text-center py-16">
-                <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-medium text-foreground mb-2">No Staff Found</h3>
-                <p className="text-muted-foreground">
-                  {searchQuery || buildingFilter !== "all"
-                    ? "Try adjusting your search filters"
-                    : "No staff members have been added yet"}
-                </p>
-              </div>
-            ) : (
-              <motion.div 
-                className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                {filteredStaff.map((member) => (
-                  <StaffCard 
-                    key={member.id} 
-                    member={member} 
-                    onClick={() => setSelectedStaff(member)} 
-                    getBuildingName={getBuildingName}
-                  />
-                ))}
-              </motion.div>
+          // DEPARTMENTS & STAFF IN BUILDING VIEW
+          <div className="space-y-8">
+            {departmentsInSelectedBuilding.length > 0 && (
+              <section>
+                <h2 className="text-xl font-semibold mb-4">Departments</h2>
+                <motion.div 
+                  className="grid lg:grid-cols-4 md:grid-cols-2 grid-cols-1 gap-4"
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  {departmentsInSelectedBuilding.map((dept) => (
+                    <motion.div key={dept.name} variants={itemVariants}>
+                      <Card
+                        className="p-6 hover-elevate active-elevate-2 cursor-pointer h-full"
+                        data-testid={`department-card-${dept.name}`}
+                        onClick={() => {
+                          setDepartmentFilter(dept.name!);
+                          setBuildingFilter(selectedBuildingId);
+                          setSearchQuery(dept.name!);
+                        }}
+                      >
+                        <div className="flex flex-col items-center justify-center text-center">
+                          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+                            <span className="text-lg font-bold text-primary">{dept.count}</span>
+                          </div>
+                          <h3 className="text-md font-semibold text-foreground">{dept.name}</h3>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground mt-2" />
+                        </div>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </section>
             )}
-          </>
+
+            {staffWithoutDepartment.length > 0 && (
+              <section>
+                <h2 className="text-xl font-semibold mb-4">Other Staff</h2>
+                <motion.div 
+                  className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4"
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  {staffWithoutDepartment.map((member) => (
+                    <StaffCard 
+                      key={member.id} 
+                      member={member} 
+                      onClick={() => setSelectedStaff(member)} 
+                      getBuildingName={getBuildingName}
+                    />
+                  ))}
+                </motion.div>
+              </section>
+            )}
+          </div>
         )}
       </main>
 
