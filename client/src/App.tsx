@@ -56,7 +56,7 @@ function Router() {
           <PageTransition><Landing /></PageTransition>
         </Route>
         <Route path="/navigation">
-          <PageTransition><Navigation /></PageTransition>
+          <Navigation />
         </Route>
         <Route path="/navigate/:routeId">
           {(params) => <PageTransition><MobileNavigation /></PageTransition>}

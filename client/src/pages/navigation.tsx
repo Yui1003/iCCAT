@@ -34,7 +34,6 @@ import { calculateETA, parseDistance } from "@/lib/eta-calculator";
 import { useLocation } from "wouter";
 
 export default function Navigation() {
-  // Return to home after 3 minutes of inactivity
   useGlobalInactivity();
   const { toast } = useToast();
   const [, navigate] = useLocation();
