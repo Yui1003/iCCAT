@@ -42,17 +42,19 @@ export default function About() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-card-border px-4 py-3 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto flex items-center gap-4">
-          <Link href="/">
-            <Button className="rounded-full bg-primary text-primary-foreground px-5 gap-1" data-testid="button-back">
-              <ChevronLeft className="w-5 h-5" />
-              Back
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">About iCCAT</h1>
-            <p className="text-sm text-muted-foreground">Learn about this kiosk system</p>
+      <header className="bg-card border-b border-card-border px-4 py-3 flex-shrink-0 sticky top-0 z-10">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link href="/">
+              <Button className="rounded-full bg-primary text-primary-foreground px-5 gap-1" data-testid="button-back">
+                <ChevronLeft className="w-5 h-5" />
+                Back
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">About iCCAT</h1>
+              <p className="text-sm text-muted-foreground">Learn about this kiosk system</p>
+            </div>
           </div>
         </div>
       </header>
