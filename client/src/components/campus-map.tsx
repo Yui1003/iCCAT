@@ -169,129 +169,118 @@ export default function CampusMap({
   const [currentZoom, setCurrentZoom] = useState(17.5);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressRef = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    const mapLoadStart = performance.now();
-    const L = window.L;
-    if (!L) {
-      console.error("Leaflet not loaded");
-      return;
-    }
-
-    const map = L.map(mapRef.current, {
-      center: [centerLat || 14.4025, centerLng || 120.8670],
-      zoom: 18.5,
-      minZoom: 17.5,
-      maxZoom: 21,
-      zoomControl: true,
-      attributionControl: true,
-      preferCanvas: true, // Better performance for multiple polygons
-      updateWhenIdle: false, // Update while panning
-      updateWhenZooming: true,
-      fadeAnimation: false, // Instant tile appearance
-      inertia: false, // More responsive for touch dragging
-      renderer: L.canvas({
-        padding: 1.5, // Buffer room for polygons during panning
-        tolerance: 5  // Improved click detection
-      })
-    });
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 21,
-      maxNativeZoom: 19,
-      detectRetina: true,
-      crossOrigin: true,
-      updateWhenIdle: false, 
-      updateWhenZooming: true,
-      keepBuffer: 8, // Significantly increased buffer for kiosk panning
-      updateInterval: 50 // Very frequent updates during panning
-    }).addTo(map);
-
-    mapInstanceRef.current = map;
-
+    const container = mapRef.current;
     const stableCenter: [number, number] = [centerLat || 14.4025, centerLng || 120.8670];
     const stableZoom = 18.5;
-    let initialStabilized = false;
+    let mapInitialized = false;
+    let cleaned = false;
 
-    const invalidateAndRecenter = () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize({ animate: false });
-        if (!initialStabilized) {
-          mapInstanceRef.current.setView(stableCenter, stableZoom, { animate: false });
-        }
+    setMapReady(false);
+
+    const initMap = () => {
+      if (mapInitialized || cleaned) return;
+      mapInitialized = true;
+
+      const mapLoadStart = performance.now();
+      const L = window.L;
+      if (!L) {
+        console.error("Leaflet not loaded");
+        return;
       }
+
+      const map = L.map(container, {
+        center: stableCenter,
+        zoom: stableZoom,
+        minZoom: 17.5,
+        maxZoom: 21,
+        zoomControl: true,
+        attributionControl: true,
+        preferCanvas: true,
+        updateWhenIdle: false,
+        updateWhenZooming: true,
+        fadeAnimation: false,
+        inertia: false,
+        renderer: L.canvas({
+          padding: 1.5,
+          tolerance: 5
+        })
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 21,
+        maxNativeZoom: 19,
+        detectRetina: true,
+        crossOrigin: true,
+        updateWhenIdle: false,
+        updateWhenZooming: true,
+        keepBuffer: 8,
+        updateInterval: 50
+      }).addTo(map);
+
+      mapInstanceRef.current = map;
+
+      map.invalidateSize({ animate: false });
+      map.setView(stableCenter, stableZoom, { animate: false });
+
+      map.whenReady(() => {
+        if (!cleaned && mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize({ animate: false });
+          mapInstanceRef.current.setView(stableCenter, stableZoom, { animate: false });
+          setMapReady(true);
+        }
+      });
+
+      const mapLoadDuration = performance.now() - mapLoadStart;
+      trackEvent(AnalyticsEventType.MAP_LOAD, Math.max(1, Math.round(mapLoadDuration)), {
+        action: 'campus_map_loaded',
+        buildingCount: buildings.length
+      });
     };
 
-    // Use ResizeObserver to handle dialog/container resize events
-    let resizeObserver: ResizeObserver | null = null;
-    try {
-      resizeObserver = new ResizeObserver(() => {
-        invalidateAndRecenter();
-      });
-      resizeObserver.observe(mapRef.current);
-    } catch (e) {
-      console.error("ResizeObserver not supported");
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (!mapInitialized && entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          initMap();
+        }
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }
+    });
+    resizeObserver.observe(container);
+
+    if (container.offsetWidth > 0 && container.offsetHeight > 0) {
+      initMap();
     }
 
-    // Invalidate size on initial load
-    invalidateAndRecenter();
-
-    // Also handle window resize
     const handleResize = () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.invalidateSize();
       }
     };
-    
     window.addEventListener('resize', handleResize);
 
-    // Use requestAnimationFrame for immediate next paint
-    requestAnimationFrame(() => {
-      invalidateAndRecenter();
-    });
-
-    // Trigger invalidateSize after minimal delays for fast tile rendering
-    const timeoutId1 = setTimeout(() => {
-      invalidateAndRecenter();
-    }, 75);
-
-    const timeoutId2 = setTimeout(() => {
-      invalidateAndRecenter();
-      initialStabilized = true;
-    }, 250);
-
-    // Track map load
-    const mapLoadDuration = performance.now() - mapLoadStart;
-    trackEvent(AnalyticsEventType.MAP_LOAD, Math.max(1, Math.round(mapLoadDuration)), {
-      action: 'campus_map_loaded',
-      buildingCount: buildings.length
-    });
-
-    // Disable context menu on the map for touchscreen kiosks
-    const mapContainer = mapRef.current;
     const disableContextMenu = (e: Event) => {
       e.preventDefault();
       return false;
     };
-    mapContainer.addEventListener('contextmenu', disableContextMenu);
+    container.addEventListener('contextmenu', disableContextMenu);
 
     return () => {
-      clearTimeout(timeoutId1);
-      clearTimeout(timeoutId2);
+      cleaned = true;
       window.removeEventListener('resize', handleResize);
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
+      resizeObserver.disconnect();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
-      if (mapContainer) {
-        mapContainer.removeEventListener('contextmenu', disableContextMenu);
-      }
+      container.removeEventListener('contextmenu', disableContextMenu);
     };
   }, [centerLat, centerLng]);
 
@@ -1051,5 +1040,12 @@ export default function CampusMap({
     pathsLayerRef.current = layerGroup;
   }, [existingPaths, pathsColor, onPathClick]);
 
-  return <div ref={mapRef} className={className} data-testid="map-container" />;
+  return (
+    <div
+      ref={mapRef}
+      className={className}
+      data-testid="map-container"
+      style={{ opacity: mapReady ? 1 : 0, transition: 'none' }}
+    />
+  );
 }
