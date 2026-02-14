@@ -212,13 +212,24 @@ export default function CampusMap({
 
     mapInstanceRef.current = map;
 
+    const stableCenter: [number, number] = [centerLat || 14.4025, centerLng || 120.8670];
+    const stableZoom = 18.5;
+    let initialStabilized = false;
+
+    const invalidateAndRecenter = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize({ animate: false });
+        if (!initialStabilized) {
+          mapInstanceRef.current.setView(stableCenter, stableZoom, { animate: false });
+        }
+      }
+    };
+
     // Use ResizeObserver to handle dialog/container resize events
     let resizeObserver: ResizeObserver | null = null;
     try {
       resizeObserver = new ResizeObserver(() => {
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.invalidateSize();
-        }
+        invalidateAndRecenter();
       });
       resizeObserver.observe(mapRef.current);
     } catch (e) {
@@ -226,7 +237,7 @@ export default function CampusMap({
     }
 
     // Invalidate size on initial load
-    map.invalidateSize();
+    invalidateAndRecenter();
 
     // Also handle window resize
     const handleResize = () => {
@@ -239,22 +250,17 @@ export default function CampusMap({
 
     // Use requestAnimationFrame for immediate next paint
     requestAnimationFrame(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-      }
+      invalidateAndRecenter();
     });
 
     // Trigger invalidateSize after minimal delays for fast tile rendering
     const timeoutId1 = setTimeout(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-      }
+      invalidateAndRecenter();
     }, 75);
 
     const timeoutId2 = setTimeout(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-      }
+      invalidateAndRecenter();
+      initialStabilized = true;
     }, 250);
 
     // Track map load
