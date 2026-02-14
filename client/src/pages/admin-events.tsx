@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,9 @@ import { ProxiedImage } from "@/components/proxied-image";
 import type { Event, InsertEvent, Building } from "@shared/schema";
 import { eventClassifications } from "@shared/schema";
 import { invalidateEndpointCache } from "@/lib/offline-data";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 export default function AdminEvents() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -239,25 +242,64 @@ export default function AdminEvents() {
 
                 <div>
                   <Label htmlFor="building">Event Location (Building)</Label>
-                  <Select
-                    value={formData.buildingId || "none"}
-                    onValueChange={(value) => setFormData({ 
-                      ...formData, 
-                      buildingId: value === "none" ? null : value 
-                    })}
-                  >
-                    <SelectTrigger data-testid="select-event-building">
-                      <SelectValue placeholder="Select a building" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[1002]">
-                      <SelectItem value="none">No specific building</SelectItem>
-                      {buildings.map((building) => (
-                        <SelectItem key={building.id} value={building.id}>
-                          {building.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between"
+                        data-testid="select-event-building"
+                      >
+                        {formData.buildingId 
+                          ? buildings.find(b => b.id === formData.buildingId)?.name 
+                          : "No specific building"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0 z-[1002]">
+                      <Command>
+                        <CommandInput placeholder="Search building..." />
+                        <CommandList>
+                          <CommandEmpty>No building found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="none"
+                              onSelect={() => {
+                                setFormData({ ...formData, buildingId: null });
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.buildingId === null ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              No specific building
+                            </CommandItem>
+                            {buildings
+                              .sort((a, b) => a.name.localeCompare(b.name))
+                              .map((building) => (
+                                <CommandItem
+                                  key={building.id}
+                                  value={building.name}
+                                  onSelect={() => {
+                                    setFormData({ ...formData, buildingId: building.id });
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      formData.buildingId === building.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {building.name}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <p className="text-xs text-muted-foreground mt-1">
                     Select if event is at a specific campus building (enables "Get Direction" button)
                   </p>
