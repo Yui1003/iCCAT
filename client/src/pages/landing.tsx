@@ -3,6 +3,7 @@ import { Map, Calendar, Users, Info, Clock, ClipboardList, HelpCircle } from "lu
 import { useEffect, useState } from "react";
 import { useHomeInactivity } from "@/hooks/use-inactivity";
 import logoImage from "@assets/logo.png";
+import campusBg from "@assets/image_1771059648368.png";
 import { Button } from "@/components/ui/button";
 import { Walkthrough, useWalkthrough } from "@/components/walkthrough";
 
@@ -39,8 +40,12 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-accent/10 flex flex-col">
-      <header className="p-6">
+    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-accent/10 flex flex-col relative">
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+        style={{ backgroundImage: `url(${campusBg})`, opacity: 0.3 }}
+      />
+      <header className="p-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -68,7 +73,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-6 pb-12">
+      <main className="flex-1 flex items-center justify-center px-6 pb-12 relative z-10">
         <div className="max-w-5xl w-full">
           <div className="text-center mb-12">
             <div className="flex items-center justify-center gap-2 mb-4">
