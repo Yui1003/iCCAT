@@ -277,6 +277,7 @@ export default function AdminEvents() {
                               No specific building
                             </CommandItem>
                             {buildings
+                              .slice()
                               .sort((a, b) => a.name.localeCompare(b.name))
                               .map((building) => (
                                 <CommandItem
