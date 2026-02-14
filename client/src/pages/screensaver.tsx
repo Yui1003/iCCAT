@@ -383,21 +383,16 @@ export default function Screensaver() {
                       {item.classification !== "Achievement" && item.date && (() => {
                         const eventDate = parseEventDate(item.date);
                         return eventDate ? (
-                          <p className="text-sm text-white/80 mb-2">
+                          <p className="text-sm text-white/80">
                             {format(eventDate, "MMMM d, yyyy")}
                             {item.time && ` • ${item.time}`}
                           </p>
                         ) : null;
                       })()}
 
-                      {/* Description */}
-                      <p className="text-sm text-white/70 line-clamp-3 mb-3">
-                        {item.description}
-                      </p>
-
                       {/* Location */}
                       {item.location && (
-                        <p className="text-xs text-white/60">📍 {item.location}</p>
+                        <p className="text-xs text-white/60 mt-2">📍 {item.location}</p>
                       )}
                     </div>
                   </div>
