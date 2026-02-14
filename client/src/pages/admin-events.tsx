@@ -321,7 +321,7 @@ export default function AdminEvents() {
 
                 <ImageUploadInput
                   label="Event Photo"
-                  value={formData.image}
+                  value={formData.image || ""}
                   onChange={(url) => setFormData({ ...formData, image: url })}
                   type="event"
                   id={editingEvent?.id || 'new'}
