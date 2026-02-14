@@ -228,13 +228,13 @@ export default function CampusMap({
       map.invalidateSize({ animate: false });
       map.setView(stableCenter, stableZoom, { animate: false });
 
-      map.whenReady(() => {
+      setTimeout(() => {
         if (!cleaned && mapInstanceRef.current) {
           mapInstanceRef.current.invalidateSize({ animate: false });
           mapInstanceRef.current.setView(stableCenter, stableZoom, { animate: false });
           setMapReady(true);
         }
-      });
+      }, 50);
 
       const mapLoadDuration = performance.now() - mapLoadStart;
       trackEvent(AnalyticsEventType.MAP_LOAD, Math.max(1, Math.round(mapLoadDuration)), {
