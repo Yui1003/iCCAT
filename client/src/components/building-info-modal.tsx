@@ -177,11 +177,11 @@ export default function BuildingInfoModal({
                   <div className="embla__container flex">
                     {allPhotos.map((photo, index) => (
                       <div className="embla__slide flex-[0_0_100%] min-w-0" key={index}>
-                        <div className="flex items-center justify-center">
+                        <div className="w-full h-[280px]">
                           <ProxiedImage
                             src={photo}
                             alt={`${building.name} - Photo ${index + 1}`}
-                            className="w-full h-auto object-contain max-h-[min(60vh,400px)]"
+                            className="w-full h-full object-cover rounded-lg"
                           />
                         </div>
                       </div>

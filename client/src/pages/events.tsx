@@ -396,11 +396,11 @@ export default function Events() {
 
             <div className="p-6">
               {selectedEvent.image && (
-                <div className="w-full mb-6 rounded-lg bg-muted flex items-center justify-center">
+                <div className="w-full h-[300px] mb-6 rounded-lg bg-muted overflow-hidden">
                   <ProxiedImage
                     src={selectedEvent.image}
                     alt={selectedEvent.title}
-                    className="w-full h-auto object-contain max-h-[min(60vh,500px)]"
+                    className="w-full h-full object-cover"
                   />
                 </div>
               )}
