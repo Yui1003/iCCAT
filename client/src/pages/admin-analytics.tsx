@@ -46,6 +46,8 @@ export default function AdminAnalytics() {
   const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteAllConfirm, setDeleteAllConfirm] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
   const { toast } = useToast();
 
   // Initialize device ID from IP address
@@ -229,6 +231,35 @@ export default function AdminAnalytics() {
       });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteAllDevices = async () => {
+    setIsDeletingAll(true);
+    try {
+      const response = await fetch('/api/analytics/kiosk-uptime', {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete all device records');
+      }
+
+      setDeleteAllConfirm(false);
+      setKioskUptimes([]);
+      toast({
+        title: "Success",
+        description: "All kiosk device records deleted successfully"
+      });
+    } catch (error) {
+      console.error('Error deleting all devices:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete all device records",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
@@ -686,7 +717,42 @@ export default function AdminAnalytics() {
                 {/* Other Devices */}
                 {otherDevices.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-4">Other Kiosk Devices ({otherDevices.length})</h4>
+                    <div className="flex items-center justify-between gap-2 mb-4">
+                      <h4 className="text-sm font-semibold text-foreground">Other Kiosk Devices ({otherDevices.length})</h4>
+                      {deleteAllConfirm ? (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={handleDeleteAllDevices}
+                            disabled={isDeletingAll}
+                            data-testid="button-confirm-delete-all-devices"
+                          >
+                            {isDeletingAll ? 'Deleting...' : 'Confirm Delete All'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setDeleteAllConfirm(false)}
+                            disabled={isDeletingAll}
+                            data-testid="button-cancel-delete-all-devices"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setDeleteAllConfirm(true)}
+                          data-testid="button-delete-all-devices"
+                          className="gap-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete All
+                        </Button>
+                      )}
+                    </div>
                     <div className="grid gap-3">
                       {otherDevices.map((device) => (
                         <Card key={device.id} className="p-4 hover-elevate active-elevate-2">

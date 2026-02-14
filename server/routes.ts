@@ -354,13 +354,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.delete('/api/feedback/clear-all', async (req, res) => {
-    // Security: Only allow from localhost/admin (testing environment only)
-    const isLocalhost = req.hostname === 'localhost' || req.hostname === '127.0.0.1' || req.ip === '127.0.0.1' || req.ip === '::1';
-    
-    if (!isLocalhost) {
-      return res.status(403).json({ error: 'This operation is only allowed from localhost for testing purposes' });
-    }
-    
     try {
       await storage.clearAllFeedback();
       res.json({ success: true, message: 'All feedback records have been deleted' });
@@ -402,16 +395,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             second: '2-digit',
             hour12: true
           }),
-          'User #': f.userId,
-          'Functional Suitability': f.avgFunctionalSuitability.toFixed(2),
-          'Performance Efficiency': f.avgPerformanceEfficiency.toFixed(2),
-          'Compatibility': f.avgCompatibility.toFixed(2),
-          'Usability': f.avgUsability.toFixed(2),
-          'Reliability': f.avgReliability.toFixed(2),
-          'Security': f.avgSecurity.toFixed(2),
-          'Maintainability': f.avgMaintainability.toFixed(2),
-          'Portability': f.avgPortability.toFixed(2),
-          'UX Items': f.avgUxItems.toFixed(2),
+          'User #': f.userId ?? '',
+          'Functional Suitability': (f.avgFunctionalSuitability ?? 0).toFixed(2),
+          'Performance Efficiency': (f.avgPerformanceEfficiency ?? 0).toFixed(2),
+          'Compatibility': (f.avgCompatibility ?? 0).toFixed(2),
+          'Usability': (f.avgUsability ?? 0).toFixed(2),
+          'Reliability': (f.avgReliability ?? 0).toFixed(2),
+          'Security': (f.avgSecurity ?? 0).toFixed(2),
+          'Maintainability': (f.avgMaintainability ?? 0).toFixed(2),
+          'Portability': (f.avgPortability ?? 0).toFixed(2),
+          'UX Items': (f.avgUxItems ?? 0).toFixed(2),
           'Comments': f.comments || ''
         };
       });
