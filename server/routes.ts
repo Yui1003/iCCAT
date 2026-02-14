@@ -370,17 +370,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Format data for Excel
       const excelData = feedbacks.map((f) => {
-        // Parse timestamp - handle both Date objects and strings
         let timestampDate: Date;
-        if (f.timestamp instanceof Date) {
-          timestampDate = f.timestamp;
-        } else if (typeof f.timestamp === 'string') {
-          timestampDate = new Date(f.timestamp);
+        const ts = f.timestamp as any;
+        if (ts && typeof ts.toDate === 'function') {
+          timestampDate = ts.toDate();
+        } else if (ts && ts._seconds !== undefined) {
+          timestampDate = new Date(ts._seconds * 1000);
+        } else if (ts instanceof Date) {
+          timestampDate = ts;
+        } else if (typeof ts === 'string') {
+          timestampDate = new Date(ts);
         } else {
           timestampDate = new Date();
         }
         
-        // Ensure we have a valid date
         if (isNaN(timestampDate.getTime())) {
           timestampDate = new Date();
         }
