@@ -215,11 +215,11 @@ export function CalendarView({ events, onEventSelect }: CalendarViewProps) {
                           >
                             <Card className="w-full h-full flex flex-col overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all">
                               {event.image ? (
-                                <div className="w-full h-48 bg-muted overflow-hidden flex items-center justify-center">
+                                <div className="w-full overflow-hidden">
                                   <ProxiedImage
                                     src={event.image}
                                     alt={event.title}
-                                    className="w-full h-full object-contain"
+                                    className="w-full h-auto"
                                   />
                                 </div>
                               ) : (

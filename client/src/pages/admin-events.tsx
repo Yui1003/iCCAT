@@ -373,8 +373,8 @@ export default function AdminEvents() {
               filteredEvents.map((event) => (
                 <Card key={event.id} className="flex flex-col overflow-hidden" data-testid={`event-item-${event.id}`}>
                   {event.image ? (
-                    <div className="w-full aspect-[4/3] bg-muted flex items-center justify-center">
-                      <ProxiedImage src={event.image} alt={event.title} className="w-full h-full object-contain" />
+                    <div className="w-full overflow-hidden">
+                      <ProxiedImage src={event.image} alt={event.title} className="w-full h-auto" />
                     </div>
                   ) : (
                     <div className="w-full aspect-[4/3] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
