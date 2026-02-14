@@ -389,22 +389,18 @@ export default function CampusMap({
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     
-    const defaultLat = 14.4025;
-    const defaultLng = 120.8670;
+    const defaultLat = 14.402870;
+    const defaultLng = 120.8640;
     const lat = centerLat || defaultLat;
     const lng = centerLng || defaultLng;
     
-    // Only set view if it's significantly different from current to avoid unnecessary jumping/animation
-    // This prevents the initial "bounce" when props match initial state
     const currentCenter = mapInstanceRef.current.getCenter();
-    const currentZoom = mapInstanceRef.current.getZoom();
     const latDiff = Math.abs(currentCenter.lat - lat);
     const lngDiff = Math.abs(currentCenter.lng - lng);
-    const zoomDiff = Math.abs(currentZoom - 18.5);
 
-    if (latDiff > 0.0001 || lngDiff > 0.0001 || zoomDiff > 0.1) {
-      mapInstanceRef.current.setView([lat, lng], 18.5, {
-        animate: false // Disable animation for direct view changes
+    if (latDiff > 0.0001 || lngDiff > 0.0001) {
+      mapInstanceRef.current.setView([lat, lng], 17.5, {
+        animate: false
       });
     }
   }, [centerLat, centerLng]);
@@ -835,7 +831,7 @@ export default function CampusMap({
       const lat = centerLat || defaultLat;
       const lng = centerLng || defaultLng;
       
-      mapInstanceRef.current.setView([lat, lng], 17.5);
+      mapInstanceRef.current.setView([lat, lng], 17.5, { animate: false });
     }
   }, [routePolyline, routeMode, routePhases, parkingLocation, centerLat, centerLng]);
 
