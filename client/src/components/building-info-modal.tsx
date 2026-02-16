@@ -170,7 +170,8 @@ export default function BuildingInfoModal({
             )}
           </TabsList>
 
-          <TabsContent value="overview" className="p-6">
+          <div className="max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 touch-pan-y">
+            <TabsContent value="overview" className="p-6 m-0">
             {allPhotos.length > 0 && (
               <div className="relative w-full mb-4 rounded-lg bg-muted overflow-hidden">
                 <div className="embla overflow-hidden" ref={emblaRef}>
@@ -256,7 +257,7 @@ export default function BuildingInfoModal({
           </TabsContent>
 
           {!isDescriptionOnly(building.type as any) && (
-            <TabsContent value="staff" className="p-6">
+            <TabsContent value="staff" className="p-6 m-0">
               <div className="space-y-3">
                 {staff.length > 0 ? (
                   staff.map((member) => (
@@ -298,7 +299,7 @@ export default function BuildingInfoModal({
           )}
 
           {canHaveFloorPlan(building.type as any) && (
-            <TabsContent value="floors" className="p-6">
+            <TabsContent value="floors" className="p-6 m-0">
               <div className="space-y-3">
                 {floors.length > 0 ? (
                   floors.map((floor) => (
