@@ -325,14 +325,14 @@ export default function AdminStaff() {
                   </div>
                 </div>
 
-                <ImageUploadInput
-                  label="Staff Photo"
-                  value={formData.photo || ""}
-                  onChange={(url) => setFormData({ ...formData, photo: url })}
-                  type="staff"
-                  id={editingStaff?.id || 'new'}
-                  testId="staff-photo"
-                />
+                  <ImageUploadInput
+                    label="Staff Photo"
+                    value={(formData.photo as string) || ""}
+                    onChange={(url) => setFormData({ ...formData, photo: url })}
+                    type="staff"
+                    id={editingStaff?.id || 'new'}
+                    testId="staff-photo"
+                  />
 
                 <div className="flex gap-3 justify-end">
                   <Button
