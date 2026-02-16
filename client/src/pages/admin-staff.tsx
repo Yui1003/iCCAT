@@ -129,6 +129,11 @@ export default function AdminStaff() {
     )
   ).sort();
 
+  const staffAllowedBuildings = useMemo(() => 
+    buildings.filter(b => canHaveStaff(b.type as any)),
+    [buildings]
+  );
+
   const buildingsWithStaff = useMemo(() => {
     return buildings
       .filter(building => staff.some(member => member.buildingId === building.id))
@@ -343,7 +348,7 @@ export default function AdminStaff() {
 
                   <ImageUploadInput
                     label="Staff Photo"
-                    value={(formData.photo as any) || ""}
+                    value={(typeof formData.photo === 'string' ? formData.photo : "") || ""}
                     onChange={(url) => setFormData({ ...formData, photo: url })}
                     type="staff"
                     id={editingStaff?.id || 'new'}
@@ -431,12 +436,15 @@ export default function AdminStaff() {
             {filteredStaff.map((member) => (
               <Card key={member.id} className="p-6 hover-elevate group">
                 <div className="flex items-start gap-4">
-                  <Avatar className="w-16 h-16">
-                    <AvatarImage src={(member.photo as string) || undefined} alt={member.name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {member.name ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2) : "???"}
-                    </AvatarFallback>
-                  </Avatar>
+                    <Avatar className="w-16 h-16">
+                      {member.photo ? (
+                        <AvatarImage src={member.photo} alt={member.name} />
+                      ) : (
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {member.name ? member.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2) : "???"}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-lg truncate">{member.name}</h3>
                     {member.position && <p className="text-sm text-muted-foreground truncate">{member.position}</p>}
@@ -529,12 +537,15 @@ export default function AdminStaff() {
                   {staffWithoutDepartment.map((member) => (
                     <Card key={member.id} className="p-6 hover-elevate group">
                       <div className="flex items-start gap-4">
-                        <Avatar className="w-16 h-16">
-                          <AvatarImage src={(member.photo as string) || undefined} alt={member.name} />
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            {member.name ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2) : "???"}
-                          </AvatarFallback>
-                        </Avatar>
+                    <Avatar className="w-16 h-16">
+                      {member.photo ? (
+                        <AvatarImage src={member.photo} alt={member.name} />
+                      ) : (
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {member.name ? member.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2) : "???"}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-bold text-lg truncate">{member.name}</h3>
                           {member.position && <p className="text-sm text-muted-foreground truncate">{member.position}</p>}
@@ -575,12 +586,15 @@ export default function AdminStaff() {
             {staffInSelectedDepartment.map((member) => (
               <Card key={member.id} className="p-6 hover-elevate group">
                 <div className="flex items-start gap-4">
-                  <Avatar className="w-16 h-16">
-                    <AvatarImage src={(member.photo as string) || undefined} alt={member.name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {member.name ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2) : "???"}
-                    </AvatarFallback>
-                  </Avatar>
+                    <Avatar className="w-16 h-16">
+                      {member.photo ? (
+                        <AvatarImage src={member.photo} alt={member.name} />
+                      ) : (
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {member.name ? member.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2) : "???"}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-lg truncate">{member.name}</h3>
                     {member.position && <p className="text-sm text-muted-foreground truncate">{member.position}</p>}
