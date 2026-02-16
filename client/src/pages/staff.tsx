@@ -169,7 +169,8 @@ export default function StaffDirectory() {
   );
 
   const staffInSelectedBuilding = useMemo(() => 
-    staff.filter(s => s.buildingId === selectedBuildingId),
+    [...staff].filter(s => s.buildingId === selectedBuildingId)
+      .sort((a, b) => a.name.localeCompare(b.name)),
     [staff, selectedBuildingId]
   );
 

@@ -150,7 +150,10 @@ export default function AdminStaff() {
   const groupedStaff = useMemo(() => {
     const grouped: Record<string, Record<string, Staff[]>> = {};
 
-    filteredStaff.forEach(member => {
+    // Sort filtered staff by name first to ensure members are alphabetical within their department
+    const sortedMembers = [...filteredStaff].sort((a, b) => a.name.localeCompare(b.name));
+
+    sortedMembers.forEach(member => {
       const building = buildings.find(b => b.id === member.buildingId);
       const buildingName = building?.name || "Other";
       const departmentName = member.department || "Other";
