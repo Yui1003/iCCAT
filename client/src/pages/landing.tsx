@@ -77,7 +77,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-6 pb-4 relative z-10">
+      <main className="flex-1 flex items-center justify-center px-6 pb-20 relative z-10 -mt-16">
         <div className="max-w-5xl w-full">
           <div className="text-center mb-6">
             <div className="flex items-center justify-center mb-4">
