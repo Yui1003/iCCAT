@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Users as UsersIcon, Search, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Pencil, Trash2, Users as UsersIcon, Search, Check, ChevronsUpDown, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -131,11 +131,11 @@ export default function AdminStaff() {
   // Filter staff based on search query
   const filteredStaff = useMemo(() => {
     if (!searchQuery.trim()) return staff;
-    
+
     const query = searchQuery.toLowerCase();
     return staff.filter((member) => {
       const building = buildings.find(b => b.id === member.buildingId);
-      
+
       return (
         member.name.toLowerCase().includes(query) ||
         member.position?.toLowerCase().includes(query) ||
@@ -146,6 +146,26 @@ export default function AdminStaff() {
       );
     });
   }, [staff, buildings, searchQuery]);
+
+  const groupedStaff = useMemo(() => {
+    const grouped: Record<string, Record<string, Staff[]>> = {};
+
+    filteredStaff.forEach(member => {
+      const building = buildings.find(b => b.id === member.buildingId);
+      const buildingName = building?.name || "Other";
+      const departmentName = member.department || "Other";
+
+      if (!grouped[buildingName]) {
+        grouped[buildingName] = {};
+      }
+      if (!grouped[buildingName][departmentName]) {
+        grouped[buildingName][departmentName] = [];
+      }
+      grouped[buildingName][departmentName].push(member);
+    });
+
+    return grouped;
+  }, [filteredStaff, buildings]);
 
   return (
     <AdminLayout>
@@ -336,92 +356,119 @@ export default function AdminStaff() {
           </Dialog>
         </div>
 
-        <Card className="p-6">
-          <div className="mb-6 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search staff by name, position, department, building, email, or phone..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-              data-testid="input-staff-search"
-            />
-          </div>
+        <div className="mb-6 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search staff by name, position, department, building, email, or phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+            data-testid="input-staff-search"
+          />
+        </div>
 
-          {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
-              ))}
-            </div>
-          ) : staff.length === 0 ? (
-            <div className="text-center py-16">
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
+            ))}
+          </div>
+        ) : staff.length === 0 ? (
+          <Card className="p-16">
+            <div className="text-center">
               <UsersIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-medium text-foreground mb-2">No Staff Members</h3>
               <p className="text-muted-foreground">Add your first staff member to get started</p>
             </div>
-          ) : filteredStaff.length === 0 ? (
-            <div className="text-center py-16">
+          </Card>
+        ) : Object.keys(groupedStaff).length === 0 ? (
+          <Card className="p-16">
+            <div className="text-center">
               <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-medium text-foreground mb-2">No Results Found</h3>
               <p className="text-muted-foreground">No staff members match your search criteria</p>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredStaff.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover-elevate"
-                  data-testid={`staff-item-${member.id}`}
-                >
-                  <div className="flex items-center gap-4 flex-1">
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={(member.photo as string) || undefined} alt={member.name} />
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        {member.name ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2) : "???"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-foreground">{member.name}</h3>
-                      <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                        {member.position && <span>{member.position}</span>}
-                        {member.department && (
-                          <>
-                            {member.position && <span>•</span>}
-                            <span>{member.department}</span>
-                          </>
-                        )}
-                      </div>
-                      <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                        {member.email && <span>{member.email}</span>}
-                        {member.phone && <span>{member.phone}</span>}
+          </Card>
+        ) : (
+          <div className="space-y-12">
+            {Object.entries(groupedStaff).sort(([a], [b]) => a.localeCompare(b)).map(([buildingName, departments]) => (
+              <div key={buildingName} className="space-y-6">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <Building2 className="w-6 h-6 text-primary" />
+                  <h2 className="text-2xl font-bold text-foreground">{buildingName}</h2>
+                </div>
+                
+                <div className="space-y-8 pl-4">
+                  {Object.entries(departments).sort(([a], [b]) => a.localeCompare(b)).map(([deptName, members]) => (
+                    <div key={deptName} className="space-y-4">
+                      <h3 className="text-lg font-semibold text-muted-foreground flex items-center gap-2">
+                        <span className="w-2 h-2 bg-primary rounded-full" />
+                        {deptName}
+                      </h3>
+                      <div className="grid gap-4">
+                        {members.map((member) => (
+                          <div
+                            key={member.id}
+                            className="flex items-center justify-between p-4 bg-card border border-card-border rounded-lg hover-elevate transition-all"
+                            data-testid={`staff-item-${member.id}`}
+                          >
+                            <div className="flex items-center gap-4 flex-1">
+                              <Avatar className="w-12 h-12">
+                                <AvatarImage src={(member.photo as string) || undefined} alt={member.name} />
+                                <AvatarFallback className="bg-primary text-primary-foreground">
+                                  {member.name ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2) : "???"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <h3 className="font-medium text-foreground">{member.name}</h3>
+                                <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                                  {member.position && <span>{member.position}</span>}
+                                  {member.department && (
+                                    <>
+                                      {member.position && <span>•</span>}
+                                      <span>{member.department}</span>
+                                    </>
+                                  )}
+                                </div>
+                                <div className="flex gap-4 text-sm text-muted-foreground mt-1">
+                                  {member.email && <span>{member.email}</span>}
+                                  {member.phone && <span>{member.phone}</span>}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleOpenDialog(member)}
+                                data-testid={`button-edit-${member.id}`}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => {
+                                  if (confirm("Are you sure you want to delete this staff member?")) {
+                                    deleteMutation.mutate(member.id);
+                                  }
+                                }}
+                                data-testid={`button-delete-${member.id}`}
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleOpenDialog(member)}
-                      data-testid={`button-edit-${member.id}`}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => deleteMutation.mutate(member.id)}
-                      data-testid={`button-delete-${member.id}`}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </Card>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
