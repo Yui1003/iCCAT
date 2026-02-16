@@ -348,7 +348,7 @@ export default function AdminStaff() {
 
                   <ImageUploadInput
                     label="Staff Photo"
-                    value={(typeof formData.photo === 'string' ? formData.photo : "") || ""}
+                    value={typeof formData.photo === 'string' ? formData.photo : ""}
                     onChange={(url) => setFormData({ ...formData, photo: url })}
                     type="staff"
                     id={editingStaff?.id || 'new'}
