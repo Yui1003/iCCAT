@@ -2,8 +2,9 @@ import { Link } from "wouter";
 import { Map, Calendar, Users, Info, ClipboardList, HelpCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useHomeInactivity } from "@/hooks/use-inactivity";
-import logoImage from "@assets/logo.png";
-import campusBg from "/assets/homepage-bg.png";
+// Use a direct path for the background image to allow simple file replacement in the public directory
+const campusBg = "/assets/homepage-bg.png";
+
 import { Button } from "@/components/ui/button";
 import { Walkthrough, useWalkthrough } from "@/components/walkthrough";
 
