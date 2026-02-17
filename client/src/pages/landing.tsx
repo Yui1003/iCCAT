@@ -57,7 +57,7 @@ export default function Landing() {
 
   const isDaytime = useMemo(() => {
     const hours = currentTime.getHours();
-    return hours >= 6 && hours < 18;
+    return hours >= 5 && hours < 18;
   }, [currentTime]);
 
   const textColorClass = isDaytime ? "text-black" : "text-white";
