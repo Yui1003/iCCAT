@@ -55,6 +55,20 @@ export default function Landing() {
     };
   }, [currentTime]);
 
+  const isDaytime = useMemo(() => {
+    const hours = currentTime.getHours();
+    return hours >= 6 && hours < 18;
+  }, [currentTime]);
+
+  const textColorClass = isDaytime ? "text-black" : "text-white";
+  const textShadowClass = isDaytime 
+    ? "[text-shadow:_-1px_-1px_0_#fff,_1px_-1px_0_#fff,_-1px_1px_0_#fff,_1px_1px_0_#fff]" 
+    : "[text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]";
+  
+  const secondaryTextShadowClass = isDaytime
+    ? "[text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]"
+    : "[text-shadow:_-0.5px_-0.5px_0_#000,_0.5px_-0.5px_0_#000,_-0.5px_0.5px_0_#000,_0.5px_0.5px_0_#000]";
+
   // Activate screensaver after 30 seconds of inactivity
   useHomeInactivity();
 
@@ -115,8 +129,8 @@ export default function Landing() {
                 data-testid="img-logo"
               />
               <div>
-                <h1 className="text-3xl font-bold text-black [text-shadow:_-1px_-1px_0_#fff,_1px_-1px_0_#fff,_-1px_1px_0_#fff,_1px_1px_0_#fff]">iCCAT</h1>
-                <p className="text-sm text-black font-bold [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]">Interactive Campus Companion & Assistance Terminal</p>
+                <h1 className={`text-3xl font-bold ${textColorClass} ${textShadowClass}`}>iCCAT</h1>
+                <p className={`text-sm ${textColorClass} font-bold ${secondaryTextShadowClass}`}>Interactive Campus Companion & Assistance Terminal</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -127,7 +141,7 @@ export default function Landing() {
                   e.stopPropagation();
                   openWalkthrough();
                 }}
-                className="relative flex items-center gap-2 bg-white/10 backdrop-blur-md border-white/20 text-white font-bold pointer-events-auto shadow-xl hover:bg-white/20 cursor-pointer z-[100]"
+                className={`relative flex items-center gap-2 bg-white/10 backdrop-blur-md border-white/20 ${isDaytime ? 'text-black shadow-black/10' : 'text-white shadow-white/10'} font-bold pointer-events-auto shadow-xl hover:bg-white/20 cursor-pointer z-[100]`}
                 data-testid="button-help-guide"
               >
                 <HelpCircle className="w-5 h-5" />
@@ -142,12 +156,12 @@ export default function Landing() {
         <div className="max-w-5xl w-full">
           <div className="text-center mb-6">
             <div className="flex items-center justify-center mb-4">
-              <div className="text-lg text-black font-bold [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]">{formatDate(currentTime)}</div>
+              <div className={`text-lg ${textColorClass} font-bold ${secondaryTextShadowClass}`}>{formatDate(currentTime)}</div>
             </div>
-            <div className="text-5xl font-bold text-black mb-2 [text-shadow:_-1px_-1px_0_#fff,_1px_-1px_0_#fff,_-1px_1px_0_#fff,_1px_1px_0_#fff]" data-testid="text-time">
+            <div className={`text-5xl font-bold ${textColorClass} mb-2 ${textShadowClass}`} data-testid="text-time">
               {formatTime(currentTime)}
             </div>
-            <p className="text-xl text-black font-semibold [text-shadow:_-1px_-1px_0_#fff,_1px_-1px_0_#fff,_-1px_1px_0_#fff,_1px_1px_0_#fff]">
+            <p className={`text-xl ${textColorClass} font-semibold ${textShadowClass}`}>
               Welcome to Cavite State University CCAT Campus
             </p>
           </div>
@@ -160,11 +174,11 @@ export default function Landing() {
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
-                    <Map className="w-10 h-10 text-primary drop-shadow-[0_0_1px_rgba(0,0,0,1)]" />
+                    <Map className={`w-10 h-10 text-primary ${isDaytime ? 'drop-shadow-[0_0_1px_rgba(255,255,255,1)]' : 'drop-shadow-[0_0_1px_rgba(0,0,0,1)]'}`} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white mb-1 [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Campus Navigation</h2>
-                    <p className="text-white font-medium [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Find your way around campus with turn-by-turn directions</p>
+                    <h2 className={`text-xl font-semibold ${textColorClass} mb-1 ${textShadowClass}`}>Campus Navigation</h2>
+                    <p className={`${textColorClass} font-medium ${textShadowClass}`}>Find your way around campus with turn-by-turn directions</p>
                   </div>
                 </div>
               </button>
@@ -177,11 +191,11 @@ export default function Landing() {
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
-                    <Calendar className="w-10 h-10 text-primary drop-shadow-[0_0_1px_rgba(0,0,0,1)]" />
+                    <Calendar className={`w-10 h-10 text-primary ${isDaytime ? 'drop-shadow-[0_0_1px_rgba(255,255,255,1)]' : 'drop-shadow-[0_0_1px_rgba(0,0,0,1)]'}`} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white mb-1 [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Events & Announcements</h2>
-                    <p className="text-white font-medium [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Stay updated with campus activities and important notices</p>
+                    <h2 className={`text-xl font-semibold ${textColorClass} mb-1 ${textShadowClass}`}>Events & Announcements</h2>
+                    <p className={`${textColorClass} font-medium ${textShadowClass}`}>Stay updated with campus activities and important notices</p>
                   </div>
                 </div>
               </button>
@@ -194,11 +208,11 @@ export default function Landing() {
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
-                    <Users className="w-10 h-10 text-primary drop-shadow-[0_0_1px_rgba(0,0,0,1)]" />
+                    <Users className={`w-10 h-10 text-primary ${isDaytime ? 'drop-shadow-[0_0_1px_rgba(255,255,255,1)]' : 'drop-shadow-[0_0_1px_rgba(0,0,0,1)]'}`} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white mb-1 [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Staff Finder</h2>
-                    <p className="text-white font-medium [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Locate faculty and staff members across campus</p>
+                    <h2 className={`text-xl font-semibold ${textColorClass} mb-1 ${textShadowClass}`}>Staff Finder</h2>
+                    <p className={`${textColorClass} font-medium ${textShadowClass}`}>Locate faculty and staff members across campus</p>
                   </div>
                 </div>
               </button>
@@ -211,11 +225,11 @@ export default function Landing() {
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
-                    <Info className="w-10 h-10 text-primary drop-shadow-[0_0_1px_rgba(0,0,0,1)]" />
+                    <Info className={`w-10 h-10 text-primary ${isDaytime ? 'drop-shadow-[0_0_1px_rgba(255,255,255,1)]' : 'drop-shadow-[0_0_1px_rgba(0,0,0,1)]'}`} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white mb-1 [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">About the Kiosk</h2>
-                    <p className="text-white font-medium [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Learn more about this information system</p>
+                    <h2 className={`text-xl font-semibold ${textColorClass} mb-1 ${textShadowClass}`}>About the Kiosk</h2>
+                    <p className={`${textColorClass} font-medium ${textShadowClass}`}>Learn more about this information system</p>
                   </div>
                 </div>
               </button>
@@ -238,8 +252,8 @@ export default function Landing() {
                 </button>
               </Link>
             </div>
-            <div className="text-xs text-foreground/70" data-testid="text-version">
-              version:2.8.0
+            <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
+              version:2.8.1
             </div>
           </div>
         </div>
