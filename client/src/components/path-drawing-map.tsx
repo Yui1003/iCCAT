@@ -60,36 +60,29 @@ export default function PathDrawingMap({
   const hasInitializedBoundsRef = useRef(false);
   const [isDrawing, setIsDrawing] = useState(true);
 
-  // Handle live preview line
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L || !isDrawing) return;
 
     const L = window.L;
     const map = mapInstanceRef.current;
 
-    const handleMouseMove = (e: any) => {
+    const updatePreview = (latlng: any) => {
       if (nodes.length === 0) return;
 
       const lastNode = nodes[nodes.length - 1];
-      let cursorLatLng = e.latlng;
+      let cursorLatLng = latlng;
 
       if (polarTracking && nodes.length > 0) {
-        // Calculate angle between last node and current cursor position
-        // In Leaflet, y is lat and x is lng
         const dy = cursorLatLng.lat - lastNode.lat;
         const dx = cursorLatLng.lng - lastNode.lng;
         
-        // angle in radians
         let angle = Math.atan2(dy, dx);
-        // angle in degrees (0 to 360)
         let angleDeg = (angle * 180) / Math.PI;
         if (angleDeg < 0) angleDeg += 360;
 
-        // Snap to increment
         const snappedAngleDeg = Math.round(angleDeg / polarIncrement) * polarIncrement;
         const snappedAngleRad = (snappedAngleDeg * Math.PI) / 180;
 
-        // Calculate distance to maintain zoom-appropriate distance
         const distance = Math.sqrt(dx * dx + dy * dy);
         
         cursorLatLng = L.latLng(
@@ -111,6 +104,16 @@ export default function PathDrawingMap({
       }
     };
 
+    const handleMouseMove = (e: any) => {
+      map._lastMousePos = e.latlng;
+      updatePreview(e.latlng);
+    };
+
+    // If polarTracking or polarIncrement changed, refresh preview immediately
+    if (map._lastMousePos) {
+      updatePreview(map._lastMousePos);
+    }
+
     map.on('mousemove', handleMouseMove);
 
     return () => {
@@ -120,7 +123,7 @@ export default function PathDrawingMap({
         previewLineRef.current = null;
       }
     };
-  }, [nodes, isDrawing]);
+  }, [nodes, isDrawing, polarTracking, polarIncrement]);
 
   useEffect(() => {
     if (!mapRef.current) return;

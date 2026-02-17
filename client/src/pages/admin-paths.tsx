@@ -197,7 +197,7 @@ export default function AdminPaths() {
                 Add Path
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingPath ? 'Edit' : 'Add'} {activeTab === "walkpaths" ? "Walking" : "Driving"} Path</DialogTitle>
                 <p className="text-sm text-muted-foreground">
@@ -218,7 +218,7 @@ export default function AdminPaths() {
                 
                 {/* PWD Friendly and Strictly PWD Only toggles - only show for walkpaths */}
                 {(activeTab === "walkpaths" || editingPathType === "walkpath") && (
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-2">
                         <Accessibility className="w-5 h-5 text-orange-500" />
@@ -226,8 +226,8 @@ export default function AdminPaths() {
                           <Label htmlFor="pwd-friendly" className="text-sm font-medium cursor-pointer">
                             PWD Accessible
                           </Label>
-                          <p className="text-xs text-muted-foreground">
-                            Mark as wheelchair-friendly (paved, no stairs)
+                          <p className="text-[10px] leading-tight text-muted-foreground">
+                            Mark as wheelchair-friendly
                           </p>
                         </div>
                       </div>
@@ -246,8 +246,8 @@ export default function AdminPaths() {
                           <Label htmlFor="strictly-pwd-only" className="text-sm font-medium cursor-pointer">
                             Strictly PWD Only
                           </Label>
-                          <p className="text-xs text-muted-foreground">
-                            Only for accessible mode, not for walking routes
+                          <p className="text-[10px] leading-tight text-muted-foreground">
+                            Only for accessible mode
                           </p>
                         </div>
                       </div>
@@ -266,7 +266,7 @@ export default function AdminPaths() {
                   <p className="text-xs text-muted-foreground mb-2">
                     🏢 Orange markers = buildings (click to snap path) • Gray dots = existing waypoints • Click map to add waypoints
                   </p>
-                  <div className="w-full" style={{ height: '350px', display: 'block' }}>
+                  <div className="w-full border rounded-md overflow-hidden" style={{ height: '450px', display: 'block' }}>
                     <PathDrawingMap
                       nodes={pathNodes}
                       onNodesChange={setPathNodes}
@@ -287,7 +287,7 @@ export default function AdminPaths() {
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex flex-wrap items-center justify-between gap-4 p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <HelpCircle className="w-5 h-5 text-blue-500" />
                     <div>
@@ -299,17 +299,25 @@ export default function AdminPaths() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 ml-auto">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="polar-increment" className="text-xs">Angle:</Label>
+                      <Label htmlFor="polar-increment" className="text-xs whitespace-nowrap">Angle (°):</Label>
                       <Input
                         id="polar-increment"
-                        type="number"
-                        min="1"
-                        max="360"
+                        type="text"
                         value={polarIncrement}
-                        onChange={(e) => setPolarIncrement(Math.min(360, Math.max(1, parseInt(e.target.value) || 1)))}
-                        className="w-20 h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            setPolarIncrement(0 as any);
+                            return;
+                          }
+                          const num = parseInt(val);
+                          if (!isNaN(num)) {
+                            setPolarIncrement(Math.min(360, Math.max(0, num)));
+                          }
+                        }}
+                        className="w-16 h-8 text-xs text-center"
                       />
                     </div>
                     <Switch
