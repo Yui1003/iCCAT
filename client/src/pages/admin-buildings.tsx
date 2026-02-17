@@ -188,7 +188,7 @@ export default function AdminBuildings() {
     setFormData(prev => ({
       ...prev,
       nodeLat: lat,
-      nodeLng: lat // Bug here: nodeLng: lng was correct, but I should check if it's lng in the original
+      nodeLng: lng
     }));
     toast({ title: "Building Node updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
   };

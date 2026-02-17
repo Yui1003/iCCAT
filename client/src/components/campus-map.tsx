@@ -390,7 +390,7 @@ export default function CampusMap({
       // Don't auto-zoom or center if we're just clicking the map in admin view
       const isAdminView = window.location.pathname.startsWith('/admin/');
       if (!isAdminView) {
-        mapInstanceRef.current.setView([lat, lng], 17.5, {
+        mapInstanceRef.current.setView([lat, lng], mapInstanceRef.current.getZoom(), {
           animate: false
         });
       }
