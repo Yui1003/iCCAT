@@ -74,11 +74,11 @@ export default function Landing() {
 
   const textColorClass = isDaytime ? "text-black" : "text-white";
   const textShadowClass = isDaytime 
-    ? "[text-shadow:_-1px_-1px_0_#fff,_1px_-1px_0_#fff,_-1px_1px_0_#fff,_1px_1px_0_#fff]" 
+    ? "" 
     : "[text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]";
   
   const secondaryTextShadowClass = isDaytime
-    ? "[text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]"
+    ? ""
     : "[text-shadow:_-0.5px_-0.5px_0_#000,_0.5px_-0.5px_0_#000,_-0.5px_0.5px_0_#000,_0.5px_0.5px_0_#000]";
 
   // Activate screensaver after 30 seconds of inactivity
@@ -110,20 +110,25 @@ export default function Landing() {
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col relative overflow-hidden">
+    <div className="h-screen bg-black flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none z-0">
         {/* Base Layer: Current Phase */}
         <img
+          key={`current-${blendData.currentImg}`}
           src={blendData.currentImg}
           alt=""
           className="absolute inset-0 w-full h-full object-fill"
         />
         {/* Blend Layer: Next Phase */}
         <img
+          key={`next-${blendData.nextImg}`}
           src={blendData.nextImg}
           alt=""
-          className="absolute inset-0 w-full h-full object-fill transition-opacity duration-1000 ease-linear"
-          style={{ opacity: blendData.nextOpacity }}
+          className="absolute inset-0 w-full h-full object-fill transition-opacity duration-[1000ms] ease-linear"
+          style={{ 
+            opacity: blendData.nextOpacity,
+            visibility: blendData.nextOpacity > 0 ? 'visible' : 'hidden'
+          }}
         />
       </div>
       
