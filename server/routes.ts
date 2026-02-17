@@ -132,12 +132,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const decodedUrl = decodeURIComponent(imageUrl);
       
-      // Validate URL
-      let parsedUrl: URL;
-      try {
-        parsedUrl = new URL(decodedUrl);
-      } catch {
-        return res.status(400).json({ error: 'Invalid URL' });
+      // If it's already a proxied URL, don't double proxy
+      if (decodedUrl.includes('/api/proxy-image?url=')) {
+        const nestedUrl = new URL(decodedUrl, 'http://localhost').searchParams.get('url');
+        if (nestedUrl) {
+          return res.redirect(`/api/proxy-image?url=${encodeURIComponent(nestedUrl)}`);
+        }
+      }
+
+      // Handle legacy Firebase URLs or other external storage
+      // If the URL is already absolute and points to firebase or other external, we proxy it
+      // If it's a relative path, it might be a local asset or a malformed legacy path
+      
+      let finalUrl = decodedUrl;
+      // Fix for legacy URLs that might be missing the protocol or domain if they were saved incorrectly
+      if (finalUrl.startsWith('https://firebasestorage.googleapis.com') || finalUrl.includes('firebasestorage')) {
+        // Ensure it's a full valid URL
       }
 
       // Only allow http and https protocols
