@@ -33,19 +33,31 @@ export default function Landing() {
 
     // Find current phase
     let currentIdx = TIME_PHASES.findIndex(p => timeInMinutes >= p.start && timeInMinutes < p.end);
-    if (currentIdx === -1) currentIdx = TIME_PHASES.length - 1;
+    if (currentIdx === -1) {
+      // Fallback for edge cases (should not happen with 0 and 24*60 coverage)
+      currentIdx = TIME_PHASES.length - 1;
+    }
 
     const currentPhase = TIME_PHASES[currentIdx];
-    const nextIdx = (currentIdx + 1) % TIME_PHASES.length;
-    const nextPhase = TIME_PHASES[nextIdx];
+    
+    // Find next phase and ensure it's different to avoid sudden jumps
+    let nextIdx = (currentIdx + 1) % TIME_PHASES.length;
+    let nextPhase = TIME_PHASES[nextIdx];
+    
+    // If next phase is the same as current (e.g. night split at 0), look further
+    while (nextPhase.img === currentPhase.img && TIME_PHASES.some(p => p.img !== currentPhase.img)) {
+      nextIdx = (nextIdx + 1) % TIME_PHASES.length;
+      nextPhase = TIME_PHASES[nextIdx];
+    }
 
     // Calculate how far we are into the current phase for blending
     // We start blending into the next phase in the last 15 minutes of the current phase
     const blendStartMinutes = currentPhase.end - 15;
     let opacity = 0;
 
-    if (timeInMinutes >= blendStartMinutes) {
-      opacity = (timeInMinutes - blendStartMinutes) / 15;
+    // Only blend if the next phase is actually a different image
+    if (timeInMinutes >= blendStartMinutes && nextPhase.img !== currentPhase.img) {
+      opacity = Math.min(1, Math.max(0, (timeInMinutes - blendStartMinutes) / 15));
     }
 
     return {
