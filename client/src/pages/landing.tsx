@@ -72,7 +72,7 @@ export default function Landing() {
           className="w-full h-full object-fill"
         />
       </div>
-      <div className="absolute inset-0 bg-background/55 pointer-events-none z-[1]" />
+      <div className="absolute inset-0 bg-background/55 pointer-events-none z-[5]" />
       <header className="px-6 pt-4 pb-2 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-4">
