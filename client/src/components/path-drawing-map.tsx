@@ -31,6 +31,8 @@ interface PathDrawingMapProps {
   existingPaths?: Array<{ id?: string; nodes: PathNode[] }>;
   currentPathId?: string;
   buildings?: Building[];
+  polarTracking?: boolean;
+  polarIncrement?: number;
 }
 
 declare global {
@@ -46,7 +48,9 @@ export default function PathDrawingMap({
   className = "h-[500px] w-full",
   existingPaths = [],
   currentPathId,
-  buildings = []
+  buildings = [],
+  polarTracking = false,
+  polarIncrement = 45
 }: PathDrawingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -67,7 +71,32 @@ export default function PathDrawingMap({
       if (nodes.length === 0) return;
 
       const lastNode = nodes[nodes.length - 1];
-      const cursorLatLng = e.latlng;
+      let cursorLatLng = e.latlng;
+
+      if (polarTracking && nodes.length > 0) {
+        // Calculate angle between last node and current cursor position
+        // In Leaflet, y is lat and x is lng
+        const dy = cursorLatLng.lat - lastNode.lat;
+        const dx = cursorLatLng.lng - lastNode.lng;
+        
+        // angle in radians
+        let angle = Math.atan2(dy, dx);
+        // angle in degrees (0 to 360)
+        let angleDeg = (angle * 180) / Math.PI;
+        if (angleDeg < 0) angleDeg += 360;
+
+        // Snap to increment
+        const snappedAngleDeg = Math.round(angleDeg / polarIncrement) * polarIncrement;
+        const snappedAngleRad = (snappedAngleDeg * Math.PI) / 180;
+
+        // Calculate distance to maintain zoom-appropriate distance
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        cursorLatLng = L.latLng(
+          lastNode.lat + distance * Math.sin(snappedAngleRad),
+          lastNode.lng + distance * Math.cos(snappedAngleRad)
+        );
+      }
 
       if (previewLineRef.current) {
         previewLineRef.current.setLatLngs([lastNode, cursorLatLng]);
@@ -228,7 +257,28 @@ export default function PathDrawingMap({
                          mapInstanceRef.current._lastClickPos.distanceTo(e.containerPoint) > 5);
 
       if (isDrawing && !wasDragged) {
-        const newNode = { lat: e.latlng.lat, lng: e.latlng.lng };
+        let newNodeLatLng = e.latlng;
+
+        if (polarTracking && nodes.length > 0) {
+          const lastNode = nodes[nodes.length - 1];
+          const dy = newNodeLatLng.lat - lastNode.lat;
+          const dx = newNodeLatLng.lng - lastNode.lng;
+          
+          let angle = Math.atan2(dy, dx);
+          let angleDeg = (angle * 180) / Math.PI;
+          if (angleDeg < 0) angleDeg += 360;
+
+          const snappedAngleDeg = Math.round(angleDeg / polarIncrement) * polarIncrement;
+          const snappedAngleRad = (snappedAngleDeg * Math.PI) / 180;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          newNodeLatLng = {
+            lat: lastNode.lat + distance * Math.sin(snappedAngleRad),
+            lng: lastNode.lng + distance * Math.cos(snappedAngleRad)
+          };
+        }
+
+        const newNode = { lat: newNodeLatLng.lat, lng: newNodeLatLng.lng };
         onNodesChange([...nodes, newNode]);
       }
     };

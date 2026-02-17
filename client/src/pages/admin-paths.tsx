@@ -35,6 +35,8 @@ export default function AdminPaths() {
   const [strictlyPwdOnly, setStrictlyPwdOnly] = useState(false); // Strictly PWD-only by default
   const [walkpathSearch, setWalkpathSearch] = useState("");
   const [drivepathSearch, setDrivepathSearch] = useState("");
+  const [polarTracking, setPolarTracking] = useState(false);
+  const [polarIncrement, setPolarIncrement] = useState(45);
   const { toast } = useToast();
 
   const { data: buildings = [] } = useQuery<Building[]>({
@@ -272,6 +274,8 @@ export default function AdminPaths() {
                       className="h-full w-full"
                       existingPaths={activeTab === "walkpaths" ? walkpaths : drivepaths}
                       currentPathId={editingPath?.id}
+                      polarTracking={polarTracking}
+                      polarIncrement={polarIncrement}
                       buildings={buildings.map(b => ({ 
                         id: b.id, 
                         name: b.name, 
@@ -280,6 +284,38 @@ export default function AdminPaths() {
                         polygon: Array.isArray(b.polygon) ? b.polygon as any : null,
                         polygonColor: b.polygonColor || "#FACC15"
                       }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <HelpCircle className="w-5 h-5 text-blue-500" />
+                    <div>
+                      <Label htmlFor="polar-tracking" className="text-sm font-medium cursor-pointer">
+                        Polar Tracking
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Snap nodes to {polarIncrement}° increments
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="polar-increment" className="text-xs">Angle:</Label>
+                      <Input
+                        id="polar-increment"
+                        type="number"
+                        min="1"
+                        max="360"
+                        value={polarIncrement}
+                        onChange={(e) => setPolarIncrement(Math.min(360, Math.max(1, parseInt(e.target.value) || 1)))}
+                        className="w-20 h-8 text-xs"
+                      />
+                    </div>
+                    <Switch
+                      id="polar-tracking"
+                      checked={polarTracking}
+                      onCheckedChange={setPolarTracking}
                     />
                   </div>
                 </div>
