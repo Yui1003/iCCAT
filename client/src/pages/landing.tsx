@@ -59,7 +59,8 @@ export default function Landing() {
     // Also ensure we don't blend if the current phase shouldn't transition (e.g. midnight)
     if (timeInMinutes >= blendStartMinutes && nextPhase.img !== currentPhase.img) {
       // Don't transition if current phase is near midnight and next phase is the split night phase
-      const isMidnightSplit = currentPhase.end === 24 * 60 && nextPhase.start === 0;
+      // or if we are in the 9PM-12AM phase (starts at 21*60, ends at 24*60)
+      const isMidnightSplit = currentPhase.end === 24 * 60;
       
       if (!isMidnightSplit) {
         opacity = Math.min(1, Math.max(0, (timeInMinutes - blendStartMinutes) / 15));
@@ -276,7 +277,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:2.8.4
+              version:2.8.5
             </div>
           </div>
         </div>
