@@ -334,7 +334,19 @@ export default function AdminBuildings() {
                 </div>
 
                 <div>
-                  <Label>Building Node (Pathfinding Entrance) *</Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Building Node (Pathfinding Entrance) *</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFormData({ ...formData, nodeLat: formData.lat, nodeLng: formData.lng })}
+                      className="text-xs h-7"
+                      data-testid="button-match-marker"
+                    >
+                      Match to Building Marker
+                    </Button>
+                  </div>
                   <p className="text-sm text-muted-foreground mt-1 mb-3">
                     Set the specific coordinate for the pathfinding entrance. This is where paths will connect to the building.
                   </p>
@@ -422,16 +434,7 @@ export default function AdminBuildings() {
                 </div>
 
                   <ImageUploadInput
-                    label="Building Photo (Main)"
-                    value={formData.image ?? ""}
-                    onChange={(url) => setFormData({ ...formData, image: url as string })}
-                    type="building"
-                    id={editingBuilding?.id || 'new'}
-                    testId="building-image"
-                  />
-
-                  <ImageUploadInput
-                    label="Additional Photos"
+                    label="Upload Photos"
                     value={formData.images || []}
                     onChange={(urls) => setFormData({ ...formData, images: urls as string[] })}
                     type="building"
