@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Route as RouteIcon, Plus, Pencil, Trash2, Accessibility } from "lucide-react";
+import { Route as RouteIcon, Plus, Pencil, Trash2, Accessibility, HelpCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
