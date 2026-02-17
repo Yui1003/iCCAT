@@ -56,8 +56,14 @@ export default function Landing() {
     let opacity = 0;
 
     // Only blend if the next phase is actually a different image
+    // Also ensure we don't blend if the current phase shouldn't transition (e.g. midnight)
     if (timeInMinutes >= blendStartMinutes && nextPhase.img !== currentPhase.img) {
-      opacity = Math.min(1, Math.max(0, (timeInMinutes - blendStartMinutes) / 15));
+      // Don't transition if current phase is near midnight and next phase is the split night phase
+      const isMidnightSplit = currentPhase.end === 24 * 60 && nextPhase.start === 0;
+      
+      if (!isMidnightSplit) {
+        opacity = Math.min(1, Math.max(0, (timeInMinutes - blendStartMinutes) / 15));
+      }
     }
 
     return {
