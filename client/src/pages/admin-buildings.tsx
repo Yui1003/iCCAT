@@ -296,8 +296,8 @@ export default function AdminBuildings() {
                       <CampusMap
                         buildings={[
                           ...buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id),
-                          { ...formData, id: "preview", name: formData.name || "New Building", markerIcon: formData.markerIcon }
-                        ] as Building[]}
+                          { ...formData, id: "preview", name: formData.name || "New Building", markerIcon: formData.markerIcon, images: formData.images || [] }
+                        ] as any}
                         onMapClick={handleMapClick}
                         centerLat={formData.lat}
                         centerLng={formData.lng}
@@ -363,9 +363,10 @@ export default function AdminBuildings() {
                             name: "Building Node", 
                             lat: formData.nodeLat ?? formData.lat,
                             lng: formData.nodeLng ?? formData.lng,
-                            markerIcon: "school" 
+                            markerIcon: "school",
+                            images: formData.images || []
                           }
-                        ] as Building[]}
+                        ] as any}
                         onMapClick={handleNodeMapClick}
                         centerLat={formData.nodeLat ?? formData.lat}
                         centerLng={formData.nodeLng ?? formData.lng}
