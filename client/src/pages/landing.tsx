@@ -76,7 +76,10 @@ export default function Landing() {
 
   const isDaytime = useMemo(() => {
     const hours = currentTime.getHours();
-    return hours >= 5 && hours < 18;
+    const minutes = currentTime.getMinutes();
+    const timeInMinutes = hours * 60 + minutes;
+    // Daytime is 5:00 AM to 5:47 PM (17 * 60 + 47 = 1067 minutes)
+    return timeInMinutes >= 5 * 60 && timeInMinutes < (17 * 60 + 47);
   }, [currentTime]);
 
   const textColorClass = isDaytime ? "text-black" : "text-white";
