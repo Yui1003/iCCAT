@@ -3,6 +3,7 @@ import { Map, Calendar, Users, Info, ClipboardList, HelpCircle } from "lucide-re
 import { useEffect, useState, useMemo } from "react";
 import { useHomeInactivity } from "@/hooks/use-inactivity";
 import logoImage from "@assets/logo.png";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Walkthrough, useWalkthrough } from "@/components/walkthrough";
@@ -66,11 +67,18 @@ export default function Landing() {
   return (
     <div className="h-screen bg-background flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none z-0">
-        <img
-          src={campusBg}
-          alt=""
-          className="w-full h-full object-fill"
-        />
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={campusBg}
+            src={campusBg}
+            alt=""
+            className="absolute inset-0 w-full h-full object-fill"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 2, ease: "easeInOut" }}
+          />
+        </AnimatePresence>
       </div>
       <div className="absolute inset-0 bg-background/55 pointer-events-none z-[5]" />
       
