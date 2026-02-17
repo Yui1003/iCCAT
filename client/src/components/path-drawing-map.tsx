@@ -73,6 +73,9 @@ export default function PathDrawingMap({
       let cursorLatLng = latlng;
 
       if (polarTracking && nodes.length > 0) {
+        // Ensure polarIncrement is a valid number to prevent division by zero or NaN
+        const increment = (typeof polarIncrement === 'number' && polarIncrement > 0) ? polarIncrement : 45;
+        
         const dy = cursorLatLng.lat - lastNode.lat;
         const dx = cursorLatLng.lng - lastNode.lng;
         
@@ -80,7 +83,7 @@ export default function PathDrawingMap({
         let angleDeg = (angle * 180) / Math.PI;
         if (angleDeg < 0) angleDeg += 360;
 
-        const snappedAngleDeg = Math.round(angleDeg / polarIncrement) * polarIncrement;
+        const snappedAngleDeg = Math.round(angleDeg / increment) * increment;
         const snappedAngleRad = (snappedAngleDeg * Math.PI) / 180;
 
         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -264,6 +267,9 @@ export default function PathDrawingMap({
 
         if (polarTracking && nodes.length > 0) {
           const lastNode = nodes[nodes.length - 1];
+          // Ensure polarIncrement is a valid number
+          const increment = (typeof polarIncrement === 'number' && polarIncrement > 0) ? polarIncrement : 45;
+
           const dy = newNodeLatLng.lat - lastNode.lat;
           const dx = newNodeLatLng.lng - lastNode.lng;
           
@@ -271,7 +277,7 @@ export default function PathDrawingMap({
           let angleDeg = (angle * 180) / Math.PI;
           if (angleDeg < 0) angleDeg += 360;
 
-          const snappedAngleDeg = Math.round(angleDeg / polarIncrement) * polarIncrement;
+          const snappedAngleDeg = Math.round(angleDeg / increment) * increment;
           const snappedAngleRad = (snappedAngleDeg * Math.PI) / 180;
           const distance = Math.sqrt(dx * dx + dy * dy);
           

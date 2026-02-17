@@ -73,7 +73,11 @@ export default function Landing() {
         />
       </div>
       <div className="absolute inset-0 bg-background/55 pointer-events-none z-[5]" />
-      <header className="px-6 pt-4 pb-2 relative z-10">
+      
+      {/* Walkthrough component needs to be high z-index */}
+      <Walkthrough isOpen={isOpen} onClose={closeWalkthrough} />
+
+      <header className="px-6 pt-4 pb-2 relative z-50">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -88,11 +92,15 @@ export default function Landing() {
                 <p className="text-sm text-foreground/80 font-medium">Interactive Campus Companion & Assistance Terminal</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 z-50">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                onClick={openWalkthrough}
-                className="relative flex items-center gap-2 bg-card/90 backdrop-blur-sm border-card-border pointer-events-auto shadow-sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openWalkthrough();
+                }}
+                className="relative flex items-center gap-2 bg-card/90 backdrop-blur-sm border-card-border pointer-events-auto shadow-sm hover:bg-card cursor-pointer z-[100]"
                 data-testid="button-help-guide"
               >
                 <HelpCircle className="w-5 h-5" />
