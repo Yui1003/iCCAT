@@ -1158,7 +1158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? await storage.getWalkpaths()
         : await storage.getDrivepaths();
 
-      const route = findShortestPath(startBuilding, endBuilding, paths);
+      const route = findShortestPath(startBuilding as any, endBuilding as any, paths);
 
       if (!route) {
         return res.status(404).json({ error: 'No route found' });
