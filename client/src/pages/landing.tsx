@@ -100,7 +100,6 @@ export default function Landing() {
           style={{ opacity: blendData.nextOpacity }}
         />
       </div>
-      <div className="absolute inset-0 bg-background/55 pointer-events-none z-[5]" />
       
       {/* Walkthrough component needs to be high z-index */}
       <Walkthrough isOpen={isOpen} onClose={closeWalkthrough} />

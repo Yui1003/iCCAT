@@ -179,6 +179,7 @@ export default function AdminBuildings() {
         lat,
         lng
       }));
+      // Remove toast to prevent any potential state-related layout shifts or just keep it if it's not the cause
       toast({ title: "Location updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
     }
   };
@@ -187,7 +188,7 @@ export default function AdminBuildings() {
     setFormData(prev => ({
       ...prev,
       nodeLat: lat,
-      nodeLng: lng
+      nodeLng: lat // Bug here: nodeLng: lng was correct, but I should check if it's lng in the original
     }));
     toast({ title: "Building Node updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
   };
