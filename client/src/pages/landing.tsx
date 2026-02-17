@@ -1,10 +1,8 @@
 import { Link } from "wouter";
 import { Map, Calendar, Users, Info, ClipboardList, HelpCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useHomeInactivity } from "@/hooks/use-inactivity";
 import logoImage from "@assets/logo.png";
-// Use a direct path for the background image to allow simple file replacement in the public directory
-const campusBg = `/assets/homepage-bg.png?v=${Date.now()}`;
 
 import { Button } from "@/components/ui/button";
 import { Walkthrough, useWalkthrough } from "@/components/walkthrough";
@@ -13,6 +11,30 @@ export default function Landing() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { isOpen, openWalkthrough, closeWalkthrough } = useWalkthrough();
   
+  // Dynamic background logic
+  const campusBg = useMemo(() => {
+    const hours = currentTime.getHours();
+    const minutes = currentTime.getMinutes();
+    const timeInMinutes = hours * 60 + minutes;
+
+    // 5AM - 6AM
+    if (timeInMinutes >= 5 * 60 && timeInMinutes < 6 * 60) return "/assets/Homepage Engine/5AM - 6AM.png";
+    // 6AM - 7AM
+    if (timeInMinutes >= 6 * 60 && timeInMinutes < 7 * 60) return "/assets/Homepage Engine/6AM - 7AM.png";
+    // 7AM - 12NN
+    if (timeInMinutes >= 7 * 60 && timeInMinutes < 12 * 60) return "/assets/Homepage Engine/7AM - 12NN.png";
+    // 12NN - 1PM
+    if (timeInMinutes >= 12 * 60 && timeInMinutes < 13 * 60) return "/assets/Homepage Engine/12NN-1PM.png";
+    // 1PM - 530PM
+    if (timeInMinutes >= 13 * 60 && timeInMinutes < 17 * 60 + 30) return "/assets/Homepage Engine/1PM - 530PM.png";
+    // 530PM - 6PM
+    if (timeInMinutes >= 17 * 60 + 30 && timeInMinutes < 18 * 60) return "/assets/Homepage Engine/530PM - 6PM.png";
+    // 6PM - 9PM
+    if (timeInMinutes >= 18 * 60 && timeInMinutes < 21 * 60) return "/assets/Homepage Engine/6PM-9PM.png";
+    // 9PM - 5AM
+    return "/assets/Homepage Engine/9PM - 5AM.png";
+  }, [currentTime]);
+
   // Activate screensaver after 30 seconds of inactivity
   useHomeInactivity();
 
