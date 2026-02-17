@@ -159,12 +159,12 @@ export default function Landing() {
                 className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-                    <Map className="w-10 h-10 text-primary" />
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
+                    <Map className="w-10 h-10 text-primary drop-shadow-[0_0_1px_rgba(0,0,0,1)]" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white mb-1">Campus Navigation</h2>
-                    <p className="text-white font-medium">Find your way around campus with turn-by-turn directions</p>
+                    <h2 className="text-xl font-semibold text-white mb-1 [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Campus Navigation</h2>
+                    <p className="text-white font-medium [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Find your way around campus with turn-by-turn directions</p>
                   </div>
                 </div>
               </button>
@@ -176,12 +176,12 @@ export default function Landing() {
                 className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-                    <Calendar className="w-10 h-10 text-primary" />
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
+                    <Calendar className="w-10 h-10 text-primary drop-shadow-[0_0_1px_rgba(0,0,0,1)]" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white mb-1">Events & Announcements</h2>
-                    <p className="text-white font-medium">Stay updated with campus activities and important notices</p>
+                    <h2 className="text-xl font-semibold text-white mb-1 [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Events & Announcements</h2>
+                    <p className="text-white font-medium [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Stay updated with campus activities and important notices</p>
                   </div>
                 </div>
               </button>
@@ -193,12 +193,12 @@ export default function Landing() {
                 className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-                    <Users className="w-10 h-10 text-primary" />
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
+                    <Users className="w-10 h-10 text-primary drop-shadow-[0_0_1px_rgba(0,0,0,1)]" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white mb-1">Staff Finder</h2>
-                    <p className="text-white font-medium">Locate faculty and staff members across campus</p>
+                    <h2 className="text-xl font-semibold text-white mb-1 [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Staff Finder</h2>
+                    <p className="text-white font-medium [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Locate faculty and staff members across campus</p>
                   </div>
                 </div>
               </button>
@@ -210,12 +210,12 @@ export default function Landing() {
                 className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-                    <Info className="w-10 h-10 text-primary" />
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
+                    <Info className="w-10 h-10 text-primary drop-shadow-[0_0_1px_rgba(0,0,0,1)]" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white mb-1">About the Kiosk</h2>
-                    <p className="text-white font-medium">Learn more about this information system</p>
+                    <h2 className="text-xl font-semibold text-white mb-1 [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">About the Kiosk</h2>
+                    <p className="text-white font-medium [text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]">Learn more about this information system</p>
                   </div>
                 </div>
               </button>
@@ -239,7 +239,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className="text-xs text-foreground/70" data-testid="text-version">
-              version:2.7.9
+              version:2.8.0
             </div>
           </div>
         </div>
