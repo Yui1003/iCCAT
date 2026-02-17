@@ -3,37 +3,56 @@ import { Map, Calendar, Users, Info, ClipboardList, HelpCircle } from "lucide-re
 import { useEffect, useState, useMemo } from "react";
 import { useHomeInactivity } from "@/hooks/use-inactivity";
 import logoImage from "@assets/logo.png";
-import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Walkthrough, useWalkthrough } from "@/components/walkthrough";
+
+// Time phases configuration
+const TIME_PHASES = [
+  { start: 5 * 60, end: 6 * 60, img: "/assets/Homepage Engine/5AM - 6AM.png" },
+  { start: 6 * 60, end: 7 * 60, img: "/assets/Homepage Engine/6AM - 7AM.png" },
+  { start: 7 * 60, end: 12 * 60, img: "/assets/Homepage Engine/7AM - 12NN.png" },
+  { start: 12 * 60, end: 13 * 60, img: "/assets/Homepage Engine/12NN-1PM.png" },
+  { start: 13 * 60, end: 17 * 60 + 30, img: "/assets/Homepage Engine/1PM - 530PM.png" },
+  { start: 17 * 60 + 30, end: 18 * 60, img: "/assets/Homepage Engine/530PM - 6PM.png" },
+  { start: 18 * 60, end: 21 * 60, img: "/assets/Homepage Engine/6PM-9PM.png" },
+  { start: 21 * 60, end: 24 * 60, img: "/assets/Homepage Engine/9PM - 5AM.png" },
+  { start: 0, end: 5 * 60, img: "/assets/Homepage Engine/9PM - 5AM.png" },
+].sort((a, b) => a.start - b.start);
 
 export default function Landing() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { isOpen, openWalkthrough, closeWalkthrough } = useWalkthrough();
   
-  // Dynamic background logic
-  const campusBg = useMemo(() => {
+  // Calculate blending states
+  const blendData = useMemo(() => {
     const hours = currentTime.getHours();
     const minutes = currentTime.getMinutes();
-    const timeInMinutes = hours * 60 + minutes;
+    const seconds = currentTime.getSeconds();
+    const timeInMinutes = hours * 60 + minutes + seconds / 60;
 
-    // 5AM - 6AM
-    if (timeInMinutes >= 5 * 60 && timeInMinutes < 6 * 60) return "/assets/Homepage Engine/5AM - 6AM.png";
-    // 6AM - 7AM
-    if (timeInMinutes >= 6 * 60 && timeInMinutes < 7 * 60) return "/assets/Homepage Engine/6AM - 7AM.png";
-    // 7AM - 12NN
-    if (timeInMinutes >= 7 * 60 && timeInMinutes < 12 * 60) return "/assets/Homepage Engine/7AM - 12NN.png";
-    // 12NN - 1PM
-    if (timeInMinutes >= 12 * 60 && timeInMinutes < 13 * 60) return "/assets/Homepage Engine/12NN-1PM.png";
-    // 1PM - 530PM
-    if (timeInMinutes >= 13 * 60 && timeInMinutes < 17 * 60 + 30) return "/assets/Homepage Engine/1PM - 530PM.png";
-    // 530PM - 6PM
-    if (timeInMinutes >= 17 * 60 + 30 && timeInMinutes < 18 * 60) return "/assets/Homepage Engine/530PM - 6PM.png";
-    // 6PM - 9PM
-    if (timeInMinutes >= 18 * 60 && timeInMinutes < 21 * 60) return "/assets/Homepage Engine/6PM-9PM.png";
-    // 9PM - 5AM
-    return "/assets/Homepage Engine/9PM - 5AM.png";
+    // Find current phase
+    let currentIdx = TIME_PHASES.findIndex(p => timeInMinutes >= p.start && timeInMinutes < p.end);
+    if (currentIdx === -1) currentIdx = TIME_PHASES.length - 1;
+
+    const currentPhase = TIME_PHASES[currentIdx];
+    const nextIdx = (currentIdx + 1) % TIME_PHASES.length;
+    const nextPhase = TIME_PHASES[nextIdx];
+
+    // Calculate how far we are into the current phase for blending
+    // We start blending into the next phase in the last 15 minutes of the current phase
+    const blendStartMinutes = currentPhase.end - 15;
+    let opacity = 0;
+
+    if (timeInMinutes >= blendStartMinutes) {
+      opacity = (timeInMinutes - blendStartMinutes) / 15;
+    }
+
+    return {
+      currentImg: currentPhase.img,
+      nextImg: nextPhase.img,
+      nextOpacity: opacity
+    };
   }, [currentTime]);
 
   // Activate screensaver after 30 seconds of inactivity
@@ -67,18 +86,19 @@ export default function Landing() {
   return (
     <div className="h-screen bg-background flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none z-0">
-        <AnimatePresence mode="wait">
-          <motion.img
-            key={campusBg}
-            src={campusBg}
-            alt=""
-            className="absolute inset-0 w-full h-full object-fill"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 2, ease: "easeInOut" }}
-          />
-        </AnimatePresence>
+        {/* Base Layer: Current Phase */}
+        <img
+          src={blendData.currentImg}
+          alt=""
+          className="absolute inset-0 w-full h-full object-fill"
+        />
+        {/* Blend Layer: Next Phase */}
+        <img
+          src={blendData.nextImg}
+          alt=""
+          className="absolute inset-0 w-full h-full object-fill transition-opacity duration-1000 ease-linear"
+          style={{ opacity: blendData.nextOpacity }}
+        />
       </div>
       <div className="absolute inset-0 bg-background/55 pointer-events-none z-[5]" />
       
