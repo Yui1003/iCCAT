@@ -1,3 +1,4 @@
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { Map, Calendar, Users, Info, ClipboardList, HelpCircle } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
@@ -52,18 +53,21 @@ export default function Landing() {
 
     // Calculate how far we are into the current phase for blending
     // We start blending into the next phase in the last 15 minutes of the current phase
-    const blendStartMinutes = currentPhase.end - 15;
+    const blendDurationMinutes = 15;
+    const blendStartMinutes = currentPhase.end - blendDurationMinutes;
     let opacity = 0;
 
     // Only blend if the next phase is actually a different image
-    // Also ensure we don't blend if the current phase shouldn't transition (e.g. midnight)
     if (timeInMinutes >= blendStartMinutes && nextPhase.img !== currentPhase.img) {
-      // Don't transition if current phase is near midnight and next phase is the split night phase
-      // or if we are in the 9PM-12AM phase (starts at 21*60, ends at 24*60)
       const isMidnightSplit = currentPhase.end === 24 * 60;
       
       if (!isMidnightSplit) {
-        opacity = Math.min(1, Math.max(0, (timeInMinutes - blendStartMinutes) / 15));
+        // Calculate raw progress (0 to 1)
+        const progress = (timeInMinutes - blendStartMinutes) / blendDurationMinutes;
+        
+        // Use a slight offset to ensure we don't hit exactly 1.0 until the actual switch
+        // This keeps the base layer visible to prevent the "black blink"
+        opacity = Math.min(0.98, Math.max(0, progress));
       }
     }
 
@@ -130,16 +134,20 @@ export default function Landing() {
           className="absolute inset-0 w-full h-full object-fill"
         />
         {/* Blend Layer: Next Phase */}
-        <img
-          key={`next-${blendData.nextImg}`}
-          src={blendData.nextImg}
-          alt=""
-          className="absolute inset-0 w-full h-full object-fill transition-opacity duration-[1000ms] ease-linear"
-          style={{ 
-            opacity: blendData.nextOpacity,
-            visibility: blendData.nextOpacity > 0 ? 'visible' : 'hidden'
-          }}
-        />
+        <AnimatePresence mode="popLayout">
+          {blendData.nextOpacity > 0 && (
+            <motion.img
+              key={`next-${blendData.nextImg}`}
+              src={blendData.nextImg}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: blendData.nextOpacity }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, ease: "linear" }}
+              alt=""
+              className="absolute inset-0 w-full h-full object-fill z-10"
+            />
+          )}
+        </AnimatePresence>
       </div>
       
       {/* Walkthrough component needs to be high z-index */}
@@ -280,7 +288,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:2.8.5
+              version:2.8.6
             </div>
           </div>
         </div>
