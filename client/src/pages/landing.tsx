@@ -115,8 +115,8 @@ export default function Landing() {
                 data-testid="img-logo"
               />
               <div>
-                <h1 className="text-3xl font-bold text-foreground">iCCAT</h1>
-                <p className="text-sm text-foreground/80 font-medium">Interactive Campus Companion & Assistance Terminal</p>
+                <h1 className="text-3xl font-bold text-black [text-shadow:_-1px_-1px_0_#fff,_1px_-1px_0_#fff,_-1px_1px_0_#fff,_1px_1px_0_#fff]">iCCAT</h1>
+                <p className="text-sm text-black font-bold [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]">Interactive Campus Companion & Assistance Terminal</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -127,7 +127,7 @@ export default function Landing() {
                   e.stopPropagation();
                   openWalkthrough();
                 }}
-                className="relative flex items-center gap-2 bg-card/90 backdrop-blur-sm border-card-border pointer-events-auto shadow-sm hover:bg-card cursor-pointer z-[100]"
+                className="relative flex items-center gap-2 bg-white/10 backdrop-blur-md border-white/20 text-black font-bold pointer-events-auto shadow-xl hover:bg-white/20 cursor-pointer z-[100] [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]"
                 data-testid="button-help-guide"
               >
                 <HelpCircle className="w-5 h-5" />
@@ -142,12 +142,12 @@ export default function Landing() {
         <div className="max-w-5xl w-full">
           <div className="text-center mb-6">
             <div className="flex items-center justify-center mb-4">
-              <div className="text-lg text-muted-foreground">{formatDate(currentTime)}</div>
+              <div className="text-lg text-black font-bold [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]">{formatDate(currentTime)}</div>
             </div>
-            <div className="text-5xl font-bold text-foreground mb-2" data-testid="text-time">
+            <div className="text-5xl font-bold text-black mb-2 [text-shadow:_-1px_-1px_0_#fff,_1px_-1px_0_#fff,_-1px_1px_0_#fff,_1px_1px_0_#fff]" data-testid="text-time">
               {formatTime(currentTime)}
             </div>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-black font-semibold [text-shadow:_-1px_-1px_0_#fff,_1px_-1px_0_#fff,_-1px_1px_0_#fff,_1px_1px_0_#fff]">
               Welcome to Cavite State University CCAT Campus
             </p>
           </div>
@@ -156,15 +156,15 @@ export default function Landing() {
             <Link href="/navigation">
               <button
                 data-testid="button-navigation"
-                className="group w-full bg-card/90 border border-card-border rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm"
+                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
                     <Map className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-1">Campus Navigation</h2>
-                    <p className="text-sm text-muted-foreground">Find your way around campus with turn-by-turn directions</p>
+                    <h2 className="text-xl font-semibold text-black mb-1 [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]">Campus Navigation</h2>
+                    <p className="text-sm text-black/80 font-medium [text-shadow:_-0.3px_-0.3px_0_#fff,_0.3px_-0.3px_0_#fff,_-0.3px_0.3px_0_#fff,_0.3px_0.3px_0_#fff]">Find your way around campus with turn-by-turn directions</p>
                   </div>
                 </div>
               </button>
@@ -173,15 +173,15 @@ export default function Landing() {
             <Link href="/events">
               <button
                 data-testid="button-events"
-                className="group w-full bg-card/90 border border-card-border rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm"
+                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
                     <Calendar className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-1">Events & Announcements</h2>
-                    <p className="text-sm text-muted-foreground">Stay updated with campus activities and important notices</p>
+                    <h2 className="text-xl font-semibold text-black mb-1 [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]">Events & Announcements</h2>
+                    <p className="text-sm text-black/80 font-medium [text-shadow:_-0.3px_-0.3px_0_#fff,_0.3px_-0.3px_0_#fff,_-0.3px_0.3px_0_#fff,_0.3px_0.3px_0_#fff]">Stay updated with campus activities and important notices</p>
                   </div>
                 </div>
               </button>
@@ -190,15 +190,15 @@ export default function Landing() {
             <Link href="/staff">
               <button
                 data-testid="button-staff"
-                className="group w-full bg-card/90 border border-card-border rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm"
+                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
                     <Users className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-1">Staff Finder</h2>
-                    <p className="text-sm text-muted-foreground">Locate faculty and staff members across campus</p>
+                    <h2 className="text-xl font-semibold text-black mb-1 [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]">Staff Finder</h2>
+                    <p className="text-sm text-black/80 font-medium [text-shadow:_-0.3px_-0.3px_0_#fff,_0.3px_-0.3px_0_#fff,_-0.3px_0.3px_0_#fff,_0.3px_0.3px_0_#fff]">Locate faculty and staff members across campus</p>
                   </div>
                 </div>
               </button>
@@ -207,15 +207,15 @@ export default function Landing() {
             <Link href="/about">
               <button
                 data-testid="button-about"
-                className="group w-full bg-card/90 border border-card-border rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm"
+                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
                     <Info className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-1">About the Kiosk</h2>
-                    <p className="text-sm text-muted-foreground">Learn more about this information system</p>
+                    <h2 className="text-xl font-semibold text-black mb-1 [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]">About the Kiosk</h2>
+                    <p className="text-sm text-black/80 font-medium [text-shadow:_-0.3px_-0.3px_0_#fff,_0.3px_-0.3px_0_#fff,_-0.3px_0.3px_0_#fff,_0.3px_0.3px_0_#fff]">Learn more about this information system</p>
                   </div>
                 </div>
               </button>
@@ -231,7 +231,7 @@ export default function Landing() {
               <Link href="/feedback">
                 <button
                   data-testid="button-feedback"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover-elevate active-elevate-2 transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover-elevate active-elevate-2 transition-all shadow-lg"
                 >
                   <ClipboardList className="w-5 h-5" />
                   <span className="font-medium">Provide Feedback</span>

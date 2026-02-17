@@ -389,7 +389,10 @@ export default function CampusMap({
     if (latDiff > 0.0001 || lngDiff > 0.0001) {
       // Don't auto-zoom or center if we're just clicking the map in admin view
       const isAdminView = window.location.pathname.startsWith('/admin/');
-      if (!isAdminView) {
+      // Specifically check for the building management page where markers are placed
+      const isBuildingAdmin = window.location.pathname === '/admin/buildings';
+      
+      if (!isAdminView && !isBuildingAdmin) {
         mapInstanceRef.current.setView([lat, lng], mapInstanceRef.current.getZoom(), {
           animate: false
         });
