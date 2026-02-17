@@ -382,21 +382,21 @@ export default function CampusMap({
     const lat = centerLat || defaultLat;
     const lng = centerLng || defaultLng;
     
+    // Check if we are in admin view (based on URL)
+    const isAdminView = window.location.pathname.startsWith('/admin/');
+    // Specifically check for the building management page where markers are placed
+    const isBuildingAdmin = window.location.pathname === '/admin/buildings';
+
+    if (isAdminView || isBuildingAdmin) return;
+
     const currentCenter = mapInstanceRef.current.getCenter();
     const latDiff = Math.abs(currentCenter.lat - lat);
     const lngDiff = Math.abs(currentCenter.lng - lng);
 
     if (latDiff > 0.0001 || lngDiff > 0.0001) {
-      // Don't auto-zoom or center if we're just clicking the map in admin view
-      const isAdminView = window.location.pathname.startsWith('/admin/');
-      // Specifically check for the building management page where markers are placed
-      const isBuildingAdmin = window.location.pathname === '/admin/buildings';
-      
-      if (!isAdminView && !isBuildingAdmin) {
-        mapInstanceRef.current.setView([lat, lng], mapInstanceRef.current.getZoom(), {
-          animate: false
-        });
-      }
+      mapInstanceRef.current.setView([lat, lng], mapInstanceRef.current.getZoom(), {
+        animate: false
+      });
     }
   }, [centerLat, centerLng]);
 

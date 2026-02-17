@@ -40,12 +40,12 @@ export default function Landing() {
     const nextPhase = TIME_PHASES[nextIdx];
 
     // Calculate how far we are into the current phase for blending
-    // We start blending into the next phase in the last 30 minutes of the current phase
-    const blendStartMinutes = currentPhase.end - 30;
+    // We start blending into the next phase in the last 15 minutes of the current phase
+    const blendStartMinutes = currentPhase.end - 15;
     let opacity = 0;
 
     if (timeInMinutes >= blendStartMinutes) {
-      opacity = (timeInMinutes - blendStartMinutes) / 30;
+      opacity = (timeInMinutes - blendStartMinutes) / 15;
     }
 
     return {
@@ -127,7 +127,7 @@ export default function Landing() {
                   e.stopPropagation();
                   openWalkthrough();
                 }}
-                className="relative flex items-center gap-2 bg-white/10 backdrop-blur-md border-white/20 text-black font-bold pointer-events-auto shadow-xl hover:bg-white/20 cursor-pointer z-[100] [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]"
+                className="relative flex items-center gap-2 bg-white/10 backdrop-blur-md border-white/20 text-white font-bold pointer-events-auto shadow-xl hover:bg-white/20 cursor-pointer z-[100]"
                 data-testid="button-help-guide"
               >
                 <HelpCircle className="w-5 h-5" />
@@ -163,8 +163,8 @@ export default function Landing() {
                     <Map className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-black mb-1 [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]">Campus Navigation</h2>
-                    <p className="text-sm text-black/80 font-medium [text-shadow:_-0.3px_-0.3px_0_#fff,_0.3px_-0.3px_0_#fff,_-0.3px_0.3px_0_#fff,_0.3px_0.3px_0_#fff]">Find your way around campus with turn-by-turn directions</p>
+                    <h2 className="text-xl font-semibold text-black mb-1">Campus Navigation</h2>
+                    <p className="text-white font-medium">Find your way around campus with turn-by-turn directions</p>
                   </div>
                 </div>
               </button>
@@ -180,8 +180,8 @@ export default function Landing() {
                     <Calendar className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-black mb-1 [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]">Events & Announcements</h2>
-                    <p className="text-sm text-black/80 font-medium [text-shadow:_-0.3px_-0.3px_0_#fff,_0.3px_-0.3px_0_#fff,_-0.3px_0.3px_0_#fff,_0.3px_0.3px_0_#fff]">Stay updated with campus activities and important notices</p>
+                    <h2 className="text-xl font-semibold text-black mb-1">Events & Announcements</h2>
+                    <p className="text-white font-medium">Stay updated with campus activities and important notices</p>
                   </div>
                 </div>
               </button>
@@ -197,8 +197,8 @@ export default function Landing() {
                     <Users className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-black mb-1 [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]">Staff Finder</h2>
-                    <p className="text-sm text-black/80 font-medium [text-shadow:_-0.3px_-0.3px_0_#fff,_0.3px_-0.3px_0_#fff,_-0.3px_0.3px_0_#fff,_0.3px_0.3px_0_#fff]">Locate faculty and staff members across campus</p>
+                    <h2 className="text-xl font-semibold text-black mb-1">Staff Finder</h2>
+                    <p className="text-white font-medium">Locate faculty and staff members across campus</p>
                   </div>
                 </div>
               </button>
@@ -214,8 +214,8 @@ export default function Landing() {
                     <Info className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-black mb-1 [text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]">About the Kiosk</h2>
-                    <p className="text-sm text-black/80 font-medium [text-shadow:_-0.3px_-0.3px_0_#fff,_0.3px_-0.3px_0_#fff,_-0.3px_0.3px_0_#fff,_0.3px_0.3px_0_#fff]">Learn more about this information system</p>
+                    <h2 className="text-xl font-semibold text-black mb-1">About the Kiosk</h2>
+                    <p className="text-white font-medium">Learn more about this information system</p>
                   </div>
                 </div>
               </button>
