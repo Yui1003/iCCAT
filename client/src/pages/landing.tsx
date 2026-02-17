@@ -40,12 +40,12 @@ export default function Landing() {
     const nextPhase = TIME_PHASES[nextIdx];
 
     // Calculate how far we are into the current phase for blending
-    // We start blending into the next phase in the last 15 minutes of the current phase
-    const blendStartMinutes = currentPhase.end - 15;
+    // We start blending into the next phase in the last 30 minutes of the current phase
+    const blendStartMinutes = currentPhase.end - 30;
     let opacity = 0;
 
     if (timeInMinutes >= blendStartMinutes) {
-      opacity = (timeInMinutes - blendStartMinutes) / 15;
+      opacity = (timeInMinutes - blendStartMinutes) / 30;
     }
 
     return {
