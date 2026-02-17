@@ -57,6 +57,7 @@ export default function AdminBuildings() {
   const [mapClickEnabled, setMapClickEnabled] = useState(false);
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>("All Types");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const mapClickEnabledRef = useRef(false);
   const { toast } = useToast();
 
@@ -437,6 +438,7 @@ export default function AdminBuildings() {
                     label="Upload Photos"
                     value={formData.images || []}
                     onChange={(urls) => setFormData({ ...formData, images: urls as string[] })}
+                    onUploadingChange={setIsUploading}
                     type="building"
                     id={editingBuilding?.id || 'new'}
                     testId="building-additional-images"
@@ -561,15 +563,16 @@ export default function AdminBuildings() {
                     variant="outline"
                     onClick={handleCloseDialog}
                     data-testid="button-cancel"
+                    disabled={createMutation.isPending || updateMutation.isPending || isUploading}
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
-                    disabled={createMutation.isPending || updateMutation.isPending}
+                    disabled={createMutation.isPending || updateMutation.isPending || isUploading}
                     data-testid="button-save-building"
                   >
-                    {editingBuilding ? "Update" : "Create"}
+                    {(createMutation.isPending || updateMutation.isPending) ? "Saving..." : (isUploading ? "Uploading..." : (editingBuilding ? "Update" : "Create"))}
                   </Button>
                 </div>
               </form>

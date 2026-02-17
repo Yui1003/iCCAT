@@ -387,9 +387,13 @@ export default function CampusMap({
     const lngDiff = Math.abs(currentCenter.lng - lng);
 
     if (latDiff > 0.0001 || lngDiff > 0.0001) {
-      mapInstanceRef.current.setView([lat, lng], 17.5, {
-        animate: false
-      });
+      // Don't auto-zoom or center if we're just clicking the map in admin view
+      const isAdminView = window.location.pathname.startsWith('/admin/');
+      if (!isAdminView) {
+        mapInstanceRef.current.setView([lat, lng], 17.5, {
+          animate: false
+        });
+      }
     }
   }, [centerLat, centerLng]);
 

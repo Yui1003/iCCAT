@@ -30,6 +30,7 @@ interface ImageUploadInputProps {
   id: string;
   testId?: string;
   multiple?: boolean;
+  onUploadingChange?: (isUploading: boolean) => void;
 }
 
 function SortableImage({ 
@@ -97,7 +98,8 @@ export default function ImageUploadInput({
   type,
   id,
   testId,
-  multiple = false
+  multiple = false,
+  onUploadingChange
 }: ImageUploadInputProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +122,7 @@ export default function ImageUploadInput({
 
     setError(null);
     setIsUploading(true);
+    onUploadingChange?.(true);
 
     try {
       const newUrls: string[] = [];
@@ -165,6 +168,7 @@ export default function ImageUploadInput({
       setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setIsUploading(false);
+      onUploadingChange?.(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
