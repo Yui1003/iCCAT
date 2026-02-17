@@ -163,7 +163,7 @@ export default function Landing() {
                     <Map className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-black mb-1">Campus Navigation</h2>
+                    <h2 className="text-xl font-semibold text-white mb-1">Campus Navigation</h2>
                     <p className="text-white font-medium">Find your way around campus with turn-by-turn directions</p>
                   </div>
                 </div>
@@ -180,7 +180,7 @@ export default function Landing() {
                     <Calendar className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-black mb-1">Events & Announcements</h2>
+                    <h2 className="text-xl font-semibold text-white mb-1">Events & Announcements</h2>
                     <p className="text-white font-medium">Stay updated with campus activities and important notices</p>
                   </div>
                 </div>
@@ -197,7 +197,7 @@ export default function Landing() {
                     <Users className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-black mb-1">Staff Finder</h2>
+                    <h2 className="text-xl font-semibold text-white mb-1">Staff Finder</h2>
                     <p className="text-white font-medium">Locate faculty and staff members across campus</p>
                   </div>
                 </div>
@@ -214,7 +214,7 @@ export default function Landing() {
                     <Info className="w-10 h-10 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-black mb-1">About the Kiosk</h2>
+                    <h2 className="text-xl font-semibold text-white mb-1">About the Kiosk</h2>
                     <p className="text-white font-medium">Learn more about this information system</p>
                   </div>
                 </div>
@@ -239,7 +239,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className="text-xs text-foreground/70" data-testid="text-version">
-              version:2.7.7
+              version:2.7.8
             </div>
           </div>
         </div>
