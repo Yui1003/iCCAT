@@ -61,13 +61,9 @@ export default function Landing() {
   }, [currentTime]);
 
   const textColorClass = isDaytime ? "text-black" : "text-white";
-  const textShadowClass = isDaytime 
-    ? "[text-shadow:_-1px_-1px_0_#fff,_1px_-1px_0_#fff,_-1px_1px_0_#fff,_1px_1px_0_#fff]" 
-    : "[text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]";
+  const textShadowClass = "";
   
-  const secondaryTextShadowClass = isDaytime
-    ? "[text-shadow:_-0.5px_-0.5px_0_#fff,_0.5px_-0.5px_0_#fff,_-0.5px_0.5px_0_#fff,_0.5px_0.5px_0_#fff]"
-    : "[text-shadow:_-0.5px_-0.5px_0_#000,_0.5px_-0.5px_0_#000,_-0.5px_0.5px_0_#000,_0.5px_0.5px_0_#000]";
+  const secondaryTextShadowClass = "";
 
   // Activate screensaver after 30 seconds of inactivity
   useHomeInactivity();
@@ -174,7 +170,7 @@ export default function Landing() {
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
-                    <Map className={`w-10 h-10 text-primary ${isDaytime ? 'drop-shadow-[0_0_1px_rgba(255,255,255,1)]' : 'drop-shadow-[0_0_1px_rgba(0,0,0,1)]'}`} />
+                    <Map className={`w-10 h-10 text-primary`} />
                   </div>
                   <div>
                     <h2 className={`text-xl font-semibold ${textColorClass} mb-1 ${textShadowClass}`}>Campus Navigation</h2>
@@ -191,7 +187,7 @@ export default function Landing() {
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
-                    <Calendar className={`w-10 h-10 text-primary ${isDaytime ? 'drop-shadow-[0_0_1px_rgba(255,255,255,1)]' : 'drop-shadow-[0_0_1px_rgba(0,0,0,1)]'}`} />
+                    <Calendar className={`w-10 h-10 text-primary`} />
                   </div>
                   <div>
                     <h2 className={`text-xl font-semibold ${textColorClass} mb-1 ${textShadowClass}`}>Events & Announcements</h2>
@@ -208,7 +204,7 @@ export default function Landing() {
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
-                    <Users className={`w-10 h-10 text-primary ${isDaytime ? 'drop-shadow-[0_0_1px_rgba(255,255,255,1)]' : 'drop-shadow-[0_0_1px_rgba(0,0,0,1)]'}`} />
+                    <Users className={`w-10 h-10 text-primary`} />
                   </div>
                   <div>
                     <h2 className={`text-xl font-semibold ${textColorClass} mb-1 ${textShadowClass}`}>Staff Finder</h2>
@@ -225,7 +221,7 @@ export default function Landing() {
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
-                    <Info className={`w-10 h-10 text-primary ${isDaytime ? 'drop-shadow-[0_0_1px_rgba(255,255,255,1)]' : 'drop-shadow-[0_0_1px_rgba(0,0,0,1)]'}`} />
+                    <Info className={`w-10 h-10 text-primary`} />
                   </div>
                   <div>
                     <h2 className={`text-xl font-semibold ${textColorClass} mb-1 ${textShadowClass}`}>About the Kiosk</h2>
