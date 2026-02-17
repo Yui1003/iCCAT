@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, Undo } from "lucide-react";
+import { Trash2, Undo, MousePointer2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Toggle } from "@/components/ui/toggle";
 
 interface PathNode {
   lat: number;
@@ -55,6 +56,7 @@ export default function PathDrawingMap({
   const previewLineRef = useRef<any>(null);
   const hasInitializedBoundsRef = useRef(false);
   const [isDrawing, setIsDrawing] = useState(true);
+  const [orthoMode, setOrthoMode] = useState(false);
 
   // Handle live preview line
   useEffect(() => {
@@ -67,7 +69,17 @@ export default function PathDrawingMap({
       if (nodes.length === 0) return;
 
       const lastNode = nodes[nodes.length - 1];
-      const cursorLatLng = e.latlng;
+      let cursorLatLng = e.latlng;
+
+      if (orthoMode) {
+        const dLat = Math.abs(cursorLatLng.lat - lastNode.lat);
+        const dLng = Math.abs(cursorLatLng.lng - lastNode.lng);
+        if (dLat > dLng) {
+          cursorLatLng = { lat: cursorLatLng.lat, lng: lastNode.lng };
+        } else {
+          cursorLatLng = { lat: lastNode.lat, lng: cursorLatLng.lng };
+        }
+      }
 
       if (previewLineRef.current) {
         previewLineRef.current.setLatLngs([lastNode, cursorLatLng]);
@@ -228,7 +240,21 @@ export default function PathDrawingMap({
                          mapInstanceRef.current._lastClickPos.distanceTo(e.containerPoint) > 5);
 
       if (isDrawing && !wasDragged) {
-        const newNode = { lat: e.latlng.lat, lng: e.latlng.lng };
+        let lat = e.latlng.lat;
+        let lng = e.latlng.lng;
+
+        if (orthoMode && nodes.length > 0) {
+          const lastNode = nodes[nodes.length - 1];
+          const dLat = Math.abs(lat - lastNode.lat);
+          const dLng = Math.abs(lng - lastNode.lng);
+          if (dLat > dLng) {
+            lng = lastNode.lng;
+          } else {
+            lat = lastNode.lat;
+          }
+        }
+
+        const newNode = { lat, lng };
         onNodesChange([...nodes, newNode]);
       }
     };
@@ -522,6 +548,16 @@ export default function PathDrawingMap({
           )}
         </div>
         <div className="flex gap-1">
+          <Toggle
+            size="sm"
+            pressed={orthoMode}
+            onPressedChange={setOrthoMode}
+            className="flex items-center gap-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            data-testid="button-toggle-ortho"
+          >
+            <MousePointer2 className="w-4 h-4" />
+            <span className="text-xs">Ortho</span>
+          </Toggle>
           <Button
             type="button"
             size="sm"

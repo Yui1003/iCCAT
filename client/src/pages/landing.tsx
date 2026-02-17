@@ -88,11 +88,11 @@ export default function Landing() {
                 <p className="text-sm text-foreground/80 font-medium">Interactive Campus Companion & Assistance Terminal</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 z-20">
+            <div className="flex items-center gap-2 z-20 pointer-events-auto">
               <Button
                 variant="outline"
                 onClick={openWalkthrough}
-                className="flex items-center gap-2 bg-card/90 backdrop-blur-sm border-card-border pointer-events-auto"
+                className="flex items-center gap-2 bg-card/90 backdrop-blur-sm border-card-border"
                 data-testid="button-help-guide"
               >
                 <HelpCircle className="w-5 h-5" />

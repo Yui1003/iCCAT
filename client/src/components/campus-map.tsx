@@ -218,10 +218,15 @@ export default function CampusMap({
 
     mapInstanceRef.current = map;
 
+    // Recenter only on initial load or explicit center change, not on every render
     const recenter = () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.invalidateSize({ animate: false, pan: false });
-        mapInstanceRef.current.setView(stableCenter, stableZoom, { animate: false });
+        // Only set view if it's the first time or explicitly requested
+        if (!mapInstanceRef.current._initialViewSet) {
+          mapInstanceRef.current.setView(stableCenter, stableZoom, { animate: false });
+          mapInstanceRef.current._initialViewSet = true;
+        }
       }
     };
 
@@ -316,7 +321,9 @@ export default function CampusMap({
       L.latLng(14.4065, 120.8705)   // Northeast corner
     );
 
-    const updateBoundsBasedOnZoom = () => {
+    const updateBoundsBasedOnZoom = (e?: any) => {
+      // If triggered by zoomend, check if it was a programmatic zoom or user zoom
+      // In some cases we want to prevent auto-zoom out
       const zoom = map.getZoom();
       setCurrentZoom(zoom);
       
