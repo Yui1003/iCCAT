@@ -64,6 +64,7 @@ export default function PathDrawingMap({
   const hasInitializedBoundsRef = useRef(false);
   const dragStartPosRef = useRef<{ lat: number; lng: number } | null>(null);
   const [isDrawing, setIsDrawing] = useState(true);
+  const [currentZoom, setCurrentZoom] = useState(18.5);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L || !isDrawing) return;
@@ -194,6 +195,7 @@ export default function PathDrawingMap({
     // Initial bounds setup
     setTimeout(updateBoundsBasedOnZoom, 350);
     map.on('zoomend', updateBoundsBasedOnZoom);
+    map.on('zoomend', () => setCurrentZoom(map.getZoom()));
 
     // Use ResizeObserver to handle dialog resize events
     let resizeObserver: ResizeObserver | null = null;
@@ -414,6 +416,9 @@ export default function PathDrawingMap({
     }
 
     existingPathMarkersRef.current.clear();
+    const isHighZoom = currentZoom >= 19;
+    const dotSize = isHighZoom ? 8 : 6;
+    const overlapDotSize = isHighZoom ? 12 : 10;
     if (existingPaths && existingPaths.length > 0) {
       existingPaths.forEach((path) => {
         if (currentPathId && path.id === currentPathId) {
@@ -429,18 +434,18 @@ export default function PathDrawingMap({
             let iconHtml: string;
             let iconSize: number;
             if (isOverlapping) {
+              const innerDot = Math.max(2, overlapDotSize - 6);
               iconHtml = `
-                <div style="width:18px;height:18px;border-radius:50%;background:#8b5cf6;border:2.5px solid #fbbf24;box-shadow:0 0 6px 2px rgba(251,191,36,0.5);display:flex;align-items:center;justify-content:center;">
-                  <div style="width:6px;height:6px;border-radius:50%;background:#fff;"></div>
+                <div style="width:${overlapDotSize}px;height:${overlapDotSize}px;border-radius:50%;background:#8b5cf6;border:1.5px solid #fbbf24;box-shadow:0 0 4px 1px rgba(251,191,36,0.5);display:flex;align-items:center;justify-content:center;">
+                  <div style="width:${innerDot}px;height:${innerDot}px;border-radius:50%;background:#fff;"></div>
                 </div>
               `;
-              iconSize = 18;
+              iconSize = overlapDotSize;
             } else {
               iconHtml = `
-                <div class="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center shadow-sm border-2 border-gray-300 opacity-60">
-                </div>
+                <div style="width:${dotSize}px;height:${dotSize}px;background:#9ca3af;border-radius:50%;border:1px solid #d1d5db;opacity:0.7;"></div>
               `;
-              iconSize = 16;
+              iconSize = dotSize;
             }
 
             const icon = L.divIcon({
@@ -483,6 +488,19 @@ export default function PathDrawingMap({
       });
     }
 
+    // Build a set of coordinates from other paths to detect connections on current path
+    const otherPathCoords = new Set<string>();
+    if (existingPaths && existingPaths.length > 0) {
+      existingPaths.forEach((path) => {
+        if (currentPathId && path.id === currentPathId) return;
+        if (path.nodes && path.nodes.length > 0) {
+          path.nodes.forEach((node) => {
+            otherPathCoords.add(`${node.lat.toFixed(6)},${node.lng.toFixed(6)}`);
+          });
+        }
+      });
+    }
+
     // Render current path nodes
     if (nodes.length > 0) {
       const color = mode === 'driving' ? '#22c55e' : '#3b82f6';
@@ -490,6 +508,8 @@ export default function PathDrawingMap({
       nodes.forEach((node, index) => {
         const isFirst = index === 0;
         const isLast = index === nodes.length - 1;
+        const nodeKey = `${node.lat.toFixed(6)},${node.lng.toFixed(6)}`;
+        const isConnected = otherPathCoords.has(nodeKey);
 
         let iconHtml = '';
         if (isFirst) {
@@ -506,6 +526,12 @@ export default function PathDrawingMap({
               <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
               </svg>
+            </div>
+          `;
+        } else if (isConnected) {
+          iconHtml = `
+            <div style="width:24px;height:24px;border-radius:50%;background:#f97316;border:2px solid #fff;box-shadow:0 0 6px 2px rgba(249,115,22,0.4);display:flex;align-items:center;justify-content:center;">
+              <div style="width:10px;height:10px;border-radius:50%;background:#fff;"></div>
             </div>
           `;
         } else {
@@ -529,7 +555,7 @@ export default function PathDrawingMap({
         })
           .addTo(mapInstanceRef.current)
           .bindTooltip(
-            isFirst ? 'Start' : isLast ? 'End' : `Waypoint ${index}`,
+            isFirst ? 'Start' : isLast ? 'End' : isConnected ? `Waypoint ${index} (connected)` : `Waypoint ${index}`,
             {
               permanent: false,
               direction: 'top',
@@ -641,7 +667,7 @@ export default function PathDrawingMap({
         hasInitializedBoundsRef.current = true;
       }
     }
-  }, [nodes, mode, isDrawing, onNodesChange, existingPaths, currentPathId, buildings]);
+  }, [nodes, mode, isDrawing, onNodesChange, existingPaths, currentPathId, buildings, currentZoom]);
 
   const handleUndo = () => {
     if (nodes.length > 0) {
