@@ -530,14 +530,14 @@ export default function PathDrawingMap({
           `;
         } else if (isConnected) {
           iconHtml = `
-            <div style="width:24px;height:24px;border-radius:50%;background:#f97316;border:2px solid #fff;box-shadow:0 0 6px 2px rgba(249,115,22,0.4);display:flex;align-items:center;justify-content:center;">
-              <div style="width:10px;height:10px;border-radius:50%;background:#fff;"></div>
+            <div style="width:${dotSize}px;height:${dotSize}px;border-radius:50%;background:#f97316;border:1px solid #fff;box-shadow:0 0 4px 1px rgba(249,115,22,0.4);display:flex;align-items:center;justify-content:center;">
+              <div style="width:${Math.max(2, dotSize - 4)}px;height:${Math.max(2, dotSize - 4)}px;border-radius:50%;background:#fff;"></div>
             </div>
           `;
         } else {
           iconHtml = `
-            <div class="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-lg border-2" style="border-color: ${color}">
-              <div class="w-3 h-3 rounded-full" style="background-color: ${color}"></div>
+            <div style="width:${dotSize}px;height:${dotSize}px;background:#fff;border-radius:50%;border:1.5px solid ${color};box-shadow:0 0 4px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;">
+              <div style="width:${Math.max(2, dotSize - 4)}px;height:${Math.max(2, dotSize - 4)}px;border-radius:50%;background-color:${color}"></div>
             </div>
           `;
         }
@@ -545,8 +545,8 @@ export default function PathDrawingMap({
         const icon = L.divIcon({
           html: iconHtml,
           className: 'waypoint-marker',
-          iconSize: isFirst || isLast ? [32, 32] : [24, 24],
-          iconAnchor: isFirst || isLast ? [16, 16] : [12, 12], // Centered end marker
+          iconSize: isFirst || isLast ? [32, 32] : [dotSize, dotSize],
+          iconAnchor: isFirst || isLast ? [16, 16] : [dotSize / 2, dotSize / 2], // Centered marker
         });
 
         const marker = L.marker([node.lat, node.lng], { 
