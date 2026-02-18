@@ -93,23 +93,32 @@ function useBackgroundCrossfade() {
     if (phase.currentImg !== prevPhaseImgRef.current && !transitioningRef.current) {
       transitioningRef.current = true;
       const doSwap = () => {
-        if (showA) {
-          setLayerBSrc(phase.currentImg);
+        const newImg = phase.currentImg;
+        const fadingFromA = showA;
+        if (fadingFromA) {
+          setLayerBSrc(newImg);
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
               setShowA(false);
             });
           });
         } else {
-          setLayerASrc(phase.currentImg);
+          setLayerASrc(newImg);
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
               setShowA(true);
             });
           });
         }
-        prevPhaseImgRef.current = phase.currentImg;
-        setTimeout(() => { setBlendOpacity(0); }, 2200);
+        prevPhaseImgRef.current = newImg;
+        setTimeout(() => {
+          setBlendOpacity(0);
+          if (fadingFromA) {
+            setLayerASrc(newImg);
+          } else {
+            setLayerBSrc(newImg);
+          }
+        }, 2200);
         setTimeout(() => { transitioningRef.current = false; }, 2500);
       };
 
@@ -334,7 +343,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:2.9.8
+              version:2.9.9
             </div>
           </div>
         </div>
