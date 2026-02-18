@@ -399,6 +399,20 @@ export default function PathDrawingMap({
     }
 
     // Render existing path markers (from other paths)
+    // First, build a coordinate frequency map to detect overlapping waypoints
+    const coordCounts = new Map<string, number>();
+    if (existingPaths && existingPaths.length > 0) {
+      existingPaths.forEach((path) => {
+        if (currentPathId && path.id === currentPathId) return;
+        if (path.nodes && path.nodes.length > 0) {
+          path.nodes.forEach((node) => {
+            const key = `${node.lat.toFixed(6)},${node.lng.toFixed(6)}`;
+            coordCounts.set(key, (coordCounts.get(key) || 0) + 1);
+          });
+        }
+      });
+    }
+
     existingPathMarkersRef.current.clear();
     if (existingPaths && existingPaths.length > 0) {
       existingPaths.forEach((path) => {
@@ -408,21 +422,41 @@ export default function PathDrawingMap({
 
         if (path.nodes && path.nodes.length > 0) {
           path.nodes.forEach((node, nodeIdx) => {
-            const iconHtml = `
-              <div class="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center shadow-sm border-2 border-gray-300 opacity-60">
-              </div>
-            `;
+            const coordKey = `${node.lat.toFixed(6)},${node.lng.toFixed(6)}`;
+            const overlapCount = coordCounts.get(coordKey) || 1;
+            const isOverlapping = overlapCount >= 2;
+
+            let iconHtml: string;
+            let iconSize: number;
+            if (isOverlapping) {
+              iconHtml = `
+                <div style="width:18px;height:18px;border-radius:50%;background:#8b5cf6;border:2.5px solid #fbbf24;box-shadow:0 0 6px 2px rgba(251,191,36,0.5);display:flex;align-items:center;justify-content:center;">
+                  <div style="width:6px;height:6px;border-radius:50%;background:#fff;"></div>
+                </div>
+              `;
+              iconSize = 18;
+            } else {
+              iconHtml = `
+                <div class="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center shadow-sm border-2 border-gray-300 opacity-60">
+                </div>
+              `;
+              iconSize = 16;
+            }
 
             const icon = L.divIcon({
               html: iconHtml,
               className: 'existing-waypoint-marker',
-              iconSize: [16, 16],
-              iconAnchor: [8, 8],
+              iconSize: [iconSize, iconSize],
+              iconAnchor: [iconSize / 2, iconSize / 2],
             });
+
+            const tooltipText = isOverlapping
+              ? `Connected junction (${overlapCount} paths overlap - click to connect)`
+              : 'Existing waypoint (click to connect)';
 
             const marker = L.marker([node.lat, node.lng], { icon })
               .addTo(mapInstanceRef.current)
-              .bindTooltip('Existing waypoint (click to connect)', {
+              .bindTooltip(tooltipText, {
                 permanent: false,
                 direction: 'top',
                 offset: [0, -10],

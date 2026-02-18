@@ -403,9 +403,12 @@ export default function AdminPaths() {
               <div className="lg:col-span-2">
                 <Card className="h-[600px] overflow-hidden">
                   <CampusMap 
-                    buildings={[]} 
+                    buildings={buildings as any} 
                     existingPaths={walkpaths} 
                     pathsColor="#22c55e" 
+                    hideKiosk
+                    thinPaths
+                    showBuildingNodes
                     onPathClick={(path) => handleOpenDialog(path, 'walkpath')}
                   />
                 </Card>
@@ -512,9 +515,12 @@ export default function AdminPaths() {
               <div className="lg:col-span-2">
                 <Card className="h-[600px] overflow-hidden">
                   <CampusMap 
-                    buildings={[]} 
+                    buildings={buildings as any} 
                     existingPaths={drivepaths} 
                     pathsColor="#3b82f6" 
+                    hideKiosk
+                    thinPaths
+                    showBuildingNodes
                     onPathClick={(path) => handleOpenDialog(path, 'drivepath')}
                   />
                 </Card>
