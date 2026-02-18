@@ -1,13 +1,12 @@
 import { Link } from "wouter";
 import { Map, Calendar, Users, Info, ClipboardList, HelpCircle } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useHomeInactivity } from "@/hooks/use-inactivity";
 import logoImage from "@assets/logo.png";
 
 import { Button } from "@/components/ui/button";
 import { Walkthrough, useWalkthrough } from "@/components/walkthrough";
 
-// Time phases configuration
 const TIME_PHASES = [
   { start: 5 * 60, end: 6 * 60, img: "/assets/Homepage Engine/5AM - 6AM.png" },
   { start: 6 * 60, end: 7 * 60, img: "/assets/Homepage Engine/6AM - 7AM.png" },
@@ -20,64 +19,122 @@ const TIME_PHASES = [
   { start: 0, end: 5 * 60, img: "/assets/Homepage Engine/9PM - 5AM.png" },
 ].sort((a, b) => a.start - b.start);
 
-export default function Landing() {
+function getPhaseForTime(timeInMinutes: number) {
+  let currentIdx = TIME_PHASES.findIndex(p => timeInMinutes >= p.start && timeInMinutes < p.end);
+  if (currentIdx === -1) currentIdx = TIME_PHASES.length - 1;
+  const currentPhase = TIME_PHASES[currentIdx];
+
+  let nextIdx = (currentIdx + 1) % TIME_PHASES.length;
+  let nextPhase = TIME_PHASES[nextIdx];
+  while (nextPhase.img === currentPhase.img && TIME_PHASES.some(p => p.img !== currentPhase.img)) {
+    nextIdx = (nextIdx + 1) % TIME_PHASES.length;
+    nextPhase = TIME_PHASES[nextIdx];
+  }
+
+  const blendStartMinutes = currentPhase.end - 15;
+  let opacity = 0;
+  if (timeInMinutes >= blendStartMinutes && nextPhase.img !== currentPhase.img) {
+    const isMidnightSplit = currentPhase.end === 24 * 60;
+    if (!isMidnightSplit) {
+      opacity = Math.min(1, Math.max(0, (timeInMinutes - blendStartMinutes) / 15));
+    }
+  }
+
+  return { currentImg: currentPhase.img, nextImg: nextPhase.img, nextOpacity: opacity };
+}
+
+function preloadImage(src: string): Promise<void> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+    img.src = src;
+  });
+}
+
+function useBackgroundCrossfade() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const { isOpen, openWalkthrough, closeWalkthrough } = useWalkthrough();
-  
-  // Calculate blending states
-  const blendData = useMemo(() => {
-    const hours = currentTime.getHours();
-    const minutes = currentTime.getMinutes();
-    const seconds = currentTime.getSeconds();
-    const timeInMinutes = hours * 60 + minutes + seconds / 60;
+  const [layerASrc, setLayerASrc] = useState('');
+  const [layerBSrc, setLayerBSrc] = useState('');
+  const [showA, setShowA] = useState(true);
+  const [blendSrc, setBlendSrc] = useState('');
+  const [blendOpacity, setBlendOpacity] = useState(0);
+  const prevPhaseImgRef = useRef('');
+  const preloadedRef = useRef<Set<string>>(new Set());
+  const transitioningRef = useRef(false);
 
-    // Find current phase
-    let currentIdx = TIME_PHASES.findIndex(p => timeInMinutes >= p.start && timeInMinutes < p.end);
-    if (currentIdx === -1) {
-      // Fallback for edge cases (should not happen with 0 and 24*60 coverage)
-      currentIdx = TIME_PHASES.length - 1;
+  useEffect(() => {
+    const now = new Date();
+    const t = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    const phase = getPhaseForTime(t);
+    setLayerASrc(phase.currentImg);
+    setLayerBSrc(phase.currentImg);
+    setBlendSrc(phase.nextImg);
+    prevPhaseImgRef.current = phase.currentImg;
+    preloadedRef.current.add(phase.currentImg);
+    if (phase.nextImg !== phase.currentImg) {
+      preloadImage(phase.nextImg).then(() => preloadedRef.current.add(phase.nextImg));
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const t = currentTime.getHours() * 60 + currentTime.getMinutes() + currentTime.getSeconds() / 60;
+    const phase = getPhaseForTime(t);
+
+    if (phase.nextImg !== phase.currentImg && !preloadedRef.current.has(phase.nextImg)) {
+      preloadImage(phase.nextImg).then(() => preloadedRef.current.add(phase.nextImg));
     }
 
-    const currentPhase = TIME_PHASES[currentIdx];
-    
-    // Find next phase and ensure it's different to avoid sudden jumps
-    let nextIdx = (currentIdx + 1) % TIME_PHASES.length;
-    let nextPhase = TIME_PHASES[nextIdx];
-    
-    // If next phase is the same as current (e.g. night split at 0), look further
-    while (nextPhase.img === currentPhase.img && TIME_PHASES.some(p => p.img !== currentPhase.img)) {
-      nextIdx = (nextIdx + 1) % TIME_PHASES.length;
-      nextPhase = TIME_PHASES[nextIdx];
-    }
+    if (phase.currentImg !== prevPhaseImgRef.current && !transitioningRef.current) {
+      transitioningRef.current = true;
+      const doSwap = () => {
+        if (showA) {
+          setLayerBSrc(phase.currentImg);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setShowA(false);
+            });
+          });
+        } else {
+          setLayerASrc(phase.currentImg);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setShowA(true);
+            });
+          });
+        }
+        setBlendOpacity(0);
+        prevPhaseImgRef.current = phase.currentImg;
+        setTimeout(() => { transitioningRef.current = false; }, 2500);
+      };
 
-    // Calculate how far we are into the current phase for blending
-    // We start blending into the next phase in the last 15 minutes of the current phase
-    const blendStartMinutes = currentPhase.end - 15;
-    let opacity = 0;
-
-    // Only blend if the next phase is actually a different image
-    // Also ensure we don't blend if the current phase shouldn't transition (e.g. midnight)
-    if (timeInMinutes >= blendStartMinutes && nextPhase.img !== currentPhase.img) {
-      // Don't transition if current phase is near midnight and next phase is the split night phase
-      // or if we are in the 9PM-12AM phase (starts at 21*60, ends at 24*60)
-      const isMidnightSplit = currentPhase.end === 24 * 60;
-      
-      if (!isMidnightSplit) {
-        opacity = Math.min(1, Math.max(0, (timeInMinutes - blendStartMinutes) / 15));
+      if (preloadedRef.current.has(phase.currentImg)) {
+        doSwap();
+      } else {
+        preloadImage(phase.currentImg).then(() => {
+          preloadedRef.current.add(phase.currentImg);
+          doSwap();
+        });
       }
     }
 
-    // Fix the "blink" by ensuring that when the phase fully transitions, 
-    // the next image is already fully opaque and the transition is seamless.
-    // If we are at the very beginning of a phase (opacity 0), we might see a flash 
-    // if the previous "nextImg" was different.
-    
-    return {
-      currentImg: currentPhase.img,
-      nextImg: nextPhase.img,
-      nextOpacity: opacity
-    };
-  }, [currentTime]);
+    if (phase.currentImg === prevPhaseImgRef.current) {
+      setBlendOpacity(phase.nextOpacity);
+      setBlendSrc(phase.nextImg);
+    }
+  }, [currentTime, showA]);
+
+  return { layerASrc, layerBSrc, showA, blendSrc, blendOpacity, currentTime };
+}
+
+export default function Landing() {
+  const { layerASrc, layerBSrc, showA, blendSrc, blendOpacity, currentTime } = useBackgroundCrossfade();
+  const { isOpen, openWalkthrough, closeWalkthrough } = useWalkthrough();
 
   const isDaytime = useMemo(() => {
     const hours = currentTime.getHours();
@@ -96,15 +153,7 @@ export default function Landing() {
     ? ""
     : "[text-shadow:_-0.5px_-0.5px_0_#000,_0.5px_-0.5px_0_#000,_-0.5px_0.5px_0_#000,_0.5px_0.5px_0_#000]";
 
-  // Activate screensaver after 30 seconds of inactivity
   useHomeInactivity();
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
@@ -127,21 +176,23 @@ export default function Landing() {
   return (
     <div className="h-screen bg-black flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none z-0">
-        {/* Base Layer: Current Phase */}
         <img
-          src={blendData.currentImg}
+          src={layerASrc}
           alt=""
           className="absolute inset-0 w-full h-full object-fill"
+          style={{ opacity: showA ? 1 : 0, transition: 'opacity 2s ease-in-out' }}
         />
-        {/* Blend Layer: Next Phase */}
         <img
-          src={blendData.nextImg}
+          src={layerBSrc}
           alt=""
-          className="absolute inset-0 w-full h-full object-fill transition-opacity duration-[2000ms] ease-in-out"
-          style={{ 
-            opacity: blendData.nextOpacity,
-            visibility: blendData.nextOpacity > 0 ? 'visible' : 'hidden'
-          }}
+          className="absolute inset-0 w-full h-full object-fill"
+          style={{ opacity: showA ? 0 : 1, transition: 'opacity 2s ease-in-out' }}
+        />
+        <img
+          src={blendSrc}
+          alt=""
+          className="absolute inset-0 w-full h-full object-fill"
+          style={{ opacity: blendOpacity, transition: 'opacity 1s linear' }}
         />
       </div>
       
@@ -283,7 +334,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:2.9.5
+              version:2.9.6
             </div>
           </div>
         </div>
