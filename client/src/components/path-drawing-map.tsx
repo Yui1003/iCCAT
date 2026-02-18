@@ -500,7 +500,7 @@ export default function PathDrawingMap({
         marker.on('drag', (e: any) => {
           const newLatLng = e.target.getLatLng();
           const newNodes = [...nodes];
-          const oldNode = newNodes[index];
+          const oldNode = { ...newNodes[index] };
           newNodes[index] = { lat: newLatLng.lat, lng: newLatLng.lng };
 
           // Synchronize with other waypoints from other paths that are at the same location
@@ -510,7 +510,8 @@ export default function PathDrawingMap({
               if (path.nodes && path.nodes.length > 0) {
                 path.nodes.forEach((node) => {
                   // If the waypoint was at the same location as our node before moving
-                  if (Math.abs(node.lat - oldNode.lat) < 0.00001 && Math.abs(node.lng - oldNode.lng) < 0.00001) {
+                  // Using a slightly larger tolerance to ensure reliable connection detection
+                  if (Math.abs(node.lat - oldNode.lat) < 0.0001 && Math.abs(node.lng - oldNode.lng) < 0.0001) {
                     node.lat = newLatLng.lat;
                     node.lng = newLatLng.lng;
                   }
@@ -518,6 +519,17 @@ export default function PathDrawingMap({
               }
             });
           }
+
+          // Update other visual markers for synchronized waypoints
+          markersRef.current.forEach(m => {
+            if (m === e.target) return;
+            // Check if this is a waypoint marker (not building or existing path marker)
+            // or if it's an existing path marker that should move
+            const mLatLng = m.getLatLng();
+            if (Math.abs(mLatLng.lat - oldNode.lat) < 0.0001 && Math.abs(mLatLng.lng - oldNode.lng) < 0.0001) {
+              m.setLatLng(newLatLng);
+            }
+          });
 
           // Don't call onNodesChange here to avoid expensive re-renders
           // Instead, just update the polyline visually
