@@ -366,9 +366,22 @@ export default function PathDrawingMap({
 
     // Render building markers - clickable to snap paths to buildings
     if (buildings && buildings.length > 0) {
+      // Build a set of all coordinates used in ALL paths (including current)
+      const allPathCoords = new Set<string>();
+      if (existingPaths) {
+        existingPaths.forEach(p => p.nodes?.forEach(n => 
+          allPathCoords.add(`${n.lat.toFixed(6)},${n.lng.toFixed(6)}`)
+        ));
+      }
+      nodes.forEach(n => allPathCoords.add(`${n.lat.toFixed(6)},${n.lng.toFixed(6)}`));
+
       buildings.forEach((building) => {
+        const coordKey = `${building.lat.toFixed(6)},${building.lng.toFixed(6)}`;
+        const isConnected = allPathCoords.has(coordKey);
+        const markerColor = isConnected ? "#f97316" : "#9ca3af"; // Orange if connected, Gray if not
+
         const iconHtml = `
-          <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white font-bold text-xs text-white">
+          <div class="w-4 h-4 rounded-full flex items-center justify-center shadow-md border border-white font-bold text-[8px] text-white" style="background-color: ${markerColor}">
             B
           </div>
         `;
@@ -376,8 +389,8 @@ export default function PathDrawingMap({
         const icon = L.divIcon({
           html: iconHtml,
           className: 'building-waypoint-marker',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
         });
 
         const marker = L.marker([building.lat, building.lng], { icon })
@@ -514,16 +527,16 @@ export default function PathDrawingMap({
         let iconHtml = '';
         if (isFirst) {
           iconHtml = `
-            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-              <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-md border-2 border-white">
+              <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
               </svg>
             </div>
           `;
         } else if (isLast) {
           iconHtml = `
-            <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-              <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-md border-2 border-white">
+              <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
               </svg>
             </div>
@@ -545,8 +558,8 @@ export default function PathDrawingMap({
         const icon = L.divIcon({
           html: iconHtml,
           className: 'waypoint-marker',
-          iconSize: isFirst || isLast ? [32, 32] : [dotSize, dotSize],
-          iconAnchor: isFirst || isLast ? [16, 16] : [dotSize / 2, dotSize / 2], // Centered marker
+          iconSize: isFirst || isLast ? [24, 24] : [dotSize, dotSize],
+          iconAnchor: isFirst || isLast ? [12, 12] : [dotSize / 2, dotSize / 2], // Centered marker
         });
 
         const marker = L.marker([node.lat, node.lng], { 
