@@ -500,20 +500,17 @@ export default function PathDrawingMap({
         marker.on('drag', (e: any) => {
           const newLatLng = e.target.getLatLng();
           const newNodes = [...nodes];
-          const oldNode = { ...newNodes[index] };
+          const oldNode = newNodes[index];
           newNodes[index] = { lat: newLatLng.lat, lng: newLatLng.lng };
 
-          // We only move waypoints that were ALREADY connected (at the same location)
-          // before the drag started.
-          const connectedWaypoints: any[] = [];
-
-          // 1. Find connected nodes in OTHER paths
+          // Synchronize with other waypoints from other paths that are at the same location
           if (existingPaths && existingPaths.length > 0) {
             existingPaths.forEach((path) => {
               if (currentPathId && path.id === currentPathId) return;
               if (path.nodes && path.nodes.length > 0) {
                 path.nodes.forEach((node) => {
-                  if (Math.abs(node.lat - oldNode.lat) < 0.0001 && Math.abs(node.lng - oldNode.lng) < 0.0001) {
+                  // If the waypoint was at the same location as our node before moving
+                  if (Math.abs(node.lat - oldNode.lat) < 0.00001 && Math.abs(node.lng - oldNode.lng) < 0.00001) {
                     node.lat = newLatLng.lat;
                     node.lng = newLatLng.lng;
                   }
@@ -521,16 +518,6 @@ export default function PathDrawingMap({
               }
             });
           }
-
-          // 2. Update visual markers for those ALREADY connected waypoints
-          markersRef.current.forEach(m => {
-            if (m === e.target) return;
-            const mLatLng = m.getLatLng();
-            // Only move markers that were at the exact same spot as our old position
-            if (Math.abs(mLatLng.lat - oldNode.lat) < 0.0001 && Math.abs(mLatLng.lng - oldNode.lng) < 0.0001) {
-              m.setLatLng(newLatLng);
-            }
-          });
 
           // Don't call onNodesChange here to avoid expensive re-renders
           // Instead, just update the polyline visually
