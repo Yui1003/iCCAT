@@ -503,14 +503,16 @@ export default function PathDrawingMap({
           const oldNode = { ...newNodes[index] };
           newNodes[index] = { lat: newLatLng.lat, lng: newLatLng.lng };
 
-          // Synchronize with other waypoints from other paths that are at the same location
+          // We only move waypoints that were ALREADY connected (at the same location)
+          // before the drag started.
+          const connectedWaypoints: any[] = [];
+
+          // 1. Find connected nodes in OTHER paths
           if (existingPaths && existingPaths.length > 0) {
             existingPaths.forEach((path) => {
               if (currentPathId && path.id === currentPathId) return;
               if (path.nodes && path.nodes.length > 0) {
                 path.nodes.forEach((node) => {
-                  // If the waypoint was at the same location as our node before moving
-                  // Using a slightly larger tolerance to ensure reliable connection detection
                   if (Math.abs(node.lat - oldNode.lat) < 0.0001 && Math.abs(node.lng - oldNode.lng) < 0.0001) {
                     node.lat = newLatLng.lat;
                     node.lng = newLatLng.lng;
@@ -520,12 +522,11 @@ export default function PathDrawingMap({
             });
           }
 
-          // Update other visual markers for synchronized waypoints
+          // 2. Update visual markers for those ALREADY connected waypoints
           markersRef.current.forEach(m => {
             if (m === e.target) return;
-            // Check if this is a waypoint marker (not building or existing path marker)
-            // or if it's an existing path marker that should move
             const mLatLng = m.getLatLng();
+            // Only move markers that were at the exact same spot as our old position
             if (Math.abs(mLatLng.lat - oldNode.lat) < 0.0001 && Math.abs(mLatLng.lng - oldNode.lng) < 0.0001) {
               m.setLatLng(newLatLng);
             }
