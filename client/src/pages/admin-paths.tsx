@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Route as RouteIcon, Plus, Pencil, Trash2, Accessibility, HelpCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -37,6 +37,7 @@ export default function AdminPaths() {
   const [drivepathSearch, setDrivepathSearch] = useState("");
   const [polarTracking, setPolarTracking] = useState(false);
   const [polarIncrement, setPolarIncrement] = useState(45);
+  const modifiedConnectedPathsRef = useRef<Map<string, { id: string; nodes: PathNode[] }>>(new Map());
   const { toast } = useToast();
 
   const { data: buildings = [] } = useQuery<Building[]>({
@@ -133,6 +134,7 @@ export default function AdminPaths() {
       setIsPwdFriendly(false); // Default to off for new paths
       setStrictlyPwdOnly(false); // Default to not strictly PWD-only
     }
+    modifiedConnectedPathsRef.current.clear();
     setIsDialogOpen(true);
   };
 
@@ -144,7 +146,14 @@ export default function AdminPaths() {
     setPathNodes([]);
     setIsPwdFriendly(false);
     setStrictlyPwdOnly(false);
+    modifiedConnectedPathsRef.current.clear();
   };
+
+  const handleConnectedPathsChange = useCallback((modifiedPaths: Array<{ id: string; nodes: PathNode[] }>) => {
+    modifiedPaths.forEach((mp) => {
+      modifiedConnectedPathsRef.current.set(mp.id, mp);
+    });
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,12 +187,44 @@ export default function AdminPaths() {
       strictlyPwdOnly
     };
 
+    const saveConnectedPaths = () => {
+      if (modifiedConnectedPathsRef.current.size === 0) return;
+
+      const walkpathIds = new Set((walkpaths || []).map((w: any) => w.id));
+      const drivepathIds = new Set((drivepaths || []).map((d: any) => d.id));
+
+      modifiedConnectedPathsRef.current.forEach((modPath) => {
+        const originalPath = [...(walkpaths || []), ...(drivepaths || [])].find((p: any) => p.id === modPath.id);
+        if (!originalPath) return;
+
+        if (walkpathIds.has(modPath.id)) {
+          apiRequest('PUT', `/api/walkpaths/${modPath.id}`, {
+            name: originalPath.name,
+            nodes: modPath.nodes,
+            isPwdFriendly: originalPath.isPwdFriendly,
+            strictlyPwdOnly: originalPath.strictlyPwdOnly
+          }).then(() => {
+            invalidateEndpointCache('/api/walkpaths', queryClient);
+          });
+        } else if (drivepathIds.has(modPath.id)) {
+          apiRequest('PUT', `/api/drivepaths/${modPath.id}`, {
+            name: originalPath.name,
+            nodes: modPath.nodes
+          }).then(() => {
+            invalidateEndpointCache('/api/drivepaths', queryClient);
+          });
+        }
+      });
+      modifiedConnectedPathsRef.current.clear();
+    };
+
     if (editingPath) {
       if (editingPathType === "walkpath") {
         updateWalkpath.mutate({ id: editingPath.id, data: walkpathData });
       } else {
         updateDrivepath.mutate({ id: editingPath.id, data: baseData });
       }
+      saveConnectedPaths();
     } else {
       if (activeTab === "walkpaths") {
         createWalkpath.mutate(walkpathData);
@@ -287,6 +328,7 @@ export default function AdminPaths() {
                       currentPathId={editingPath?.id}
                       polarTracking={polarTracking}
                       polarIncrement={polarIncrement}
+                      onConnectedPathsChange={handleConnectedPathsChange}
                       buildings={buildings.map(b => ({ 
                         id: b.id, 
                         name: b.name, 

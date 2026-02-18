@@ -33,6 +33,7 @@ interface PathDrawingMapProps {
   buildings?: Building[];
   polarTracking?: boolean;
   polarIncrement?: number;
+  onConnectedPathsChange?: (modifiedPaths: Array<{ id: string; nodes: PathNode[] }>) => void;
 }
 
 declare global {
@@ -50,7 +51,8 @@ export default function PathDrawingMap({
   currentPathId,
   buildings = [],
   polarTracking = false,
-  polarIncrement = 45
+  polarIncrement = 45,
+  onConnectedPathsChange
 }: PathDrawingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -544,19 +546,32 @@ export default function PathDrawingMap({
           const newNodes = [...nodes];
           newNodes[index] = { lat: newLatLng.lat, lng: newLatLng.lng };
 
+          const modifiedPathsMap = new Map<string, { id: string; nodes: PathNode[] }>();
+
           if (existingPaths && existingPaths.length > 0 && dragStartPosRef.current) {
             const origPos = dragStartPosRef.current;
             existingPaths.forEach((path) => {
               if (currentPathId && path.id === currentPathId) return;
+              if (!path.id) return;
               if (path.nodes && path.nodes.length > 0) {
-                path.nodes.forEach((pNode) => {
+                let pathModified = false;
+                const updatedNodes = path.nodes.map((pNode) => {
                   if (Math.abs(pNode.lat - origPos.lat) < 0.00001 && Math.abs(pNode.lng - origPos.lng) < 0.00001) {
-                    pNode.lat = newLatLng.lat;
-                    pNode.lng = newLatLng.lng;
+                    pathModified = true;
+                    return { lat: newLatLng.lat, lng: newLatLng.lng };
                   }
+                  return { lat: pNode.lat, lng: pNode.lng };
                 });
+                if (pathModified) {
+                  path.nodes = updatedNodes;
+                  modifiedPathsMap.set(path.id, { id: path.id, nodes: updatedNodes });
+                }
               }
             });
+          }
+
+          if (onConnectedPathsChange && modifiedPathsMap.size > 0) {
+            onConnectedPathsChange(Array.from(modifiedPathsMap.values()));
           }
 
           connectedMarkersRef.current = [];
