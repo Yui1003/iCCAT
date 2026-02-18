@@ -108,8 +108,8 @@ function useBackgroundCrossfade() {
             });
           });
         }
-        setBlendOpacity(0);
         prevPhaseImgRef.current = phase.currentImg;
+        setTimeout(() => { setBlendOpacity(0); }, 2200);
         setTimeout(() => { transitioningRef.current = false; }, 2500);
       };
 
@@ -334,7 +334,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:2.9.6
+              version:2.9.7
             </div>
           </div>
         </div>
