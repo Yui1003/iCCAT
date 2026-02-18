@@ -123,7 +123,7 @@ function useBackgroundCrossfade() {
       }
     }
 
-    if (phase.currentImg === prevPhaseImgRef.current) {
+    if (phase.currentImg === prevPhaseImgRef.current && !transitioningRef.current) {
       setBlendOpacity(phase.nextOpacity);
       setBlendSrc(phase.nextImg);
     }
@@ -334,7 +334,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:2.9.7
+              version:2.9.8
             </div>
           </div>
         </div>
