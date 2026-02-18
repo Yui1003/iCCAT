@@ -280,7 +280,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:2.8.8
+              version:2.8.9
             </div>
           </div>
         </div>
