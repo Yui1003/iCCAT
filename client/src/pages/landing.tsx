@@ -43,6 +43,8 @@ function getPhaseForTime(timeInMinutes: number) {
   return { currentImg: currentPhase.img, nextImg: nextPhase.img, nextOpacity: opacity };
 }
 
+const FADE_MS = 2000;
+
 function useBackgroundCrossfade() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [baseSrc, setBaseSrc] = useState('');
@@ -91,12 +93,16 @@ function useBackgroundCrossfade() {
 
     if (phase.currentImg !== prevPhaseImgRef.current && !swappingRef.current) {
       swappingRef.current = true;
+
       ensureLoaded(phase.currentImg).then(() => {
         setBaseSrc(phase.currentImg);
-        setOverlaySrc(phase.nextImg);
-        setOverlayOpacity(phase.nextOpacity);
-        prevPhaseImgRef.current = phase.currentImg;
-        swappingRef.current = false;
+        setOverlayOpacity(0);
+
+        setTimeout(() => {
+          setOverlaySrc(phase.nextImg);
+          prevPhaseImgRef.current = phase.currentImg;
+          swappingRef.current = false;
+        }, FADE_MS + 200);
       });
     } else if (!swappingRef.current) {
       setOverlaySrc(phase.nextImg);
@@ -302,7 +308,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:3.0.0
+              version:3.0.1
             </div>
           </div>
         </div>
