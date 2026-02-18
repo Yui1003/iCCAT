@@ -67,6 +67,11 @@ export default function Landing() {
       }
     }
 
+    // Fix the "blink" by ensuring that when the phase fully transitions, 
+    // the next image is already fully opaque and the transition is seamless.
+    // If we are at the very beginning of a phase (opacity 0), we might see a flash 
+    // if the previous "nextImg" was different.
+    
     return {
       currentImg: currentPhase.img,
       nextImg: nextPhase.img,
@@ -124,17 +129,15 @@ export default function Landing() {
       <div className="absolute inset-0 pointer-events-none z-0">
         {/* Base Layer: Current Phase */}
         <img
-          key={`current-${blendData.currentImg}`}
           src={blendData.currentImg}
           alt=""
           className="absolute inset-0 w-full h-full object-fill"
         />
         {/* Blend Layer: Next Phase */}
         <img
-          key={`next-${blendData.nextImg}`}
           src={blendData.nextImg}
           alt=""
-          className="absolute inset-0 w-full h-full object-fill transition-opacity duration-[1000ms] ease-linear"
+          className="absolute inset-0 w-full h-full object-fill transition-opacity duration-[2000ms] ease-in-out"
           style={{ 
             opacity: blendData.nextOpacity,
             visibility: blendData.nextOpacity > 0 ? 'visible' : 'hidden'
@@ -280,7 +283,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:2.9.4
+              version:2.9.5
             </div>
           </div>
         </div>
