@@ -43,37 +43,36 @@ function getPhaseForTime(timeInMinutes: number) {
   return { currentImg: currentPhase.img, nextImg: nextPhase.img, nextOpacity: opacity };
 }
 
-function preloadImage(src: string): Promise<void> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve();
-    img.onerror = () => resolve();
-    img.src = src;
-  });
-}
-
 function useBackgroundCrossfade() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [layerASrc, setLayerASrc] = useState('');
-  const [layerBSrc, setLayerBSrc] = useState('');
-  const [showA, setShowA] = useState(true);
-  const [blendSrc, setBlendSrc] = useState('');
-  const [blendOpacity, setBlendOpacity] = useState(0);
+  const [baseSrc, setBaseSrc] = useState('');
+  const [overlaySrc, setOverlaySrc] = useState('');
+  const [overlayOpacity, setOverlayOpacity] = useState(0);
   const prevPhaseImgRef = useRef('');
   const preloadedRef = useRef<Set<string>>(new Set());
-  const transitioningRef = useRef(false);
+  const swappingRef = useRef(false);
+
+  const ensureLoaded = useRef((src: string): Promise<void> => {
+    if (preloadedRef.current.has(src)) return Promise.resolve();
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => { preloadedRef.current.add(src); resolve(); };
+      img.onerror = () => { preloadedRef.current.add(src); resolve(); };
+      img.src = src;
+    });
+  }).current;
 
   useEffect(() => {
     const now = new Date();
     const t = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
     const phase = getPhaseForTime(t);
-    setLayerASrc(phase.currentImg);
-    setLayerBSrc(phase.currentImg);
-    setBlendSrc(phase.nextImg);
+    setBaseSrc(phase.currentImg);
+    setOverlaySrc(phase.nextImg);
+    setOverlayOpacity(phase.nextOpacity);
     prevPhaseImgRef.current = phase.currentImg;
     preloadedRef.current.add(phase.currentImg);
     if (phase.nextImg !== phase.currentImg) {
-      preloadImage(phase.nextImg).then(() => preloadedRef.current.add(phase.nextImg));
+      ensureLoaded(phase.nextImg);
     }
   }, []);
 
@@ -86,63 +85,30 @@ function useBackgroundCrossfade() {
     const t = currentTime.getHours() * 60 + currentTime.getMinutes() + currentTime.getSeconds() / 60;
     const phase = getPhaseForTime(t);
 
-    if (phase.nextImg !== phase.currentImg && !preloadedRef.current.has(phase.nextImg)) {
-      preloadImage(phase.nextImg).then(() => preloadedRef.current.add(phase.nextImg));
+    if (phase.nextImg !== phase.currentImg) {
+      ensureLoaded(phase.nextImg);
     }
 
-    if (phase.currentImg !== prevPhaseImgRef.current && !transitioningRef.current) {
-      transitioningRef.current = true;
-      const doSwap = () => {
-        const newImg = phase.currentImg;
-        const fadingFromA = showA;
-        if (fadingFromA) {
-          setLayerBSrc(newImg);
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              setShowA(false);
-            });
-          });
-        } else {
-          setLayerASrc(newImg);
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              setShowA(true);
-            });
-          });
-        }
-        prevPhaseImgRef.current = newImg;
-        setTimeout(() => {
-          setBlendOpacity(0);
-          if (fadingFromA) {
-            setLayerASrc(newImg);
-          } else {
-            setLayerBSrc(newImg);
-          }
-        }, 2200);
-        setTimeout(() => { transitioningRef.current = false; }, 2500);
-      };
-
-      if (preloadedRef.current.has(phase.currentImg)) {
-        doSwap();
-      } else {
-        preloadImage(phase.currentImg).then(() => {
-          preloadedRef.current.add(phase.currentImg);
-          doSwap();
-        });
-      }
+    if (phase.currentImg !== prevPhaseImgRef.current && !swappingRef.current) {
+      swappingRef.current = true;
+      ensureLoaded(phase.currentImg).then(() => {
+        setBaseSrc(phase.currentImg);
+        setOverlaySrc(phase.nextImg);
+        setOverlayOpacity(phase.nextOpacity);
+        prevPhaseImgRef.current = phase.currentImg;
+        swappingRef.current = false;
+      });
+    } else if (!swappingRef.current) {
+      setOverlaySrc(phase.nextImg);
+      setOverlayOpacity(phase.nextOpacity);
     }
+  }, [currentTime]);
 
-    if (phase.currentImg === prevPhaseImgRef.current && !transitioningRef.current) {
-      setBlendOpacity(phase.nextOpacity);
-      setBlendSrc(phase.nextImg);
-    }
-  }, [currentTime, showA]);
-
-  return { layerASrc, layerBSrc, showA, blendSrc, blendOpacity, currentTime };
+  return { baseSrc, overlaySrc, overlayOpacity, currentTime };
 }
 
 export default function Landing() {
-  const { layerASrc, layerBSrc, showA, blendSrc, blendOpacity, currentTime } = useBackgroundCrossfade();
+  const { baseSrc, overlaySrc, overlayOpacity, currentTime } = useBackgroundCrossfade();
   const { isOpen, openWalkthrough, closeWalkthrough } = useWalkthrough();
 
   const isDaytime = useMemo(() => {
@@ -186,22 +152,15 @@ export default function Landing() {
     <div className="h-screen bg-black flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none z-0">
         <img
-          src={layerASrc}
+          src={baseSrc}
           alt=""
           className="absolute inset-0 w-full h-full object-fill"
-          style={{ opacity: showA ? 1 : 0, transition: 'opacity 2s ease-in-out' }}
         />
         <img
-          src={layerBSrc}
+          src={overlaySrc}
           alt=""
           className="absolute inset-0 w-full h-full object-fill"
-          style={{ opacity: showA ? 0 : 1, transition: 'opacity 2s ease-in-out' }}
-        />
-        <img
-          src={blendSrc}
-          alt=""
-          className="absolute inset-0 w-full h-full object-fill"
-          style={{ opacity: blendOpacity, transition: 'opacity 1s linear' }}
+          style={{ opacity: overlayOpacity, transition: 'opacity 2s linear' }}
         />
       </div>
       
@@ -343,7 +302,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:2.9.9
+              version:3.0.0
             </div>
           </div>
         </div>
