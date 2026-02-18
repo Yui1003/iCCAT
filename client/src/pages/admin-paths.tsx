@@ -149,6 +149,17 @@ export default function AdminPaths() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // If no waypoints, delete the path if it exists
+    if (pathNodes.length === 0 && editingPath) {
+      if (editingPathType === "walkpath") {
+        deleteWalkpath.mutate(editingPath.id);
+      } else {
+        deleteDrivepath.mutate(editingPath.id);
+      }
+      setIsDialogOpen(false);
+      return;
+    }
+
     if (pathNodes.length < 2) {
       toast({ title: "Please add at least 2 waypoints to create a path", variant: "destructive" });
       return;
@@ -327,7 +338,9 @@ export default function AdminPaths() {
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full" disabled={pathNodes.length < 2}>{editingPath ? 'Update Path' : 'Create Path'}</Button>
+                <Button type="submit" className="w-full">
+                  {pathNodes.length === 0 && editingPath ? 'Delete Path' : (editingPath ? 'Update Path' : 'Create Path')}
+                </Button>
               </form>
             </DialogContent>
           </Dialog>

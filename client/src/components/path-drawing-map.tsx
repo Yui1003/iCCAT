@@ -500,22 +500,41 @@ export default function PathDrawingMap({
         marker.on('drag', (e: any) => {
           const newLatLng = e.target.getLatLng();
           const newNodes = [...nodes];
+          const oldNode = newNodes[index];
           newNodes[index] = { lat: newLatLng.lat, lng: newLatLng.lng };
+
+          // Synchronize with other waypoints from other paths that are at the same location
+          if (existingPaths && existingPaths.length > 0) {
+            existingPaths.forEach((path) => {
+              if (currentPathId && path.id === currentPathId) return;
+              if (path.nodes && path.nodes.length > 0) {
+                path.nodes.forEach((node) => {
+                  // If the waypoint was at the same location as our node before moving
+                  if (Math.abs(node.lat - oldNode.lat) < 0.00001 && Math.abs(node.lng - oldNode.lng) < 0.00001) {
+                    node.lat = newLatLng.lat;
+                    node.lng = newLatLng.lng;
+                  }
+                });
+              }
+            });
+          }
+
           // Don't call onNodesChange here to avoid expensive re-renders
           // Instead, just update the polyline visually
           if (polylineRef.current) {
             polylineRef.current.setLatLngs(newNodes);
-          }
-          // Also update the preview line if dragging the last node
-          if (index === nodes.length - 1 && previewLineRef.current) {
-            // Mouse move handler usually handles this, but let's be safe
           }
         });
 
         marker.on('dragend', (e: any) => {
           const newLatLng = e.target.getLatLng();
           const newNodes = [...nodes];
+          const oldNode = newNodes[index];
           newNodes[index] = { lat: newLatLng.lat, lng: newLatLng.lng };
+
+          // Final update for onNodesChange and notify parent about potential existing path changes
+          // Note: In a real app, we might need a separate callback to update other paths in the database
+          // but here we are primarily focused on the visual connection in the editor.
           onNodesChange(newNodes);
         });
 
