@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Route as RouteIcon, Plus, Pencil, Trash2, Accessibility, HelpCircle } from "lucide-react";
+import { Route as RouteIcon, Plus, Pencil, Trash2, Accessibility, HelpCircle, Building2, MapPin, GitBranch } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,9 @@ export default function AdminPaths() {
   const [drivepathSearch, setDrivepathSearch] = useState("");
   const [polarTracking, setPolarTracking] = useState(false);
   const [polarIncrement, setPolarIncrement] = useState(45);
+  const [showBuildingMarkers, setShowBuildingMarkers] = useState(true);
+  const [showBuildingNodes, setShowBuildingNodes] = useState(true);
+  const [showPathDashes, setShowPathDashes] = useState(true);
   const modifiedConnectedPathsRef = useRef<Map<string, { id: string; nodes: PathNode[] }>>(new Map());
   const { toast } = useToast();
 
@@ -399,6 +402,39 @@ export default function AdminPaths() {
           </TabsList>
 
           <TabsContent value="walkpaths">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs text-muted-foreground mr-1">Filters:</span>
+              <Button
+                size="sm"
+                variant={showBuildingMarkers ? "default" : "outline"}
+                className="toggle-elevate"
+                onClick={() => setShowBuildingMarkers(!showBuildingMarkers)}
+                data-testid="button-toggle-building-markers"
+              >
+                <Building2 className="w-3.5 h-3.5 mr-1" />
+                Buildings
+              </Button>
+              <Button
+                size="sm"
+                variant={showBuildingNodes ? "default" : "outline"}
+                className="toggle-elevate"
+                onClick={() => setShowBuildingNodes(!showBuildingNodes)}
+                data-testid="button-toggle-building-nodes"
+              >
+                <MapPin className="w-3.5 h-3.5 mr-1" />
+                Nodes
+              </Button>
+              <Button
+                size="sm"
+                variant={showPathDashes ? "default" : "outline"}
+                className="toggle-elevate"
+                onClick={() => setShowPathDashes(!showPathDashes)}
+                data-testid="button-toggle-path-dashes"
+              >
+                <GitBranch className="w-3.5 h-3.5 mr-1" />
+                Paths
+              </Button>
+            </div>
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <Card className="h-[600px] overflow-hidden">
@@ -407,8 +443,11 @@ export default function AdminPaths() {
                     existingPaths={walkpaths} 
                     pathsColor="#22c55e" 
                     hideKiosk
+                    hidePolygons
                     thinPaths
-                    showBuildingNodes
+                    showBuildingNodes={showBuildingNodes}
+                    hideBuildingMarkers={!showBuildingMarkers}
+                    hidePaths={!showPathDashes}
                     onPathClick={(path) => handleOpenDialog(path, 'walkpath')}
                   />
                 </Card>
@@ -511,6 +550,39 @@ export default function AdminPaths() {
           </TabsContent>
 
           <TabsContent value="drivepaths">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs text-muted-foreground mr-1">Filters:</span>
+              <Button
+                size="sm"
+                variant={showBuildingMarkers ? "default" : "outline"}
+                className="toggle-elevate"
+                onClick={() => setShowBuildingMarkers(!showBuildingMarkers)}
+                data-testid="button-toggle-building-markers-drive"
+              >
+                <Building2 className="w-3.5 h-3.5 mr-1" />
+                Buildings
+              </Button>
+              <Button
+                size="sm"
+                variant={showBuildingNodes ? "default" : "outline"}
+                className="toggle-elevate"
+                onClick={() => setShowBuildingNodes(!showBuildingNodes)}
+                data-testid="button-toggle-building-nodes-drive"
+              >
+                <MapPin className="w-3.5 h-3.5 mr-1" />
+                Nodes
+              </Button>
+              <Button
+                size="sm"
+                variant={showPathDashes ? "default" : "outline"}
+                className="toggle-elevate"
+                onClick={() => setShowPathDashes(!showPathDashes)}
+                data-testid="button-toggle-path-dashes-drive"
+              >
+                <GitBranch className="w-3.5 h-3.5 mr-1" />
+                Paths
+              </Button>
+            </div>
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <Card className="h-[600px] overflow-hidden">
@@ -519,8 +591,11 @@ export default function AdminPaths() {
                     existingPaths={drivepaths} 
                     pathsColor="#3b82f6" 
                     hideKiosk
+                    hidePolygons
                     thinPaths
-                    showBuildingNodes
+                    showBuildingNodes={showBuildingNodes}
+                    hideBuildingMarkers={!showBuildingMarkers}
+                    hidePaths={!showPathDashes}
                     onPathClick={(path) => handleOpenDialog(path, 'drivepath')}
                   />
                 </Card>

@@ -78,6 +78,9 @@ interface CampusMapProps {
   hideKiosk?: boolean;
   showBuildingNodes?: boolean;
   thinPaths?: boolean;
+  hidePolygons?: boolean;
+  hideBuildingMarkers?: boolean;
+  hidePaths?: boolean;
 }
 
 declare global {
@@ -162,6 +165,9 @@ export default function CampusMap({
   hideKiosk = false,
   showBuildingNodes = false,
   thinPaths = false,
+  hidePolygons = false,
+  hideBuildingMarkers = false,
+  hidePaths = false,
   onPathClick
 }: CampusMapProps & { onPathClick?: (path: any) => void }) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -483,9 +489,8 @@ export default function CampusMap({
         markersRef.current.push(kioskMarker);
       }
 
-      // Only render building markers when NOT navigating
+      if (!hideBuildingMarkers) {
       buildings.forEach(building => {
-        // Skip the Kiosk building since we render it separately with special styling
         if (building.type === 'Kiosk' || building.id === 'kiosk') {
           return;
         }
@@ -627,8 +632,9 @@ export default function CampusMap({
 
         markersRef.current.push(marker);
       });
+      }
     }
-  }, [buildings, onBuildingClick, selectedBuilding, currentZoom, routePolyline, routePhases, parkingSelectionMode, parkingTypeFilter, onParkingSelected, highlightedParkingIds]);
+  }, [buildings, onBuildingClick, selectedBuilding, currentZoom, routePolyline, routePhases, parkingSelectionMode, parkingTypeFilter, onParkingSelected, highlightedParkingIds, hideKiosk, hideBuildingMarkers]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
@@ -846,8 +852,7 @@ export default function CampusMap({
     polygonsRef.current.forEach(polygon => polygon.remove());
     polygonsRef.current = [];
 
-    // Don't render building polygons when in navigation mode
-    if (hidePolygonsInNavigation) {
+    if (hidePolygonsInNavigation || hidePolygons) {
       return;
     }
 
@@ -879,7 +884,7 @@ export default function CampusMap({
         polygonsRef.current.push(polygon);
       }
     });
-  }, [buildings, hidePolygonsInNavigation, parkingSelectionMode, parkingTypeFilter]);
+  }, [buildings, hidePolygonsInNavigation, hidePolygons, parkingSelectionMode, parkingTypeFilter]);
 
   // Render navigation-specific building polygons with highlight colors
   useEffect(() => {
@@ -1008,6 +1013,7 @@ export default function CampusMap({
 
     const layerGroup = L.layerGroup();
 
+    if (!hidePaths) {
     const pathWeight = thinPaths ? 2 : 4;
     const pathDash = thinPaths ? '4, 6' : '10, 10';
     const hoverWeight = thinPaths ? 3 : 6;
@@ -1049,6 +1055,7 @@ export default function CampusMap({
         polyline.addTo(layerGroup);
       }
     });
+    }
 
     if (showBuildingNodes && buildings.length > 0) {
       buildings.forEach((building: any) => {
@@ -1068,7 +1075,7 @@ export default function CampusMap({
 
     layerGroup.addTo(mapInstanceRef.current);
     pathsLayerRef.current = layerGroup;
-  }, [existingPaths, pathsColor, onPathClick, thinPaths, showBuildingNodes, buildings]);
+  }, [existingPaths, pathsColor, onPathClick, thinPaths, showBuildingNodes, buildings, hidePaths]);
 
   return <div ref={mapRef} className={className} data-testid="map-container" />;
 }
