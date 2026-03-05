@@ -12,9 +12,9 @@ const TIME_PHASES = [
   { start: 6 * 60, end: 7 * 60, img: "/assets/Homepage Engine/6AM - 7AM.png" },
   { start: 7 * 60, end: 12 * 60, img: "/assets/Homepage Engine/7AM - 12NN.png" },
   { start: 12 * 60, end: 13 * 60, img: "/assets/Homepage Engine/12NN-1PM.png" },
-  { start: 13 * 60, end: 17 * 60 + 30, img: "/assets/Homepage Engine/1PM - 530PM.png" },
-  { start: 17 * 60 + 30, end: 18 * 60, img: "/assets/Homepage Engine/530PM - 6PM.png" },
-  { start: 18 * 60, end: 21 * 60, img: "/assets/Homepage Engine/6PM-9PM.png" },
+  { start: 13 * 60, end: 18 * 60, img: "/assets/Homepage Engine/1PM - 530PM.png" },
+  { start: 18 * 60, end: 18 * 60 + 30, img: "/assets/Homepage Engine/530PM - 6PM.png" },
+  { start: 18 * 60 + 30, end: 21 * 60, img: "/assets/Homepage Engine/6PM-9PM.png" },
   { start: 21 * 60, end: 24 * 60, img: "/assets/Homepage Engine/9PM - 5AM.png" },
   { start: 0, end: 5 * 60, img: "/assets/Homepage Engine/9PM - 5AM.png" },
 ].sort((a, b) => a.start - b.start);
@@ -166,7 +166,7 @@ export default function Landing() {
           src={overlaySrc}
           alt=""
           className="absolute inset-0 w-full h-full object-fill"
-          style={{ opacity: overlayOpacity, transition: 'opacity 2s linear' }}
+          style={{ opacity: overlayOpacity, visibility: overlayOpacity === 0 ? 'hidden' : 'visible', transition: 'opacity 2s linear' }}
         />
       </div>
       
@@ -308,7 +308,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:3.1.2
+              version:3.1.3
             </div>
           </div>
         </div>

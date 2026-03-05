@@ -212,6 +212,7 @@ export default function Navigation() {
     }
   }, [selectedFloor]);
 
+  const autoGenRanRef = useRef(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const fromId = params.get('from');
@@ -222,6 +223,11 @@ export default function Navigation() {
     const autoGenerate = params.get('autoGenerate') === 'true';
 
     if (fromId && toId && buildings.length > 0) {
+      const roomNodeId = params.get('roomNode');
+      if (autoGenerate && roomNodeId && indoorNodes.length === 0) {
+        return;
+      }
+
       const kioskSource = kioskBuilding || KIOSK_LOCATION;
       const startBuilding = fromId === 'kiosk' 
         ? { ...kioskSource, description: null, departments: null, image: null, markerIcon: null, polygon: null, polygonColor: null, nodeLat: kioskSource.lat, nodeLng: kioskSource.lng }
@@ -242,12 +248,22 @@ export default function Navigation() {
         }
         
         // Auto-generate route if requested
-        if (autoGenerate) {
+        if (autoGenerate && !autoGenRanRef.current) {
+          autoGenRanRef.current = true;
           setTimeout(async () => {
             const routeStartTime = performance.now();
             try {
               const waypointIds = waypointsParam ? waypointsParam.split(',') : [];
               const effectiveMode = travelMode || 'walking';
+
+              const roomNodeId = params.get('roomNode');
+              let autoGenRoomData: typeof indoorNodes[0] | null = null;
+              if (roomNodeId && indoorNodes.length > 0) {
+                autoGenRoomData = indoorNodes.find(n => n.id === roomNodeId && n.type === 'room') || null;
+                if (autoGenRoomData) {
+                  setNavigationPhase('outdoor');
+                }
+              }
               
               // For driving mode with vehicle type and no waypoints, use two-phase routing
               if (effectiveMode === 'driving' && vehicleParam && waypointIds.length === 0) {
@@ -257,7 +273,7 @@ export default function Navigation() {
 
                   // Save two-phase route for QR code generation
                   try {
-                    const routeData = {
+                    const routeData: any = {
                       startId: (startBuilding as any).id,
                       endId: endBuilding.id,
                       waypoints: [],
@@ -266,6 +282,13 @@ export default function Navigation() {
                       phases: twoPhaseRoute.phases || [],
                       expiresAt: null
                     };
+
+                    if (autoGenRoomData) {
+                      routeData.destinationRoomId = autoGenRoomData.id;
+                      routeData.destinationBuildingId = endBuilding.id;
+                      routeData.destinationFloorId = autoGenRoomData.floorId;
+                      routeData.destinationRoomName = autoGenRoomData.label || 'Room';
+                    }
 
                     const res = await apiRequest('POST', '/api/routes', routeData);
                     const response = await res.json();
@@ -350,7 +373,7 @@ export default function Navigation() {
 
                   // Save route
                   try {
-                    const routeData = {
+                    const routeData: any = {
                       startId: (startBuilding as any).id,
                       endId: endBuilding.id,
                       waypoints: waypointIds,
@@ -359,6 +382,13 @@ export default function Navigation() {
                       phases: multiPhaseRoute.phases,
                       expiresAt: null
                     };
+
+                    if (autoGenRoomData) {
+                      routeData.destinationRoomId = autoGenRoomData.id;
+                      routeData.destinationBuildingId = endBuilding.id;
+                      routeData.destinationFloorId = autoGenRoomData.floorId;
+                      routeData.destinationRoomName = autoGenRoomData.label || 'Room';
+                    }
 
                     const res = await apiRequest('POST', '/api/routes', routeData);
                     const response = await res.json();
@@ -402,7 +432,7 @@ export default function Navigation() {
 
                 // Save route
                 try {
-                  const routeData = {
+                  const routeData: any = {
                     startId: (startBuilding as any).id,
                     endId: endBuilding.id,
                     waypoints: [],
@@ -423,6 +453,13 @@ export default function Navigation() {
                     expiresAt: null
                   };
 
+                  if (autoGenRoomData) {
+                    routeData.destinationRoomId = autoGenRoomData.id;
+                    routeData.destinationBuildingId = endBuilding.id;
+                    routeData.destinationFloorId = autoGenRoomData.floorId;
+                    routeData.destinationRoomName = autoGenRoomData.label || 'Room';
+                  }
+
                   const res = await apiRequest('POST', '/api/routes', routeData);
                   const response = await res.json();
 
@@ -434,7 +471,7 @@ export default function Navigation() {
                 }
 
                 const duration = performance.now() - routeStartTime;
-                trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, routeType: 'standard', routeFound: true, source: 'autoGenerate' });
+                trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, routeType: 'standard', routeFound: true, hasRoom: !!autoGenRoomData, source: 'autoGenerate' });
               } else {
                 const duration = performance.now() - routeStartTime;
                 trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, routeType: 'standard', routeFound: false, source: 'autoGenerate' });
@@ -448,7 +485,7 @@ export default function Navigation() {
         }
       }
     }
-  }, [buildings]);
+  }, [buildings, indoorNodes]);
 
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371000;
