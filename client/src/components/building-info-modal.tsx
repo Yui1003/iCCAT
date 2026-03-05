@@ -295,7 +295,7 @@ export default function BuildingInfoModal({
                 <TabsContent value="floors" className="p-6 m-0">
                   <div className="space-y-3">
                     {floors.length > 0 ? (
-                      floors.map((floor) => (
+                      [...floors].sort((a, b) => a.floorNumber - b.floorNumber).map((floor) => (
                         <div
                           key={floor.id}
                           className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover-elevate"

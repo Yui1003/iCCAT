@@ -244,7 +244,7 @@ export default function RoomFinderDialog({
                 </div>
               ) : (
                 <div className="space-y-2 pr-4 pb-4">
-                  {Object.values(roomsByBuilding).map(({ building, floors: buildingFloors }) => {
+                  {Object.values(roomsByBuilding).sort((a, b) => a.building.name.localeCompare(b.building.name)).map(({ building, floors: buildingFloors }) => {
                     const buildingExpanded = expandedBuildings.has(building.id);
                     const buildingRoomCount = Object.values(buildingFloors).reduce((sum, f) => sum + f.rooms.length, 0);
                     
@@ -267,7 +267,7 @@ export default function RoomFinderDialog({
 
                         {buildingExpanded && (
                           <div className="ml-4 mt-2 space-y-2 pl-4 border-l">
-                            {Object.values(buildingFloors).map(({ floor, rooms: floorRooms }) => {
+                            {Object.values(buildingFloors).sort((a, b) => a.floor.floorNumber - b.floor.floorNumber).map(({ floor, rooms: floorRooms }) => {
                               const floorExpanded = expandedFloors.has(floor.id);
                               
                               return (

@@ -225,7 +225,7 @@ export default function Landing() {
             <Link href="/navigation">
               <button
                 data-testid="button-navigation"
-                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
+                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
@@ -242,7 +242,7 @@ export default function Landing() {
             <Link href="/events">
               <button
                 data-testid="button-events"
-                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
+                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
@@ -259,7 +259,7 @@ export default function Landing() {
             <Link href="/staff">
               <button
                 data-testid="button-staff"
-                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
+                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
@@ -276,7 +276,7 @@ export default function Landing() {
             <Link href="/about">
               <button
                 data-testid="button-about"
-                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
+                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
@@ -308,7 +308,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:3.0.4
+              version:3.0.5
             </div>
           </div>
         </div>
