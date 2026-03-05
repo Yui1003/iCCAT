@@ -135,6 +135,20 @@ export default function FloorPlanDrawingCanvas({
       ctx.font = `bold ${10 / scale}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText('R', room.x, room.y + 3 / scale);
+
+      if (room.name) {
+        ctx.font = `${9 / scale}px sans-serif`;
+        ctx.textAlign = 'center';
+        const nameMetrics = ctx.measureText(room.name);
+        const nameW = nameMetrics.width;
+        const nameH = 10 / scale;
+        const nameX = room.x - nameW / 2 - 2 / scale;
+        const nameY = room.y + 12 / scale;
+        ctx.fillStyle = 'rgba(255,255,255,0.82)';
+        ctx.fillRect(nameX, nameY, nameW + 4 / scale, nameH);
+        ctx.fillStyle = '#1E40AF';
+        ctx.fillText(room.name, room.x, room.y + 20 / scale);
+      }
     });
 
     indoorNodes.forEach(node => {
@@ -160,6 +174,20 @@ export default function FloorPlanDrawingCanvas({
       ctx.font = `bold ${8 / scale}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText(label, node.x, node.y + 3 / scale);
+
+      if (node.label) {
+        ctx.font = `${9 / scale}px sans-serif`;
+        ctx.textAlign = 'center';
+        const nameMetrics = ctx.measureText(node.label);
+        const nameW = nameMetrics.width;
+        const nameH = 10 / scale;
+        const nameX = node.x - nameW / 2 - 2 / scale;
+        const nameY = node.y + 12 / scale;
+        ctx.fillStyle = 'rgba(255,255,255,0.82)';
+        ctx.fillRect(nameX, nameY, nameW + 4 / scale, nameH);
+        ctx.fillStyle = color;
+        ctx.fillText(node.label, node.x, node.y + 20 / scale);
+      }
     });
 
     if (waypoints.length > 0) {
@@ -341,10 +369,8 @@ export default function FloorPlanDrawingCanvas({
         setDraggingWaypointIndex(nearIdx);
         return;
       }
-      if (!isDrawing || e.altKey) {
-        setIsDragging(true);
-        setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
-      }
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
     }
 
     if (e.button === 1) {
@@ -401,11 +427,18 @@ export default function FloorPlanDrawingCanvas({
     setMousePosition(null);
   };
 
-  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-    setScale(prev => Math.min(Math.max(prev * zoomFactor, 0.2), 5));
-  };
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      setScale(prev => Math.min(Math.max(prev * zoomFactor, 0.2), 5));
+    };
+    canvas.addEventListener('wheel', handler, { passive: false });
+    return () => canvas.removeEventListener('wheel', handler);
+  }, [imageLoaded]);
 
   const handleZoomIn = () => setScale(prev => Math.min(prev * 1.2, 5));
   const handleZoomOut = () => setScale(prev => Math.max(prev / 1.2, 0.2));
@@ -559,8 +592,8 @@ export default function FloorPlanDrawingCanvas({
 
       <div className="text-xs text-muted-foreground px-1">
         {isDrawing
-          ? "Draw Mode: Click to add waypoints • Drag a waypoint to move it • Scroll to zoom"
-          : "Pan Mode: Drag to pan • Click a waypoint to delete it • Drag a waypoint to move it"}
+          ? "Draw Mode: Click to add waypoints • Drag to pan • Drag a waypoint to move it • Scroll to zoom"
+          : "Pan Mode: Drag to pan • Click a waypoint to delete it • Drag a waypoint to move it • Scroll to zoom"}
       </div>
 
       <div
@@ -576,7 +609,6 @@ export default function FloorPlanDrawingCanvas({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          onWheel={handleWheel}
           data-testid="floor-plan-canvas"
         />
         {!imageLoaded && (
