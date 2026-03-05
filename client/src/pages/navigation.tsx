@@ -304,6 +304,8 @@ export default function Navigation() {
                   trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, vehicleType: vehicleParam, routeType: 'two-phase', source: 'autoGenerate' });
                   return;
                 }
+                // generateTwoPhaseRoute returned null — parking selection UI was triggered, wait for user
+                return;
               }
 
               // Multi-stop navigation
@@ -407,23 +409,68 @@ export default function Navigation() {
               }
 
               // Single destination route
-              const routePolyline = await calculateRouteClientSide(
+              let routePolyline = await calculateRouteClientSide(
                 startBuilding as any,
                 endBuilding,
                 effectiveMode
               );
+              let finalEndBuilding: Building = endBuilding;
+
+              // Accessible fallback: if no route found, find nearest accessible endpoint
+              if (!routePolyline && effectiveMode === 'accessible') {
+                try {
+                  const walkpathsRes = await fetch('/api/walkpaths', { credentials: 'include', cache: 'no-cache' });
+                  if (walkpathsRes.ok) {
+                    const walkpaths = await walkpathsRes.json();
+                    const nearestEndpoint = findNearestAccessibleEndpoint(endBuilding, walkpaths);
+                    if (nearestEndpoint) {
+                      setOriginalDestinationName(endBuilding.name);
+                      setAccessibleFallbackEndpoint(nearestEndpoint);
+                      setShowAccessibleFallbackDialog(true);
+                      const endpointBuilding: Building = {
+                        id: 'accessible-endpoint',
+                        name: 'Accessible Path End',
+                        lat: nearestEndpoint.lat,
+                        lng: nearestEndpoint.lng,
+                        nodeLat: nearestEndpoint.lat,
+                        nodeLng: nearestEndpoint.lng,
+                        entranceLat: nearestEndpoint.lat,
+                        entranceLng: nearestEndpoint.lng,
+                        polygon: null,
+                        polygonColor: null,
+                        description: '',
+                        image: null,
+                        type: 'building',
+                        markerIcon: null,
+                        departments: null,
+                        polygonOpacity: null
+                      };
+                      finalEndBuilding = endpointBuilding;
+                      routePolyline = await calculateRouteClientSide(startBuilding as any, endpointBuilding, effectiveMode);
+                    } else {
+                      toast({
+                        title: "No Accessible Route",
+                        description: "No wheelchair-accessible path found to this destination.",
+                        variant: "destructive"
+                      });
+                    }
+                  }
+                } catch (fallbackError) {
+                  console.error('[ACCESSIBLE] Auto-generate fallback failed:', fallbackError);
+                }
+              }
 
               if (routePolyline) {
                 const { steps, totalDistance } = generateSmartSteps(
                   routePolyline,
                   effectiveMode,
                   startBuilding.name,
-                  endBuilding.name
+                  finalEndBuilding.name
                 );
 
                 setRoute({
                   start: startBuilding as any,
-                  end: endBuilding,
+                  end: finalEndBuilding,
                   mode: effectiveMode,
                   polyline: routePolyline,
                   steps,
@@ -444,7 +491,7 @@ export default function Navigation() {
                       steps,
                       distance: totalDistance,
                       startName: startBuilding.name,
-                      endName: endBuilding.name,
+                      endName: finalEndBuilding.name,
                       color: '#3B82F6',
                       phaseIndex: 0,
                       startId: (startBuilding as any).id,
@@ -1281,7 +1328,7 @@ export default function Navigation() {
             if (route) {
               setRoute(route);
               try {
-                const routeData = {
+                const routeData: any = {
                   startId: start.id,
                   endId: end.id,
                   waypoints: [],
@@ -1290,6 +1337,12 @@ export default function Navigation() {
                   phases: route.phases || [],
                   expiresAt: null
                 };
+                if (destinationRoom) {
+                  routeData.destinationRoomId = destinationRoom.id;
+                  routeData.destinationBuildingId = end.id;
+                  routeData.destinationFloorId = destinationRoom.floorId;
+                  routeData.destinationRoomName = destinationRoom.label || 'Room';
+                }
                 const res = await apiRequest('POST', '/api/routes', routeData);
                 const response = await res.json();
                 if (response.id) setSavedRouteId(response.id);
@@ -1302,7 +1355,7 @@ export default function Navigation() {
             if (route) {
               setRoute(route);
               try {
-                const routeData = {
+                const routeData: any = {
                   startId: start.id,
                   endId: end.id,
                   waypoints: [],
@@ -1311,6 +1364,12 @@ export default function Navigation() {
                   phases: route.phases || [],
                   expiresAt: null
                 };
+                if (destinationRoom) {
+                  routeData.destinationRoomId = destinationRoom.id;
+                  routeData.destinationBuildingId = end.id;
+                  routeData.destinationFloorId = destinationRoom.floorId;
+                  routeData.destinationRoomName = destinationRoom.label || 'Room';
+                }
                 const res = await apiRequest('POST', '/api/routes', routeData);
                 const response = await res.json();
                 if (response.id) setSavedRouteId(response.id);
@@ -1429,7 +1488,7 @@ export default function Navigation() {
           setRoute(route);
           
           try {
-            const routeData = {
+            const routeData: any = {
               startId: start.id,
               endId: end.id,
               waypoints: [],
@@ -1438,6 +1497,12 @@ export default function Navigation() {
               phases: route.phases || [],
               expiresAt: null
             };
+            if (destinationRoom) {
+              routeData.destinationRoomId = destinationRoom.id;
+              routeData.destinationBuildingId = end.id;
+              routeData.destinationFloorId = destinationRoom.floorId;
+              routeData.destinationRoomName = destinationRoom.label || 'Room';
+            }
             const res = await apiRequest('POST', '/api/routes', routeData);
             const response = await res.json();
             if (response.id) setSavedRouteId(response.id);
@@ -1474,7 +1539,7 @@ export default function Navigation() {
           if (route) {
             setRoute(route);
             try {
-              const routeData = {
+              const routeData: any = {
                 startId: start.id,
                 endId: end.id,
                 waypoints: [],
@@ -1483,6 +1548,12 @@ export default function Navigation() {
                 phases: route.phases || [],
                 expiresAt: null
               };
+              if (destinationRoom) {
+                routeData.destinationRoomId = destinationRoom.id;
+                routeData.destinationBuildingId = end.id;
+                routeData.destinationFloorId = destinationRoom.floorId;
+                routeData.destinationRoomName = destinationRoom.label || 'Room';
+              }
               const res = await apiRequest('POST', '/api/routes', routeData);
               const response = await res.json();
               if (response.id) setSavedRouteId(response.id);
@@ -1495,7 +1566,7 @@ export default function Navigation() {
           if (route) {
             setRoute(route);
             try {
-              const routeData = {
+              const routeData: any = {
                 startId: start.id,
                 endId: end.id,
                 waypoints: [],
@@ -1504,6 +1575,12 @@ export default function Navigation() {
                 phases: route.phases || [],
                 expiresAt: null
               };
+              if (destinationRoom) {
+                routeData.destinationRoomId = destinationRoom.id;
+                routeData.destinationBuildingId = end.id;
+                routeData.destinationFloorId = destinationRoom.floorId;
+                routeData.destinationRoomName = destinationRoom.label || 'Room';
+              }
               const res = await apiRequest('POST', '/api/routes', routeData);
               const response = await res.json();
               if (response.id) setSavedRouteId(response.id);
@@ -1823,7 +1900,7 @@ export default function Navigation() {
 
         // Save route for QR code
         try {
-          const routeData = {
+          const routeData: any = {
             startId: start.id,
             endId: end.id,
             waypoints: waypointIds,
@@ -1832,6 +1909,12 @@ export default function Navigation() {
             phases: route.phases || [],
             expiresAt: null
           };
+          if (destinationRoom) {
+            routeData.destinationRoomId = destinationRoom.id;
+            routeData.destinationBuildingId = end.id;
+            routeData.destinationFloorId = destinationRoom.floorId;
+            routeData.destinationRoomName = destinationRoom.label || 'Room';
+          }
 
           const res = await apiRequest('POST', '/api/routes', routeData);
           const response = await res.json();
