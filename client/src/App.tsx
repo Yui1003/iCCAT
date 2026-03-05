@@ -129,9 +129,6 @@ function AppContent() {
 
   // Apply kiosk theme globally with time-based auto dark mode
   useEffect(() => {
-    // Skip if on admin route - admin layout handles its own theme
-    if (location.startsWith('/admin/')) return;
-
     const getAutoTheme = (): 'dark' | 'light' => {
       const h = new Date().getHours();
       return h >= 18 || h < 7 ? 'dark' : 'light';
@@ -147,15 +144,23 @@ function AppContent() {
       window.dispatchEvent(new CustomEvent('kiosk-theme-changed', { detail: theme }));
     };
 
-    // Apply auto theme on mount
-    applyTheme(getAutoTheme());
-
-    // Check every 60 seconds and auto-switch at the 6pm / 7am boundary
-    const interval = setInterval(() => {
+    // Apply auto theme once on mount (skip if already on admin — admin-layout handles its own)
+    if (!window.location.pathname.startsWith('/admin/')) {
       applyTheme(getAutoTheme());
+    }
+
+    // Track last auto theme — only switch when a boundary (6pm / 7am) is actually crossed
+    let lastAutoTheme = getAutoTheme();
+    const interval = setInterval(() => {
+      if (window.location.pathname.startsWith('/admin/')) return;
+      const current = getAutoTheme();
+      if (current !== lastAutoTheme) {
+        lastAutoTheme = current;
+        applyTheme(current);
+      }
     }, 60000);
 
-    // Listen for manual theme changes from the landing page toggle
+    // Listen for manual theme changes from other tabs
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'kiosk-theme' && !window.location.pathname.startsWith('/admin/')) {
         if (e.newValue === 'dark') {
@@ -171,7 +176,7 @@ function AppContent() {
       clearInterval(interval);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [location]);
+  }, []);
 
   // Disable context menu (right-click and long-press) globally
   useEffect(() => {
