@@ -33,7 +33,7 @@ function getTurnInstruction(angleDiff: number, travelMode: string): { instructio
   const isWalking = travelMode === 'walking' || travelMode === 'accessible';
   const road = isWalking ? 'pathway' : 'road';
 
-  if (absAngle < 20) {
+  if (absAngle < 15) {
     return { instruction: `Continue straight on the ${road}`, icon: 'straight' };
   } else if (absAngle < 45) {
     return {
@@ -103,16 +103,36 @@ function generateSmartSteps(
     bearings.push(bearing);
   }
 
-  // Group consecutive segments with similar bearings
+  // Google Maps-style thresholds
+  const MIN_TURN_ANGLE = 45;
+  const MIN_SLIGHT_ANGLE = 15;
+  const MIN_SLIGHT_DIST = 15;
+
+  // Group consecutive segments, only breaking on real turns
   let currentGroupStart = 0;
+  let accumulatedGroupDist = 0;
+
   for (let i = 1; i < bearings.length; i++) {
     const prevBearing = bearings[i - 1];
     const currBearing = bearings[i];
     const angleDiff = ((currBearing - prevBearing + 540) % 360) - 180;
+    const absAngle = Math.abs(angleDiff);
 
-    if (Math.abs(angleDiff) > 20 || i === bearings.length - 1) {
-      const groupEnd = i === bearings.length - 1 ? i + 1 : i;
-      
+    const segDist = calculateDistance(
+      routePolyline[i].lat,
+      routePolyline[i].lng,
+      routePolyline[i + 1 < routePolyline.length ? i + 1 : i].lat,
+      routePolyline[i + 1 < routePolyline.length ? i + 1 : i].lng
+    );
+    accumulatedGroupDist += segDist;
+
+    const isRealTurn = absAngle >= MIN_TURN_ANGLE;
+    const isSlightTurn = absAngle >= MIN_SLIGHT_ANGLE && accumulatedGroupDist >= MIN_SLIGHT_DIST;
+    const isLast = i === bearings.length - 1;
+
+    if (isRealTurn || isSlightTurn || isLast) {
+      const groupEnd = isLast ? i + 1 : i;
+
       let segmentDist = 0;
       for (let j = currentGroupStart; j < groupEnd; j++) {
         segmentDist += calculateDistance(
@@ -124,12 +144,12 @@ function generateSmartSteps(
       }
       totalDist += segmentDist;
 
-      if (currentGroupStart > 0) {
-        const prevBearing = bearings[currentGroupStart - 1];
-        const currBearing = bearings[currentGroupStart];
-        const turnAngle = ((currBearing - prevBearing + 540) % 360) - 180;
+      if (currentGroupStart > 0 && !isLast) {
+        const gb = bearings[currentGroupStart - 1];
+        const nb = bearings[currentGroupStart];
+        const turnAngle = ((nb - gb + 540) % 360) - 180;
         const { instruction, icon } = getTurnInstruction(turnAngle, travelMode);
-        
+
         const distStr = segmentDist >= 1000
           ? `${(segmentDist / 1000).toFixed(1)} km`
           : `${Math.round(segmentDist)} m`;
@@ -138,6 +158,7 @@ function generateSmartSteps(
       }
 
       currentGroupStart = i;
+      accumulatedGroupDist = 0;
     }
   }
 
