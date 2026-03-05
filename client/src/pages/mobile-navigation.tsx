@@ -990,18 +990,18 @@ export default function MobileNavigation() {
               <FloorPlanViewer
                 key={currentIndoorFloor.id}
                 floor={currentIndoorFloor}
-                rooms={indoorNodes
-                  .filter(n => n.floorId === currentIndoorFloor.id && n.type === 'room')
-                  .map(node => ({
-                    id: node.id,
-                    name: node.label || node.id,
-                    type: 'classroom',
-                    description: node.description || null,
-                    x: node.x,
-                    y: node.y,
-                    buildingId: currentIndoorFloor.buildingId,
-                    floorId: currentIndoorFloor.id,
-                  }))}
+                rooms={isOnDestinationFloor && destinationRoom
+                  ? [{
+                      id: destinationRoom.id,
+                      name: destinationRoom.label || destinationRoom.id,
+                      type: 'classroom',
+                      description: destinationRoom.description || null,
+                      x: destinationRoom.x,
+                      y: destinationRoom.y,
+                      buildingId: currentIndoorFloor.buildingId,
+                      floorId: currentIndoorFloor.id,
+                    }]
+                  : []}
                 indoorNodes={indoorNodes.filter(n => n.floorId === currentIndoorFloor.id)}
                 highlightedRoomId={isOnDestinationFloor ? destinationRoom?.id : undefined}
                 showPathTo={isOnDestinationFloor ? destinationRoom : indoorNodes.find(n => n.floorId === currentIndoorFloor.id && (n.type === 'stairway' || n.type === 'elevator'))}

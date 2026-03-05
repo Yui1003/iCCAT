@@ -661,8 +661,9 @@ export default function Navigation() {
 
     // Google Maps-style thresholds (in meters via pixel scale)
     const MIN_TURN_ANGLE = 45;
+    const MIN_REAL_DIST_M = 4;
     const MIN_SLIGHT_ANGLE = 15;
-    const MIN_SLIGHT_DIST_M = 10;
+    const MIN_SLIGHT_DIST_M = 15;
 
     // Pixel-space bearings using atan2 on dx/dy
     const bearings: number[] = [];
@@ -704,7 +705,7 @@ export default function Navigation() {
         const angleDiff = ((bearings[i + 1] - bearings[i] + 540) % 360) - 180;
         const absAngle = Math.abs(angleDiff);
 
-        const isRealTurn = absAngle >= MIN_TURN_ANGLE;
+        const isRealTurn = absAngle >= MIN_TURN_ANGLE && accumulatedMeters >= MIN_REAL_DIST_M;
         const isSlightTurn = absAngle >= MIN_SLIGHT_ANGLE && accumulatedMeters >= MIN_SLIGHT_DIST_M;
 
         if (isRealTurn || isSlightTurn) {
