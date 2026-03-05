@@ -505,7 +505,8 @@ export default function StaffDirectory() {
           onNavigate={(startId: string, waypointIds: string[], mode: 'walking' | 'driving' | 'accessible', vehicleType?: 'car' | 'motorcycle' | 'bike') => {
             const waypointParam = waypointIds.length > 0 ? `&waypoints=${waypointIds.join(',')}` : '';
             const vehicleParam = vehicleType ? `&vehicle=${vehicleType}` : '';
-            navigate(`/navigation?from=${startId}&to=${directionsDestination}&mode=${mode}${waypointParam}${vehicleParam}&autoGenerate=true`);
+            const roomNodeParam = selectedStaff?.roomId ? `&roomNode=${selectedStaff.roomId}` : '';
+            navigate(`/navigation?from=${startId}&to=${directionsDestination}&mode=${mode}${waypointParam}${vehicleParam}${roomNodeParam}&autoGenerate=true`);
             setShowDirections(false);
             setDirectionsDestination(null);
             setSelectedStaff(null);

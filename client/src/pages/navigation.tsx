@@ -160,6 +160,18 @@ export default function Navigation() {
     }
   });
 
+  // Auto-set destinationRoom from URL param ?roomNode=<indoorNodeId> (used when navigating to a staff member's room)
+  useEffect(() => {
+    if (indoorNodes.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const roomNodeId = params.get('roomNode');
+    if (!roomNodeId) return;
+    setDestinationRoom(prev => {
+      if (prev) return prev; // don't overwrite a user-selected room
+      return indoorNodes.find(n => n.id === roomNodeId) ?? null;
+    });
+  }, [indoorNodes]);
+
   // Get the Kiosk building from database (fallback to constant if not found)
   const kioskBuilding = buildings.find(b => b.type === 'Kiosk' || b.id === 'kiosk');
   

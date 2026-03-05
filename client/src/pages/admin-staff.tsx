@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
 import ImageUploadInput from "@/components/image-upload-input";
-import type { Staff, InsertStaff, Building } from "@shared/schema";
+import type { Staff, InsertStaff, Building, Floor, IndoorNode } from "@shared/schema";
 import { canHaveDepartments, canHaveStaff } from "@shared/schema";
 import { invalidateEndpointCache } from "@/lib/offline-data";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -42,6 +42,14 @@ export default function AdminStaff() {
 
   const { data: buildings = [] } = useQuery<Building[]>({
     queryKey: ['/api/buildings']
+  });
+
+  const { data: floors = [] } = useQuery<Floor[]>({
+    queryKey: ['/api/floors']
+  });
+
+  const { data: indoorNodes = [] } = useQuery<IndoorNode[]>({
+    queryKey: ['/api/indoor-nodes']
   });
 
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
@@ -158,6 +166,16 @@ export default function AdminStaff() {
       count: staffInSelectedBuilding.filter(s => s.department === dept).length
     })).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [staffInSelectedBuilding]);
+
+  const formBuildingRoomNodes = useMemo(() => {
+    if (!formData.buildingId) return [];
+    const buildingFloorIds = new Set(
+      floors.filter(f => f.buildingId === formData.buildingId).map(f => f.id)
+    );
+    return indoorNodes
+      .filter(n => n.type === 'room' && buildingFloorIds.has(n.floorId))
+      .sort((a, b) => (a.label || '').localeCompare(b.label || ''));
+  }, [formData.buildingId, floors, indoorNodes]);
 
   const staffInSelectedDepartment = useMemo(() => {
     if (!selectedDepartment) return [];
@@ -305,7 +323,7 @@ export default function AdminStaff() {
                                   key={building.id}
                                   value={building.name}
                                   onSelect={() => {
-                                    setFormData({ ...formData, buildingId: building.id });
+                                    setFormData({ ...formData, buildingId: building.id, roomId: null });
                                   }}
                                 >
                                   <Check
@@ -323,6 +341,67 @@ export default function AdminStaff() {
                     </PopoverContent>
                   </Popover>
                 </div>
+
+                {formData.buildingId && (
+                  <div>
+                    <Label htmlFor="room">Room (optional)</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className="w-full justify-between"
+                          data-testid="select-staff-room"
+                        >
+                          {formData.roomId
+                            ? formBuildingRoomNodes.find(n => n.id === formData.roomId)?.label ?? "Unknown room"
+                            : "None (building only)"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0 z-[1002]">
+                        <Command>
+                          <CommandInput placeholder="Search room..." />
+                          <CommandList>
+                            <CommandEmpty>No room nodes found.</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                value="none"
+                                onSelect={() => setFormData({ ...formData, roomId: null })}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    !formData.roomId ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                None (building only)
+                              </CommandItem>
+                              {formBuildingRoomNodes.map((node) => (
+                                <CommandItem
+                                  key={node.id}
+                                  value={node.label || node.id}
+                                  onSelect={() => setFormData({ ...formData, roomId: node.id })}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      formData.roomId === node.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {node.label}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      If a room is assigned, directions will navigate indoors to that room.
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>

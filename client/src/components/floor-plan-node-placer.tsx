@@ -112,7 +112,7 @@ export default function FloorPlanNodePlacer({
         case 'stairway': color = '#8B5CF6'; label = 'S'; break;
         case 'elevator': color = '#EC4899'; label = 'EL'; break;
         case 'hallway': color = '#6B7280'; label = 'H'; break;
-        case 'room': return;
+        case 'room': color = '#10B981'; label = 'R'; break;
       }
 
       ctx.beginPath();
