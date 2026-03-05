@@ -49,11 +49,22 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | CombinedRoom | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | CombinedRoom | null>(null);
   const [roomFormData, setRoomFormData] = useState({ name: "", type: "classroom", description: "", x: 0, y: 0 });
   const [viewingRoomInfo, setViewingRoomInfo] = useState<Room | CombinedRoom | null>(null);
+
+  const zoomRef = useRef(1);
+  const panXRef = useRef(0);
+  const panYRef = useRef(0);
+  const gestureRef = useRef({ isDragging: false, lastX: 0, lastY: 0, lastDist: 0, wasDragging: false, startX: 0, startY: 0 });
+
+  const updateZoom = (v: number) => { zoomRef.current = v; setZoom(v); };
+  const updatePanX = (v: number) => { panXRef.current = v; setPanX(v); };
+  const updatePanY = (v: number) => { panYRef.current = v; setPanY(v); };
   
   const isAdminMode = !!(onCreateRoom || onUpdateRoom || onDeleteRoom);
 
@@ -91,6 +102,7 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
 
     ctx.save();
     ctx.scale(zoom, zoom);
+    ctx.translate(panX / zoom, panY / zoom);
 
     if (image) {
       const scale = Math.min(canvas.width / image.width, canvas.height / image.height) * 0.9;
@@ -234,7 +246,7 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
     }
 
     ctx.restore();
-  }, [image, zoom, rooms, highlightedRoomId, showPathTo, indoorNodes, floor.id, pathPolyline]);
+  }, [image, zoom, panX, panY, rooms, highlightedRoomId, showPathTo, indoorNodes, floor.id, pathPolyline]);
 
   const getRoomColor = (type: string) => {
     const colors: Record<string, string> = {
@@ -249,18 +261,134 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
   };
 
   const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev * 1.2, 5));
+    updateZoom(Math.min(zoomRef.current * 1.2, 8));
   };
 
   const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev / 1.2, 0.5));
+    updateZoom(Math.max(zoomRef.current / 1.2, 0.5));
   };
 
   const handleReset = () => {
-    setZoom(1);
+    updateZoom(1);
+    updatePanX(0);
+    updatePanY(0);
   };
 
+  useEffect(() => {
+    updateZoom(1);
+    updatePanX(0);
+    updatePanY(0);
+  }, [floor.id]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const getTouchDist = (t1: Touch, t2: Touch) => {
+      const dx = t2.clientX - t1.clientX;
+      const dy = t2.clientY - t1.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const g = gestureRef.current;
+      if (e.touches.length === 1) {
+        g.isDragging = true;
+        g.wasDragging = false;
+        g.lastX = e.touches[0].clientX;
+        g.lastY = e.touches[0].clientY;
+        g.startX = e.touches[0].clientX;
+        g.startY = e.touches[0].clientY;
+        g.lastDist = 0;
+      } else if (e.touches.length === 2) {
+        g.isDragging = false;
+        g.lastDist = getTouchDist(e.touches[0], e.touches[1]);
+        g.lastX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        g.lastY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const g = gestureRef.current;
+      if (e.touches.length === 1 && g.isDragging) {
+        const dx = e.touches[0].clientX - g.lastX;
+        const dy = e.touches[0].clientY - g.lastY;
+        g.lastX = e.touches[0].clientX;
+        g.lastY = e.touches[0].clientY;
+        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) g.wasDragging = true;
+        updatePanX(panXRef.current + dx);
+        updatePanY(panYRef.current + dy);
+      } else if (e.touches.length === 2 && g.lastDist > 0) {
+        const newDist = getTouchDist(e.touches[0], e.touches[1]);
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const scaleFactor = newDist / g.lastDist;
+        const curZoom = zoomRef.current;
+        const newZoom = Math.min(Math.max(curZoom * scaleFactor, 0.5), 8);
+        const newPanX = midX - (midX - panXRef.current) * (newZoom / curZoom) + (midX - g.lastX);
+        const newPanY = midY - (midY - panYRef.current) * (newZoom / curZoom) + (midY - g.lastY);
+        updateZoom(newZoom);
+        updatePanX(newPanX);
+        updatePanY(newPanY);
+        g.lastDist = newDist;
+        g.lastX = midX;
+        g.lastY = midY;
+        g.wasDragging = true;
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      const g = gestureRef.current;
+      if (e.touches.length === 0) {
+        g.isDragging = false;
+        g.lastDist = 0;
+      } else if (e.touches.length === 1) {
+        g.isDragging = true;
+        g.lastX = e.touches[0].clientX;
+        g.lastY = e.touches[0].clientY;
+        g.lastDist = 0;
+      }
+    };
+
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+    return () => {
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchend', onTouchEnd);
+    };
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const g = gestureRef.current;
+    g.isDragging = true;
+    g.wasDragging = false;
+    g.lastX = e.clientX;
+    g.lastY = e.clientY;
+    g.startX = e.clientX;
+    g.startY = e.clientY;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const g = gestureRef.current;
+    if (!g.isDragging) return;
+    const dx = e.clientX - g.lastX;
+    const dy = e.clientY - g.lastY;
+    g.lastX = e.clientX;
+    g.lastY = e.clientY;
+    if (Math.abs(e.clientX - g.startX) > 4 || Math.abs(e.clientY - g.startY) > 4) g.wasDragging = true;
+    updatePanX(panXRef.current + dx);
+    updatePanY(panYRef.current + dy);
+  };
+
+  const handleMouseUp = () => { gestureRef.current.isDragging = false; };
+  const handleMouseLeave = () => { gestureRef.current.isDragging = false; };
+
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (gestureRef.current.wasDragging) return;
     if (!image) return;
 
     const canvas = canvasRef.current;
@@ -270,9 +398,9 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
     const rect = canvas.getBoundingClientRect();
     const canvasX = e.clientX - rect.left;
     const canvasY = e.clientY - rect.top;
-    
-    const x = canvasX / zoom;
-    const y = canvasY / zoom;
+
+    const x = canvasX / zoom - panX / zoom;
+    const y = canvasY / zoom - panY / zoom;
 
     const scale = Math.min(canvas.width / image.width, canvas.height / image.height) * 0.9;
     const imgX = (canvas.width / zoom - image.width * scale) / 2;
@@ -411,7 +539,11 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
-            className="w-full h-full cursor-pointer"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
+            className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
             data-testid="floor-plan-canvas"
           />
         </div>
@@ -645,8 +777,12 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
           >
             <canvas
               ref={canvasRef}
-              className="cursor-pointer"
+              className="cursor-grab active:cursor-grabbing touch-none"
               onClick={handleCanvasClick}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
               data-testid="canvas-floor-plan"
             />
           </div>

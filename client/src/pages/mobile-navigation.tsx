@@ -13,6 +13,7 @@ import { trackEvent } from "@/lib/analytics-tracker";
 import { AnalyticsEventType } from "@shared/analytics-schema";
 import FloorPlanViewer from "@/components/floor-plan-viewer";
 import { buildIndoorGraph } from "@/lib/indoor-pathfinding";
+import { generateIndoorSteps } from "@/lib/indoor-steps";
 
 declare global {
   interface Window {
@@ -853,18 +854,7 @@ export default function MobileNavigation() {
       return [];
     }
 
-    // Calculate distance from the indoor path polyline (which is already computed per floor)
-    let totalMeterDistance = 0;
     const scale = currentIndoorFloor.pixelToMeterScale || 0.02;
-    
-    if (indoorPathPolyline && indoorPathPolyline.length > 1) {
-      for (let i = 0; i < indoorPathPolyline.length - 1; i++) {
-        const dx = indoorPathPolyline[i + 1].lat - indoorPathPolyline[i].lat;
-        const dy = indoorPathPolyline[i + 1].lng - indoorPathPolyline[i].lng;
-        totalMeterDistance += Math.sqrt(dx * dx + dy * dy) * scale;
-      }
-    }
-    totalMeterDistance = Math.round(totalMeterDistance);
 
     // Generate labels matching kiosk format
     const startLabel = startNode.label || (isFirstFloor ? 'Main Entrance' : 'Stairway');
@@ -877,28 +867,20 @@ export default function MobileNavigation() {
       ? (targetNode.label || route?.destinationRoomName || 'Destination')
       : (targetNode.label || (nextFloor ? `Stairway to ${nextFloor.floorName || `Floor ${nextFloor.floorNumber}`}` : 'Stairway'));
 
-    // Generate steps in the same format as the kiosk (navigation.tsx lines 1570-1586)
-    const steps: RouteStep[] = [
-      {
-        instruction: `Start at ${startLabel}`,
-        distance: '0 m',
-        icon: 'navigation'
-      },
-      {
-        instruction: `Walk to ${targetLabel}`,
-        distance: totalMeterDistance > 0 ? `${totalMeterDistance} m` : '',
-        icon: 'arrow-right'
-      },
-      {
-        instruction: `Arrive at ${targetLabel}`,
-        distance: '0 m',
-        icon: isDestinationFloor ? 'flag' : 'arrow-up'
-      }
-    ];
+    const floorRooms = rooms.filter(r => r.floorId === currentIndoorFloor.id);
+    const steps = generateIndoorSteps(
+      indoorPathPolyline ?? [],
+      floorIndoorNodes,
+      floorRooms,
+      scale,
+      startLabel,
+      targetLabel,
+      !isDestinationFloor
+    );
 
     console.log('[MOBILE-STEPS] Generated indoor steps for floor:', currentIndoorFloor.floorName, steps);
     return steps;
-  }, [navigationPhase, currentIndoorFloor, destinationRoom, indoorNodes, floorsInRoute, indoorPathPolyline, route?.destinationRoomName]);
+  }, [navigationPhase, currentIndoorFloor, destinationRoom, indoorNodes, floorsInRoute, indoorPathPolyline, route?.destinationRoomName, rooms]);
 
   // Handle loading state (after all hooks)
   if (isLoading) {
