@@ -198,7 +198,7 @@ export default function StaffDirectory() {
       const matchesDepartment = departmentFilter === "all" || member.department === departmentFilter;
 
       return matchesSearch && matchesBuilding && matchesDepartment;
-    });
+    }).sort((a, b) => a.name.localeCompare(b.name));
   }, [staff, searchQuery, buildingFilter, departmentFilter]);
 
   const getBuildingName = (buildingId: string | null | undefined) => {
