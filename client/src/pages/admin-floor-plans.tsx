@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Layers, Building2, Plus, Pencil, Trash2, Filter, ChevronDown, ChevronRight } from "lucide-react";
+import { Layers, Building2, Plus, Pencil, Trash2, Filter, ChevronDown, ChevronRight, Check, ChevronsUpDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,9 @@ import { canHaveFloorPlan, floorPlanEligibleTypes } from "@shared/schema";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { invalidateEndpointCache } from "@/lib/offline-data";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 export default function AdminFloorPlans() {
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>("");
@@ -26,6 +29,7 @@ export default function AdminFloorPlans() {
   const [deletingFloor, setDeletingFloor] = useState<Floor | null>(null);
   const [floorData, setFloorData] = useState({ floorNumber: "", floorName: "", image: "" });
   const [filterType, setFilterType] = useState<string>("all");
+  const [dialogBuildingId, setDialogBuildingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: buildings = [] } = useQuery<Building[]>({
@@ -96,6 +100,7 @@ export default function AdminFloorPlans() {
   const handleOpenFloorDialog = (floor?: Floor) => {
     if (floor) {
       setEditingFloor(floor);
+      setDialogBuildingId(floor.buildingId);
       setFloorData({
         floorNumber: floor.floorNumber.toString(),
         floorName: floor.floorName || "",
@@ -103,6 +108,7 @@ export default function AdminFloorPlans() {
       });
     } else {
       setEditingFloor(null);
+      setDialogBuildingId(selectedBuildingId || null);
       setFloorData({ floorNumber: "", floorName: "", image: "" });
     }
     setIsFloorDialogOpen(true);
@@ -111,15 +117,24 @@ export default function AdminFloorPlans() {
   const handleCloseFloorDialog = () => {
     setIsFloorDialogOpen(false);
     setEditingFloor(null);
+    setDialogBuildingId(null);
     setFloorData({ floorNumber: "", floorName: "", image: "" });
   };
 
+  const allEligibleBuildings = buildings
+    .filter(b => canHaveFloorPlan(b.type as any))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   const handleCreateFloor = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedBuildingId) return;
+    const targetBuildingId = editingFloor ? editingFloor.buildingId : dialogBuildingId;
+    if (!targetBuildingId) {
+      toast({ title: "Please select a building", variant: "destructive" });
+      return;
+    }
 
     const data = {
-      buildingId: selectedBuildingId,
+      buildingId: targetBuildingId,
       floorNumber: parseInt(floorData.floorNumber),
       floorName: floorData.floorName || null,
       floorPlanImage: floorData.image || null
@@ -142,7 +157,7 @@ export default function AdminFloorPlans() {
           </div>
           <Dialog open={isFloorDialogOpen} onOpenChange={(open) => open ? handleOpenFloorDialog() : handleCloseFloorDialog()}>
             <DialogTrigger asChild>
-              <Button disabled={!selectedBuildingId} data-testid="button-add-floor">
+              <Button data-testid="button-add-floor">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Floor
               </Button>
@@ -155,6 +170,52 @@ export default function AdminFloorPlans() {
                 </p>
               </DialogHeader>
               <form onSubmit={handleCreateFloor} className="space-y-4">
+                {!editingFloor && (
+                  <div>
+                    <Label>Building *</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          className="w-full justify-between"
+                          data-testid="select-dialog-building"
+                        >
+                          {dialogBuildingId
+                            ? allEligibleBuildings.find(b => b.id === dialogBuildingId)?.name ?? "Select building"
+                            : "Select building"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0 z-[1002]">
+                        <Command>
+                          <CommandInput placeholder="Search building..." />
+                          <CommandList>
+                            <CommandEmpty>No building found.</CommandEmpty>
+                            <CommandGroup>
+                              {allEligibleBuildings.map((b) => (
+                                <CommandItem
+                                  key={b.id}
+                                  value={b.name}
+                                  onSelect={() => setDialogBuildingId(b.id)}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      dialogBuildingId === b.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {b.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
                 <div>
                   <Label htmlFor="floorNumber">Floor Number *</Label>
                   <Input
@@ -176,7 +237,7 @@ export default function AdminFloorPlans() {
                 <ImageUploadInput
                   label="Floor Plan Image"
                   value={floorData.image}
-                  onChange={(url) => setFloorData({ ...floorData, image: url })}
+                  onChange={(url) => setFloorData({ ...floorData, image: typeof url === 'string' ? url : url[0] || '' })}
                   type="floor"
                   id={editingFloor?.id || 'new'}
                   testId="floor-plan-image"

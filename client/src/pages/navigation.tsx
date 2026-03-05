@@ -4523,7 +4523,7 @@ export default function Navigation() {
                       Go Back
                     </Button>
                   </div>
-                ) : navigationPhase === 'outdoor' && destinationRoom ? (
+                ) : (navigationPhase === 'outdoor' || navigationPhase === null) && destinationRoom && route ? (
                   <Button
                     className="w-full mt-6"
                     onClick={handleReachedBuilding}
