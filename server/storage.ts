@@ -1004,26 +1004,30 @@ export class DatabaseStorage implements IStorage {
 
   async resetAnalytics(): Promise<void> {
     try {
-      const batch = db.batch();
+      const BATCH_SIZE = 500;
       
-      // Delete all analytics events
       const analyticsSnapshot = await db.collection('analytics').get();
-      analyticsSnapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-      });
+      const analyticsDocs = analyticsSnapshot.docs;
+      for (let i = 0; i < analyticsDocs.length; i += BATCH_SIZE) {
+        const batch = db.batch();
+        const chunk = analyticsDocs.slice(i, i + BATCH_SIZE);
+        chunk.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+      }
       
-      // Delete all kiosk uptime records
       const kioskSnapshot = await db.collection('kioskUptimes').get();
-      kioskSnapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-      });
+      const kioskDocs = kioskSnapshot.docs;
+      for (let i = 0; i < kioskDocs.length; i += BATCH_SIZE) {
+        const batch = db.batch();
+        const chunk = kioskDocs.slice(i, i + BATCH_SIZE);
+        chunk.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+      }
       
-      await batch.commit();
       analyticsMemory.clear();
-      console.log('[Analytics] All analytics data and kiosk uptime records cleared from Firestore');
+      console.log(`[Analytics] Cleared ${analyticsDocs.length} analytics + ${kioskDocs.length} kiosk records from Firestore`);
     } catch (error) {
       console.error('Error resetting analytics:', error);
-      // Clear in-memory cache on error (graceful fallback)
       analyticsMemory.clear();
       console.log('[Analytics] Cleared in-memory analytics cache');
     }
@@ -1294,12 +1298,15 @@ export class DatabaseStorage implements IStorage {
   async clearAllFeedback(): Promise<void> {
     try {
       const snapshot = await db.collection('feedbacks').get();
-      const batch = db.batch();
-      snapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-      });
-      await batch.commit();
-      console.log(`Cleared ${snapshot.docs.length} feedback records`);
+      const docs = snapshot.docs;
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+        const batch = db.batch();
+        const chunk = docs.slice(i, i + BATCH_SIZE);
+        chunk.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+      }
+      console.log(`Cleared ${docs.length} feedback records`);
     } catch (error) {
       console.error('Firestore error:', error);
       throw new Error('Cannot clear feedback');

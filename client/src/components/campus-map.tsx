@@ -75,6 +75,12 @@ interface CampusMapProps {
   parkingTypeFilter?: 'Car Parking' | 'Motorcycle Parking' | 'Bike Parking' | null;
   onParkingSelected?: (parking: Building) => void;
   highlightedParkingIds?: string[];
+  hideKiosk?: boolean;
+  showBuildingNodes?: boolean;
+  thinPaths?: boolean;
+  hidePolygons?: boolean;
+  hideBuildingMarkers?: boolean;
+  hidePaths?: boolean;
 }
 
 declare global {
@@ -156,6 +162,12 @@ export default function CampusMap({
   parkingTypeFilter = null,
   onParkingSelected,
   highlightedParkingIds = [],
+  hideKiosk = false,
+  showBuildingNodes = false,
+  thinPaths = false,
+  hidePolygons = false,
+  hideBuildingMarkers = false,
+  hidePaths = false,
   onPathClick
 }: CampusMapProps & { onPathClick?: (path: any) => void }) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -382,12 +394,19 @@ export default function CampusMap({
     const lat = centerLat || defaultLat;
     const lng = centerLng || defaultLng;
     
+    // Check if we are in admin view (based on URL)
+    const isAdminView = window.location.pathname.startsWith('/admin/');
+    // Specifically check for the building management page where markers are placed
+    const isBuildingAdmin = window.location.pathname === '/admin/buildings';
+
+    if (isAdminView || isBuildingAdmin) return;
+
     const currentCenter = mapInstanceRef.current.getCenter();
     const latDiff = Math.abs(currentCenter.lat - lat);
     const lngDiff = Math.abs(currentCenter.lng - lng);
 
     if (latDiff > 0.0001 || lngDiff > 0.0001) {
-      mapInstanceRef.current.setView([lat, lng], 17.5, {
+      mapInstanceRef.current.setView([lat, lng], mapInstanceRef.current.getZoom(), {
         animate: false
       });
     }
@@ -436,41 +455,42 @@ export default function CampusMap({
     if (isNavigating) {
       // Skip marker rendering during navigation
     } else {
-      // Find Kiosk building from database, fall back to constant if not found
-      const kioskBuilding = buildings.find(b => b.type === 'Kiosk' || b.id === 'kiosk');
-      const kioskLat = kioskBuilding?.lat ?? KIOSK_LOCATION.lat;
-      const kioskLng = kioskBuilding?.lng ?? KIOSK_LOCATION.lng;
-      const kioskName = kioskBuilding?.name ?? KIOSK_LOCATION.name;
-      
-      const kioskIconHtml = L.divIcon({
-        html: `
-          <div class="relative flex items-center justify-center">
-            <div class="absolute ${kioskSize.ping} bg-blue-500/30 rounded-full animate-ping"></div>
-            <div class="relative">
-              <img src="${kioskIcon}" alt="You are Here" class="${kioskSize.img} object-contain drop-shadow-lg" />
-            </div>
-          </div>
-        `,
-        className: 'kiosk-marker',
-        iconSize: [kioskSize.icon, kioskSize.icon],
-        iconAnchor: [kioskSize.icon / 2, kioskSize.icon / 2],
-      });
-
-      const kioskMarker = L.marker([kioskLat, kioskLng], { icon: kioskIconHtml })
-        .addTo(mapInstanceRef.current);
+      if (!hideKiosk) {
+        // Find Kiosk building from database, fall back to constant if not found
+        const kioskBuilding = buildings.find(b => b.type === 'Kiosk' || b.id === 'kiosk');
+        const kioskLat = kioskBuilding?.lat ?? KIOSK_LOCATION.lat;
+        const kioskLng = kioskBuilding?.lng ?? KIOSK_LOCATION.lng;
+        const kioskName = kioskBuilding?.name ?? KIOSK_LOCATION.name;
         
-      if (showBuildingTooltips) {
-        kioskMarker.bindTooltip(kioskName, {
-          ...tooltipOptions,
-          className: 'bg-blue-600 text-white px-2 py-1 rounded shadow-md font-medium text-[10px] pointer-events-none opacity-90'
+        const kioskIconHtml = L.divIcon({
+          html: `
+            <div class="relative flex items-center justify-center">
+              <div class="absolute ${kioskSize.ping} bg-blue-500/30 rounded-full animate-ping"></div>
+              <div class="relative">
+                <img src="${kioskIcon}" alt="You are Here" class="${kioskSize.img} object-contain drop-shadow-lg" />
+              </div>
+            </div>
+          `,
+          className: 'kiosk-marker',
+          iconSize: [kioskSize.icon, kioskSize.icon],
+          iconAnchor: [kioskSize.icon / 2, kioskSize.icon / 2],
         });
+
+        const kioskMarker = L.marker([kioskLat, kioskLng], { icon: kioskIconHtml })
+          .addTo(mapInstanceRef.current);
+          
+        if (showBuildingTooltips) {
+          kioskMarker.bindTooltip(kioskName, {
+            ...tooltipOptions,
+            className: 'bg-blue-600 text-white px-2 py-1 rounded shadow-md font-medium text-[10px] pointer-events-none opacity-90'
+          });
+        }
+
+        markersRef.current.push(kioskMarker);
       }
 
-      markersRef.current.push(kioskMarker);
-
-      // Only render building markers when NOT navigating
+      if (!hideBuildingMarkers) {
       buildings.forEach(building => {
-        // Skip the Kiosk building since we render it separately with special styling
         if (building.type === 'Kiosk' || building.id === 'kiosk') {
           return;
         }
@@ -612,8 +632,9 @@ export default function CampusMap({
 
         markersRef.current.push(marker);
       });
+      }
     }
-  }, [buildings, onBuildingClick, selectedBuilding, currentZoom, routePolyline, routePhases, parkingSelectionMode, parkingTypeFilter, onParkingSelected, highlightedParkingIds]);
+  }, [buildings, onBuildingClick, selectedBuilding, currentZoom, routePolyline, routePhases, parkingSelectionMode, parkingTypeFilter, onParkingSelected, highlightedParkingIds, hideKiosk, hideBuildingMarkers]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
@@ -831,8 +852,7 @@ export default function CampusMap({
     polygonsRef.current.forEach(polygon => polygon.remove());
     polygonsRef.current = [];
 
-    // Don't render building polygons when in navigation mode
-    if (hidePolygonsInNavigation) {
+    if (hidePolygonsInNavigation || hidePolygons) {
       return;
     }
 
@@ -864,7 +884,7 @@ export default function CampusMap({
         polygonsRef.current.push(polygon);
       }
     });
-  }, [buildings, hidePolygonsInNavigation, parkingSelectionMode, parkingTypeFilter]);
+  }, [buildings, hidePolygonsInNavigation, hidePolygons, parkingSelectionMode, parkingTypeFilter]);
 
   // Render navigation-specific building polygons with highlight colors
   useEffect(() => {
@@ -993,14 +1013,19 @@ export default function CampusMap({
 
     const layerGroup = L.layerGroup();
 
+    if (!hidePaths) {
+    const pathWeight = thinPaths ? 2 : 4;
+    const pathDash = thinPaths ? '4, 6' : '10, 10';
+    const hoverWeight = thinPaths ? 3 : 6;
+
     existingPaths.forEach((path) => {
       if (path.nodes && Array.isArray(path.nodes) && path.nodes.length > 0) {
         const polyline = L.polyline(path.nodes, {
           color: pathsColor,
-          weight: 4,
+          weight: pathWeight,
           opacity: 0.6,
           smoothFactor: 1,
-          dashArray: '10, 10',
+          dashArray: pathDash,
           interactive: !!onPathClick,
           className: onPathClick ? 'cursor-pointer' : ''
         });
@@ -1012,10 +1037,10 @@ export default function CampusMap({
           });
           
           polyline.on('mouseover', () => {
-            polyline.setStyle({ opacity: 1, weight: 6 });
+            polyline.setStyle({ opacity: 1, weight: hoverWeight });
           });
           polyline.on('mouseout', () => {
-            polyline.setStyle({ opacity: 0.6, weight: 4 });
+            polyline.setStyle({ opacity: 0.6, weight: pathWeight });
           });
 
           if (path.name) {
@@ -1030,10 +1055,27 @@ export default function CampusMap({
         polyline.addTo(layerGroup);
       }
     });
+    }
+
+    if (showBuildingNodes && buildings.length > 0) {
+      buildings.forEach((building: any) => {
+        if (building.type === 'Kiosk' || building.id === 'kiosk') return;
+        const nodeLat = building.nodeLat ?? building.lat;
+        const nodeLng = building.nodeLng ?? building.lng;
+        const nodeIcon = L.divIcon({
+          html: `<div style="width:6px;height:6px;background:#f97316;border-radius:50%;border:1px solid #fff;opacity:0.8;"></div>`,
+          className: 'building-node-dot',
+          iconSize: [6, 6],
+          iconAnchor: [3, 3],
+        });
+        const marker = L.marker([nodeLat, nodeLng], { icon: nodeIcon, interactive: false })
+          .addTo(layerGroup);
+      });
+    }
 
     layerGroup.addTo(mapInstanceRef.current);
     pathsLayerRef.current = layerGroup;
-  }, [existingPaths, pathsColor, onPathClick]);
+  }, [existingPaths, pathsColor, onPathClick, thinPaths, showBuildingNodes, buildings, hidePaths]);
 
   return <div ref={mapRef} className={className} data-testid="map-container" />;
 }

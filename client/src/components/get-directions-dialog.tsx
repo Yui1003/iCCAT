@@ -139,8 +139,9 @@ export default function GetDirectionsDialog({
   const getEstimatedTime = (): string | null => {
     if (!selectedStart || !destination) return null;
 
+    const kioskSource = buildings.find(b => b.type === 'Kiosk' || b.id === 'kiosk') || KIOSK_LOCATION;
     const startBuilding = selectedStart === 'kiosk'
-      ? { ...KIOSK_LOCATION, nodeLat: KIOSK_LOCATION.lat, nodeLng: KIOSK_LOCATION.lng }
+      ? { ...kioskSource, nodeLat: kioskSource.lat, nodeLng: kioskSource.lng }
       : buildings.find(b => b.id === selectedStart);
 
     if (!startBuilding) return null;

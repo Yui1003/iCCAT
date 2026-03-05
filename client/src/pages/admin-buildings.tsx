@@ -57,6 +57,7 @@ export default function AdminBuildings() {
   const [mapClickEnabled, setMapClickEnabled] = useState(false);
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>("All Types");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const mapClickEnabledRef = useRef(false);
   const { toast } = useToast();
 
@@ -178,6 +179,7 @@ export default function AdminBuildings() {
         lat,
         lng
       }));
+      // Remove toast to prevent any potential state-related layout shifts or just keep it if it's not the cause
       toast({ title: "Location updated", description: `Set to ${lat.toFixed(6)}, ${lng.toFixed(6)}` });
     }
   };
@@ -294,8 +296,8 @@ export default function AdminBuildings() {
                       <CampusMap
                         buildings={[
                           ...buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id),
-                          { ...formData, id: "preview", name: formData.name || "New Building", markerIcon: formData.markerIcon }
-                        ] as Building[]}
+                          { ...formData, id: "preview", name: formData.name || "New Building", markerIcon: formData.markerIcon, images: formData.images || [] }
+                        ] as any}
                         onMapClick={handleMapClick}
                         centerLat={formData.lat}
                         centerLng={formData.lng}
@@ -334,7 +336,19 @@ export default function AdminBuildings() {
                 </div>
 
                 <div>
-                  <Label>Building Node (Pathfinding Entrance) *</Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Building Node (Pathfinding Entrance) *</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFormData({ ...formData, nodeLat: formData.lat, nodeLng: formData.lng })}
+                      className="text-xs h-7"
+                      data-testid="button-match-marker"
+                    >
+                      Match to Building Marker
+                    </Button>
+                  </div>
                   <p className="text-sm text-muted-foreground mt-1 mb-3">
                     Set the specific coordinate for the pathfinding entrance. This is where paths will connect to the building.
                   </p>
@@ -349,9 +363,10 @@ export default function AdminBuildings() {
                             name: "Building Node", 
                             lat: formData.nodeLat ?? formData.lat,
                             lng: formData.nodeLng ?? formData.lng,
-                            markerIcon: "school" 
+                            markerIcon: "school",
+                            images: formData.images || []
                           }
-                        ] as Building[]}
+                        ] as any}
                         onMapClick={handleNodeMapClick}
                         centerLat={formData.nodeLat ?? formData.lat}
                         centerLng={formData.nodeLng ?? formData.lng}
@@ -422,18 +437,10 @@ export default function AdminBuildings() {
                 </div>
 
                   <ImageUploadInput
-                    label="Building Photo (Main)"
-                    value={formData.image ?? ""}
-                    onChange={(url) => setFormData({ ...formData, image: url as string })}
-                    type="building"
-                    id={editingBuilding?.id || 'new'}
-                    testId="building-image"
-                  />
-
-                  <ImageUploadInput
-                    label="Additional Photos"
+                    label="Upload Photos"
                     value={formData.images || []}
                     onChange={(urls) => setFormData({ ...formData, images: urls as string[] })}
+                    onUploadingChange={setIsUploading}
                     type="building"
                     id={editingBuilding?.id || 'new'}
                     testId="building-additional-images"
@@ -558,15 +565,16 @@ export default function AdminBuildings() {
                     variant="outline"
                     onClick={handleCloseDialog}
                     data-testid="button-cancel"
+                    disabled={createMutation.isPending || updateMutation.isPending || isUploading}
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
-                    disabled={createMutation.isPending || updateMutation.isPending}
+                    disabled={createMutation.isPending || updateMutation.isPending || isUploading}
                     data-testid="button-save-building"
                   >
-                    {editingBuilding ? "Update" : "Create"}
+                    {(createMutation.isPending || updateMutation.isPending) ? "Saving..." : (isUploading ? "Uploading..." : (editingBuilding ? "Update" : "Create"))}
                   </Button>
                 </div>
               </form>

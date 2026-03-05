@@ -1,25 +1,140 @@
 import { Link } from "wouter";
 import { Map, Calendar, Users, Info, ClipboardList, HelpCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useHomeInactivity } from "@/hooks/use-inactivity";
 import logoImage from "@assets/logo.png";
-import campusBg from "/generated_images/Homepage BG.png";
+
 import { Button } from "@/components/ui/button";
 import { Walkthrough, useWalkthrough } from "@/components/walkthrough";
 
-export default function Landing() {
+const TIME_PHASES = [
+  { start: 5 * 60, end: 6 * 60, img: "/assets/Homepage Engine/5AM - 6AM.png" },
+  { start: 6 * 60, end: 7 * 60, img: "/assets/Homepage Engine/6AM - 7AM.png" },
+  { start: 7 * 60, end: 12 * 60, img: "/assets/Homepage Engine/7AM - 12NN.png" },
+  { start: 12 * 60, end: 13 * 60, img: "/assets/Homepage Engine/12NN-1PM.png" },
+  { start: 13 * 60, end: 17 * 60 + 30, img: "/assets/Homepage Engine/1PM - 530PM.png" },
+  { start: 17 * 60 + 30, end: 18 * 60, img: "/assets/Homepage Engine/530PM - 6PM.png" },
+  { start: 18 * 60, end: 21 * 60, img: "/assets/Homepage Engine/6PM-9PM.png" },
+  { start: 21 * 60, end: 24 * 60, img: "/assets/Homepage Engine/9PM - 5AM.png" },
+  { start: 0, end: 5 * 60, img: "/assets/Homepage Engine/9PM - 5AM.png" },
+].sort((a, b) => a.start - b.start);
+
+function getPhaseForTime(timeInMinutes: number) {
+  let currentIdx = TIME_PHASES.findIndex(p => timeInMinutes >= p.start && timeInMinutes < p.end);
+  if (currentIdx === -1) currentIdx = TIME_PHASES.length - 1;
+  const currentPhase = TIME_PHASES[currentIdx];
+
+  let nextIdx = (currentIdx + 1) % TIME_PHASES.length;
+  let nextPhase = TIME_PHASES[nextIdx];
+  while (nextPhase.img === currentPhase.img && TIME_PHASES.some(p => p.img !== currentPhase.img)) {
+    nextIdx = (nextIdx + 1) % TIME_PHASES.length;
+    nextPhase = TIME_PHASES[nextIdx];
+  }
+
+  const blendStartMinutes = currentPhase.end - 15;
+  let opacity = 0;
+  if (timeInMinutes >= blendStartMinutes && nextPhase.img !== currentPhase.img) {
+    const isMidnightSplit = currentPhase.end === 24 * 60;
+    if (!isMidnightSplit) {
+      opacity = Math.min(1, Math.max(0, (timeInMinutes - blendStartMinutes) / 15));
+    }
+  }
+
+  return { currentImg: currentPhase.img, nextImg: nextPhase.img, nextOpacity: opacity };
+}
+
+const FADE_MS = 2000;
+
+function useBackgroundCrossfade() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const { isOpen, openWalkthrough, closeWalkthrough } = useWalkthrough();
-  
-  // Activate screensaver after 30 seconds of inactivity
-  useHomeInactivity();
+  const [baseSrc, setBaseSrc] = useState('');
+  const [overlaySrc, setOverlaySrc] = useState('');
+  const [overlayOpacity, setOverlayOpacity] = useState(0);
+  const prevPhaseImgRef = useRef('');
+  const preloadedRef = useRef<Set<string>>(new Set());
+  const swappingRef = useRef(false);
+
+  const ensureLoaded = useRef((src: string): Promise<void> => {
+    if (preloadedRef.current.has(src)) return Promise.resolve();
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => { preloadedRef.current.add(src); resolve(); };
+      img.onerror = () => { preloadedRef.current.add(src); resolve(); };
+      img.src = src;
+    });
+  }).current;
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const now = new Date();
+    const t = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    const phase = getPhaseForTime(t);
+    setBaseSrc(phase.currentImg);
+    setOverlaySrc(phase.nextImg);
+    setOverlayOpacity(phase.nextOpacity);
+    prevPhaseImgRef.current = phase.currentImg;
+    preloadedRef.current.add(phase.currentImg);
+    if (phase.nextImg !== phase.currentImg) {
+      ensureLoaded(phase.nextImg);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const t = currentTime.getHours() * 60 + currentTime.getMinutes() + currentTime.getSeconds() / 60;
+    const phase = getPhaseForTime(t);
+
+    if (phase.nextImg !== phase.currentImg) {
+      ensureLoaded(phase.nextImg);
+    }
+
+    if (phase.currentImg !== prevPhaseImgRef.current && !swappingRef.current) {
+      swappingRef.current = true;
+
+      ensureLoaded(phase.currentImg).then(() => {
+        setBaseSrc(phase.currentImg);
+        setOverlayOpacity(0);
+
+        setTimeout(() => {
+          setOverlaySrc(phase.nextImg);
+          prevPhaseImgRef.current = phase.currentImg;
+          swappingRef.current = false;
+        }, FADE_MS + 200);
+      });
+    } else if (!swappingRef.current) {
+      setOverlaySrc(phase.nextImg);
+      setOverlayOpacity(phase.nextOpacity);
+    }
+  }, [currentTime]);
+
+  return { baseSrc, overlaySrc, overlayOpacity, currentTime };
+}
+
+export default function Landing() {
+  const { baseSrc, overlaySrc, overlayOpacity, currentTime } = useBackgroundCrossfade();
+  const { isOpen, openWalkthrough, closeWalkthrough } = useWalkthrough();
+
+  const isDaytime = useMemo(() => {
+    const hours = currentTime.getHours();
+    const minutes = currentTime.getMinutes();
+    const timeInMinutes = hours * 60 + minutes;
+    // Daytime is 5:00 AM to 5:47 PM (17 * 60 + 47 = 1067 minutes)
+    return timeInMinutes >= 5 * 60 && timeInMinutes < (17 * 60 + 47);
+  }, [currentTime]);
+
+  const textColorClass = isDaytime ? "text-black" : "text-white";
+  const textShadowClass = isDaytime 
+    ? "" 
+    : "[text-shadow:_-1px_-1px_0_#000,_1px_-1px_0_#000,_-1px_1px_0_#000,_1px_1px_0_#000]";
+  
+  const secondaryTextShadowClass = isDaytime
+    ? ""
+    : "[text-shadow:_-0.5px_-0.5px_0_#000,_0.5px_-0.5px_0_#000,_-0.5px_0.5px_0_#000,_0.5px_0.5px_0_#000]";
+
+  useHomeInactivity();
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
@@ -40,16 +155,25 @@ export default function Landing() {
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col relative overflow-hidden">
+    <div className="h-screen bg-black flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none z-0">
         <img
-          src={campusBg}
+          src={baseSrc}
           alt=""
-          className="w-full h-full object-fill"
+          className="absolute inset-0 w-full h-full object-fill"
+        />
+        <img
+          src={overlaySrc}
+          alt=""
+          className="absolute inset-0 w-full h-full object-fill"
+          style={{ opacity: overlayOpacity, transition: 'opacity 2s linear' }}
         />
       </div>
-      <div className="absolute inset-0 bg-background/55 pointer-events-none z-[1]" />
-      <header className="px-6 pt-4 pb-2 relative z-10">
+      
+      {/* Walkthrough component needs to be high z-index */}
+      <Walkthrough isOpen={isOpen} onClose={closeWalkthrough} />
+
+      <header className="px-6 pt-4 pb-2 relative z-50">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -60,33 +184,39 @@ export default function Landing() {
                 data-testid="img-logo"
               />
               <div>
-                <h1 className="text-3xl font-bold text-foreground">iCCAT</h1>
-                <p className="text-sm text-foreground/80 font-medium">Interactive Campus Companion & Assistance Terminal</p>
+                <h1 className={`text-3xl font-bold ${textColorClass} ${textShadowClass}`}>iCCAT</h1>
+                <p className={`text-sm ${textColorClass} font-bold ${secondaryTextShadowClass}`}>Interactive Campus Companion & Assistance Terminal</p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              onClick={openWalkthrough}
-              className="flex items-center gap-2 bg-card/90 backdrop-blur-sm border-card-border"
-              data-testid="button-help-guide"
-            >
-              <HelpCircle className="w-5 h-5" />
-              <span className="hidden sm:inline">How to Use</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openWalkthrough();
+                }}
+                className={`relative flex items-center gap-2 bg-white/10 backdrop-blur-md border-white/20 ${isDaytime ? 'text-black shadow-black/10' : 'text-white shadow-white/10'} font-bold pointer-events-auto shadow-xl hover:bg-white/20 cursor-pointer z-[100]`}
+                data-testid="button-help-guide"
+              >
+                <HelpCircle className="w-5 h-5" />
+                <span className="hidden sm:inline">How to Use</span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-6 pb-4 relative z-10">
+      <main className="flex-1 flex items-center justify-center px-6 pb-28 relative z-10 -mt-24">
         <div className="max-w-5xl w-full">
           <div className="text-center mb-6">
             <div className="flex items-center justify-center mb-4">
-              <div className="text-lg text-muted-foreground">{formatDate(currentTime)}</div>
+              <div className={`text-lg ${textColorClass} font-bold ${secondaryTextShadowClass}`}>{formatDate(currentTime)}</div>
             </div>
-            <div className="text-5xl font-bold text-foreground mb-2" data-testid="text-time">
+            <div className={`text-5xl font-bold ${textColorClass} mb-2 ${textShadowClass}`} data-testid="text-time">
               {formatTime(currentTime)}
             </div>
-            <p className="text-xl text-muted-foreground">
+            <p className={`text-xl ${textColorClass} font-semibold ${textShadowClass}`}>
               Welcome to Cavite State University CCAT Campus
             </p>
           </div>
@@ -95,15 +225,15 @@ export default function Landing() {
             <Link href="/navigation">
               <button
                 data-testid="button-navigation"
-                className="group w-full bg-card/90 border border-card-border rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm"
+                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Map className="w-10 h-10 text-primary" />
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
+                    <Map className={`w-10 h-10 text-primary ${isDaytime ? 'drop-shadow-[0_0_1px_rgba(255,255,255,1)]' : 'drop-shadow-[0_0_1px_rgba(0,0,0,1)]'}`} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-1">Campus Navigation</h2>
-                    <p className="text-sm text-muted-foreground">Find your way around campus with turn-by-turn directions</p>
+                    <h2 className={`text-xl font-semibold ${textColorClass} mb-1 ${textShadowClass}`}>Campus Navigation</h2>
+                    <p className={`${textColorClass} font-medium ${textShadowClass}`}>Find your way around campus with turn-by-turn directions</p>
                   </div>
                 </div>
               </button>
@@ -112,15 +242,15 @@ export default function Landing() {
             <Link href="/events">
               <button
                 data-testid="button-events"
-                className="group w-full bg-card/90 border border-card-border rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm"
+                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Calendar className="w-10 h-10 text-primary" />
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
+                    <Calendar className={`w-10 h-10 text-primary ${isDaytime ? 'drop-shadow-[0_0_1px_rgba(255,255,255,1)]' : 'drop-shadow-[0_0_1px_rgba(0,0,0,1)]'}`} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-1">Events & Announcements</h2>
-                    <p className="text-sm text-muted-foreground">Stay updated with campus activities and important notices</p>
+                    <h2 className={`text-xl font-semibold ${textColorClass} mb-1 ${textShadowClass}`}>Events & Announcements</h2>
+                    <p className={`${textColorClass} font-medium ${textShadowClass}`}>Stay updated with campus activities and important notices</p>
                   </div>
                 </div>
               </button>
@@ -129,15 +259,15 @@ export default function Landing() {
             <Link href="/staff">
               <button
                 data-testid="button-staff"
-                className="group w-full bg-card/90 border border-card-border rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm"
+                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Users className="w-10 h-10 text-primary" />
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
+                    <Users className={`w-10 h-10 text-primary ${isDaytime ? 'drop-shadow-[0_0_1px_rgba(255,255,255,1)]' : 'drop-shadow-[0_0_1px_rgba(0,0,0,1)]'}`} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-1">Staff Finder</h2>
-                    <p className="text-sm text-muted-foreground">Locate faculty and staff members across campus</p>
+                    <h2 className={`text-xl font-semibold ${textColorClass} mb-1 ${textShadowClass}`}>Staff Finder</h2>
+                    <p className={`${textColorClass} font-medium ${textShadowClass}`}>Locate faculty and staff members across campus</p>
                   </div>
                 </div>
               </button>
@@ -146,15 +276,15 @@ export default function Landing() {
             <Link href="/about">
               <button
                 data-testid="button-about"
-                className="group w-full bg-card/90 border border-card-border rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-sm"
+                className="group w-full bg-white/10 border border-white/20 rounded-lg p-6 hover-elevate active-elevate-2 transition-all backdrop-blur-md shadow-xl"
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Info className="w-10 h-10 text-primary" />
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors border border-black/20">
+                    <Info className={`w-10 h-10 text-primary ${isDaytime ? 'drop-shadow-[0_0_1px_rgba(255,255,255,1)]' : 'drop-shadow-[0_0_1px_rgba(0,0,0,1)]'}`} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-foreground mb-1">About the Kiosk</h2>
-                    <p className="text-sm text-muted-foreground">Learn more about this information system</p>
+                    <h2 className={`text-xl font-semibold ${textColorClass} mb-1 ${textShadowClass}`}>About the Kiosk</h2>
+                    <p className={`${textColorClass} font-medium ${textShadowClass}`}>Learn more about this information system</p>
                   </div>
                 </div>
               </button>
@@ -170,15 +300,15 @@ export default function Landing() {
               <Link href="/feedback">
                 <button
                   data-testid="button-feedback"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover-elevate active-elevate-2 transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover-elevate active-elevate-2 transition-all shadow-lg"
                 >
                   <ClipboardList className="w-5 h-5" />
                   <span className="font-medium">Provide Feedback</span>
                 </button>
               </Link>
             </div>
-            <div className="text-xs text-foreground/70" data-testid="text-version">
-              version:2.5.6
+            <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
+              version:3.0.2
             </div>
           </div>
         </div>

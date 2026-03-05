@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Route as RouteIcon, Plus, Pencil, Trash2, Accessibility } from "lucide-react";
+import { Route as RouteIcon, Plus, Pencil, Trash2, Accessibility, HelpCircle, Building2, MapPin, GitBranch } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,12 @@ export default function AdminPaths() {
   const [strictlyPwdOnly, setStrictlyPwdOnly] = useState(false); // Strictly PWD-only by default
   const [walkpathSearch, setWalkpathSearch] = useState("");
   const [drivepathSearch, setDrivepathSearch] = useState("");
+  const [polarTracking, setPolarTracking] = useState(false);
+  const [polarIncrement, setPolarIncrement] = useState(45);
+  const [showBuildingMarkers, setShowBuildingMarkers] = useState(true);
+  const [showBuildingNodes, setShowBuildingNodes] = useState(true);
+  const [showPathDashes, setShowPathDashes] = useState(true);
+  const modifiedConnectedPathsRef = useRef<Map<string, { id: string; nodes: PathNode[] }>>(new Map());
   const { toast } = useToast();
 
   const { data: buildings = [] } = useQuery<Building[]>({
@@ -131,6 +137,7 @@ export default function AdminPaths() {
       setIsPwdFriendly(false); // Default to off for new paths
       setStrictlyPwdOnly(false); // Default to not strictly PWD-only
     }
+    modifiedConnectedPathsRef.current.clear();
     setIsDialogOpen(true);
   };
 
@@ -142,11 +149,29 @@ export default function AdminPaths() {
     setPathNodes([]);
     setIsPwdFriendly(false);
     setStrictlyPwdOnly(false);
+    modifiedConnectedPathsRef.current.clear();
   };
+
+  const handleConnectedPathsChange = useCallback((modifiedPaths: Array<{ id: string; nodes: PathNode[] }>) => {
+    modifiedPaths.forEach((mp) => {
+      modifiedConnectedPathsRef.current.set(mp.id, mp);
+    });
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // If no waypoints, delete the path if it exists
+    if (pathNodes.length === 0 && editingPath) {
+      if (editingPathType === "walkpath") {
+        deleteWalkpath.mutate(editingPath.id);
+      } else {
+        deleteDrivepath.mutate(editingPath.id);
+      }
+      setIsDialogOpen(false);
+      return;
+    }
+
     if (pathNodes.length < 2) {
       toast({ title: "Please add at least 2 waypoints to create a path", variant: "destructive" });
       return;
@@ -165,12 +190,44 @@ export default function AdminPaths() {
       strictlyPwdOnly
     };
 
+    const saveConnectedPaths = () => {
+      if (modifiedConnectedPathsRef.current.size === 0) return;
+
+      const walkpathIds = new Set((walkpaths || []).map((w: any) => w.id));
+      const drivepathIds = new Set((drivepaths || []).map((d: any) => d.id));
+
+      modifiedConnectedPathsRef.current.forEach((modPath) => {
+        const originalPath = [...(walkpaths || []), ...(drivepaths || [])].find((p: any) => p.id === modPath.id);
+        if (!originalPath) return;
+
+        if (walkpathIds.has(modPath.id)) {
+          apiRequest('PUT', `/api/walkpaths/${modPath.id}`, {
+            name: originalPath.name,
+            nodes: modPath.nodes,
+            isPwdFriendly: originalPath.isPwdFriendly,
+            strictlyPwdOnly: originalPath.strictlyPwdOnly
+          }).then(() => {
+            invalidateEndpointCache('/api/walkpaths', queryClient);
+          });
+        } else if (drivepathIds.has(modPath.id)) {
+          apiRequest('PUT', `/api/drivepaths/${modPath.id}`, {
+            name: originalPath.name,
+            nodes: modPath.nodes
+          }).then(() => {
+            invalidateEndpointCache('/api/drivepaths', queryClient);
+          });
+        }
+      });
+      modifiedConnectedPathsRef.current.clear();
+    };
+
     if (editingPath) {
       if (editingPathType === "walkpath") {
         updateWalkpath.mutate({ id: editingPath.id, data: walkpathData });
       } else {
         updateDrivepath.mutate({ id: editingPath.id, data: baseData });
       }
+      saveConnectedPaths();
     } else {
       if (activeTab === "walkpaths") {
         createWalkpath.mutate(walkpathData);
@@ -195,7 +252,7 @@ export default function AdminPaths() {
                 Add Path
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingPath ? 'Edit' : 'Add'} {activeTab === "walkpaths" ? "Walking" : "Driving"} Path</DialogTitle>
                 <p className="text-sm text-muted-foreground">
@@ -216,7 +273,7 @@ export default function AdminPaths() {
                 
                 {/* PWD Friendly and Strictly PWD Only toggles - only show for walkpaths */}
                 {(activeTab === "walkpaths" || editingPathType === "walkpath") && (
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-2">
                         <Accessibility className="w-5 h-5 text-orange-500" />
@@ -224,8 +281,8 @@ export default function AdminPaths() {
                           <Label htmlFor="pwd-friendly" className="text-sm font-medium cursor-pointer">
                             PWD Accessible
                           </Label>
-                          <p className="text-xs text-muted-foreground">
-                            Mark as wheelchair-friendly (paved, no stairs)
+                          <p className="text-[10px] leading-tight text-muted-foreground">
+                            Mark as wheelchair-friendly
                           </p>
                         </div>
                       </div>
@@ -244,8 +301,8 @@ export default function AdminPaths() {
                           <Label htmlFor="strictly-pwd-only" className="text-sm font-medium cursor-pointer">
                             Strictly PWD Only
                           </Label>
-                          <p className="text-xs text-muted-foreground">
-                            Only for accessible mode, not for walking routes
+                          <p className="text-[10px] leading-tight text-muted-foreground">
+                            Only for accessible mode
                           </p>
                         </div>
                       </div>
@@ -264,7 +321,7 @@ export default function AdminPaths() {
                   <p className="text-xs text-muted-foreground mb-2">
                     🏢 Orange markers = buildings (click to snap path) • Gray dots = existing waypoints • Click map to add waypoints
                   </p>
-                  <div className="w-full" style={{ height: '350px', display: 'block' }}>
+                  <div className="w-full border rounded-md overflow-hidden" style={{ height: '450px', display: 'block' }}>
                     <PathDrawingMap
                       nodes={pathNodes}
                       onNodesChange={setPathNodes}
@@ -272,6 +329,9 @@ export default function AdminPaths() {
                       className="h-full w-full"
                       existingPaths={activeTab === "walkpaths" ? walkpaths : drivepaths}
                       currentPathId={editingPath?.id}
+                      polarTracking={polarTracking}
+                      polarIncrement={polarIncrement}
+                      onConnectedPathsChange={handleConnectedPathsChange}
                       buildings={buildings.map(b => ({ 
                         id: b.id, 
                         name: b.name, 
@@ -283,7 +343,49 @@ export default function AdminPaths() {
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full" disabled={pathNodes.length < 2}>{editingPath ? 'Update Path' : 'Create Path'}</Button>
+                <div className="flex flex-wrap items-center justify-between gap-4 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <HelpCircle className="w-5 h-5 text-blue-500" />
+                    <div>
+                      <Label htmlFor="polar-tracking" className="text-sm font-medium cursor-pointer">
+                        Polar Tracking
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Snap nodes to {polarIncrement}° increments
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 ml-auto">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="polar-increment" className="text-xs whitespace-nowrap">Angle (°):</Label>
+                      <Input
+                        id="polar-increment"
+                        type="text"
+                        value={polarIncrement}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            setPolarIncrement(0 as any);
+                            return;
+                          }
+                          const num = parseInt(val);
+                          if (!isNaN(num)) {
+                            setPolarIncrement(Math.min(360, Math.max(0, num)));
+                          }
+                        }}
+                        className="w-16 h-8 text-xs text-center"
+                      />
+                    </div>
+                    <Switch
+                      id="polar-tracking"
+                      checked={polarTracking}
+                      onCheckedChange={setPolarTracking}
+                    />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full">
+                  {pathNodes.length === 0 && editingPath ? 'Delete Path' : (editingPath ? 'Update Path' : 'Create Path')}
+                </Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -300,13 +402,52 @@ export default function AdminPaths() {
           </TabsList>
 
           <TabsContent value="walkpaths">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs text-muted-foreground mr-1">Filters:</span>
+              <Button
+                size="sm"
+                variant={showBuildingMarkers ? "default" : "outline"}
+                className="toggle-elevate"
+                onClick={() => setShowBuildingMarkers(!showBuildingMarkers)}
+                data-testid="button-toggle-building-markers"
+              >
+                <Building2 className="w-3.5 h-3.5 mr-1" />
+                Buildings
+              </Button>
+              <Button
+                size="sm"
+                variant={showBuildingNodes ? "default" : "outline"}
+                className="toggle-elevate"
+                onClick={() => setShowBuildingNodes(!showBuildingNodes)}
+                data-testid="button-toggle-building-nodes"
+              >
+                <MapPin className="w-3.5 h-3.5 mr-1" />
+                Nodes
+              </Button>
+              <Button
+                size="sm"
+                variant={showPathDashes ? "default" : "outline"}
+                className="toggle-elevate"
+                onClick={() => setShowPathDashes(!showPathDashes)}
+                data-testid="button-toggle-path-dashes"
+              >
+                <GitBranch className="w-3.5 h-3.5 mr-1" />
+                Paths
+              </Button>
+            </div>
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <Card className="h-[600px] overflow-hidden">
                   <CampusMap 
-                    buildings={[]} 
+                    buildings={buildings as any} 
                     existingPaths={walkpaths} 
                     pathsColor="#22c55e" 
+                    hideKiosk
+                    hidePolygons
+                    thinPaths
+                    showBuildingNodes={showBuildingNodes}
+                    hideBuildingMarkers={!showBuildingMarkers}
+                    hidePaths={!showPathDashes}
                     onPathClick={(path) => handleOpenDialog(path, 'walkpath')}
                   />
                 </Card>
@@ -409,13 +550,52 @@ export default function AdminPaths() {
           </TabsContent>
 
           <TabsContent value="drivepaths">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs text-muted-foreground mr-1">Filters:</span>
+              <Button
+                size="sm"
+                variant={showBuildingMarkers ? "default" : "outline"}
+                className="toggle-elevate"
+                onClick={() => setShowBuildingMarkers(!showBuildingMarkers)}
+                data-testid="button-toggle-building-markers-drive"
+              >
+                <Building2 className="w-3.5 h-3.5 mr-1" />
+                Buildings
+              </Button>
+              <Button
+                size="sm"
+                variant={showBuildingNodes ? "default" : "outline"}
+                className="toggle-elevate"
+                onClick={() => setShowBuildingNodes(!showBuildingNodes)}
+                data-testid="button-toggle-building-nodes-drive"
+              >
+                <MapPin className="w-3.5 h-3.5 mr-1" />
+                Nodes
+              </Button>
+              <Button
+                size="sm"
+                variant={showPathDashes ? "default" : "outline"}
+                className="toggle-elevate"
+                onClick={() => setShowPathDashes(!showPathDashes)}
+                data-testid="button-toggle-path-dashes-drive"
+              >
+                <GitBranch className="w-3.5 h-3.5 mr-1" />
+                Paths
+              </Button>
+            </div>
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <Card className="h-[600px] overflow-hidden">
                   <CampusMap 
-                    buildings={[]} 
+                    buildings={buildings as any} 
                     existingPaths={drivepaths} 
                     pathsColor="#3b82f6" 
+                    hideKiosk
+                    hidePolygons
+                    thinPaths
+                    showBuildingNodes={showBuildingNodes}
+                    hideBuildingMarkers={!showBuildingMarkers}
+                    hidePaths={!showPathDashes}
                     onPathClick={(path) => handleOpenDialog(path, 'drivepath')}
                   />
                 </Card>

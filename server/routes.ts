@@ -132,10 +132,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const decodedUrl = decodeURIComponent(imageUrl);
       
+      // If it's already a proxied URL, don't double proxy
+      if (decodedUrl.includes('/api/proxy-image?url=')) {
+        const nestedUrl = new URL(decodedUrl, 'http://localhost').searchParams.get('url');
+        if (nestedUrl) {
+          return res.redirect(`/api/proxy-image?url=${encodeURIComponent(nestedUrl)}`);
+        }
+      }
+
+      // Handle legacy Firebase URLs or other external storage
+      let finalUrl = decodedUrl;
+      
       // Validate URL
       let parsedUrl: URL;
       try {
-        parsedUrl = new URL(decodedUrl);
+        parsedUrl = new URL(finalUrl);
       } catch {
         return res.status(400).json({ error: 'Invalid URL' });
       }
@@ -354,13 +365,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.delete('/api/feedback/clear-all', async (req, res) => {
-    // Security: Only allow from localhost/admin (testing environment only)
-    const isLocalhost = req.hostname === 'localhost' || req.hostname === '127.0.0.1' || req.ip === '127.0.0.1' || req.ip === '::1';
-    
-    if (!isLocalhost) {
-      return res.status(403).json({ error: 'This operation is only allowed from localhost for testing purposes' });
-    }
-    
     try {
       await storage.clearAllFeedback();
       res.json({ success: true, message: 'All feedback records have been deleted' });
@@ -377,23 +381,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Format data for Excel
       const excelData = feedbacks.map((f) => {
-        // Parse timestamp - handle both Date objects and strings
         let timestampDate: Date;
-        if (f.timestamp instanceof Date) {
-          timestampDate = f.timestamp;
-        } else if (typeof f.timestamp === 'string') {
-          timestampDate = new Date(f.timestamp);
+        const ts = f.timestamp as any;
+        if (ts && typeof ts.toDate === 'function') {
+          timestampDate = ts.toDate();
+        } else if (ts && ts._seconds !== undefined) {
+          timestampDate = new Date(ts._seconds * 1000);
+        } else if (ts instanceof Date) {
+          timestampDate = ts;
+        } else if (typeof ts === 'string') {
+          timestampDate = new Date(ts);
         } else {
           timestampDate = new Date();
         }
         
-        // Ensure we have a valid date
         if (isNaN(timestampDate.getTime())) {
           timestampDate = new Date();
         }
         
         return {
           'Timestamp': timestampDate.toLocaleString('en-US', {
+            timeZone: 'Asia/Manila',
             year: '2-digit',
             month: '2-digit',
             day: '2-digit',
@@ -402,16 +410,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             second: '2-digit',
             hour12: true
           }),
-          'User #': f.userId,
-          'Functional Suitability': f.avgFunctionalSuitability.toFixed(2),
-          'Performance Efficiency': f.avgPerformanceEfficiency.toFixed(2),
-          'Compatibility': f.avgCompatibility.toFixed(2),
-          'Usability': f.avgUsability.toFixed(2),
-          'Reliability': f.avgReliability.toFixed(2),
-          'Security': f.avgSecurity.toFixed(2),
-          'Maintainability': f.avgMaintainability.toFixed(2),
-          'Portability': f.avgPortability.toFixed(2),
-          'UX Items': f.avgUxItems.toFixed(2),
+          'User #': f.userId ?? '',
+          'Functional Suitability': (f.avgFunctionalSuitability ?? 0).toFixed(2),
+          'Performance Efficiency': (f.avgPerformanceEfficiency ?? 0).toFixed(2),
+          'Compatibility': (f.avgCompatibility ?? 0).toFixed(2),
+          'Usability': (f.avgUsability ?? 0).toFixed(2),
+          'Reliability': (f.avgReliability ?? 0).toFixed(2),
+          'Security': (f.avgSecurity ?? 0).toFixed(2),
+          'Maintainability': (f.avgMaintainability ?? 0).toFixed(2),
+          'Portability': (f.avgPortability ?? 0).toFixed(2),
+          'UX Items': (f.avgUxItems ?? 0).toFixed(2),
           'Comments': f.comments || ''
         };
       });
@@ -1150,7 +1158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? await storage.getWalkpaths()
         : await storage.getDrivepaths();
 
-      const route = findShortestPath(startBuilding, endBuilding, paths);
+      const route = findShortestPath(startBuilding as any, endBuilding as any, paths);
 
       if (!route) {
         return res.status(404).json({ error: 'No route found' });

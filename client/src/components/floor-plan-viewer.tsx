@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { X, ZoomIn, ZoomOut, Maximize2, Plus, Trash2 } from "lucide-react";
+import { X, ZoomIn, ZoomOut, Maximize2, Plus, Trash2, Navigation } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -42,9 +42,10 @@ interface FloorPlanViewerProps {
   showPathTo?: IndoorNode | null;
   viewOnly?: boolean;
   pathPolyline?: LatLng[];
+  onGetDirections?: (room: Room | CombinedRoom) => void;
 }
 
-export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], onClose, onPlaceRoom, onCreateRoom, onUpdateRoom, onDeleteRoom, highlightedRoomId, showPathTo, viewOnly = false, pathPolyline }: FloorPlanViewerProps) {
+export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], onClose, onPlaceRoom, onCreateRoom, onUpdateRoom, onDeleteRoom, highlightedRoomId, showPathTo, viewOnly = false, pathPolyline, onGetDirections }: FloorPlanViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -82,11 +83,9 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Force canvas to match container dimensions
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
 
-    // Completely clear canvas including style
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setLineDash([]);
 
@@ -100,17 +99,14 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
       
       ctx.drawImage(image, x, y, image.width * scale, image.height * scale);
 
-      // Draw path if destination room is set using the polyline from route phase
       if (pathPolyline && pathPolyline.length > 0) {
         console.log('[FLOOR-PLAN] Drawing path with', pathPolyline.length, 'waypoints');
         
-        // Filter waypoints to only those within canvas bounds with safe margins
         const imageWidth = image.width * scale;
         const imageHeight = image.height * scale;
         const validWaypoints = pathPolyline.filter(wp => {
           const px = x + wp.lat * scale;
           const py = y + wp.lng * scale;
-          // Only draw if waypoint is reasonably close to visible canvas
           return px >= x - 100 && px <= x + imageWidth + 100 &&
                  py >= y - 100 && py <= y + imageHeight + 100;
         });
@@ -121,11 +117,9 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
           ctx.setLineDash([5 / zoom, 5 / zoom]);
           ctx.beginPath();
           
-          // Start from first valid waypoint
           const firstWp = validWaypoints[0];
           ctx.moveTo(x + firstWp.lat * scale, y + firstWp.lng * scale);
           
-          // Draw through all valid waypoints
           for (let i = 1; i < validWaypoints.length; i++) {
             const wp = validWaypoints[i];
             ctx.lineTo(x + wp.lat * scale, y + wp.lng * scale);
@@ -140,22 +134,17 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
       }
 
       rooms.forEach(room => {
-        // room.x and room.y are now absolute pixel coordinates on the floor plan image
         const roomX = x + room.x * scale;
         const roomY = y + room.y * scale;
 
-        // Draw pin/marker icon (teardrop shape)
         const pinSize = 20 / zoom;
         let roomColor = getRoomColor(room.type);
         
-        // Highlight the destination room
         if (highlightedRoomId && room.id === highlightedRoomId) {
-          roomColor = '#ef4444'; // Red for highlighted
+          roomColor = '#ef4444';
         }
         
-        // Draw the pin shape
         ctx.beginPath();
-        // Top circle part of the pin
         ctx.arc(roomX, roomY - pinSize / 2, pinSize / 2, 0, Math.PI * 2);
         ctx.fillStyle = roomColor;
         ctx.fill();
@@ -163,7 +152,6 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
         ctx.lineWidth = 2 / zoom;
         ctx.stroke();
         
-        // Bottom point of the pin (triangle)
         ctx.beginPath();
         ctx.moveTo(roomX - pinSize / 3, roomY - pinSize / 4);
         ctx.lineTo(roomX + pinSize / 3, roomY - pinSize / 4);
@@ -174,6 +162,41 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2 / zoom;
         ctx.stroke();
+
+        // Draw room name label above the pin
+        const label = room.name;
+        const fontSize = Math.max(9, 11 / zoom);
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.textAlign = 'center';
+
+        const textWidth = ctx.measureText(label).width;
+        const labelPadX = 4 / zoom;
+        const labelPadY = 3 / zoom;
+        const labelX = roomX;
+        const labelY = roomY - pinSize - 4 / zoom;
+
+        // Background pill
+        ctx.fillStyle = 'rgba(0,0,0,0.65)';
+        const bgX = labelX - textWidth / 2 - labelPadX;
+        const bgY = labelY - fontSize - labelPadY;
+        const bgW = textWidth + labelPadX * 2;
+        const bgH = fontSize + labelPadY * 2;
+        const radius = 3 / zoom;
+        ctx.beginPath();
+        ctx.moveTo(bgX + radius, bgY);
+        ctx.lineTo(bgX + bgW - radius, bgY);
+        ctx.quadraticCurveTo(bgX + bgW, bgY, bgX + bgW, bgY + radius);
+        ctx.lineTo(bgX + bgW, bgY + bgH - radius);
+        ctx.quadraticCurveTo(bgX + bgW, bgY + bgH, bgX + bgW - radius, bgY + bgH);
+        ctx.lineTo(bgX + radius, bgY + bgH);
+        ctx.quadraticCurveTo(bgX, bgY + bgH, bgX, bgY + bgH - radius);
+        ctx.lineTo(bgX, bgY + radius);
+        ctx.quadraticCurveTo(bgX, bgY, bgX + radius, bgY);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(label, labelX, labelY - labelPadY / 2);
       });
     } else {
       ctx.fillStyle = '#f3f4f6';
@@ -222,11 +245,9 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
     const canvasX = e.clientX - rect.left;
     const canvasY = e.clientY - rect.top;
     
-    // Adjust for zoom
     const x = canvasX / zoom;
     const y = canvasY / zoom;
 
-    // Calculate exact rendering parameters (must match the draw function)
     const scale = Math.min(canvas.width / image.width, canvas.height / image.height) * 0.9;
     const imgX = (canvas.width / zoom - image.width * scale) / 2;
     const imgY = (canvas.height / zoom - image.height * scale) / 2;
@@ -266,7 +287,6 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
         setViewingRoomInfo(clickedRoom);
       }
     } else if (isAdminMode) {
-      // Reverse-engineer pixel coordinates: if roomX = imgX + room.x * scale, then room.x = (roomX - imgX) / scale
       const roomPixelX = (x - imgX) / scale;
       const roomPixelY = (y - imgY) / scale;
       
@@ -326,7 +346,6 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
   };
 
   if (viewOnly) {
-    // View-only mode for navigation (no overlay, no admin controls)
     return (
       <div className="h-full flex flex-col bg-background">
         <div className="bg-card border-b border-card-border p-3 flex items-center justify-between">
@@ -611,9 +630,9 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
       {/* Room Information Dialog for view-only mode */}
       {!isAdminMode && (
         <Dialog open={!!viewingRoomInfo} onOpenChange={(open) => !open && setViewingRoomInfo(null)}>
-          <DialogContent className="z-[1200]">
+          <DialogContent className="z-[1200]" data-testid="dialog-room-info">
             <DialogHeader>
-              <DialogTitle>{viewingRoomInfo?.name}</DialogTitle>
+              <DialogTitle data-testid="text-room-info-name">{viewingRoomInfo?.name}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -623,25 +642,30 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
                 />
                 <div>
                   <p className="text-sm text-muted-foreground">Room Type</p>
-                  <p className="font-medium capitalize">{viewingRoomInfo?.type}</p>
+                  <p className="font-medium capitalize" data-testid="text-room-info-type">{viewingRoomInfo?.type}</p>
                 </div>
               </div>
               {viewingRoomInfo?.description && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Room Description</p>
-                  <p className="font-medium">{viewingRoomInfo.description}</p>
+                  <p className="text-sm text-muted-foreground">Description</p>
+                  <p className="font-medium" data-testid="text-room-info-description">{viewingRoomInfo.description}</p>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">X Position</p>
-                  <p className="font-mono text-sm">{viewingRoomInfo?.x.toFixed(3)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Y Position</p>
-                  <p className="font-mono text-sm">{viewingRoomInfo?.y.toFixed(3)}</p>
-                </div>
-              </div>
+              {onGetDirections && (
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    if (viewingRoomInfo) {
+                      onGetDirections(viewingRoomInfo);
+                      setViewingRoomInfo(null);
+                    }
+                  }}
+                  data-testid="button-get-directions-from-floor-plan"
+                >
+                  <Navigation className="w-4 h-4 mr-2" />
+                  Get Directions to Room
+                </Button>
+              )}
             </div>
           </DialogContent>
         </Dialog>

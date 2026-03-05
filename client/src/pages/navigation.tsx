@@ -77,7 +77,7 @@ export default function Navigation() {
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(Array.from(poiTypes).sort());
-  const sortedPoiTypes = useMemo(() => [...poiTypes].sort(), []);
+  const sortedPoiTypes = useMemo(() => [...poiTypes].sort((a, b) => a.localeCompare(b)), []);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showDirectionsDialog, setShowDirectionsDialog] = useState(false);
   const [directionsDestination, setDirectionsDestination] = useState<Building | null>(null);
@@ -207,8 +207,9 @@ export default function Navigation() {
     const autoGenerate = params.get('autoGenerate') === 'true';
 
     if (fromId && toId && buildings.length > 0) {
+      const kioskSource = kioskBuilding || KIOSK_LOCATION;
       const startBuilding = fromId === 'kiosk' 
-        ? { ...KIOSK_LOCATION, description: null, departments: null, image: null, markerIcon: null, polygon: null, polygonColor: null, nodeLat: KIOSK_LOCATION.lat, nodeLng: KIOSK_LOCATION.lng }
+        ? { ...kioskSource, description: null, departments: null, image: null, markerIcon: null, polygon: null, polygonColor: null, nodeLat: kioskSource.lat, nodeLng: kioskSource.lng }
         : buildings.find(b => b.id === fromId);
       const endBuilding = buildings.find(b => b.id === toId);
 
@@ -3107,53 +3108,45 @@ export default function Navigation() {
     }
     
     try {
-      // On next floor, the stairway/elevator IS the entrance point (connecting floors)
-      const staircaseOnCurrentFloor = indoorNodes.find(n => 
-        (n.type === 'stairway' || n.type === 'elevator') && n.floorId === currentIndoorFloor.id
-      );
-      
-      console.log('[FLOOR2-START] Current floor stairway:', staircaseOnCurrentFloor?.label);
-      if (!staircaseOnCurrentFloor) {
-        console.log('[FLOOR2-ERROR] No stairway on current floor');
-        return;
-      }
-      
-      // Find a stairway on next floor that connects back to current floor
+      // Find the entrance stairway on the next floor: it must connect back to the current floor
       const entranceNode = indoorNodes.find(n => {
         if ((n.type !== 'stairway' && n.type !== 'elevator') || n.floorId !== nextFloor.id) {
           return false;
         }
-        // Check if this stairway connects to current floor
         const connectedFloors = (n as any).connectedFloorIds || [];
         return connectedFloors.includes(currentIndoorFloor.id);
-      });
+      }) || indoorNodes.find(n => (n.type === 'stairway' || n.type === 'elevator') && n.floorId === nextFloor.id);
       
       console.log('[FLOOR2-START] Entrance node on next floor found:', !!entranceNode, entranceNode?.label);
       if (!entranceNode) {
-        console.log('[FLOOR2-ERROR] No stairway on Floor 2 connects back to Floor 1');
-        // Fallback: find ANY stairway on next floor
-        const anyStairway = indoorNodes.find(n => (n.type === 'stairway' || n.type === 'elevator') && n.floorId === nextFloor.id);
-        if (!anyStairway) {
-          console.log('[FLOOR2-ERROR] No stairways at all on next floor');
-          return;
-        }
-        console.log('[FLOOR2-FALLBACK] Using fallback stairway:', anyStairway.label);
+        console.log('[FLOOR2-ERROR] No stairways at all on next floor');
+        return;
       }
       
-      // Determine target: either destination or next stairway
+      // Determine target: either destination room (final floor) or the departure stairway (intermediate floor)
       let targetNode: IndoorNode | undefined;
       if (roomFloor.id === nextFloor.id) {
         targetNode = destinationRoom;
         console.log('[FLOOR2-START] Target is destination room:', targetNode?.label);
       } else {
+        // Intermediate floor: find a stairway that connects to the floor AFTER the next one
+        const floorAfterNext = floorsInRoute[currentFloorIndex + 2];
         const stairways = indoorNodes.filter(n => (n.type === 'stairway' || n.type === 'elevator') && n.floorId === nextFloor.id);
-        console.log('[FLOOR2-START] Found', stairways.length, 'stairways on floor');
+        console.log('[FLOOR2-START] Found', stairways.length, 'stairways on floor, looking for one connecting to', floorAfterNext);
         if (stairways.length === 0) {
           console.log('[FLOOR2-ERROR] No stairways on floor');
           return;
         }
-        targetNode = stairways[0];
-        console.log('[FLOOR2-START] Target is stairway:', targetNode?.label);
+        // Prefer a stairway that connects to the next floor in the route and is different from entranceNode
+        const departureStairway = stairways.find(n => {
+          const connectedFloors = (n as any).connectedFloorIds || [];
+          return n.id !== entranceNode.id && connectedFloors.includes(floorAfterNext);
+        }) || stairways.find(n => {
+          const connectedFloors = (n as any).connectedFloorIds || [];
+          return connectedFloors.includes(floorAfterNext);
+        }) || stairways.find(n => n.id !== entranceNode.id) || stairways[0];
+        targetNode = departureStairway;
+        console.log('[FLOOR2-START] Target is departure stairway:', targetNode?.label);
       }
       
       // Build indoor path for next floor
@@ -3425,9 +3418,8 @@ export default function Navigation() {
 
     const routeStartTime = performance.now();
 
-    // Handle kiosk location or regular building
     const start = startId === 'kiosk' 
-      ? KIOSK_LOCATION as any
+      ? (kioskBuilding || KIOSK_LOCATION) as any
       : buildings.find(b => b.id === startId);
     
     if (!start) return;
@@ -3999,7 +3991,7 @@ export default function Navigation() {
                         </Button>
                       </div>
                       <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {poiTypes.map((type) => (
+                        {[...poiTypes].sort((a, b) => a.localeCompare(b)).map((type) => (
                           <div key={type} className="flex items-center space-x-2">
                             <Checkbox
                               id={`type-${type}`}
@@ -4035,7 +4027,7 @@ export default function Navigation() {
                   selectedId={selectedStart?.id}
                   onSelect={(id) => {
                     if (id === 'kiosk') {
-                      setSelectedStart(KIOSK_LOCATION as any);
+                      setSelectedStart((kioskBuilding || KIOSK_LOCATION) as any);
                     } else {
                       const building = buildings.find(b => b.id === id);
                       setSelectedStart(building || null);
@@ -4685,6 +4677,20 @@ export default function Navigation() {
             }))}
           indoorNodes={indoorNodes}
           onClose={() => setSelectedFloor(null)}
+          onGetDirections={(room) => {
+            const floorBuilding = selectedBuilding || buildings.find(b => b.id === room.buildingId);
+            if (floorBuilding) {
+              setDirectionsDestination(floorBuilding);
+              setSelectedRoomForNav({
+                id: room.id,
+                name: room.name,
+                buildingName: floorBuilding.name
+              });
+              setShowDirectionsDialog(true);
+            }
+            setSelectedFloor(null);
+            setSelectedBuilding(null);
+          }}
         />
       )}
 
@@ -4826,6 +4832,7 @@ export default function Navigation() {
         }}
         onViewFloorPlan={(floor, floorRooms) => {
           setRoomFinderFloorPlan({ floor, rooms: floorRooms });
+          setShowRoomFinder(false);
         }}
       />
 
@@ -4839,6 +4846,19 @@ export default function Navigation() {
                 rooms={roomFinderFloorPlan.rooms}
                 indoorNodes={indoorNodes}
                 onClose={() => setRoomFinderFloorPlan(null)}
+                onGetDirections={(room) => {
+                  const floorBuilding = buildings.find(b => b.id === room.buildingId);
+                  if (floorBuilding) {
+                    setDirectionsDestination(floorBuilding);
+                    setSelectedRoomForNav({
+                      id: room.id,
+                      name: room.name,
+                      buildingName: floorBuilding.name
+                    });
+                    setShowDirectionsDialog(true);
+                  }
+                  setRoomFinderFloorPlan(null);
+                }}
               />
             </div>
           </DialogContent>
