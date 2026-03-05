@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Route as RouteIcon, Plus, Pencil, Trash2, Zap, ChevronDown, Building2, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -45,6 +46,7 @@ export default function AdminFloorPlanManagement() {
   const [nodeType, setNodeType] = useState<string>("entrance");
   const [nodeLabel, setNodeLabel] = useState("");
   const [nodeDescription, setNodeDescription] = useState("");
+  const [nodeCategory, setNodeCategory] = useState("");
   const [x, setX] = useState("");
   const [y, setY] = useState("");
   const [connectedFloorIds, setConnectedFloorIds] = useState<string[]>([]);
@@ -70,6 +72,11 @@ export default function AdminFloorPlanManagement() {
   const { data: roomPaths = [] } = useQuery<RoomPath[]>({
     queryKey: ['/api/room-paths']
   });
+
+  const existingCategories = useMemo(() =>
+    [...new Set(indoorNodes.filter(n => n.type === 'room' && n.category).map(n => n.category as string))],
+    [indoorNodes]
+  );
 
   // Path queries
   const buildingsWithFloorPlans = buildings.filter(b => {
@@ -244,6 +251,7 @@ export default function AdminFloorPlanManagement() {
       setNodeType(node.type);
       setNodeLabel(node.label || "");
       setNodeDescription(node.description || "");
+      setNodeCategory((node as any).category || "");
       setX(node.x.toString());
       setY(node.y.toString());
       setConnectedFloorIds(node.connectedFloorIds || []);
@@ -254,6 +262,7 @@ export default function AdminFloorPlanManagement() {
       setNodeType("entrance");
       setNodeLabel("");
       setNodeDescription("");
+      setNodeCategory("");
       setX("");
       setY("");
       setConnectedFloorIds([]);
@@ -269,6 +278,7 @@ export default function AdminFloorPlanManagement() {
     setNodeType("entrance");
     setNodeLabel("");
     setNodeDescription("");
+    setNodeCategory("");
     setX("");
     setY("");
     setConnectedFloorIds([]);
@@ -286,6 +296,7 @@ export default function AdminFloorPlanManagement() {
       type: nodeType,
       label: nodeLabel,
       description: nodeDescription || null,
+      category: nodeCategory || null,
       x: parseFloat(x),
       y: parseFloat(y),
       connectedFloorIds: connectedFloorIds
@@ -625,11 +636,13 @@ export default function AdminFloorPlanManagement() {
                       </div>
                       <div>
                         <Label htmlFor="label">{nodeType === 'room' ? 'Room Name' : 'Label'}</Label>
-                        <Input
+                        <Textarea
                           id="label"
+                          rows={2}
+                          className="resize-none"
                           value={nodeLabel}
                           onChange={(e) => setNodeLabel(e.target.value)}
-                          placeholder={nodeType === 'room' ? "e.g., Conference Room A" : "e.g., Main Entrance"}
+                          placeholder={nodeType === 'room' ? "e.g., Comfort Room\n(HE)" : "e.g., Main Entrance"}
                           data-testid="input-node-label"
                         />
                       </div>
@@ -645,6 +658,25 @@ export default function AdminFloorPlanManagement() {
                           placeholder="e.g., Main conference room with capacity for 50 people"
                           data-testid="input-room-description"
                         />
+                      </div>
+                    )}
+
+                    {nodeType === 'room' && (
+                      <div>
+                        <Label htmlFor="category">Room Category</Label>
+                        <Input
+                          id="category"
+                          list="room-category-options"
+                          value={nodeCategory}
+                          onChange={(e) => setNodeCategory(e.target.value)}
+                          placeholder="e.g., Classroom, Laboratory, Office"
+                          data-testid="input-room-category"
+                        />
+                        <datalist id="room-category-options">
+                          {existingCategories.map(cat => (
+                            <option key={cat} value={cat} />
+                          ))}
+                        </datalist>
                       </div>
                     )}
 

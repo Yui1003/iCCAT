@@ -384,3 +384,7 @@ svg {
 .leaflet-marker-icon {
   z-index: 1001 !important;
 }
+
+.leaflet-dark-tiles .leaflet-tile-pane {
+  filter: brightness(0.4) saturate(0.9) contrast(1.15);
+}
