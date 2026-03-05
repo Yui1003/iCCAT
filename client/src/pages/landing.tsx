@@ -308,13 +308,12 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:3.1.4
+              version:3.1.5
             </div>
           </div>
         </div>
       </footer>
 
-      <Walkthrough isOpen={isOpen} onClose={closeWalkthrough} />
     </div>
   );
 }
