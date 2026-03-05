@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, Link } from "wouter";
 import {
   Building2,
@@ -11,7 +11,9 @@ import {
   Settings,
   BarChart3,
   DoorOpen,
-  Zap
+  Zap,
+  Moon,
+  Sun
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "./ui/sidebar";
@@ -28,6 +30,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     if (!isAuthenticated) {
       setLocation('/admin/login');
     }
+
+    // Apply admin theme
+    const adminTheme = localStorage.getItem('admin-theme') || 'light';
+    if (adminTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    return () => {
+      // Restore kiosk theme when leaving admin
+      document.documentElement.classList.remove('dark');
+      const kioskTheme = localStorage.getItem('kiosk-theme') || 'light';
+      if (kioskTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    };
   }, [setLocation]);
 
   const handleLogout = () => {

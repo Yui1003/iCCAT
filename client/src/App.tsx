@@ -127,6 +127,52 @@ function AppContent() {
   const [location] = useLocation();
   useKioskUptime(); // Start tracking kiosk uptime
 
+  // Apply kiosk theme globally with time-based auto dark mode
+  useEffect(() => {
+    // Skip if on admin route - admin layout handles its own theme
+    if (location.startsWith('/admin/')) return;
+
+    const getAutoTheme = (): 'dark' | 'light' => {
+      const h = new Date().getHours();
+      return h >= 18 || h < 7 ? 'dark' : 'light';
+    };
+
+    const applyTheme = (theme: 'dark' | 'light') => {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      localStorage.setItem('kiosk-theme', theme);
+      window.dispatchEvent(new CustomEvent('kiosk-theme-changed', { detail: theme }));
+    };
+
+    // Apply auto theme on mount
+    applyTheme(getAutoTheme());
+
+    // Check every 60 seconds and auto-switch at the 6pm / 7am boundary
+    const interval = setInterval(() => {
+      applyTheme(getAutoTheme());
+    }, 60000);
+
+    // Listen for manual theme changes from the landing page toggle
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'kiosk-theme' && !window.location.pathname.startsWith('/admin/')) {
+        if (e.newValue === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [location]);
+
   // Disable context menu (right-click and long-press) globally
   useEffect(() => {
     const disableContextMenu = (e: Event) => {

@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Map, Calendar, Users, Info, ClipboardList, HelpCircle } from "lucide-react";
+import { Map, Calendar, Users, Info, ClipboardList, HelpCircle, Moon, Sun } from "lucide-react";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useHomeInactivity } from "@/hooks/use-inactivity";
 import logoImage from "@assets/logo.png";
@@ -116,13 +116,33 @@ function useBackgroundCrossfade() {
 export default function Landing() {
   const { baseSrc, overlaySrc, overlayOpacity, currentTime } = useBackgroundCrossfade();
   const { isOpen, openWalkthrough, closeWalkthrough } = useWalkthrough();
+  const [isKioskDark, setIsKioskDark] = useState(() => localStorage.getItem('kiosk-theme') === 'dark');
+
+  useEffect(() => {
+    const handleThemeChanged = (e: CustomEvent) => {
+      setIsKioskDark(e.detail === 'dark');
+    };
+    window.addEventListener('kiosk-theme-changed', handleThemeChanged as EventListener);
+    return () => window.removeEventListener('kiosk-theme-changed', handleThemeChanged as EventListener);
+  }, []);
+
+  const toggleKioskTheme = () => {
+    const newTheme = !isKioskDark ? 'dark' : 'light';
+    setIsKioskDark(!isKioskDark);
+    localStorage.setItem('kiosk-theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   const isDaytime = useMemo(() => {
     const hours = currentTime.getHours();
     const minutes = currentTime.getMinutes();
     const timeInMinutes = hours * 60 + minutes;
-    // Daytime is 5:00 AM to 5:47 PM (17 * 60 + 47 = 1067 minutes)
-    return timeInMinutes >= 5 * 60 && timeInMinutes < (17 * 60 + 47);
+    // Daytime is 5:00 AM to 6:00 PM (18 * 60 = 1080 minutes)
+    return timeInMinutes >= 5 * 60 && timeInMinutes < 18 * 60;
   }, [currentTime]);
 
   const textColorClass = isDaytime ? "text-black" : "text-white";
@@ -189,6 +209,15 @@ export default function Landing() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={toggleKioskTheme}
+                className={`flex items-center justify-center w-10 h-10 p-0 bg-white/10 backdrop-blur-md border-white/20 ${isDaytime ? 'text-black' : 'text-white'} pointer-events-auto shadow-xl hover:bg-white/20 cursor-pointer z-[100] rounded-full`}
+                title={isKioskDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                data-testid="button-theme-toggle"
+              >
+                {isKioskDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </Button>
               <Button
                 variant="outline"
                 onClick={(e) => {
@@ -308,7 +337,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:3.1.5
+              version:3.1.6
             </div>
           </div>
         </div>

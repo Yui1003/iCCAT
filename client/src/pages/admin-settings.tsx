@@ -3,12 +3,13 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Settings, Loader2, Power, Download, Trash2 } from "lucide-react";
+import { Settings, Loader2, Power, Download, Trash2, Moon, Sun } from "lucide-react";
 import AdminLayout from "@/components/admin-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { invalidateEndpointCache } from "@/lib/offline-data";
@@ -59,6 +60,22 @@ export default function AdminSettings() {
   const { toast } = useToast();
   const [showShutdownDialog, setShowShutdownDialog] = useState(false);
   const [showClearFeedbackDialog, setShowClearFeedbackDialog] = useState(false);
+  const [isAdminDark, setIsAdminDark] = useState(() => localStorage.getItem('admin-theme') === 'dark');
+
+  const toggleAdminTheme = () => {
+    const newTheme = !isAdminDark ? 'dark' : 'light';
+    setIsAdminDark(!isAdminDark);
+    localStorage.setItem('admin-theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    toast({
+      title: `${newTheme === 'dark' ? 'Dark' : 'Light'} Mode Enabled`,
+      description: `Admin panel is now in ${newTheme} mode.`,
+    });
+  };
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
@@ -244,6 +261,33 @@ export default function AdminSettings() {
         </div>
 
         <div className="max-w-2xl space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {isAdminDark ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                Appearance
+              </CardTitle>
+              <CardDescription>
+                Customize how the admin panel looks for you
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-sm font-medium">Dark Mode</div>
+                  <div className="text-xs text-muted-foreground">
+                    Switch between light and dark themes for the admin interface
+                  </div>
+                </div>
+                <Switch
+                  checked={isAdminDark}
+                  onCheckedChange={toggleAdminTheme}
+                  data-testid="switch-admin-theme"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Homepage Inactivity Timeout</CardTitle>
