@@ -3418,7 +3418,33 @@ export default function Navigation() {
     
     setCurrentIndoorFloor(prevFloor);
     setSelectedFloor(prevFloor);
-    
+
+    // Re-derive the correct start/end markers for the previous floor
+    const prevFloorIndex = currentFloorIndex - 1;
+
+    // End node on prevFloor = stairway/elevator that connects TO the floor we're leaving (currentIndoorFloor)
+    const prevFloorEndNode = indoorNodes.find(n => {
+      if ((n.type !== 'stairway' && n.type !== 'elevator') || n.floorId !== prevFloorId) return false;
+      return ((n as any).connectedFloorIds || []).includes(currentIndoorFloor.id);
+    }) || indoorNodes.find(n => (n.type === 'stairway' || n.type === 'elevator') && n.floorId === prevFloorId) || null;
+
+    // Start node on prevFloor
+    let prevFloorStartNode: IndoorNode | null = null;
+    if (prevFloorIndex === 0) {
+      // First floor in route: start at the entrance
+      prevFloorStartNode = indoorNodes.find(n => n.type === 'entrance' && n.floorId === prevFloorId) || null;
+    } else {
+      // Intermediate floor: start at stairway coming from the floor before it
+      const floorBeforePrev = floorsInRoute[prevFloorIndex - 1];
+      prevFloorStartNode = indoorNodes.find(n => {
+        if ((n.type !== 'stairway' && n.type !== 'elevator') || n.floorId !== prevFloorId) return false;
+        return n.id !== prevFloorEndNode?.id && ((n as any).connectedFloorIds || []).includes(floorBeforePrev);
+      }) || null;
+    }
+
+    setCurrentSegmentStartNode(prevFloorStartNode);
+    setCurrentSegmentEndNode(prevFloorEndNode);
+
     toast({
       title: "Floor Changed",
       description: `Back to ${prevFloor.floorName || `Floor ${prevFloor.floorNumber}`}`,

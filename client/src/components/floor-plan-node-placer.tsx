@@ -34,6 +34,9 @@ export default function FloorPlanNodePlacer({
   const [imageLoaded, setImageLoaded] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
+  const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
+  const wasDraggingRef = useRef(false);
+
   useEffect(() => {
     if (!floorPlanImage) return;
 
@@ -58,11 +61,10 @@ export default function FloorPlanNodePlacer({
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Auto-fit image to canvas on first load
     if (scale === 1 && offset.x === 0 && offset.y === 0) {
       const scaleX = canvas.width / imageRef.current.width;
       const scaleY = canvas.height / imageRef.current.height;
-      const fitScale = Math.min(scaleX, scaleY) * 0.95; // 95% to leave margin
+      const fitScale = Math.min(scaleX, scaleY) * 0.95;
       setScale(fitScale);
     }
 
@@ -70,10 +72,8 @@ export default function FloorPlanNodePlacer({
     ctx.translate(offset.x, offset.y);
     ctx.scale(scale, scale);
 
-    // Draw floor plan image
     ctx.drawImage(imageRef.current, 0, 0);
 
-    // Draw existing rooms
     rooms.forEach(room => {
       ctx.beginPath();
       ctx.fillStyle = '#3B82F6';
@@ -89,34 +89,30 @@ export default function FloorPlanNodePlacer({
       ctx.font = `bold ${10 / scale}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText('R', room.x, room.y + 3 / scale);
+
+      if (room.name) {
+        ctx.font = `${9 / scale}px sans-serif`;
+        const nameMetrics = ctx.measureText(room.name);
+        const nameW = nameMetrics.width;
+        ctx.fillStyle = 'rgba(255,255,255,0.82)';
+        ctx.fillRect(room.x - nameW / 2 - 2 / scale, room.y + 12 / scale, nameW + 4 / scale, 10 / scale);
+        ctx.fillStyle = '#1E40AF';
+        ctx.fillText(room.name, room.x, room.y + 20 / scale);
+      }
     });
 
-    // Draw existing nodes on the same floor
     existingNodes.forEach(node => {
       if (currentFloorId && node.floorId !== currentFloorId) return;
 
       let color = '#6B7280';
       let label = 'H';
-      
+
       switch (node.type) {
-        case 'entrance':
-          color = '#F97316';
-          label = 'E';
-          break;
-        case 'stairway':
-          color = '#8B5CF6';
-          label = 'S';
-          break;
-        case 'elevator':
-          color = '#EC4899';
-          label = 'EL';
-          break;
-        case 'hallway':
-          color = '#6B7280';
-          label = 'H';
-          break;
-        case 'room':
-          return; // Don't draw room nodes here, rooms are drawn separately
+        case 'entrance': color = '#F97316'; label = 'E'; break;
+        case 'stairway': color = '#8B5CF6'; label = 'S'; break;
+        case 'elevator': color = '#EC4899'; label = 'EL'; break;
+        case 'hallway': color = '#6B7280'; label = 'H'; break;
+        case 'room': return;
       }
 
       ctx.beginPath();
@@ -133,9 +129,18 @@ export default function FloorPlanNodePlacer({
       ctx.font = `bold ${8 / scale}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText(label, node.x, node.y + 3 / scale);
+
+      if (node.label) {
+        ctx.font = `${9 / scale}px sans-serif`;
+        const nameMetrics = ctx.measureText(node.label);
+        const nameW = nameMetrics.width;
+        ctx.fillStyle = 'rgba(255,255,255,0.82)';
+        ctx.fillRect(node.x - nameW / 2 - 2 / scale, node.y + 12 / scale, nameW + 4 / scale, 10 / scale);
+        ctx.fillStyle = color;
+        ctx.fillText(node.label, node.x, node.y + 20 / scale);
+      }
     });
 
-    // Draw selected node placement
     if (x !== null && y !== null) {
       ctx.beginPath();
       ctx.fillStyle = '#EF4444';
@@ -156,6 +161,19 @@ export default function FloorPlanNodePlacer({
     ctx.restore();
   }, [imageLoaded, scale, offset, x, y, rooms, existingNodes, currentFloorId]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      setScale(prev => Math.min(Math.max(prev * zoomFactor, 0.2), 5));
+    };
+    canvas.addEventListener('wheel', handler, { passive: false });
+    return () => canvas.removeEventListener('wheel', handler);
+  }, [imageLoaded]);
+
   const getCanvasCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
@@ -167,6 +185,17 @@ export default function FloorPlanNodePlacer({
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const downPos = mouseDownPosRef.current;
+    if (downPos) {
+      const dx = e.clientX - downPos.x;
+      const dy = e.clientY - downPos.y;
+      if (Math.sqrt(dx * dx + dy * dy) > 5 || wasDraggingRef.current) {
+        wasDraggingRef.current = false;
+        return;
+      }
+    }
+    wasDraggingRef.current = false;
+
     const coords = getCanvasCoordinates(e);
     if (coords) {
       onCoordinatesChange(Math.round(coords.x), Math.round(coords.y));
@@ -174,7 +203,10 @@ export default function FloorPlanNodePlacer({
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (e.button === 1 || (e.button === 0 && e.altKey)) {
+    mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
+    wasDraggingRef.current = false;
+
+    if (e.button === 0 || e.button === 1) {
       setIsDragging(true);
       setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
     }
@@ -182,6 +214,7 @@ export default function FloorPlanNodePlacer({
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isDragging) {
+      wasDraggingRef.current = true;
       setOffset({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y
@@ -193,9 +226,13 @@ export default function FloorPlanNodePlacer({
     setIsDragging(false);
   };
 
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
   const handleZoom = (direction: 'in' | 'out') => {
     const zoomFactor = direction === 'in' ? 1.2 : 0.8;
-    setScale(scale * zoomFactor);
+    setScale(prev => Math.min(Math.max(prev * zoomFactor, 0.2), 5));
   };
 
   const handleReset = () => {
@@ -252,12 +289,13 @@ export default function FloorPlanNodePlacer({
           </Badge>
         )}
         <span className="text-xs text-muted-foreground ml-auto">
-          Click to place node. Alt+Drag to pan.
+          Click to place node • Drag to pan • Scroll to zoom
         </span>
       </div>
       <div
         ref={containerRef}
         className={className}
+        style={{ cursor: isDragging ? 'grabbing' : 'crosshair' }}
       >
         <canvas
           ref={canvasRef}
@@ -265,8 +303,8 @@ export default function FloorPlanNodePlacer({
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          className="w-full h-full cursor-crosshair border rounded-lg bg-muted"
+          onMouseLeave={handleMouseLeave}
+          className="w-full h-full border rounded-lg bg-muted"
           data-testid="canvas-node-placer"
         />
       </div>
