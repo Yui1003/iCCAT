@@ -1,6 +1,9 @@
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Trash2, Undo, ZoomIn, ZoomOut, Move } from "lucide-react";
 import type { IndoorNode, Room, RoomPath } from "@shared/schema";
 
@@ -21,6 +24,24 @@ interface FloorPlanDrawingCanvasProps {
   className?: string;
 }
 
+function applyPolarSnap(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  increment: number
+): { x: number; y: number } {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < 0.001) return to;
+  const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const snapped = Math.round(angleDeg / increment) * increment;
+  const rad = (snapped * Math.PI) / 180;
+  return {
+    x: from.x + dist * Math.cos(rad),
+    y: from.y + dist * Math.sin(rad),
+  };
+}
+
 export default function FloorPlanDrawingCanvas({
   floorPlanImage,
   waypoints,
@@ -39,16 +60,23 @@ export default function FloorPlanDrawingCanvas({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const imageRef = useRef<HTMLImageElement | null>(null);
+
+  const [draggingWaypointIndex, setDraggingWaypointIndex] = useState<number | null>(null);
+  const [hoverWaypointIndex, setHoverWaypointIndex] = useState<number | null>(null);
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+
+  const [polarTracking, setPolarTracking] = useState(false);
+  const [polarIncrement, setPolarIncrement] = useState(45);
+
+  const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
+  const wasDraggingRef = useRef(false);
 
   useEffect(() => {
     if (!floorPlanImage) return;
-
     const img = new Image();
     img.onload = () => {
       imageRef.current = img;
-      setImageDimensions({ width: img.width, height: img.height });
       setImageLoaded(true);
     };
     img.src = floorPlanImage;
@@ -66,7 +94,6 @@ export default function FloorPlanDrawingCanvas({
     canvas.height = container.clientHeight;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     ctx.save();
     ctx.translate(offset.x, offset.y);
     ctx.scale(scale, scale);
@@ -82,12 +109,9 @@ export default function FloorPlanDrawingCanvas({
         ctx.lineWidth = 2 / scale;
         ctx.setLineDash([5 / scale, 5 / scale]);
         ctx.moveTo(pathWaypoints[0].x, pathWaypoints[0].y);
-        pathWaypoints.slice(1).forEach(wp => {
-          ctx.lineTo(wp.x, wp.y);
-        });
+        pathWaypoints.slice(1).forEach(wp => ctx.lineTo(wp.x, wp.y));
         ctx.stroke();
         ctx.setLineDash([]);
-
         pathWaypoints.forEach(wp => {
           ctx.beginPath();
           ctx.fillStyle = '#9CA3AF';
@@ -107,7 +131,6 @@ export default function FloorPlanDrawingCanvas({
       ctx.lineWidth = 2 / scale;
       ctx.arc(room.x, room.y, 8 / scale, 0, Math.PI * 2);
       ctx.stroke();
-
       ctx.fillStyle = '#1E40AF';
       ctx.font = `bold ${10 / scale}px sans-serif`;
       ctx.textAlign = 'center';
@@ -117,30 +140,13 @@ export default function FloorPlanDrawingCanvas({
     indoorNodes.forEach(node => {
       let color = '#6B7280';
       let label = 'H';
-      
       switch (node.type) {
-        case 'entrance':
-          color = '#F97316';
-          label = 'E';
-          break;
-        case 'stairway':
-          color = '#8B5CF6';
-          label = 'S';
-          break;
-        case 'elevator':
-          color = '#EC4899';
-          label = 'EL';
-          break;
-        case 'hallway':
-          color = '#6B7280';
-          label = 'H';
-          break;
-        case 'room':
-          color = '#3B82F6';
-          label = 'R';
-          break;
+        case 'entrance': color = '#F97316'; label = 'E'; break;
+        case 'stairway': color = '#8B5CF6'; label = 'S'; break;
+        case 'elevator': color = '#EC4899'; label = 'EL'; break;
+        case 'hallway': color = '#6B7280'; label = 'H'; break;
+        case 'room': color = '#3B82F6'; label = 'R'; break;
       }
-
       ctx.beginPath();
       ctx.fillStyle = color;
       ctx.arc(node.x, node.y, 8 / scale, 0, Math.PI * 2);
@@ -150,7 +156,6 @@ export default function FloorPlanDrawingCanvas({
       ctx.lineWidth = 2 / scale;
       ctx.arc(node.x, node.y, 8 / scale, 0, Math.PI * 2);
       ctx.stroke();
-
       ctx.fillStyle = '#FFFFFF';
       ctx.font = `bold ${8 / scale}px sans-serif`;
       ctx.textAlign = 'center';
@@ -163,28 +168,38 @@ export default function FloorPlanDrawingCanvas({
         ctx.strokeStyle = '#22C55E';
         ctx.lineWidth = 3 / scale;
         ctx.moveTo(waypoints[0].x, waypoints[0].y);
-        waypoints.slice(1).forEach(wp => {
-          ctx.lineTo(wp.x, wp.y);
-        });
+        waypoints.slice(1).forEach(wp => ctx.lineTo(wp.x, wp.y));
         ctx.stroke();
       }
 
       waypoints.forEach((wp, index) => {
         const isFirst = index === 0;
         const isLast = index === waypoints.length - 1;
-        
+        const isDragged = draggingWaypointIndex === index;
+        const isHovered = hoverWaypointIndex === index;
+
         let color = '#22C55E';
         if (isFirst) color = '#22C55E';
         else if (isLast) color = '#EF4444';
-        
+
+        const baseR = (isFirst || isLast ? 10 : 6) / scale;
+
+        if (isDragged || isHovered) {
+          ctx.beginPath();
+          ctx.strokeStyle = '#FBBF24';
+          ctx.lineWidth = 3 / scale;
+          ctx.arc(wp.x, wp.y, baseR + 4 / scale, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
         ctx.beginPath();
         ctx.fillStyle = color;
-        ctx.arc(wp.x, wp.y, (isFirst || isLast ? 10 : 6) / scale, 0, Math.PI * 2);
+        ctx.arc(wp.x, wp.y, baseR, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
         ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = 2 / scale;
-        ctx.arc(wp.x, wp.y, (isFirst || isLast ? 10 : 6) / scale, 0, Math.PI * 2);
+        ctx.arc(wp.x, wp.y, baseR, 0, Math.PI * 2);
         ctx.stroke();
 
         if (isFirst || isLast) {
@@ -196,13 +211,35 @@ export default function FloorPlanDrawingCanvas({
       });
     }
 
+    if (isDrawing && waypoints.length > 0 && mousePosition) {
+      const last = waypoints[waypoints.length - 1];
+      const snapped = polarTracking
+        ? applyPolarSnap(last, mousePosition, polarIncrement)
+        : mousePosition;
+
+      ctx.beginPath();
+      ctx.strokeStyle = '#3B82F6';
+      ctx.lineWidth = 2 / scale;
+      ctx.setLineDash([6 / scale, 4 / scale]);
+      ctx.moveTo(last.x, last.y);
+      ctx.lineTo(snapped.x, snapped.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.beginPath();
+      ctx.strokeStyle = '#3B82F6';
+      ctx.lineWidth = 1.5 / scale;
+      ctx.arc(snapped.x, snapped.y, 5 / scale, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
     ctx.restore();
-  }, [imageLoaded, scale, offset, waypoints, rooms, indoorNodes, existingPaths, currentPathId]);
+  }, [imageLoaded, scale, offset, waypoints, rooms, indoorNodes, existingPaths, currentPathId,
+    draggingWaypointIndex, hoverWaypointIndex, mousePosition, isDrawing, polarTracking, polarIncrement]);
 
   const getCanvasCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
-
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left - offset.x) / scale;
     const y = (e.clientY - rect.top - offset.y) / scale;
@@ -216,14 +253,12 @@ export default function FloorPlanDrawingCanvas({
         return { x: room.x, y: room.y, nodeId: room.id, type: 'room' };
       }
     }
-
     for (const node of indoorNodes) {
       const distance = Math.sqrt(Math.pow(node.x - x, 2) + Math.pow(node.y - y, 2));
       if (distance < threshold / scale) {
         return { x: node.x, y: node.y, nodeId: node.id, type: node.type };
       }
     }
-
     for (const path of existingPaths) {
       if (currentPathId && path.id === currentPathId) continue;
       const pathWaypoints = path.waypoints as RoomPathWaypoint[];
@@ -234,18 +269,51 @@ export default function FloorPlanDrawingCanvas({
         }
       }
     }
+    return null;
+  };
 
+  const findNearbyWaypointIndex = (x: number, y: number, threshold: number = 12): number | null => {
+    for (let i = waypoints.length - 1; i >= 0; i--) {
+      const wp = waypoints[i];
+      const dist = Math.sqrt(Math.pow(wp.x - x, 2) + Math.pow(wp.y - y, 2));
+      if (dist < threshold / scale) return i;
+    }
     return null;
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    
+    const downPos = mouseDownPosRef.current;
+    if (downPos) {
+      const dx = e.clientX - downPos.x;
+      const dy = e.clientY - downPos.y;
+      if (Math.sqrt(dx * dx + dy * dy) > 5 || wasDraggingRef.current) {
+        wasDraggingRef.current = false;
+        return;
+      }
+    }
+    wasDraggingRef.current = false;
+
     const coords = getCanvasCoordinates(e);
     if (!coords) return;
 
+    if (!isDrawing) {
+      const nearIdx = findNearbyWaypointIndex(coords.x, coords.y);
+      if (nearIdx !== null) {
+        const updated = [...waypoints];
+        updated.splice(nearIdx, 1);
+        onWaypointsChange(updated);
+      }
+      return;
+    }
+
     const nearbyNode = findNearbyNode(coords.x, coords.y);
-    
+    let finalCoords = coords;
+
+    if (!nearbyNode && polarTracking && waypoints.length > 0) {
+      const last = waypoints[waypoints.length - 1];
+      finalCoords = applyPolarSnap(last, coords, polarIncrement);
+    }
+
     if (nearbyNode) {
       const alreadyExists = waypoints.some(
         wp => Math.abs(wp.x - nearbyNode.x) < 1 && Math.abs(wp.y - nearbyNode.y) < 1
@@ -254,51 +322,105 @@ export default function FloorPlanDrawingCanvas({
         onWaypointsChange([...waypoints, { x: nearbyNode.x, y: nearbyNode.y, nodeId: nearbyNode.nodeId }]);
       }
     } else {
-      onWaypointsChange([...waypoints, { x: coords.x, y: coords.y }]);
+      onWaypointsChange([...waypoints, { x: finalCoords.x, y: finalCoords.y }]);
     }
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (e.button === 1 || (e.button === 0 && e.altKey)) {
+    mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
+    wasDraggingRef.current = false;
+
+    if (e.button !== 0 && e.button !== 1) return;
+
+    const coords = getCanvasCoordinates(e);
+    if (!coords) return;
+
+    if (e.button === 0) {
+      const nearIdx = findNearbyWaypointIndex(coords.x, coords.y);
+      if (nearIdx !== null) {
+        setDraggingWaypointIndex(nearIdx);
+        return;
+      }
+      if (!isDrawing || e.altKey) {
+        setIsDragging(true);
+        setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+      }
+    }
+
+    if (e.button === 1) {
       setIsDragging(true);
       setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const coords = getCanvasCoordinates(e);
+    if (!coords) return;
+
+    setMousePosition({ x: coords.x, y: coords.y });
+
+    if (draggingWaypointIndex !== null) {
+      wasDraggingRef.current = true;
+      const nearbyNode = findNearbyNode(coords.x, coords.y);
+      const updated = [...waypoints];
+      if (nearbyNode) {
+        updated[draggingWaypointIndex] = { x: nearbyNode.x, y: nearbyNode.y, nodeId: nearbyNode.nodeId };
+      } else {
+        updated[draggingWaypointIndex] = { x: coords.x, y: coords.y, nodeId: undefined };
+      }
+      onWaypointsChange(updated);
+      return;
+    }
+
     if (isDragging) {
+      wasDraggingRef.current = true;
       setOffset({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y
       });
+      return;
     }
+
+    const nearIdx = findNearbyWaypointIndex(coords.x, coords.y);
+    setHoverWaypointIndex(nearIdx);
   };
 
   const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleZoomIn = () => {
-    setScale(prev => Math.min(prev * 1.2, 5));
-  };
-
-  const handleZoomOut = () => {
-    setScale(prev => Math.max(prev / 1.2, 0.2));
-  };
-
-  const handleUndo = () => {
-    if (waypoints.length > 0) {
-      onWaypointsChange(waypoints.slice(0, -1));
+    if (draggingWaypointIndex !== null) {
+      wasDraggingRef.current = true;
     }
+    setDraggingWaypointIndex(null);
+    setIsDragging(false);
+    setHoverWaypointIndex(null);
   };
 
-  const handleClear = () => {
-    onWaypointsChange([]);
+  const handleMouseLeave = () => {
+    setDraggingWaypointIndex(null);
+    setIsDragging(false);
+    setHoverWaypointIndex(null);
+    setMousePosition(null);
   };
 
-  const handleResetView = () => {
-    setScale(1);
-    setOffset({ x: 0, y: 0 });
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+    setScale(prev => Math.min(Math.max(prev * zoomFactor, 0.2), 5));
+  };
+
+  const handleZoomIn = () => setScale(prev => Math.min(prev * 1.2, 5));
+  const handleZoomOut = () => setScale(prev => Math.max(prev / 1.2, 0.2));
+  const handleUndo = () => {
+    if (waypoints.length > 0) onWaypointsChange(waypoints.slice(0, -1));
+  };
+  const handleClear = () => onWaypointsChange([]);
+  const handleResetView = () => { setScale(1); setOffset({ x: 0, y: 0 }); };
+
+  const getCursor = () => {
+    if (draggingWaypointIndex !== null) return 'grabbing';
+    if (hoverWaypointIndex !== null) return 'move';
+    if (isDragging) return 'grabbing';
+    if (!isDrawing) return 'grab';
+    return 'crosshair';
   };
 
   if (!floorPlanImage) {
@@ -319,16 +441,6 @@ export default function FloorPlanDrawingCanvas({
           <Badge variant="outline">
             {waypoints.length} waypoint{waypoints.length !== 1 ? 's' : ''}
           </Badge>
-          {rooms.length > 0 && (
-            <Badge variant="outline" className="bg-blue-50 text-blue-700">
-              R {rooms.length} room{rooms.length !== 1 ? 's' : ''}
-            </Badge>
-          )}
-          {indoorNodes.filter(n => n.type === 'room').length > 0 && (
-            <Badge variant="outline" className="bg-blue-50 text-blue-700">
-              R {indoorNodes.filter(n => n.type === 'room').length} room{indoorNodes.filter(n => n.type === 'room').length !== 1 ? 's' : ''}
-            </Badge>
-          )}
           {indoorNodes.filter(n => n.type === 'entrance').length > 0 && (
             <Badge variant="outline" className="bg-orange-50 text-orange-700">
               E {indoorNodes.filter(n => n.type === 'entrance').length} entrance{indoorNodes.filter(n => n.type === 'entrance').length !== 1 ? 's' : ''}
@@ -400,28 +512,61 @@ export default function FloorPlanDrawingCanvas({
         </div>
       </div>
 
-      <div className="text-xs text-muted-foreground mb-2">
-        <span className="inline-flex items-center gap-1 mr-3">
-          <span className="w-3 h-3 rounded-full bg-blue-500"></span> Room
-        </span>
-        <span className="inline-flex items-center gap-1 mr-3">
-          <span className="w-3 h-3 rounded-full bg-orange-500"></span> Entrance
-        </span>
-        <span className="inline-flex items-center gap-1 mr-3">
-          <span className="w-3 h-3 rounded-full bg-purple-500"></span> Stairway
-        </span>
-        <span className="inline-flex items-center gap-1 mr-3">
-          <span className="w-3 h-3 rounded-full bg-pink-500"></span> Elevator
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-gray-500"></span> Hallway
-        </span>
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+          <span className="inline-flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> Room
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-orange-500 inline-block"></span> Entrance
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-purple-500 inline-block"></span> Stairway
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-pink-500 inline-block"></span> Elevator
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-gray-500 inline-block"></span> Hallway
+          </span>
+        </div>
+        <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="polar-tracking"
+              checked={polarTracking}
+              onCheckedChange={setPolarTracking}
+              data-testid="switch-polar-tracking"
+            />
+            <Label htmlFor="polar-tracking" className="text-xs cursor-pointer">Angle Snap</Label>
+          </div>
+          {polarTracking && (
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                value={polarIncrement}
+                onChange={e => setPolarIncrement(Math.max(1, Math.min(180, Number(e.target.value))))}
+                className="w-16 h-7 text-xs"
+                min={1}
+                max={180}
+                data-testid="input-polar-increment"
+              />
+              <span className="text-xs text-muted-foreground">°</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div 
+      <div className="text-xs text-muted-foreground px-1">
+        {isDrawing
+          ? "Draw Mode: Click to add waypoints • Drag a waypoint to move it • Scroll to zoom"
+          : "Pan Mode: Drag to pan • Click a waypoint to delete it • Drag a waypoint to move it"}
+      </div>
+
+      <div
         ref={containerRef}
         className={`${className} rounded-lg overflow-hidden border bg-slate-100 relative`}
-        style={{ cursor: isDragging ? 'grabbing' : (isDrawing ? 'crosshair' : 'grab') }}
+        style={{ cursor: getCursor() }}
       >
         <canvas
           ref={canvasRef}
@@ -430,7 +575,8 @@ export default function FloorPlanDrawingCanvas({
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+          onWheel={handleWheel}
           data-testid="floor-plan-canvas"
         />
         {!imageLoaded && (

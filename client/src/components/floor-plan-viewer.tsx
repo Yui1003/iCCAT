@@ -128,6 +128,32 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
           ctx.stroke();
           ctx.setLineDash([]);
           console.log('[FLOOR-PLAN] Path drawn with', validWaypoints.length, 'valid waypoints');
+
+          // Draw S/E endpoint markers on top of the path
+          const drawEndpointMarker = (wx: number, wy: number, color: string, letter: string) => {
+            const r = 12 / zoom;
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.arc(wx, wy, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2 / zoom;
+            ctx.beginPath();
+            ctx.arc(wx, wy, r, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${10 / zoom}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(letter, wx, wy);
+            ctx.textBaseline = 'alphabetic';
+          };
+          const firstWpE = validWaypoints[0];
+          const lastWpE = validWaypoints[validWaypoints.length - 1];
+          drawEndpointMarker(x + firstWpE.lat * scale, y + firstWpE.lng * scale, '#22c55e', 'S');
+          if (validWaypoints.length > 1) {
+            drawEndpointMarker(x + lastWpE.lat * scale, y + lastWpE.lng * scale, '#ef4444', 'E');
+          }
         }
       } else {
         console.log('[FLOOR-PLAN] No polyline or empty polyline, pathPolyline:', pathPolyline);

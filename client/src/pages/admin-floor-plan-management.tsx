@@ -75,18 +75,18 @@ export default function AdminFloorPlanManagement() {
   const buildingsWithFloorPlans = buildings.filter(b => {
     const buildingFloors = floors.filter(f => f.buildingId === b.id);
     return buildingFloors.some(f => f.floorPlanImage);
-  });
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   // Buildings with paths/nodes for list views
   const buildingsWithPaths = buildings.filter(b => {
     const buildingFloors = floors.filter(f => f.buildingId === b.id);
     return buildingFloors.some(f => roomPaths.some(p => p.floorId === f.id));
-  });
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   const buildingsWithNodes = buildings.filter(b => {
     const buildingFloors = floors.filter(f => f.buildingId === b.id);
     return buildingFloors.some(f => indoorNodes.some(n => n.floorId === f.id));
-  });
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   const floorsForBuilding = floors.filter(f => 
     f.buildingId === selectedBuildingId && f.floorPlanImage
@@ -585,7 +585,7 @@ export default function AdminFloorPlanManagement() {
                       <div>
                         <Label>Building</Label>
                         <SearchableSelect
-                          options={buildings.map(b => ({ id: b.id, name: b.name }))}
+                          options={buildingsWithFloorPlans.map(b => ({ id: b.id, name: b.name }))}
                           selectedId={nodeSelectedBuildingId}
                           onSelect={(value) => {
                             setNodeSelectedBuildingId(value);

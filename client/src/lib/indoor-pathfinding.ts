@@ -160,10 +160,12 @@ export function buildIndoorGraph(
     });
 
     // Connect the entity to the closest waypoint if one exists
-    if (closestWaypoint) {
-      const meterDist: number = closestWaypoint.distance * pixelToMeterScale;
-      const wpNodeKey: string = closestWaypoint.nodeKey;
-      console.log(`[INDOOR-GRAPH] Connecting ${entity.type} (${entityKey}) to waypoint ${wpNodeKey} (distance: ${closestWaypoint.distance.toFixed(1)}px)`);
+    // Use a high penalty multiplier (50x) to strongly prefer actual drawn path segments
+    const cw = closestWaypoint as { nodeKey: string; distance: number } | null;
+    if (cw) {
+      const meterDist: number = cw.distance * pixelToMeterScale * 50;
+      const wpNodeKey: string = cw.nodeKey;
+      console.log(`[INDOOR-GRAPH] Connecting ${entity.type} (${entityKey}) to waypoint ${wpNodeKey} (distance: ${cw.distance.toFixed(1)}px)`);
       edges.push({ from: entityKey, to: wpNodeKey, distance: meterDist, pathWaypoints: [] });
       edges.push({ from: wpNodeKey, to: entityKey, distance: meterDist, pathWaypoints: [] });
     } else {

@@ -66,12 +66,16 @@ export default function AdminFloorPlans() {
     },
   });
 
-  // Only show buildings that can have floor plans
-  const floorPlanEligibleBuildings = buildings.filter(b => canHaveFloorPlan(b.type as any));
+  // Only show buildings that can have floor plans AND have at least one floor with an uploaded image
+  const floorPlanEligibleBuildings = buildings.filter(b => {
+    if (!canHaveFloorPlan(b.type as any)) return false;
+    return floors.some(f => f.buildingId === b.id && f.floorPlanImage);
+  });
   
-  const filteredBuildings = filterType === "all" 
+  const filteredBuildings = (filterType === "all" 
     ? floorPlanEligibleBuildings 
-    : floorPlanEligibleBuildings.filter(b => b.type === filterType);
+    : floorPlanEligibleBuildings.filter(b => b.type === filterType)
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
   const buildingFloors = selectedBuildingId
     ? floors.filter(f => f.buildingId === selectedBuildingId)

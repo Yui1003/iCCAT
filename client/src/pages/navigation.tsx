@@ -92,6 +92,8 @@ export default function Navigation() {
   const [destinationRoom, setDestinationRoom] = useState<IndoorNode | null>(null);
   const [currentIndoorFloor, setCurrentIndoorFloor] = useState<Floor | null>(null);
   const [floorsInRoute, setFloorsInRoute] = useState<string[]>([]);
+  const [currentSegmentStartNode, setCurrentSegmentStartNode] = useState<IndoorNode | null>(null);
+  const [currentSegmentEndNode, setCurrentSegmentEndNode] = useState<IndoorNode | null>(null);
   const [outdoorRouteSnapshot, setOutdoorRouteSnapshot] = useState<NavigationRoute | null>(null);
   const [showAccessibleFallbackDialog, setShowAccessibleFallbackDialog] = useState(false);
   const [accessibleFallbackEndpoint, setAccessibleFallbackEndpoint] = useState<{ lat: number; lng: number } | null>(null);
@@ -2883,6 +2885,27 @@ export default function Navigation() {
     console.log('[INDOOR-PATH] Building graph...');
     console.log('[INDOOR-PATH] Total nodes:', indoorGraph.nodes.size);
     console.log('[INDOOR-PATH] Total edges:', indoorGraph.edges.length);
+
+    // Try to find a direct roomPath that connects entrance -> target (or reversed)
+    type RoomPathWaypoint = { x: number; y: number; nodeId?: string };
+    const directPath = floorRoomPaths.find(rp => {
+      const wps = rp.waypoints as RoomPathWaypoint[];
+      if (!wps || wps.length < 2) return false;
+      const firstId = wps[0].nodeId;
+      const lastId = wps[wps.length - 1].nodeId;
+      return (firstId === entranceNode.id && lastId === targetNode.id) ||
+             (lastId === entranceNode.id && firstId === targetNode.id);
+    });
+
+    let polylineWaypoints: Array<{ lat: number; lng: number }>;
+
+    if (directPath) {
+      console.log('[INDOOR-PATH] Direct roomPath found, skipping Dijkstra');
+      const wps = directPath.waypoints as RoomPathWaypoint[];
+      const firstId = wps[0].nodeId;
+      const ordered = firstId === entranceNode.id ? wps : [...wps].reverse();
+      polylineWaypoints = ordered.map(wp => ({ lat: wp.x, lng: wp.y }));
+    } else {
     
     // Use Dijkstra's algorithm to find shortest path
     const { nodes, edges } = indoorGraph;
@@ -2974,7 +2997,7 @@ export default function Navigation() {
     console.log('[INDOOR-PATH] Path length:', shortestPath.length);
     
     // Extract waypoints by following the edges in the shortest path
-    let polylineWaypoints: Array<{ lat: number; lng: number }> = [
+    polylineWaypoints = [
       { lat: entranceNode.x, lng: entranceNode.y }
     ];
     
@@ -3001,7 +3024,9 @@ export default function Navigation() {
     
     // Add target node
     polylineWaypoints.push({ lat: targetNode.x, lng: targetNode.y });
-    
+
+    } // end else (Dijkstra branch)
+
     // Remove duplicates
     const seen = new Set<string>();
     polylineWaypoints = polylineWaypoints.filter(wp => {
@@ -3079,6 +3104,8 @@ export default function Navigation() {
     };
     
     setRoute(updatedRoute);
+    setCurrentSegmentStartNode(entranceNode);
+    setCurrentSegmentEndNode(targetNode as IndoorNode);
     setNavigationPhase('indoor');
   };
 
@@ -3165,6 +3192,27 @@ export default function Navigation() {
         console.log('[FLOOR2-ERROR] Could not find any stairway to start from');
         return;
       }
+
+      // Try to find a direct roomPath connecting startNode -> targetNode (or reversed)
+      type F2RoomPathWaypoint = { x: number; y: number; nodeId?: string };
+      const f2DirectPath = floorRoomPaths.find(rp => {
+        const wps = rp.waypoints as F2RoomPathWaypoint[];
+        if (!wps || wps.length < 2) return false;
+        const firstId = wps[0].nodeId;
+        const lastId = wps[wps.length - 1].nodeId;
+        return (firstId === startNode.id && lastId === targetNode.id) ||
+               (lastId === startNode.id && firstId === targetNode.id);
+      });
+
+      let polylineWaypoints: Array<{ lat: number; lng: number }>;
+
+      if (f2DirectPath) {
+        console.log('[FLOOR2] Direct roomPath found, skipping Dijkstra');
+        const wps = f2DirectPath.waypoints as F2RoomPathWaypoint[];
+        const firstId = wps[0].nodeId;
+        const ordered = firstId === startNode.id ? wps : [...wps].reverse();
+        polylineWaypoints = ordered.map(wp => ({ lat: wp.x, lng: wp.y }));
+      } else {
       
       const entranceKey = `${nextFloor.id}:${startNode.id}`;
       const destKey = `${nextFloor.id}:${targetNode.id}`;
@@ -3225,7 +3273,7 @@ export default function Navigation() {
       }
       
       // Extract waypoints
-      let polylineWaypoints: Array<{ lat: number; lng: number }> = [
+      polylineWaypoints = [
         { lat: startNode.x, lng: startNode.y }
       ];
       
@@ -3245,6 +3293,8 @@ export default function Navigation() {
       }
       
       polylineWaypoints.push({ lat: targetNode.x, lng: targetNode.y });
+
+      } // end else (Dijkstra branch)
       
       console.log('[FLOOR2-DIJKSTRA] Polyline waypoints before dedup:', polylineWaypoints.length);
       
@@ -3295,6 +3345,8 @@ export default function Navigation() {
       
       // NOW update state after all calculations are done
       setRoute(updatedRoute);
+      setCurrentSegmentStartNode(startNode);
+      setCurrentSegmentEndNode(targetNode as IndoorNode);
       setCurrentIndoorFloor(nextFloor);
       setSelectedFloor(nextFloor);
       console.log('[FLOOR2-END] State updated successfully');
@@ -4504,26 +4556,36 @@ export default function Navigation() {
           {navigationPhase === 'indoor' && currentIndoorFloor ? (
             <FloorPlanViewer
               floor={currentIndoorFloor}
-              rooms={indoorNodes
-                .filter(n => n.floorId === currentIndoorFloor.id && n.type === 'room')
-                .map(n => ({
-                  id: n.id,
-                  name: n.label || 'Unnamed Room',
-                  type: 'room',
-                  description: n.description || null,
-                  floorId: n.floorId,
+              rooms={[
+                ...(currentSegmentStartNode ? [{
+                  id: currentSegmentStartNode.id,
+                  name: currentSegmentStartNode.label || 'Start',
+                  type: currentSegmentStartNode.type,
+                  description: currentSegmentStartNode.description || null,
+                  floorId: currentSegmentStartNode.floorId,
                   buildingId: selectedEnd?.id || '',
-                  x: n.x,
-                  y: n.y,
+                  x: currentSegmentStartNode.x,
+                  y: currentSegmentStartNode.y,
                   isIndoorNode: true
-                }))}
-              indoorNodes={indoorNodes}
+                }] : []),
+                ...(currentSegmentEndNode && currentSegmentEndNode.id !== currentSegmentStartNode?.id ? [{
+                  id: currentSegmentEndNode.id,
+                  name: currentSegmentEndNode.label || 'End',
+                  type: currentSegmentEndNode.type,
+                  description: currentSegmentEndNode.description || null,
+                  floorId: currentSegmentEndNode.floorId,
+                  buildingId: selectedEnd?.id || '',
+                  x: currentSegmentEndNode.x,
+                  y: currentSegmentEndNode.y,
+                  isIndoorNode: true
+                }] : [])
+              ]}
+              indoorNodes={[]}
               onClose={() => {
                 setNavigationPhase(null);
                 setCurrentIndoorFloor(null);
               }}
               highlightedRoomId={currentIndoorFloor.id === destinationRoom?.floorId ? destinationRoom?.id : undefined}
-              showPathTo={currentIndoorFloor.id === destinationRoom?.floorId ? destinationRoom : indoorNodes.find(n => n.floorId === currentIndoorFloor.id && (n.type === 'stairway' || n.type === 'elevator'))}
               viewOnly={true}
               pathPolyline={route?.phases?.[route.phases.length - 1]?.polyline && route.phases[route.phases.length - 1].polyline.length > 0 ? route.phases[route.phases.length - 1].polyline : undefined}
             />
