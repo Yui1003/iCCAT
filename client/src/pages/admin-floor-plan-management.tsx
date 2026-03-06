@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Route as RouteIcon, Plus, Pencil, Trash2, Zap, ChevronDown, Building2, MapPin } from "lucide-react";
+import { Route as RouteIcon, Plus, Pencil, Trash2, Zap, ChevronDown, Building2, MapPin, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -42,6 +42,8 @@ export default function AdminFloorPlanManagement() {
   const [pathsExpandedFloors, setPathsExpandedFloors] = useState<Set<string>>(new Set());
   const [nodesExpandedBuildings, setNodesExpandedBuildings] = useState<Set<string>>(new Set());
   const [nodesExpandedFloors, setNodesExpandedFloors] = useState<Set<string>>(new Set());
+  const [buildingPathSearch, setBuildingPathSearch] = useState("");
+  const [buildingNodeSearch, setBuildingNodeSearch] = useState("");
 
   // Node dialog states
   const [nodeSelectedBuildingId, setNodeSelectedBuildingId] = useState<string>("");
@@ -504,13 +506,23 @@ export default function AdminFloorPlanManagement() {
             </div>
 
             {/* Expandable List View for Paths */}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search buildings..."
+                value={buildingPathSearch}
+                onChange={(e) => setBuildingPathSearch(e.target.value)}
+                className="pl-9"
+                data-testid="input-path-building-search"
+              />
+            </div>
             <div className="space-y-2">
-              {buildingsWithPaths.length === 0 ? (
+              {buildingsWithPaths.filter(b => b.name.toLowerCase().includes(buildingPathSearch.toLowerCase())).length === 0 ? (
                 <Card className="p-4">
                   <p className="text-sm text-muted-foreground">No buildings with paths</p>
                 </Card>
               ) : (
-                buildingsWithPaths.map(building => {
+                buildingsWithPaths.filter(b => b.name.toLowerCase().includes(buildingPathSearch.toLowerCase())).map(building => {
                   const buildingFloors = floors.filter(f => f.buildingId === building.id);
                   const isExpanded = pathsExpandedBuildings.has(building.id);
                   
@@ -839,13 +851,23 @@ export default function AdminFloorPlanManagement() {
             </div>
 
             {/* Expandable List View for Nodes */}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search buildings..."
+                value={buildingNodeSearch}
+                onChange={(e) => setBuildingNodeSearch(e.target.value)}
+                className="pl-9"
+                data-testid="input-node-building-search"
+              />
+            </div>
             <div className="space-y-2">
-              {buildingsWithNodes.length === 0 ? (
+              {buildingsWithNodes.filter(b => b.name.toLowerCase().includes(buildingNodeSearch.toLowerCase())).length === 0 ? (
                 <Card className="p-4">
                   <p className="text-sm text-muted-foreground">No buildings with nodes</p>
                 </Card>
               ) : (
-                buildingsWithNodes.map(building => {
+                buildingsWithNodes.filter(b => b.name.toLowerCase().includes(buildingNodeSearch.toLowerCase())).map(building => {
                   const buildingFloors = floors.filter(f => f.buildingId === building.id);
                   const isExpanded = nodesExpandedBuildings.has(building.id);
                   

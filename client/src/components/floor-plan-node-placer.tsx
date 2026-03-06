@@ -40,6 +40,7 @@ export default function FloorPlanNodePlacer({
   const [imageLoaded, setImageLoaded] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [placementMode, setPlacementMode] = useState<'node' | 'label'>('node');
+  const [isLabelDragging, setIsLabelDragging] = useState(false);
 
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const wasDraggingRef = useRef(false);
@@ -213,7 +214,7 @@ export default function FloorPlanNodePlacer({
     }
 
     ctx.restore();
-  }, [imageLoaded, scale, offset, x, y, rooms, existingNodes, currentFloorId]);
+  }, [imageLoaded, scale, offset, x, y, labelX, labelY, rooms, existingNodes, currentFloorId]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -265,13 +266,23 @@ export default function FloorPlanNodePlacer({
     wasDraggingRef.current = false;
 
     if (e.button === 0 || e.button === 1) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+      if (placementMode === 'label' && onLabelCoordinatesChange) {
+        setIsLabelDragging(true);
+      } else {
+        setIsDragging(true);
+        setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+      }
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isDragging) {
+    if (isLabelDragging && onLabelCoordinatesChange) {
+      wasDraggingRef.current = true;
+      const coords = getCanvasCoordinates(e);
+      if (coords) {
+        onLabelCoordinatesChange(Math.round(coords.x), Math.round(coords.y));
+      }
+    } else if (isDragging) {
       wasDraggingRef.current = true;
       setOffset({
         x: e.clientX - dragStart.x,
@@ -282,10 +293,12 @@ export default function FloorPlanNodePlacer({
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setIsLabelDragging(false);
   };
 
   const handleMouseLeave = () => {
     setIsDragging(false);
+    setIsLabelDragging(false);
   };
 
   const handleZoom = (direction: 'in' | 'out') => {
@@ -377,13 +390,13 @@ export default function FloorPlanNodePlacer({
           </Badge>
         )}
         <span className="text-xs text-muted-foreground ml-auto">
-          {placementMode === 'node' ? '📍 Click to place pin' : '🏷️ Click to place label'} • Drag to pan • Scroll to zoom
+          {placementMode === 'node' ? '📍 Click to place pin • Drag to pan' : '🏷️ Click or drag to place label'} • Scroll to zoom
         </span>
       </div>
       <div
         ref={containerRef}
         className={className}
-        style={{ cursor: isDragging ? 'grabbing' : 'crosshair' }}
+        style={{ cursor: isDragging ? 'grabbing' : isLabelDragging ? 'grabbing' : 'crosshair' }}
       >
         <canvas
           ref={canvasRef}

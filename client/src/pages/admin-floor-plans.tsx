@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Layers, Building2, Plus, Pencil, Trash2, Filter, ChevronDown, ChevronRight, Check, ChevronsUpDown } from "lucide-react";
+import { Layers, Building2, Plus, Pencil, Trash2, Filter, ChevronDown, ChevronRight, Check, ChevronsUpDown, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,8 @@ export default function AdminFloorPlans() {
   const [floorData, setFloorData] = useState({ floorNumber: "", floorName: "", image: "" });
   const [filterType, setFilterType] = useState<string>("all");
   const [dialogBuildingId, setDialogBuildingId] = useState<string | null>(null);
+  const [buildingPopoverOpen, setBuildingPopoverOpen] = useState(false);
+  const [buildingSearch, setBuildingSearch] = useState("");
   const { toast } = useToast();
 
   const { data: buildings = [] } = useQuery<Building[]>({
@@ -83,7 +85,9 @@ export default function AdminFloorPlans() {
   const filteredBuildings = (filterType === "all"
     ? floorPlanEligibleBuildings
     : floorPlanEligibleBuildings.filter(b => b.type === filterType)
-  ).sort((a, b) => a.name.localeCompare(b.name));
+  )
+    .filter(b => b.name.toLowerCase().includes(buildingSearch.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const getFloorsForBuilding = (buildingId: string) =>
     floors
@@ -173,7 +177,7 @@ export default function AdminFloorPlans() {
                 {!editingFloor && (
                   <div>
                     <Label>Building *</Label>
-                    <Popover>
+                    <Popover open={buildingPopoverOpen} onOpenChange={setBuildingPopoverOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           type="button"
@@ -188,17 +192,20 @@ export default function AdminFloorPlans() {
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-full p-0 z-[1002]">
+                      <PopoverContent className="p-0 z-[1002]" style={{ width: 'var(--radix-popover-trigger-width)' }}>
                         <Command>
                           <CommandInput placeholder="Search building..." />
-                          <CommandList>
+                          <CommandList className="max-h-[200px] overflow-y-auto">
                             <CommandEmpty>No building found.</CommandEmpty>
                             <CommandGroup>
                               {allEligibleBuildings.map((b) => (
                                 <CommandItem
                                   key={b.id}
                                   value={b.name}
-                                  onSelect={() => setDialogBuildingId(b.id)}
+                                  onSelect={() => {
+                                    setDialogBuildingId(b.id);
+                                    setBuildingPopoverOpen(false);
+                                  }}
                                 >
                                   <Check
                                     className={cn(
@@ -256,7 +263,7 @@ export default function AdminFloorPlans() {
                   <Filter className="w-4 h-4" />
                   Filter by Building Type
                 </label>
-                <Select value={filterType} onValueChange={setFilterType}>
+                <Select value={filterType} onValueChange={(v) => { setFilterType(v); setBuildingSearch(""); }}>
                   <SelectTrigger data-testid="select-building-type-filter">
                     <SelectValue />
                   </SelectTrigger>
@@ -269,6 +276,16 @@ export default function AdminFloorPlans() {
                     ))}
                   </SelectContent>
                 </Select>
+                <div className="relative mt-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    placeholder="Search buildings..."
+                    value={buildingSearch}
+                    onChange={(e) => setBuildingSearch(e.target.value)}
+                    className="pl-9"
+                    data-testid="input-building-search"
+                  />
+                </div>
               </div>
 
               {filteredBuildings.length === 0 ? (
