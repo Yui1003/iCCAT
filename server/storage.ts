@@ -1090,7 +1090,8 @@ export class DatabaseStorage implements IStorage {
       id, 
       ...node,
       label: node.label ?? null,
-      description: node.description ?? null
+      description: node.description ?? null,
+      imageUrl: node.imageUrl ?? null
     } as IndoorNode;
     
     if (FORCE_FALLBACK_MODE) {
@@ -1119,7 +1120,8 @@ export class DatabaseStorage implements IStorage {
         id, 
         ...node,
         label: node.label ?? null,
-        description: node.description ?? null
+        description: node.description ?? null,
+        imageUrl: node.imageUrl ?? null
       } as IndoorNode;
       data.indoorNodes[index] = updatedNode;
       saveFallbackData();
@@ -1135,7 +1137,8 @@ export class DatabaseStorage implements IStorage {
         id, 
         ...node,
         label: node.label ?? null,
-        description: node.description ?? null
+        description: node.description ?? null,
+        imageUrl: node.imageUrl ?? null
       } as IndoorNode;
     } catch (error) {
       console.error('Firestore error:', error);

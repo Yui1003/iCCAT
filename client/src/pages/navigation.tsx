@@ -4713,7 +4713,9 @@ export default function Navigation() {
                   buildingId: selectedEnd?.id || '',
                   x: currentSegmentStartNode.x,
                   y: currentSegmentStartNode.y,
-                  isIndoorNode: true
+                  isIndoorNode: true,
+                  category: currentSegmentStartNode.category || null,
+                  imageUrl: (currentSegmentStartNode as any).imageUrl || null
                 }] : []),
                 ...(currentSegmentEndNode && currentSegmentEndNode.id !== currentSegmentStartNode?.id ? [{
                   id: currentSegmentEndNode.id,
@@ -4724,7 +4726,9 @@ export default function Navigation() {
                   buildingId: selectedEnd?.id || '',
                   x: currentSegmentEndNode.x,
                   y: currentSegmentEndNode.y,
-                  isIndoorNode: true
+                  isIndoorNode: true,
+                  category: currentSegmentEndNode.category || null,
+                  imageUrl: (currentSegmentEndNode as any).imageUrl || null
                 }] : [])
               ]}
               indoorNodes={[]}
@@ -4882,7 +4886,9 @@ export default function Navigation() {
               buildingId: selectedBuilding?.id || '',
               x: n.x,
               y: n.y,
-              isIndoorNode: true
+              isIndoorNode: true,
+              category: n.category || null,
+              imageUrl: (n as any).imageUrl || null
             }))}
           indoorNodes={indoorNodes}
           onClose={() => setSelectedFloor(null)}

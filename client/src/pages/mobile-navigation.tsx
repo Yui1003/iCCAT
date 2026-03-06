@@ -352,8 +352,10 @@ export default function MobileNavigation() {
         );
         map.setMaxBounds(dynamicBounds.extend(campusBounds));
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors',
+        const isDark = () => document.documentElement.classList.contains('dark');
+        const osmAttrib = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+        const lightTile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: osmAttrib,
           maxZoom: 19,
           minZoom: 17.5,
           crossOrigin: 'anonymous',
@@ -361,13 +363,24 @@ export default function MobileNavigation() {
           keepBuffer: 3,
           updateWhenZooming: false,
           updateWhenIdle: true,
-          bounds: [[14.398, 120.861], [14.408, 120.871]], // Constrain tiles to campus area
-        }).addTo(map);
-
+          bounds: [[14.398, 120.861], [14.408, 120.871]],
+        });
+        const darkTile = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+          attribution: osmAttrib + ' © <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 19,
+          minZoom: 17.5,
+          keepBuffer: 3,
+          updateWhenZooming: false,
+          updateWhenIdle: true,
+          bounds: [[14.398, 120.861], [14.408, 120.871]],
+        });
+        let activeTile = isDark() ? darkTile : lightTile;
+        activeTile.addTo(map);
         const applyDarkMap = () => {
-          if (mapRef.current) mapRef.current.classList.toggle('leaflet-dark-tiles', document.documentElement.classList.contains('dark'));
+          const next = isDark() ? darkTile : lightTile;
+          if (next !== activeTile) { map.removeLayer(activeTile); next.addTo(map); activeTile = next; }
         };
-        applyDarkMap();
         darkObserver = new MutationObserver(applyDarkMap);
         darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
@@ -992,6 +1005,8 @@ export default function MobileNavigation() {
                       y: destinationRoom.y,
                       buildingId: currentIndoorFloor.buildingId,
                       floorId: currentIndoorFloor.id,
+                      category: destinationRoom.category || null,
+                      imageUrl: (destinationRoom as any).imageUrl || null,
                     }]
                   : []}
                 indoorNodes={indoorNodes.filter(n => n.floorId === currentIndoorFloor.id)}

@@ -22,6 +22,8 @@ interface CombinedRoom {
   buildingId: string;
   floorId: string;
   isIndoorNode?: boolean;
+  category?: string | null;
+  imageUrl?: string | null;
 }
 
 interface LatLng {
@@ -801,6 +803,11 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
               <DialogTitle data-testid="text-room-info-name">{viewingRoomInfo?.name}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {'imageUrl' in (viewingRoomInfo || {}) && viewingRoomInfo?.imageUrl && (
+                <div className="w-full rounded-md overflow-hidden aspect-video">
+                  <img src={viewingRoomInfo.imageUrl} alt={viewingRoomInfo.name} className="w-full h-full object-cover" />
+                </div>
+              )}
               <div className="flex items-center gap-3">
                 <div 
                   className="w-8 h-8 rounded-full" 
@@ -811,6 +818,12 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
                   <p className="font-medium capitalize" data-testid="text-room-info-type">{viewingRoomInfo?.type}</p>
                 </div>
               </div>
+              {'category' in (viewingRoomInfo || {}) && viewingRoomInfo?.category && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Room Category</p>
+                  <p className="font-medium" data-testid="text-room-info-category">{viewingRoomInfo.category}</p>
+                </div>
+              )}
               {viewingRoomInfo?.description && (
                 <div>
                   <p className="text-sm text-muted-foreground">Description</p>

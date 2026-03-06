@@ -14,6 +14,7 @@ import AdminLayout from "@/components/admin-layout";
 import FloorPlanDrawingCanvas from "@/components/floor-plan-drawing-canvas";
 import SearchableSelect from "@/components/searchable-select";
 import FloorPlanNodePlacer from "@/components/floor-plan-node-placer";
+import ImageUploadInput from "@/components/image-upload-input";
 import type { Building, Floor, Room, IndoorNode, RoomPath, RoomPathWaypoint } from "@shared/schema";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,6 +48,8 @@ export default function AdminFloorPlanManagement() {
   const [nodeLabel, setNodeLabel] = useState("");
   const [nodeDescription, setNodeDescription] = useState("");
   const [nodeCategory, setNodeCategory] = useState("");
+  const [nodeImageUrl, setNodeImageUrl] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const [x, setX] = useState("");
   const [y, setY] = useState("");
   const [connectedFloorIds, setConnectedFloorIds] = useState<string[]>([]);
@@ -252,6 +255,7 @@ export default function AdminFloorPlanManagement() {
       setNodeLabel(node.label || "");
       setNodeDescription(node.description || "");
       setNodeCategory((node as any).category || "");
+      setNodeImageUrl((node as any).imageUrl || "");
       setX(node.x.toString());
       setY(node.y.toString());
       setConnectedFloorIds(node.connectedFloorIds || []);
@@ -263,6 +267,7 @@ export default function AdminFloorPlanManagement() {
       setNodeLabel("");
       setNodeDescription("");
       setNodeCategory("");
+      setNodeImageUrl("");
       setX("");
       setY("");
       setConnectedFloorIds([]);
@@ -279,6 +284,7 @@ export default function AdminFloorPlanManagement() {
     setNodeLabel("");
     setNodeDescription("");
     setNodeCategory("");
+    setNodeImageUrl("");
     setX("");
     setY("");
     setConnectedFloorIds([]);
@@ -297,6 +303,7 @@ export default function AdminFloorPlanManagement() {
       label: nodeLabel,
       description: nodeDescription || null,
       category: nodeCategory || null,
+      imageUrl: nodeImageUrl || null,
       x: parseFloat(x),
       y: parseFloat(y),
       connectedFloorIds: connectedFloorIds
@@ -662,22 +669,37 @@ export default function AdminFloorPlanManagement() {
                     )}
 
                     {nodeType === 'room' && (
-                      <div>
-                        <Label htmlFor="category">Room Category</Label>
-                        <Input
-                          id="category"
-                          list="room-category-options"
-                          value={nodeCategory}
-                          onChange={(e) => setNodeCategory(e.target.value)}
-                          placeholder="e.g., Classroom, Laboratory, Office"
-                          data-testid="input-room-category"
-                        />
-                        <datalist id="room-category-options">
-                          {existingCategories.map(cat => (
-                            <option key={cat} value={cat} />
-                          ))}
-                        </datalist>
-                      </div>
+                      <>
+                        <div>
+                          <Label htmlFor="category">Room Category</Label>
+                          <Input
+                            id="category"
+                            list="room-category-options"
+                            value={nodeCategory}
+                            onChange={(e) => setNodeCategory(e.target.value)}
+                            placeholder="e.g., Classroom, Laboratory, Office"
+                            data-testid="input-room-category"
+                          />
+                          <datalist id="room-category-options">
+                            {existingCategories.map(cat => (
+                              <option key={cat} value={cat} />
+                            ))}
+                          </datalist>
+                        </div>
+                        <div>
+                          <Label>Room Photo</Label>
+                          <ImageUploadInput
+                            label="Upload Room Photo"
+                            value={nodeImageUrl ? [nodeImageUrl] : []}
+                            onChange={(urls) => setNodeImageUrl(Array.isArray(urls) ? urls[0] || "" : "")}
+                            onUploadingChange={setIsUploading}
+                            type="room"
+                            id={editingNode?.id || 'new'}
+                            testId="input-room-image"
+                            multiple={false}
+                          />
+                        </div>
+                      </>
                     )}
 
                     <div className="grid grid-cols-2 gap-4">

@@ -20,6 +20,8 @@ interface CombinedRoom {
   x: number;
   y: number;
   isIndoorNode?: boolean;
+  category?: string | null;
+  imageUrl?: string | null;
 }
 
 interface RoomFinderDialogProps {
@@ -75,7 +77,9 @@ export default function RoomFinderDialog({
         buildingId: floors.find(f => f.id === n.floorId)?.buildingId || '',
         x: n.x || 0,
         y: n.y || 0,
-        isIndoorNode: true
+        isIndoorNode: true,
+        category: n.category || null,
+        imageUrl: (n as any).imageUrl || null
       }));
     return combined;
   }, [indoorNodes, floors]);

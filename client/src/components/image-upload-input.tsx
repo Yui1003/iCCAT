@@ -26,7 +26,7 @@ interface ImageUploadInputProps {
   label: string;
   value: string | string[] | null;
   onChange: (value: string | string[]) => void;
-  type: "building" | "staff" | "event" | "floor";
+  type: "building" | "staff" | "event" | "floor" | "room";
   id: string;
   testId?: string;
   multiple?: boolean;

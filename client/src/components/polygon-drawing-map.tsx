@@ -62,16 +62,25 @@ export default function PolygonDrawingMap({
       attributionControl: true,
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
+    const isDark = () => document.documentElement.classList.contains('dark');
+    const osmAttrib = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+    const lightTile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: osmAttrib,
       maxZoom: 21,
       maxNativeZoom: 19,
-    }).addTo(map);
-
+    });
+    const darkTile = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+      attribution: osmAttrib + ' © <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 21,
+      maxNativeZoom: 19,
+    });
+    let activeTile = isDark() ? darkTile : lightTile;
+    activeTile.addTo(map);
     const applyDarkMap = () => {
-      if (mapRef.current) mapRef.current.classList.toggle('leaflet-dark-tiles', document.documentElement.classList.contains('dark'));
+      const next = isDark() ? darkTile : lightTile;
+      if (next !== activeTile) { map.removeLayer(activeTile); next.addTo(map); activeTile = next; }
     };
-    applyDarkMap();
     const darkObserver = new MutationObserver(applyDarkMap);
     darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
