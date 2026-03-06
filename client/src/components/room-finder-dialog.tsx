@@ -79,7 +79,15 @@ export default function RoomFinderDialog({
         y: n.y || 0,
         isIndoorNode: true,
         category: n.category || null,
-        imageUrl: (n as any).imageUrl || null
+        imageUrl: (n as any).imageUrl || null,
+        labelX: (n as any).labelX ?? null,
+        labelY: (n as any).labelY ?? null,
+        labelX: (n as any).labelX ?? null,
+        labelY: (n as any).labelY ?? null,
+        labelX: (n as any).labelX ?? null,
+        labelY: (n as any).labelY ?? null,
+        labelX: (n as any).labelX ?? null,
+        labelY: (n as any).labelY ?? null
       }));
     return combined;
   }, [indoorNodes, floors]);

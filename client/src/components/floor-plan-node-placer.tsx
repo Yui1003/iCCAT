@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, ZoomIn, ZoomOut, Move } from "lucide-react";
+import { Trash2, ZoomIn, ZoomOut, Move, MapPin, Tag } from "lucide-react";
 import type { IndoorNode, Room } from "@shared/schema";
 
 interface FloorPlanNodePlacerProps {
@@ -9,6 +9,9 @@ interface FloorPlanNodePlacerProps {
   x: number | null;
   y: number | null;
   onCoordinatesChange: (x: number, y: number) => void;
+  labelX?: number | null;
+  labelY?: number | null;
+  onLabelCoordinatesChange?: (lx: number, ly: number) => void;
   rooms?: Room[];
   existingNodes?: IndoorNode[];
   currentFloorId?: string;
@@ -20,6 +23,9 @@ export default function FloorPlanNodePlacer({
   x,
   y,
   onCoordinatesChange,
+  labelX,
+  labelY,
+  onLabelCoordinatesChange,
   rooms = [],
   existingNodes = [],
   currentFloorId,
@@ -33,6 +39,7 @@ export default function FloorPlanNodePlacer({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const [placementMode, setPlacementMode] = useState<'node' | 'label'>('node');
 
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const wasDraggingRef = useRef(false);
@@ -137,12 +144,34 @@ export default function FloorPlanNodePlacer({
         const lineH = 10 / scale;
         const maxW = Math.max(...lines.map((l: string) => ctx.measureText(l).width));
         const totalH = lines.length * lineH;
+        
+        // Use custom label position if set
+        const hasCustomLabel = (node as any).labelX != null && (node as any).labelY != null;
+        const lx = hasCustomLabel ? (node as any).labelX : node.x;
+        const ly = hasCustomLabel ? (node as any).labelY : node.y + 20 / scale;
+
         ctx.fillStyle = 'rgba(255,255,255,0.82)';
-        ctx.fillRect(node.x - maxW / 2 - 2 / scale, node.y + 12 / scale, maxW + 4 / scale, totalH);
-        ctx.fillStyle = color;
-        lines.forEach((line: string, i: number) => {
-          ctx.fillText(line, node.x, node.y + 20 / scale + i * lineH);
-        });
+        if (hasCustomLabel) {
+          ctx.fillRect(lx - maxW / 2 - 2 / scale, ly - totalH / 2, maxW + 4 / scale, totalH);
+          ctx.fillStyle = color;
+          lines.forEach((line: string, i: number) => {
+            ctx.fillText(line, lx, ly - totalH / 2 + (i + 0.8) * lineH);
+          });
+          // Draw connecting line
+          ctx.beginPath();
+          ctx.setLineDash([2 / scale, 2 / scale]);
+          ctx.strokeStyle = color;
+          ctx.moveTo(node.x, node.y);
+          ctx.lineTo(lx, ly);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        } else {
+          ctx.fillRect(lx - maxW / 2 - 2 / scale, ly - 8 / scale, maxW + 4 / scale, totalH);
+          ctx.fillStyle = color;
+          lines.forEach((line: string, i: number) => {
+            ctx.fillText(line, lx, ly + i * lineH);
+          });
+        }
       }
     });
 
@@ -161,6 +190,26 @@ export default function FloorPlanNodePlacer({
       ctx.font = `bold ${10 / scale}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText('X', x, y + 3 / scale);
+      
+      // Draw temporary label position if being placed
+      if (labelX != null && labelY != null) {
+        ctx.beginPath();
+        ctx.setLineDash([2 / scale, 2 / scale]);
+        ctx.strokeStyle = '#EF4444';
+        ctx.moveTo(x, y);
+        ctx.lineTo(labelX, labelY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+        ctx.fillRect(labelX - 15 / scale, labelY - 10 / scale, 30 / scale, 20 / scale);
+        ctx.strokeStyle = '#EF4444';
+        ctx.lineWidth = 1 / scale;
+        ctx.strokeRect(labelX - 15 / scale, labelY - 10 / scale, 30 / scale, 20 / scale);
+        ctx.fillStyle = '#EF4444';
+        ctx.font = `${8 / scale}px sans-serif`;
+        ctx.fillText('Label', labelX, labelY + 3 / scale);
+      }
     }
 
     ctx.restore();
@@ -203,7 +252,11 @@ export default function FloorPlanNodePlacer({
 
     const coords = getCanvasCoordinates(e);
     if (coords) {
-      onCoordinatesChange(Math.round(coords.x), Math.round(coords.y));
+      if (placementMode === 'label' && onLabelCoordinatesChange) {
+        onLabelCoordinatesChange(Math.round(coords.x), Math.round(coords.y));
+      } else {
+        onCoordinatesChange(Math.round(coords.x), Math.round(coords.y));
+      }
     }
   };
 
@@ -252,6 +305,31 @@ export default function FloorPlanNodePlacer({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center border rounded-md p-1 bg-background mr-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={placementMode === 'node' ? 'default' : 'ghost'}
+            className="h-8 w-8 p-0"
+            onClick={() => setPlacementMode('node')}
+            title="Place marker (entrance)"
+            data-testid="button-mode-node"
+          >
+            <MapPin className="w-4 h-4" />
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={placementMode === 'label' ? 'default' : 'ghost'}
+            className="h-8 w-8 p-0"
+            onClick={() => setPlacementMode('label')}
+            title="Place label (room center)"
+            data-testid="button-mode-label"
+            disabled={!onLabelCoordinatesChange}
+          >
+            <Tag className="w-4 h-4" />
+          </Button>
+        </div>
         <Button
           type="button"
           size="sm"
@@ -290,11 +368,16 @@ export default function FloorPlanNodePlacer({
         </Button>
         {x !== null && y !== null && (
           <Badge variant="default">
-            Node: ({x}, {y})
+            Pin: ({x}, {y})
+          </Badge>
+        )}
+        {labelX != null && labelY != null && (
+          <Badge variant="secondary">
+            Label: ({labelX}, {labelY})
           </Badge>
         )}
         <span className="text-xs text-muted-foreground ml-auto">
-          Click to place node • Drag to pan • Scroll to zoom
+          {placementMode === 'node' ? '📍 Click to place pin' : '🏷️ Click to place label'} • Drag to pan • Scroll to zoom
         </span>
       </div>
       <div

@@ -1091,8 +1091,10 @@ export class DatabaseStorage implements IStorage {
       ...node,
       label: node.label ?? null,
       description: node.description ?? null,
-      imageUrl: node.imageUrl ?? null
-    } as IndoorNode;
+      imageUrl: node.imageUrl ?? null,
+      labelX: node.labelX ?? null,
+      labelY: node.labelY ?? null,
+    };
     
     if (FORCE_FALLBACK_MODE) {
       const data = loadFallbackData();

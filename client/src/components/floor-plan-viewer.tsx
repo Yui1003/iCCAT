@@ -214,14 +214,21 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
         const maxTextWidth = Math.max(...lines.map((l: string) => ctx.measureText(l).width));
         const labelPadX = 4 / zoom;
         const labelPadY = 3 / zoom;
-        const labelX = roomX;
-        const labelY = roomY - pinSize - 4 / zoom;
+        
+        // Use custom label position if set, otherwise default to above pin
+        const hasCustomLabel = 'labelX' in room && room.labelX != null && room.labelY != null;
+        const labelDrawX = hasCustomLabel ? x + (room as any).labelX * scale : roomX;
+        const labelDrawY = hasCustomLabel ? y + (room as any).labelY * scale : roomY - pinSize - 4 / zoom;
 
         // Background pill sized for all lines
         const bgW = maxTextWidth + labelPadX * 2;
         const bgH = lines.length * lineH + labelPadY * 2;
-        const bgX = labelX - maxTextWidth / 2 - labelPadX;
-        const bgY = labelY - lines.length * lineH - labelPadY;
+        const bgX = labelDrawX - maxTextWidth / 2 - labelPadX;
+        // If custom label, center the pill vertically on the coordinate. If default, stack it above.
+        const bgY = hasCustomLabel 
+          ? labelDrawY - (lines.length * lineH) / 2 - labelPadY 
+          : labelDrawY - lines.length * lineH - labelPadY;
+          
         const radius = 3 / zoom;
         ctx.fillStyle = 'rgba(0,0,0,0.65)';
         ctx.beginPath();
@@ -239,7 +246,10 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
 
         ctx.fillStyle = '#ffffff';
         lines.forEach((line: string, i: number) => {
-          ctx.fillText(line, labelX, labelY - labelPadY / 2 - (lines.length - 1 - i) * lineH);
+          const textY = hasCustomLabel
+            ? labelDrawY - (lines.length * lineH) / 2 + (i + 0.8) * lineH
+            : labelDrawY - labelPadY / 2 - (lines.length - 1 - i) * lineH;
+          ctx.fillText(line, labelDrawX, textY);
         });
       });
     } else {

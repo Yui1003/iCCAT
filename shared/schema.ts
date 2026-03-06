@@ -438,6 +438,8 @@ export const indoorNodes = pgTable("indoor_nodes", {
   description: text("description"), // Description for room nodes
   category: text("category"), // Category for room nodes (e.g. Classroom, Laboratory)
   imageUrl: text("image_url"), // Optional photo for room nodes
+  labelX: real("label_x"), // Custom X position for the room label
+  labelY: real("label_y"), // Custom Y position for the room label
 });
 
 export const insertIndoorNodeSchema = createInsertSchema(indoorNodes).omit({ id: true }).extend({
@@ -447,6 +449,8 @@ export const insertIndoorNodeSchema = createInsertSchema(indoorNodes).omit({ id:
   description: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
   imageUrl: z.string().nullable().optional(),
+  labelX: z.number().nullable().optional(),
+  labelY: z.number().nullable().optional(),
 });
 export type InsertIndoorNode = z.infer<typeof insertIndoorNodeSchema>;
 export type IndoorNode = typeof indoorNodes.$inferSelect;

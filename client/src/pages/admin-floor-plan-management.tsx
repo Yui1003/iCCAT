@@ -49,6 +49,8 @@ export default function AdminFloorPlanManagement() {
   const [nodeDescription, setNodeDescription] = useState("");
   const [nodeCategory, setNodeCategory] = useState("");
   const [nodeImageUrl, setNodeImageUrl] = useState("");
+  const [nodeLabelX, setNodeLabelX] = useState<number | null>(null);
+  const [nodeLabelY, setNodeLabelY] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [x, setX] = useState("");
   const [y, setY] = useState("");
@@ -256,6 +258,8 @@ export default function AdminFloorPlanManagement() {
       setNodeDescription(node.description || "");
       setNodeCategory((node as any).category || "");
       setNodeImageUrl((node as any).imageUrl || "");
+      setNodeLabelX((node as any).labelX ?? null);
+      setNodeLabelY((node as any).labelY ?? null);
       setX(node.x.toString());
       setY(node.y.toString());
       setConnectedFloorIds(node.connectedFloorIds || []);
@@ -268,6 +272,8 @@ export default function AdminFloorPlanManagement() {
       setNodeDescription("");
       setNodeCategory("");
       setNodeImageUrl("");
+      setNodeLabelX(null);
+      setNodeLabelY(null);
       setX("");
       setY("");
       setConnectedFloorIds([]);
@@ -304,6 +310,8 @@ export default function AdminFloorPlanManagement() {
       description: nodeDescription || null,
       category: nodeCategory || null,
       imageUrl: nodeImageUrl || null,
+      labelX: nodeLabelX,
+      labelY: nodeLabelY,
       x: parseFloat(x),
       y: parseFloat(y),
       connectedFloorIds: connectedFloorIds
@@ -743,6 +751,18 @@ export default function AdminFloorPlanManagement() {
                             setX(coordX.toString());
                             setY(coordY.toString());
                           }}
+                          labelX={nodeType === "room" ? nodeLabelX : undefined}
+                          labelY={nodeType === "room" ? nodeLabelY : undefined}
+                          onLabelCoordinatesChange={nodeType === "room" ? (lx, ly) => {
+                            setNodeLabelX(lx);
+                            setNodeLabelY(ly);
+                          } : undefined}
+                          labelX={nodeType === "room" ? nodeLabelX : undefined}
+                          labelY={nodeType === "room" ? nodeLabelY : undefined}
+                          onLabelCoordinatesChange={nodeType === "room" ? (lx, ly) => {
+                            setNodeLabelX(lx);
+                            setNodeLabelY(ly);
+                          } : undefined}
                           rooms={rooms.filter(r => r.floorId === nodeSelectedFloorId)}
                           existingNodes={indoorNodes.filter(n => n.floorId === nodeSelectedFloorId && n.id !== editingNode?.id)}
                           currentFloorId={nodeSelectedFloorId}
