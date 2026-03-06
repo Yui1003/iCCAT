@@ -68,6 +68,13 @@ export default function PolygonDrawingMap({
       maxNativeZoom: 19,
     }).addTo(map);
 
+    const applyDarkMap = () => {
+      if (mapRef.current) mapRef.current.classList.toggle('leaflet-dark-tiles', document.documentElement.classList.contains('dark'));
+    };
+    applyDarkMap();
+    const darkObserver = new MutationObserver(applyDarkMap);
+    darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
     const drawnItems = new L.FeatureGroup();
     drawnItems.addTo(map);
 
@@ -221,6 +228,7 @@ export default function PolygonDrawingMap({
     map.on('zoomend', updateBoundsBasedOnZoom);
 
     return () => {
+      darkObserver.disconnect();
       clearTimeout(timeoutId1);
       clearTimeout(timeoutId2);
       window.removeEventListener('resize', handleResize);

@@ -132,12 +132,17 @@ export default function FloorPlanNodePlacer({
 
       if (node.label) {
         ctx.font = `${9 / scale}px sans-serif`;
-        const nameMetrics = ctx.measureText(node.label);
-        const nameW = nameMetrics.width;
+        ctx.textAlign = 'center';
+        const lines = node.label.split('\n');
+        const lineH = 10 / scale;
+        const maxW = Math.max(...lines.map((l: string) => ctx.measureText(l).width));
+        const totalH = lines.length * lineH;
         ctx.fillStyle = 'rgba(255,255,255,0.82)';
-        ctx.fillRect(node.x - nameW / 2 - 2 / scale, node.y + 12 / scale, nameW + 4 / scale, 10 / scale);
+        ctx.fillRect(node.x - maxW / 2 - 2 / scale, node.y + 12 / scale, maxW + 4 / scale, totalH);
         ctx.fillStyle = color;
-        ctx.fillText(node.label, node.x, node.y + 20 / scale);
+        lines.forEach((line: string, i: number) => {
+          ctx.fillText(line, node.x, node.y + 20 / scale + i * lineH);
+        });
       }
     });
 

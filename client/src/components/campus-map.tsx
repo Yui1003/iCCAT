@@ -228,6 +228,13 @@ export default function CampusMap({
       updateInterval: 50
     }).addTo(map);
 
+    const applyDarkMap = () => {
+      container.classList.toggle('leaflet-dark-tiles', document.documentElement.classList.contains('dark'));
+    };
+    applyDarkMap();
+    const darkObserver = new MutationObserver(applyDarkMap);
+    darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
     mapInstanceRef.current = map;
 
     const recenter = () => {
@@ -278,6 +285,7 @@ export default function CampusMap({
     container.addEventListener('contextmenu', disableContextMenu);
 
     return () => {
+      darkObserver.disconnect();
       cancelAnimationFrame(rafId);
       clearTimeout(t1);
       clearTimeout(t2);

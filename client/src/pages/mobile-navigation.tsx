@@ -289,6 +289,8 @@ export default function MobileNavigation() {
 
   // Initialize Leaflet map on mount (not dependent on route)
   useEffect(() => {
+    let darkObserver: MutationObserver | null = null;
+
     const initMap = () => {
       // Check if ref is ready
       if (!mapRef.current) {
@@ -362,6 +364,13 @@ export default function MobileNavigation() {
           bounds: [[14.398, 120.861], [14.408, 120.871]], // Constrain tiles to campus area
         }).addTo(map);
 
+        const applyDarkMap = () => {
+          if (mapRef.current) mapRef.current.classList.toggle('leaflet-dark-tiles', document.documentElement.classList.contains('dark'));
+        };
+        applyDarkMap();
+        darkObserver = new MutationObserver(applyDarkMap);
+        darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
         mapInstanceRef.current = map;
         console.log("Map initialized successfully");
 
@@ -385,6 +394,7 @@ export default function MobileNavigation() {
     const timer = setTimeout(initMap, 100);
     return () => {
       clearTimeout(timer);
+      darkObserver?.disconnect();
       // Clean up touch event listener
       if (mapRef.current && touchHandlerRef.current) {
         mapRef.current.removeEventListener('touchmove', touchHandlerRef.current);

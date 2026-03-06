@@ -201,25 +201,27 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
         ctx.lineWidth = 2 / zoom;
         ctx.stroke();
 
-        // Draw room name label above the pin
+        // Draw room name label above the pin (supports multiline via \n)
         const label = room.name;
         const fontSize = Math.max(9, 11 / zoom);
         ctx.font = `bold ${fontSize}px sans-serif`;
         ctx.textAlign = 'center';
 
-        const textWidth = ctx.measureText(label).width;
+        const lines = label.split('\n');
+        const lineH = fontSize * 1.25;
+        const maxTextWidth = Math.max(...lines.map((l: string) => ctx.measureText(l).width));
         const labelPadX = 4 / zoom;
         const labelPadY = 3 / zoom;
         const labelX = roomX;
         const labelY = roomY - pinSize - 4 / zoom;
 
-        // Background pill
-        ctx.fillStyle = 'rgba(0,0,0,0.65)';
-        const bgX = labelX - textWidth / 2 - labelPadX;
-        const bgY = labelY - fontSize - labelPadY;
-        const bgW = textWidth + labelPadX * 2;
-        const bgH = fontSize + labelPadY * 2;
+        // Background pill sized for all lines
+        const bgW = maxTextWidth + labelPadX * 2;
+        const bgH = lines.length * lineH + labelPadY * 2;
+        const bgX = labelX - maxTextWidth / 2 - labelPadX;
+        const bgY = labelY - lines.length * lineH - labelPadY;
         const radius = 3 / zoom;
+        ctx.fillStyle = 'rgba(0,0,0,0.65)';
         ctx.beginPath();
         ctx.moveTo(bgX + radius, bgY);
         ctx.lineTo(bgX + bgW - radius, bgY);
@@ -234,7 +236,9 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
         ctx.fill();
 
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(label, labelX, labelY - labelPadY / 2);
+        lines.forEach((line: string, i: number) => {
+          ctx.fillText(line, labelX, labelY - labelPadY / 2 - (lines.length - 1 - i) * lineH);
+        });
       });
     } else {
       ctx.fillStyle = '#f3f4f6';

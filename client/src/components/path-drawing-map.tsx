@@ -190,6 +190,13 @@ export default function PathDrawingMap({
       maxNativeZoom: 19,
     }).addTo(map);
 
+    const applyDarkMap = () => {
+      if (mapRef.current) mapRef.current.classList.toggle('leaflet-dark-tiles', document.documentElement.classList.contains('dark'));
+    };
+    applyDarkMap();
+    const darkObserver = new MutationObserver(applyDarkMap);
+    darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
     mapInstanceRef.current = map;
     
     // Initial bounds setup
@@ -238,6 +245,7 @@ export default function PathDrawingMap({
     return () => {
       clearTimeout(timeoutId1);
       clearTimeout(timeoutId2);
+      darkObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       if (resizeObserver) {
         resizeObserver.disconnect();
@@ -600,8 +608,30 @@ export default function PathDrawingMap({
           connectedMarkersRef.current = connected;
         });
 
+        const applyLatLngPolarSnap = (refNode: PathNode, rawLatLng: { lat: number; lng: number }, increment: number) => {
+          const dy = rawLatLng.lat - refNode.lat;
+          const dx = rawLatLng.lng - refNode.lng;
+          let angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
+          if (angleDeg < 0) angleDeg += 360;
+          const snappedAngleDeg = Math.round(angleDeg / increment) * increment;
+          const snappedAngleRad = (snappedAngleDeg * Math.PI) / 180;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          return {
+            lat: refNode.lat + distance * Math.sin(snappedAngleRad),
+            lng: refNode.lng + distance * Math.cos(snappedAngleRad),
+          };
+        };
+
         marker.on('drag', (e: any) => {
-          const newLatLng = e.target.getLatLng();
+          let newLatLng = e.target.getLatLng();
+
+          if (polarTracking && nodes.length > 1) {
+            const inc = (typeof polarIncrement === 'number' && polarIncrement > 0) ? polarIncrement : 45;
+            const refNode = index > 0 ? nodes[index - 1] : nodes[index + 1];
+            newLatLng = applyLatLngPolarSnap(refNode, newLatLng, inc);
+            marker.setLatLng([newLatLng.lat, newLatLng.lng]);
+          }
+
           const newNodes = [...nodes];
           newNodes[index] = { lat: newLatLng.lat, lng: newLatLng.lng };
 
@@ -615,7 +645,15 @@ export default function PathDrawingMap({
         });
 
         marker.on('dragend', (e: any) => {
-          const newLatLng = e.target.getLatLng();
+          let newLatLng = e.target.getLatLng();
+
+          if (polarTracking && nodes.length > 1) {
+            const inc = (typeof polarIncrement === 'number' && polarIncrement > 0) ? polarIncrement : 45;
+            const refNode = index > 0 ? nodes[index - 1] : nodes[index + 1];
+            newLatLng = applyLatLngPolarSnap(refNode, newLatLng, inc);
+            marker.setLatLng([newLatLng.lat, newLatLng.lng]);
+          }
+
           const newNodes = [...nodes];
           newNodes[index] = { lat: newLatLng.lat, lng: newLatLng.lng };
 
@@ -680,7 +718,7 @@ export default function PathDrawingMap({
         hasInitializedBoundsRef.current = true;
       }
     }
-  }, [nodes, mode, isDrawing, onNodesChange, existingPaths, currentPathId, buildings, currentZoom]);
+  }, [nodes, mode, isDrawing, onNodesChange, existingPaths, currentPathId, buildings, currentZoom, polarTracking, polarIncrement]);
 
   const handleUndo = () => {
     if (nodes.length > 0) {

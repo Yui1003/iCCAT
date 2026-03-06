@@ -178,15 +178,16 @@ export default function FloorPlanDrawingCanvas({
       if (node.label) {
         ctx.font = `${9 / scale}px sans-serif`;
         ctx.textAlign = 'center';
-        const nameMetrics = ctx.measureText(node.label);
-        const nameW = nameMetrics.width;
-        const nameH = 10 / scale;
-        const nameX = node.x - nameW / 2 - 2 / scale;
-        const nameY = node.y + 12 / scale;
+        const lines = node.label.split('\n');
+        const lineH = 10 / scale;
+        const maxW = Math.max(...lines.map((l: string) => ctx.measureText(l).width));
+        const totalH = lines.length * lineH;
         ctx.fillStyle = 'rgba(255,255,255,0.82)';
-        ctx.fillRect(nameX, nameY, nameW + 4 / scale, nameH);
+        ctx.fillRect(node.x - maxW / 2 - 2 / scale, node.y + 12 / scale, maxW + 4 / scale, totalH);
         ctx.fillStyle = color;
-        ctx.fillText(node.label, node.x, node.y + 20 / scale);
+        lines.forEach((line: string, i: number) => {
+          ctx.fillText(line, node.x, node.y + 20 / scale + i * lineH);
+        });
       }
     });
 
@@ -392,7 +393,15 @@ export default function FloorPlanDrawingCanvas({
       if (nearbyNode) {
         updated[draggingWaypointIndex] = { x: nearbyNode.x, y: nearbyNode.y, nodeId: nearbyNode.nodeId };
       } else {
-        updated[draggingWaypointIndex] = { x: coords.x, y: coords.y, nodeId: undefined };
+        let finalCoords = { x: coords.x, y: coords.y };
+        if (polarTracking && waypoints.length > 1) {
+          const refIdx = draggingWaypointIndex > 0 ? draggingWaypointIndex - 1 : draggingWaypointIndex + 1;
+          const refWaypoint = waypoints[refIdx];
+          if (refWaypoint) {
+            finalCoords = applyPolarSnap(refWaypoint, coords, polarIncrement);
+          }
+        }
+        updated[draggingWaypointIndex] = { x: finalCoords.x, y: finalCoords.y, nodeId: undefined };
       }
       onWaypointsChange(updated);
       return;
