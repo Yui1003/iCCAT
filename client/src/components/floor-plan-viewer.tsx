@@ -335,7 +335,7 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
         const dy = e.touches[0].clientY - g.lastY;
         g.lastX = e.touches[0].clientX;
         g.lastY = e.touches[0].clientY;
-        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) g.wasDragging = true;
+        if (Math.abs(e.touches[0].clientX - g.startX) > 8 || Math.abs(e.touches[0].clientY - g.startY) > 8) g.wasDragging = true;
         updatePanX(panXRef.current + dx);
         updatePanY(panYRef.current + dy);
       } else if (e.touches.length === 2 && g.lastDist > 0) {
@@ -362,6 +362,17 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
       if (e.touches.length === 0) {
         g.isDragging = false;
         g.lastDist = 0;
+        if (!g.wasDragging && e.changedTouches.length === 1) {
+          const touch = e.changedTouches[0];
+          const syntheticClick = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            view: window
+          });
+          (e.target as HTMLElement).dispatchEvent(syntheticClick);
+        }
       } else if (e.touches.length === 1) {
         g.isDragging = true;
         g.lastX = e.touches[0].clientX;
