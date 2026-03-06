@@ -358,13 +358,30 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
       }
     };
 
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const delta = e.deltaY > 0 ? 0.85 : 1.18;
+      const curZoom = zoomRef.current;
+      const newZoom = Math.min(Math.max(curZoom * delta, 0.5), 8);
+      const newPanX = mouseX - (mouseX - panXRef.current) * (newZoom / curZoom);
+      const newPanY = mouseY - (mouseY - panYRef.current) * (newZoom / curZoom);
+      updateZoom(newZoom);
+      updatePanX(newPanX);
+      updatePanY(newPanY);
+    };
+
     canvas.addEventListener('touchstart', onTouchStart, { passive: false });
     canvas.addEventListener('touchmove', onTouchMove, { passive: false });
     canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+    canvas.addEventListener('wheel', onWheel, { passive: false });
     return () => {
       canvas.removeEventListener('touchstart', onTouchStart);
       canvas.removeEventListener('touchmove', onTouchMove);
       canvas.removeEventListener('touchend', onTouchEnd);
+      canvas.removeEventListener('wheel', onWheel);
     };
   }, []);
 

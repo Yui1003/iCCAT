@@ -4,9 +4,9 @@
  * Compatible with PWABuilder
  */
 
-const CACHE_NAME = 'iccat-v12';
-const DATA_CACHE_NAME = 'iccat-data-v12';
-const IMAGE_CACHE_NAME = 'iccat-images-v12';
+const CACHE_NAME = 'iccat-v13';
+const DATA_CACHE_NAME = 'iccat-data-v13';
+const IMAGE_CACHE_NAME = 'iccat-images-v13';
 
 // Static assets to cache immediately
 const urlsToCache = [
@@ -367,6 +367,46 @@ self.addEventListener('fetch', (event) => {
             })
             .catch((error) => {
               // Return placeholder tile when offline
+              return new Response(
+                new Blob([new Uint8Array([
+                  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
+                  0, 0, 1, 0, 0, 0, 1, 0, 8, 6, 0, 0, 0, 92, 114, 168, 229,
+                  0, 0, 0, 1, 115, 82, 71, 66, 0, 174, 206, 28, 233, 0, 0, 0,
+                  4, 103, 65, 77, 65, 0, 0, 177, 143, 11, 252, 97, 5, 0, 0, 0,
+                  9, 112, 72, 89, 115, 0, 0, 14, 195, 0, 0, 14, 195, 1, 199, 111,
+                  168, 100, 0, 0, 0, 23, 73, 68, 65, 84, 120, 94, 237, 193, 1,
+                  13, 0, 0, 0, 194, 160, 247, 79, 109, 14, 55, 160, 0, 0, 0, 0,
+                  0, 0, 230, 7, 32, 0, 0, 1, 225, 33, 177, 39, 0, 0, 0, 0, 73,
+                  69, 78, 68, 174, 66, 96, 130
+                ])], { type: 'image/png' })
+              );
+            });
+        });
+      })
+    );
+    return;
+  }
+
+  // Handle Thunderforest dark tiles - cache first for performance and offline use
+  if (url.hostname.includes('tile.thunderforest.com')) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(request).then((response) => {
+          if (response) {
+            return response;
+          }
+          return fetch(request)
+            .then((response) => {
+              if (response.status === 200) {
+                try {
+                  cache.put(request, response.clone());
+                } catch (cacheError) {
+                  console.warn(`[SW] Failed to cache Thunderforest tile: ${url.pathname}`, cacheError.message);
+                }
+              }
+              return response;
+            })
+            .catch((error) => {
               return new Response(
                 new Blob([new Uint8Array([
                   137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,

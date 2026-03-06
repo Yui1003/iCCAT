@@ -365,9 +365,10 @@ export default function MobileNavigation() {
           updateWhenIdle: true,
           bounds: [[14.398, 120.861], [14.408, 120.871]],
         });
-        const darkTile = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
-          attribution: osmAttrib + ' © <a href="https://carto.com/attributions">CARTO</a>',
-          subdomains: 'abcd',
+        const tfKey = import.meta.env.VITE_THUNDERFOREST_API_KEY || '';
+        const darkTile = L.tileLayer(`https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png?apikey=${tfKey}`, {
+          attribution: osmAttrib + ' © <a href="https://www.thunderforest.com/">Thunderforest</a>',
+          subdomains: 'abc',
           maxZoom: 19,
           minZoom: 17.5,
           keepBuffer: 3,
