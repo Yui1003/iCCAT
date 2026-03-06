@@ -73,7 +73,7 @@ export default function RoomFinderDialog({
       .map(n => ({
         id: n.id,
         name: n.label || 'Unnamed Room',
-        type: 'room',
+        type: n.type,
         description: n.description || null,
         floorId: n.floorId,
         buildingId: floors.find(f => f.id === n.floorId)?.buildingId || '',
@@ -129,11 +129,11 @@ export default function RoomFinderDialog({
   const filteredRooms = useMemo(() => {
     if (!searchQuery.trim()) return allRooms;
     
-    const query = searchQuery.toLowerCase();
-    return allRooms.filter(room => 
-      room.name.toLowerCase().includes(query) ||
-      room.type.toLowerCase().includes(query) ||
-      room.description?.toLowerCase().includes(query) ||
+    const query = searchQuery.replace(/\s+/g, ' ').trim().toLowerCase();
+    return allRooms.filter(room =>
+      room.name.replace(/\s+/g, ' ').toLowerCase().includes(query) ||
+      room.type.replace(/\s+/g, ' ').toLowerCase().includes(query) ||
+      room.description?.replace(/\s+/g, ' ').toLowerCase().includes(query) ||
       getBuildingName(room.buildingId).toLowerCase().includes(query) ||
       getFloorName(room.floorId).toLowerCase().includes(query)
     );

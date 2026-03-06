@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, Link } from "wouter";
+import { APP_VERSION } from "@/pages/landing";
 import {
   Building2,
   Route,
@@ -116,6 +117,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   <div>
                     <h2 className="font-semibold text-sidebar-foreground">iCCAT Admin</h2>
                     <p className="text-xs text-sidebar-foreground/70">Management Panel</p>
+                    <p className="text-xs text-sidebar-foreground/40">version:{APP_VERSION}</p>
                   </div>
                 </div>
               </div>

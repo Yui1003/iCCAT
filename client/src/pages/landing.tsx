@@ -7,6 +7,8 @@ import logoImage from "@assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { Walkthrough, useWalkthrough } from "@/components/walkthrough";
 
+export const APP_VERSION = "3.2.4";
+
 const TIME_PHASES = [
   { start: 5 * 60, end: 6 * 60, img: "/assets/Homepage Engine/5AM - 6AM.png" },
   { start: 6 * 60, end: 7 * 60, img: "/assets/Homepage Engine/6AM - 7AM.png" },
@@ -337,7 +339,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className={`text-xs ${isDaytime ? 'text-black/70' : 'text-white/70'}`} data-testid="text-version">
-              version:3.2.3
+              version:{APP_VERSION}
             </div>
           </div>
         </div>

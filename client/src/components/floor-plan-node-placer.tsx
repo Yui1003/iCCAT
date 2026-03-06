@@ -41,6 +41,7 @@ export default function FloorPlanNodePlacer({
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [placementMode, setPlacementMode] = useState<'node' | 'label'>('node');
   const [isLabelDragging, setIsLabelDragging] = useState(false);
+  const [isOverLabel, setIsOverLabel] = useState(false);
 
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const wasDraggingRef = useRef(false);
@@ -239,6 +240,13 @@ export default function FloorPlanNodePlacer({
     return { x: coordX, y: coordY };
   };
 
+  const isOnLabelBox = (imgX: number, imgY: number): boolean => {
+    if (labelX == null || labelY == null) return false;
+    const hitW = 20 / scale;
+    const hitH = 14 / scale;
+    return Math.abs(imgX - labelX) <= hitW && Math.abs(imgY - labelY) <= hitH;
+  };
+
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const downPos = mouseDownPosRef.current;
     if (downPos) {
@@ -267,7 +275,13 @@ export default function FloorPlanNodePlacer({
 
     if (e.button === 0 || e.button === 1) {
       if (placementMode === 'label' && onLabelCoordinatesChange) {
-        setIsLabelDragging(true);
+        const coords = getCanvasCoordinates(e);
+        if (coords && isOnLabelBox(coords.x, coords.y)) {
+          setIsLabelDragging(true);
+        } else {
+          setIsDragging(true);
+          setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+        }
       } else {
         setIsDragging(true);
         setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
@@ -288,6 +302,11 @@ export default function FloorPlanNodePlacer({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y
       });
+    } else if (placementMode === 'label' && !isDragging && !isLabelDragging) {
+      const coords = getCanvasCoordinates(e);
+      if (coords) {
+        setIsOverLabel(isOnLabelBox(coords.x, coords.y));
+      }
     }
   };
 
@@ -299,6 +318,7 @@ export default function FloorPlanNodePlacer({
   const handleMouseLeave = () => {
     setIsDragging(false);
     setIsLabelDragging(false);
+    setIsOverLabel(false);
   };
 
   const handleZoom = (direction: 'in' | 'out') => {
@@ -396,7 +416,7 @@ export default function FloorPlanNodePlacer({
       <div
         ref={containerRef}
         className={className}
-        style={{ cursor: isDragging ? 'grabbing' : isLabelDragging ? 'grabbing' : 'crosshair' }}
+        style={{ cursor: isDragging || isLabelDragging ? 'grabbing' : (placementMode === 'label' && isOverLabel) ? 'grab' : 'crosshair' }}
       >
         <canvas
           ref={canvasRef}

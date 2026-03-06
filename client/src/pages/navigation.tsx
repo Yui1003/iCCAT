@@ -4883,7 +4883,7 @@ export default function Navigation() {
             .map(n => ({
               id: n.id,
               name: n.label || 'Unnamed Room',
-              type: 'room',
+              type: n.type,
               description: n.description || null,
               floorId: n.floorId,
               buildingId: selectedBuilding?.id || '',
