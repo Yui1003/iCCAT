@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, AlertCircle, BarChart3, RotateCcw, Wifi, WifiOff, Download, Cpu, Clock, Info, Trash2, Smartphone } from "lucide-react";
 import { Link } from "wouter";
+import AdminLayout from "@/components/admin-layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -361,6 +362,7 @@ export default function AdminAnalytics() {
   }));
 
   return (
+    <AdminLayout>
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-card-border p-4 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex items-center gap-4">
@@ -870,5 +872,6 @@ export default function AdminAnalytics() {
         )}
       </main>
     </div>
+    </AdminLayout>
   );
 }
