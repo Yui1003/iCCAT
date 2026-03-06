@@ -22,6 +22,8 @@ interface CombinedRoom {
   isIndoorNode?: boolean;
   category?: string | null;
   imageUrl?: string | null;
+  labelX?: number | null;
+  labelY?: number | null;
 }
 
 interface RoomFinderDialogProps {
@@ -67,7 +69,7 @@ export default function RoomFinderDialog({
   // Show ONLY indoor node rooms (not old rooms table)
   const allRooms = useMemo(() => {
     const combined: CombinedRoom[] = indoorNodes
-      .filter(n => n.type === 'room')
+      .filter(n => !['entrance', 'stairway', 'elevator'].includes(n.type))
       .map(n => ({
         id: n.id,
         name: n.label || 'Unnamed Room',
@@ -82,12 +84,6 @@ export default function RoomFinderDialog({
         imageUrl: (n as any).imageUrl || null,
         labelX: (n as any).labelX ?? null,
         labelY: (n as any).labelY ?? null,
-        labelX: (n as any).labelX ?? null,
-        labelY: (n as any).labelY ?? null,
-        labelX: (n as any).labelX ?? null,
-        labelY: (n as any).labelY ?? null,
-        labelX: (n as any).labelX ?? null,
-        labelY: (n as any).labelY ?? null
       }));
     return combined;
   }, [indoorNodes, floors]);

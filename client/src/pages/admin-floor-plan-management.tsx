@@ -19,6 +19,8 @@ import type { Building, Floor, Room, IndoorNode, RoomPath, RoomPathWaypoint } fr
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const STANDARD_NODE_TYPES = ['entrance', 'room', 'stairway', 'elevator'];
+
 export default function AdminFloorPlanManagement() {
   const [tab, setTab] = useState<"paths" | "nodes">("paths");
   const [pathDialogOpen, setPathDialogOpen] = useState(false);
@@ -45,6 +47,7 @@ export default function AdminFloorPlanManagement() {
   const [nodeSelectedBuildingId, setNodeSelectedBuildingId] = useState<string>("");
   const [nodeSelectedFloorId, setNodeSelectedFloorId] = useState<string>("");
   const [nodeType, setNodeType] = useState<string>("entrance");
+  const [customTypeInput, setCustomTypeInput] = useState("");
   const [nodeLabel, setNodeLabel] = useState("");
   const [nodeDescription, setNodeDescription] = useState("");
   const [nodeCategory, setNodeCategory] = useState("");
@@ -82,6 +85,13 @@ export default function AdminFloorPlanManagement() {
     [...new Set(indoorNodes.filter(n => n.type === 'room' && n.category).map(n => n.category as string))],
     [indoorNodes]
   );
+
+  const existingCustomTypes = useMemo(() =>
+    [...new Set(indoorNodes.filter(n => !STANDARD_NODE_TYPES.includes(n.type)).map(n => n.type))],
+    [indoorNodes]
+  );
+
+  const isRoomLike = !['entrance', 'stairway', 'elevator'].includes(nodeType);
 
   // Path queries
   const buildingsWithFloorPlans = buildings.filter(b => {
@@ -254,6 +264,7 @@ export default function AdminFloorPlanManagement() {
         setNodeSelectedBuildingId(floor.buildingId);
       }
       setNodeType(node.type);
+      setCustomTypeInput('');
       setNodeLabel(node.label || "");
       setNodeDescription(node.description || "");
       setNodeCategory((node as any).category || "");
@@ -268,6 +279,7 @@ export default function AdminFloorPlanManagement() {
       setNodeSelectedBuildingId("");
       setNodeSelectedFloorId("");
       setNodeType("entrance");
+      setCustomTypeInput('');
       setNodeLabel("");
       setNodeDescription("");
       setNodeCategory("");
@@ -287,6 +299,7 @@ export default function AdminFloorPlanManagement() {
     setNodeSelectedBuildingId("");
     setNodeSelectedFloorId("");
     setNodeType("entrance");
+    setCustomTypeInput('');
     setNodeLabel("");
     setNodeDescription("");
     setNodeCategory("");
@@ -302,10 +315,16 @@ export default function AdminFloorPlanManagement() {
       toast({ title: "Please fill in all required fields", variant: "destructive" });
       return;
     }
+    if (nodeType === '__custom__' && !customTypeInput.trim()) {
+      toast({ title: "Please enter a custom type name", variant: "destructive" });
+      return;
+    }
+
+    const resolvedType = nodeType === '__custom__' ? customTypeInput.trim() : nodeType;
 
     const data = {
       floorId: nodeSelectedFloorId,
-      type: nodeType,
+      type: resolvedType,
       label: nodeLabel,
       description: nodeDescription || null,
       category: nodeCategory || null,
@@ -641,29 +660,40 @@ export default function AdminFloorPlanManagement() {
                             { id: 'entrance', name: 'Entrance' },
                             { id: 'stairway', name: 'Stairway' },
                             { id: 'elevator', name: 'Elevator' },
-                            { id: 'room', name: 'Room' }
+                            { id: 'room', name: 'Room' },
+                            ...existingCustomTypes.map(t => ({ id: t, name: t })),
+                            { id: '__custom__', name: 'Custom Type...' },
                           ]}
                           selectedId={nodeType}
-                          onSelect={setNodeType}
+                          onSelect={(val) => { setNodeType(val); setCustomTypeInput(''); }}
                           placeholder="Select type"
                           testId="select-node-type"
                         />
+                        {nodeType === '__custom__' && (
+                          <Input
+                            className="mt-2"
+                            value={customTypeInput}
+                            onChange={(e) => setCustomTypeInput(e.target.value)}
+                            placeholder="e.g., Faculty Office, Laboratory"
+                            data-testid="input-custom-type"
+                          />
+                        )}
                       </div>
                       <div>
-                        <Label htmlFor="label">{nodeType === 'room' ? 'Room Name' : 'Label'}</Label>
+                        <Label htmlFor="label">{isRoomLike ? 'Room Name' : 'Label'}</Label>
                         <Textarea
                           id="label"
                           rows={2}
                           className="resize-none"
                           value={nodeLabel}
                           onChange={(e) => setNodeLabel(e.target.value)}
-                          placeholder={nodeType === 'room' ? "e.g., Comfort Room\n(HE)" : "e.g., Main Entrance"}
+                          placeholder={isRoomLike ? "e.g., Comfort Room\n(HE)" : "e.g., Main Entrance"}
                           data-testid="input-node-label"
                         />
                       </div>
                     </div>
 
-                    {nodeType === 'room' && (
+                    {isRoomLike && (
                       <div>
                         <Label htmlFor="description">Room Description</Label>
                         <Input
@@ -676,7 +706,7 @@ export default function AdminFloorPlanManagement() {
                       </div>
                     )}
 
-                    {nodeType === 'room' && (
+                    {isRoomLike && (
                       <>
                         <div>
                           <Label htmlFor="category">Room Category</Label>
@@ -751,15 +781,9 @@ export default function AdminFloorPlanManagement() {
                             setX(coordX.toString());
                             setY(coordY.toString());
                           }}
-                          labelX={nodeType === "room" ? nodeLabelX : undefined}
-                          labelY={nodeType === "room" ? nodeLabelY : undefined}
-                          onLabelCoordinatesChange={nodeType === "room" ? (lx, ly) => {
-                            setNodeLabelX(lx);
-                            setNodeLabelY(ly);
-                          } : undefined}
-                          labelX={nodeType === "room" ? nodeLabelX : undefined}
-                          labelY={nodeType === "room" ? nodeLabelY : undefined}
-                          onLabelCoordinatesChange={nodeType === "room" ? (lx, ly) => {
+                          labelX={isRoomLike ? nodeLabelX : undefined}
+                          labelY={isRoomLike ? nodeLabelY : undefined}
+                          onLabelCoordinatesChange={isRoomLike ? (lx, ly) => {
                             setNodeLabelX(lx);
                             setNodeLabelY(ly);
                           } : undefined}

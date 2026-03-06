@@ -13,6 +13,7 @@ import { ProxiedImage } from "@/components/proxied-image";
 import GetDirectionsDialog from "@/components/get-directions-dialog";
 import type { Staff, Building } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
+import ThemeToggle from "@/components/theme-toggle";
 import { trackEvent } from "@/lib/analytics-tracker";
 import { AnalyticsEventType } from "@shared/analytics-schema";
 import { motion } from "framer-motion";
@@ -225,6 +226,7 @@ export default function StaffDirectory() {
               </p>
             </div>
           </div>
+          <ThemeToggle />
         </div>
       </header>
 

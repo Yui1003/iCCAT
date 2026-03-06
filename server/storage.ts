@@ -1123,7 +1123,9 @@ export class DatabaseStorage implements IStorage {
         ...node,
         label: node.label ?? null,
         description: node.description ?? null,
-        imageUrl: node.imageUrl ?? null
+        imageUrl: node.imageUrl ?? null,
+        labelX: node.labelX ?? null,
+        labelY: node.labelY ?? null,
       } as IndoorNode;
       data.indoorNodes[index] = updatedNode;
       saveFallbackData();
@@ -1140,7 +1142,9 @@ export class DatabaseStorage implements IStorage {
         ...node,
         label: node.label ?? null,
         description: node.description ?? null,
-        imageUrl: node.imageUrl ?? null
+        imageUrl: node.imageUrl ?? null,
+        labelX: node.labelX ?? null,
+        labelY: node.labelY ?? null,
       } as IndoorNode;
     } catch (error) {
       console.error('Firestore error:', error);

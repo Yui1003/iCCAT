@@ -24,6 +24,8 @@ interface CombinedRoom {
   isIndoorNode?: boolean;
   category?: string | null;
   imageUrl?: string | null;
+  labelX?: number | null;
+  labelY?: number | null;
 }
 
 interface LatLng {

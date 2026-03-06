@@ -13,6 +13,7 @@ import { ProxiedImage } from "@/components/proxied-image";
 import GetDirectionsDialog from "@/components/get-directions-dialog";
 import { CalendarView } from "@/components/calendar-view";
 import type { Event, Building } from "@shared/schema";
+import ThemeToggle from "@/components/theme-toggle";
 import { eventClassifications } from "@shared/schema";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
 import useEmblaCarousel from "embla-carousel-react";
@@ -216,6 +217,7 @@ export default function Events() {
               <p className="text-sm text-muted-foreground">Stay updated with campus activities</p>
             </div>
           </div>
+          <ThemeToggle />
         </div>
       </header>
 

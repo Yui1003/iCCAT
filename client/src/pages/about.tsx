@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
+import ThemeToggle from "@/components/theme-toggle";
 
 export default function About() {
   // Return to home after 3 minutes of inactivity
@@ -56,6 +57,7 @@ export default function About() {
               <p className="text-sm text-muted-foreground">Learn about this kiosk system</p>
             </div>
           </div>
+          <ThemeToggle />
         </div>
       </header>
 

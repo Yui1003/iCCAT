@@ -33,6 +33,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { calculateETA, parseDistance } from "@/lib/eta-calculator";
 import { generateIndoorSteps } from "@/lib/indoor-steps";
 import { useLocation } from "wouter";
+import ThemeToggle from "@/components/theme-toggle";
 
 export default function Navigation() {
   useGlobalInactivity();
@@ -146,6 +147,7 @@ export default function Navigation() {
 
   const { data: indoorNodes = [] } = useQuery<IndoorNode[]>({
     queryKey: ['/api/indoor-nodes'],
+    staleTime: 0,
     queryFn: async () => {
       const res = await fetch('/api/indoor-nodes');
       return res.json();
@@ -4112,6 +4114,7 @@ export default function Navigation() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Button 
               variant="outline" 
               onClick={() => setShowRoomFinder(true)}
@@ -4876,7 +4879,7 @@ export default function Navigation() {
         <FloorPlanViewer
           floor={selectedFloor}
           rooms={indoorNodes
-            .filter(n => n.floorId === selectedFloor.id && n.type === 'room')
+            .filter(n => n.floorId === selectedFloor.id && !['entrance', 'stairway', 'elevator'].includes(n.type))
             .map(n => ({
               id: n.id,
               name: n.label || 'Unnamed Room',
@@ -4888,6 +4891,8 @@ export default function Navigation() {
               y: n.y,
               isIndoorNode: true,
               category: n.category || null,
+              labelX: (n as any).labelX ?? null,
+              labelY: (n as any).labelY ?? null,
               imageUrl: (n as any).imageUrl || null
             }))}
           indoorNodes={indoorNodes}

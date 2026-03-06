@@ -1008,6 +1008,8 @@ export default function MobileNavigation() {
                       floorId: currentIndoorFloor.id,
                       category: destinationRoom.category || null,
                       imageUrl: (destinationRoom as any).imageUrl || null,
+        labelX: (destinationRoom as any).labelX ?? null,
+        labelY: (destinationRoom as any).labelY ?? null,
                     }]
                   : []}
                 indoorNodes={indoorNodes.filter(n => n.floorId === currentIndoorFloor.id)}
