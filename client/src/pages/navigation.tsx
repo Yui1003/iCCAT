@@ -2987,178 +2987,150 @@ export default function Navigation() {
     setCurrentIndoorFloor(entranceFloor);
     setSelectedFloor(entranceFloor);
     
-    // Find entrance node on current floor
-    const entranceNode = indoorNodes.find(n => 
+    // Find ALL entrance nodes on current floor
+    const allEntrances = indoorNodes.filter(n =>
       n.type === 'entrance' && n.floorId === entranceFloor.id
     );
-    
-    if (!entranceNode) return;
-    
+
+    if (allEntrances.length === 0) return;
+
     // Determine target for this floor: either destination room (if same floor) or nearest stairway (if multi-floor)
     let targetNode: IndoorNode | undefined;
     if (roomFloor.id === entranceFloor.id) {
-      // Same floor - route to destination
       targetNode = destinationRoom;
     } else {
-      // Multi-floor - route to nearest stairway/elevator
       const stairways = indoorNodes.filter(n => (n.type === 'stairway' || n.type === 'elevator') && n.floorId === entranceFloor.id);
       if (stairways.length === 0) return;
       targetNode = stairways[0];
     }
-    
+
     // Get floor-specific data
     const floorRoomPaths = roomPaths.filter(rp => rp.floorId === entranceFloor.id);
     const floorRooms = rooms.filter(r => r.floorId === entranceFloor.id);
     const floorIndoorNodes = indoorNodes.filter(n => n.floorId === entranceFloor.id);
-    
-    // Build indoor graph using the same pathfinding logic as outdoor navigation
+
+    // Build indoor graph once (shared across all entrance candidates)
     const indoorGraph = buildIndoorGraph(floorRooms, floorIndoorNodes, floorRoomPaths, roomFloor.pixelToMeterScale || 1);
-    
-    // DEBUG: Log graph structure
-    console.log('[INDOOR-PATH] Building graph...');
-    console.log('[INDOOR-PATH] Total nodes:', indoorGraph.nodes.size);
-    console.log('[INDOOR-PATH] Total edges:', indoorGraph.edges.length);
-
-    // Try to find a direct roomPath that connects entrance -> target (or reversed)
-    type RoomPathWaypoint = { x: number; y: number; nodeId?: string };
-    const directPath = floorRoomPaths.find(rp => {
-      const wps = rp.waypoints as RoomPathWaypoint[];
-      if (!wps || wps.length < 2) return false;
-      const firstId = wps[0].nodeId;
-      const lastId = wps[wps.length - 1].nodeId;
-      return (firstId === entranceNode.id && lastId === targetNode.id) ||
-             (lastId === entranceNode.id && firstId === targetNode.id);
-    });
-
-    let polylineWaypoints: Array<{ lat: number; lng: number }>;
-
-    if (directPath) {
-      console.log('[INDOOR-PATH] Direct roomPath found, skipping Dijkstra');
-      const wps = directPath.waypoints as RoomPathWaypoint[];
-      const firstId = wps[0].nodeId;
-      const ordered = firstId === entranceNode.id ? wps : [...wps].reverse();
-      polylineWaypoints = ordered.map(wp => ({ lat: wp.x, lng: wp.y }));
-    } else {
-    
-    // Use Dijkstra's algorithm to find shortest path
     const { nodes, edges } = indoorGraph;
-    const entranceKey = `${entranceFloor.id}:${entranceNode.id}`;
-    const destKey = `${entranceFloor.id}:${targetNode.id}`;
-    
-    console.log('[INDOOR-PATH] Entrance key:', entranceKey, 'Dest key:', destKey);
-    console.log('[INDOOR-PATH] Entrance exists:', nodes.has(entranceKey), 'Dest exists:', nodes.has(destKey));
-    
-    // Dijkstra's algorithm
-    const distances = new Map<string, number>();
-    const previous = new Map<string, string | null>();
-    const unvisited = new Set<string>();
-    
-    nodes.forEach((_, key) => {
-      distances.set(key, Infinity);
-      previous.set(key, null);
-      unvisited.add(key);
-    });
-    
-    distances.set(entranceKey, 0);
-    
-    console.log('[INDOOR-PATH] Starting Dijkstra from:', entranceKey);
-    console.log('[INDOOR-PATH] Initial unvisited size:', unvisited.size);
-    console.log('[INDOOR-PATH] Entrance in unvisited?', unvisited.has(entranceKey));
-    console.log('[INDOOR-PATH] Entrance distance:', distances.get(entranceKey));
-    
-    let iterations = 0;
-    while (unvisited.size > 0) {
-      iterations++;
-      let current: string | null = null;
-      let minDist = Infinity;
-      
-      unvisited.forEach(key => {
-        const dist = distances.get(key) ?? Infinity;
-        if (dist < minDist) {
-          minDist = dist;
-          current = key;
-        }
+
+    type RoomPathWaypoint = { x: number; y: number; nodeId?: string };
+
+    // Try every entrance and keep the one that yields the shortest valid path to targetNode
+    let bestEntranceNode: IndoorNode | null = null;
+    let bestPolylineWaypoints: Array<{ lat: number; lng: number }> | null = null;
+    let bestCost = Infinity;
+
+    for (const candidateEntrance of allEntrances) {
+      // First check for a direct drawn path between this entrance and target
+      const directPath = floorRoomPaths.find(rp => {
+        const wps = rp.waypoints as RoomPathWaypoint[];
+        if (!wps || wps.length < 2) return false;
+        const firstId = wps[0].nodeId;
+        const lastId = wps[wps.length - 1].nodeId;
+        return (firstId === candidateEntrance.id && lastId === targetNode!.id) ||
+               (lastId === candidateEntrance.id && firstId === targetNode!.id);
       });
-      
-      if (iterations === 1) {
-        console.log(`[INDOOR-PATH] Iteration 1: current=${current}, minDist=${minDist}, destKey=${destKey}`);
+
+      if (directPath) {
+        const wps = directPath.waypoints as RoomPathWaypoint[];
+        const firstId = wps[0].nodeId;
+        const ordered = firstId === candidateEntrance.id ? wps : [...wps].reverse();
+        const candidateWaypoints = ordered.map(wp => ({ lat: wp.x, lng: wp.y }));
+        let cost = 0;
+        for (let i = 0; i < candidateWaypoints.length - 1; i++) {
+          const dx = candidateWaypoints[i + 1].lat - candidateWaypoints[i].lat;
+          const dy = candidateWaypoints[i + 1].lng - candidateWaypoints[i].lng;
+          cost += Math.sqrt(dx * dx + dy * dy);
+        }
+        if (cost < bestCost) {
+          bestCost = cost;
+          bestEntranceNode = candidateEntrance;
+          bestPolylineWaypoints = candidateWaypoints;
+        }
+        continue;
       }
-      
-      if (!current) {
-        console.log('[INDOOR-PATH] Dijkstra: No current node found, breaking');
-        break;
+
+      // Run full Dijkstra from this entrance (no iteration cap)
+      const entranceKey = `${entranceFloor.id}:${candidateEntrance.id}`;
+      const destKey = `${entranceFloor.id}:${targetNode!.id}`;
+
+      const distances = new Map<string, number>();
+      const previous = new Map<string, string | null>();
+      const unvisited = new Set<string>();
+
+      nodes.forEach((_, key) => {
+        distances.set(key, Infinity);
+        previous.set(key, null);
+        unvisited.add(key);
+      });
+
+      distances.set(entranceKey, 0);
+
+      while (unvisited.size > 0) {
+        let current: string | null = null;
+        let minDist = Infinity;
+
+        unvisited.forEach(key => {
+          const dist = distances.get(key) ?? Infinity;
+          if (dist < minDist) { minDist = dist; current = key; }
+        });
+
+        if (!current) break;
+        if (current === destKey) break;
+
+        unvisited.delete(current);
+
+        edges.filter(e => e.from === current).forEach(edge => {
+          if (unvisited.has(edge.to)) {
+            const alt = (distances.get(current!) ?? Infinity) + edge.distance;
+            if (alt < (distances.get(edge.to) ?? Infinity)) {
+              distances.set(edge.to, alt);
+              previous.set(edge.to, current!);
+            }
+          }
+        });
       }
-      
-      if (current === destKey) {
-        console.log('[INDOOR-PATH] Dijkstra: Reached destination at iteration', iterations);
-        break;
+
+      const destCost = distances.get(destKey) ?? Infinity;
+      if (destCost >= bestCost) continue;
+
+      // Reconstruct path for this entrance
+      const shortestPath: string[] = [];
+      let cur: string | null = destKey;
+      while (cur !== null) {
+        shortestPath.unshift(cur);
+        cur = previous.get(cur) || null;
       }
-      
-      unvisited.delete(current);
-      
-      const outgoingEdges = edges.filter(e => e.from === current);
-      
-      outgoingEdges.forEach(edge => {
-        if (unvisited.has(edge.to)) {
-          const alt = (distances.get(current!) ?? Infinity) + edge.distance;
-          if (alt < (distances.get(edge.to) ?? Infinity)) {
-            distances.set(edge.to, alt);
-            previous.set(edge.to, current!);
+
+      // Extract waypoints along the path
+      const candidateWaypoints: Array<{ lat: number; lng: number }> = [
+        { lat: candidateEntrance.x, lng: candidateEntrance.y }
+      ];
+
+      for (let i = 0; i < shortestPath.length - 1; i++) {
+        const fromNode = shortestPath[i];
+        const toNode = shortestPath[i + 1];
+        const edge = edges.find(e => e.from === fromNode && e.to === toNode);
+        if (edge && edge.pathWaypoints && edge.pathWaypoints.length > 0) {
+          for (let j = 1; j < edge.pathWaypoints.length; j++) {
+            candidateWaypoints.push({ lat: edge.pathWaypoints[j].x, lng: edge.pathWaypoints[j].y });
           }
         }
-      });
-      
-      if (iterations > 100) {
-        console.log('[INDOOR-PATH] Dijkstra: Too many iterations, breaking');
-        break;
       }
-    }
-    
-    console.log('[INDOOR-PATH] Dijkstra completed in', iterations, 'iterations');
-    console.log('[INDOOR-PATH] Distance to destination:', distances.get(destKey));
-    
-    // Reconstruct shortest path
-    const shortestPath: string[] = [];
-    let current: string | null = destKey;
-    
-    while (current !== null) {
-      shortestPath.unshift(current);
-      current = previous.get(current) || null;
-    }
-    
-    console.log('[INDOOR-PATH] Shortest path:', shortestPath);
-    console.log('[INDOOR-PATH] Path length:', shortestPath.length);
-    
-    // Extract waypoints by following the edges in the shortest path
-    polylineWaypoints = [
-      { lat: entranceNode.x, lng: entranceNode.y }
-    ];
-    
-    // For each consecutive pair of nodes in the shortest path, find the edge and get its waypoints
-    for (let i = 0; i < shortestPath.length - 1; i++) {
-      const fromNode = shortestPath[i];
-      const toNode = shortestPath[i + 1];
-      
-      // Find the edge from -> to
-      const edge = edges.find(e => e.from === fromNode && e.to === toNode);
-      
-      if (edge && edge.pathWaypoints && edge.pathWaypoints.length > 0) {
-        console.log(`[INDOOR-PATH] Edge ${fromNode} -> ${toNode} has ${edge.pathWaypoints.length} waypoints`);
-        
-        // Add all waypoints from this edge, but skip the first one (it's the start node)
-        for (let j = 1; j < edge.pathWaypoints.length; j++) {
-          const wp = edge.pathWaypoints[j];
-          polylineWaypoints.push({ lat: wp.x, lng: wp.y });
-        }
-      }
-    }
-    
-    console.log('[INDOOR-PATH] Final polyline waypoints:', polylineWaypoints.length, polylineWaypoints);
-    
-    // Add target node
-    polylineWaypoints.push({ lat: targetNode.x, lng: targetNode.y });
 
-    } // end else (Dijkstra branch)
+      candidateWaypoints.push({ lat: targetNode!.x, lng: targetNode!.y });
+
+      bestCost = destCost;
+      bestEntranceNode = candidateEntrance;
+      bestPolylineWaypoints = candidateWaypoints;
+    }
+
+    // Use best entrance; fall back to first entrance with straight line if nothing found
+    const entranceNode = bestEntranceNode || allEntrances[0];
+    let polylineWaypoints: Array<{ lat: number; lng: number }> = bestPolylineWaypoints || [
+      { lat: entranceNode.x, lng: entranceNode.y },
+      { lat: targetNode!.x, lng: targetNode!.y }
+    ];
 
     // Remove duplicates
     const seen = new Set<string>();
