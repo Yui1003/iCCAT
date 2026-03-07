@@ -23,7 +23,6 @@ interface PolygonDrawingMapProps {
   onShadowPolygonsChange: (shadows: LatLng[][] | null) => void;
   polygonColor?: string;
   polygonOpacity?: number;
-  className?: string;
   existingBuildings?: Building[];
 }
 
@@ -42,7 +41,6 @@ export default function PolygonDrawingMap({
   onShadowPolygonsChange,
   polygonColor = "#FACC15",
   polygonOpacity = 0.4,
-  className = "h-full w-full",
   existingBuildings = []
 }: PolygonDrawingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -81,193 +79,186 @@ export default function PolygonDrawingMap({
     let timeoutId3: ReturnType<typeof setTimeout>;
     let timeoutId4: ReturnType<typeof setTimeout>;
     let handleResize: () => void;
-    let cancelled = false;
 
-    const initDelay = setTimeout(() => {
-      if (cancelled || !mapRef.current || mapInstanceRef.current) return;
+    try {
+      map = L.map(mapRef.current, {
+        center: [centerLat || 14.4025, centerLng || 120.8670],
+        zoom: 18.5,
+        minZoom: 17.5,
+        maxZoom: 21,
+        zoomControl: true,
+        attributionControl: true,
+      });
 
-      try {
-        map = L.map(mapRef.current, {
-          center: [centerLat || 14.4025, centerLng || 120.8670],
-          zoom: 18.5,
-          minZoom: 17.5,
-          maxZoom: 21,
-          zoomControl: true,
-          attributionControl: true,
-        });
+      const isDark = () => document.documentElement.classList.contains('dark');
+      const osmAttrib = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+      const tfKey = import.meta.env.VITE_THUNDERFOREST_API_KEY || '';
+      const lightTile = L.tileLayer(`https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${tfKey}`, {
+        attribution: osmAttrib + ' © <a href="https://www.thunderforest.com/">Thunderforest</a>',
+        subdomains: 'abc',
+        maxZoom: 21,
+        maxNativeZoom: 19,
+        crossOrigin: true,
+        detectRetina: true,
+        updateWhenIdle: false,
+        updateWhenZooming: true,
+        keepBuffer: 4,
+      });
+      const darkTile = L.tileLayer(`https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png?apikey=${tfKey}`, {
+        attribution: osmAttrib + ' © <a href="https://www.thunderforest.com/">Thunderforest</a>',
+        subdomains: 'abc',
+        maxZoom: 21,
+        maxNativeZoom: 19,
+        crossOrigin: true,
+        detectRetina: true,
+        updateWhenIdle: false,
+        updateWhenZooming: true,
+        keepBuffer: 4,
+      });
+      let activeTile = isDark() ? darkTile : lightTile;
+      activeTile.addTo(map);
+      const applyDarkMap = () => {
+        const next = isDark() ? darkTile : lightTile;
+        if (next !== activeTile) { map.removeLayer(activeTile); next.addTo(map); activeTile = next; }
+      };
+      darkObserver = new MutationObserver(applyDarkMap);
+      darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
-        const isDark = () => document.documentElement.classList.contains('dark');
-        const osmAttrib = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-        const tfKey = import.meta.env.VITE_THUNDERFOREST_API_KEY || '';
-        const lightTile = L.tileLayer(`https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${tfKey}`, {
-          attribution: osmAttrib + ' © <a href="https://www.thunderforest.com/">Thunderforest</a>',
-          subdomains: 'abc',
-          maxZoom: 21,
-          maxNativeZoom: 19,
-          crossOrigin: true,
-          detectRetina: true,
-          updateWhenIdle: false,
-          updateWhenZooming: true,
-          keepBuffer: 4,
-        });
-        const darkTile = L.tileLayer(`https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png?apikey=${tfKey}`, {
-          attribution: osmAttrib + ' © <a href="https://www.thunderforest.com/">Thunderforest</a>',
-          subdomains: 'abc',
-          maxZoom: 21,
-          maxNativeZoom: 19,
-          crossOrigin: true,
-          detectRetina: true,
-          updateWhenIdle: false,
-          updateWhenZooming: true,
-          keepBuffer: 4,
-        });
-        let activeTile = isDark() ? darkTile : lightTile;
-        activeTile.addTo(map);
-        const applyDarkMap = () => {
-          const next = isDark() ? darkTile : lightTile;
-          if (next !== activeTile) { map.removeLayer(activeTile); next.addTo(map); activeTile = next; }
-        };
-        darkObserver = new MutationObserver(applyDarkMap);
-        darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-
-        const drawControl = new L.Control.Draw({
-          position: 'topright',
-          draw: {
-            polygon: {
-              allowIntersection: false,
-              showArea: true,
-              shapeOptions: {
-                color: polygonColor,
-                fillColor: polygonColor,
-                fillOpacity: 0.4,
-                weight: 3
-              },
-              drawError: {
-                color: '#ef4444',
-                message: 'Drawing error!'
-              }
+      const drawControl = new L.Control.Draw({
+        position: 'topright',
+        draw: {
+          polygon: {
+            allowIntersection: false,
+            showArea: true,
+            shapeOptions: {
+              color: polygonColor,
+              fillColor: polygonColor,
+              fillOpacity: 0.4,
+              weight: 3
             },
-            polyline: false,
-            circle: false,
-            circlemarker: false,
-            marker: false,
-            rectangle: {
-              shapeOptions: {
-                color: polygonColor,
-                fillColor: polygonColor,
-                fillOpacity: 0.4,
-                weight: 3
-              }
+            drawError: {
+              color: '#ef4444',
+              message: 'Drawing error!'
             }
           },
-          edit: { remove: false, edit: false }
-        });
-
-        map.addControl(drawControl);
-
-        try {
-          resizeObserver = new ResizeObserver(() => {
-            if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
-          });
-          if (mapRef.current) resizeObserver.observe(mapRef.current);
-        } catch (e) {}
-
-        handleResize = () => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); };
-        window.addEventListener('resize', handleResize);
-
-        map.invalidateSize();
-        requestAnimationFrame(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); });
-        timeoutId1 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 50);
-        timeoutId2 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 150);
-        timeoutId3 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 350);
-        timeoutId4 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 600);
-
-        const createdEvent = L.Draw?.Event?.CREATED || 'draw:created';
-        map.on(createdEvent, function (e: any) {
-          const layer = e.layer;
-          const latlngs = layer.getLatLngs()[0];
-          const coords: LatLng[] = latlngs.map((ll: any) => ({ lat: ll.lat, lng: ll.lng }));
-
-          if (modeRef.current === 'shadow') {
-            const color = (mapInstanceRef.current as any)._currentColor || polygonColor;
-            const shadowLayer = L.polygon(latlngs, {
-              color,
-              fillColor: color,
-              fillOpacity: 1.0,
-              weight: 2,
-              opacity: 1.0
-            });
-            shadowLayer.addTo(map);
-            shadowLayersRef.current.push(shadowLayer);
-
-            const idx = shadowLayersRef.current.length - 1;
-            addDeleteControl(map, L, shadowLayer, () => {
-              shadowLayer.remove();
-              shadowLayersRef.current.splice(idx, 1);
-              const updated = shadowLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
-              onShadowPolygonsChange(updated.length ? updated : null);
-            });
-
-            const updated = shadowLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
-            onShadowPolygonsChange(updated);
-          } else {
-            const color = (mapInstanceRef.current as any)._currentColor || polygonColor;
-            const opacity = (mapInstanceRef.current as any)._currentOpacity ?? polygonOpacity;
-            const areaLayer = L.polygon(latlngs, {
-              color,
-              fillColor: color,
-              fillOpacity: opacity,
+          polyline: false,
+          circle: false,
+          circlemarker: false,
+          marker: false,
+          rectangle: {
+            shapeOptions: {
+              color: polygonColor,
+              fillColor: polygonColor,
+              fillOpacity: 0.4,
               weight: 3
-            });
-            areaLayer.addTo(map);
-            areaLayersRef.current.push(areaLayer);
-
-            const idx = areaLayersRef.current.length - 1;
-            addDeleteControl(map, L, areaLayer, () => {
-              areaLayer.remove();
-              areaLayersRef.current.splice(idx, 1);
-              const updated = areaLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
-              onPolygonsChange(updated.length ? updated : null);
-            });
-
-            const updated = areaLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
-            onPolygonsChange(updated);
+            }
           }
+        },
+        edit: { remove: false, edit: false }
+      });
+
+      map.addControl(drawControl);
+
+      try {
+        resizeObserver = new ResizeObserver(() => {
+          if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
         });
+        if (mapRef.current) resizeObserver.observe(mapRef.current);
+      } catch (e) {}
 
-        const updateBoundsBasedOnZoom = () => {
-          if (!mapInstanceRef.current) return;
-          const m = mapInstanceRef.current;
-          const zoom = m.getZoom();
-          const campusBounds = L.latLngBounds(L.latLng(14.3995, 120.8645), L.latLng(14.4055, 120.8695));
-          let padding = 0.004;
-          if (zoom >= 20) padding = 0.001;
-          else if (zoom >= 19) padding = 0.002;
-          else if (zoom >= 18) padding = 0.003;
-          const dynamicBounds = L.latLngBounds(L.latLng(14.4025 - padding, 120.8670 - padding), L.latLng(14.4025 + padding, 120.8670 + padding));
-          m.setMaxBounds(dynamicBounds.extend(campusBounds));
-        };
+      handleResize = () => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); };
+      window.addEventListener('resize', handleResize);
 
-        mapInstanceRef.current = map;
-        drawControlRef.current = drawControl;
-        (map as any)._currentColor = polygonColor;
-        (map as any)._currentOpacity = polygonOpacity;
+      map.invalidateSize();
+      window.dispatchEvent(new Event('resize'));
+      requestAnimationFrame(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); });
+      timeoutId1 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 75);
+      timeoutId2 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 200);
+      timeoutId3 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 400);
+      timeoutId4 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 700);
 
-        setTimeout(updateBoundsBasedOnZoom, 400);
-        map.on('zoomend', updateBoundsBasedOnZoom);
+      const createdEvent = L.Draw?.Event?.CREATED || 'draw:created';
+      map.on(createdEvent, function (e: any) {
+        const layer = e.layer;
+        const latlngs = layer.getLatLngs()[0];
 
-      } catch (err) {
-        console.error('PolygonDrawingMap init error:', err);
-        if (map) {
-          try { map.remove(); } catch (_) {}
+        if (modeRef.current === 'shadow') {
+          const color = (mapInstanceRef.current as any)._currentColor || polygonColor;
+          const shadowLayer = L.polygon(latlngs, {
+            color,
+            fillColor: color,
+            fillOpacity: 1.0,
+            weight: 2,
+            opacity: 1.0
+          });
+          shadowLayer.addTo(map);
+          shadowLayersRef.current.push(shadowLayer);
+
+          const idx = shadowLayersRef.current.length - 1;
+          addDeleteControl(map, L, shadowLayer, () => {
+            shadowLayer.remove();
+            shadowLayersRef.current.splice(idx, 1);
+            const updated = shadowLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
+            onShadowPolygonsChange(updated.length ? updated : null);
+          });
+
+          const updated = shadowLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
+          onShadowPolygonsChange(updated);
+        } else {
+          const color = (mapInstanceRef.current as any)._currentColor || polygonColor;
+          const opacity = (mapInstanceRef.current as any)._currentOpacity ?? polygonOpacity;
+          const areaLayer = L.polygon(latlngs, {
+            color,
+            fillColor: color,
+            fillOpacity: opacity,
+            weight: 3
+          });
+          areaLayer.addTo(map);
+          areaLayersRef.current.push(areaLayer);
+
+          const idx = areaLayersRef.current.length - 1;
+          addDeleteControl(map, L, areaLayer, () => {
+            areaLayer.remove();
+            areaLayersRef.current.splice(idx, 1);
+            const updated = areaLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
+            onPolygonsChange(updated.length ? updated : null);
+          });
+
+          const updated = areaLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
+          onPolygonsChange(updated);
         }
-        mapInstanceRef.current = null;
+      });
+
+      const updateBoundsBasedOnZoom = () => {
+        if (!mapInstanceRef.current) return;
+        const m = mapInstanceRef.current;
+        const zoom = m.getZoom();
+        const campusBounds = L.latLngBounds(L.latLng(14.3995, 120.8645), L.latLng(14.4055, 120.8695));
+        let padding = 0.004;
+        if (zoom >= 20) padding = 0.001;
+        else if (zoom >= 19) padding = 0.002;
+        else if (zoom >= 18) padding = 0.003;
+        const dynamicBounds = L.latLngBounds(L.latLng(14.4025 - padding, 120.8670 - padding), L.latLng(14.4025 + padding, 120.8670 + padding));
+        m.setMaxBounds(dynamicBounds.extend(campusBounds));
+      };
+
+      mapInstanceRef.current = map;
+      drawControlRef.current = drawControl;
+      (map as any)._currentColor = polygonColor;
+      (map as any)._currentOpacity = polygonOpacity;
+
+      setTimeout(updateBoundsBasedOnZoom, 400);
+      map.on('zoomend', updateBoundsBasedOnZoom);
+
+    } catch (err) {
+      console.error('PolygonDrawingMap init error:', err);
+      if (map) {
+        try { map.remove(); } catch (_) {}
       }
-    }, 200);
+      mapInstanceRef.current = null;
+    }
 
     return () => {
-      cancelled = true;
-      clearTimeout(initDelay);
       if (darkObserver) darkObserver.disconnect();
       if (timeoutId1) clearTimeout(timeoutId1);
       if (timeoutId2) clearTimeout(timeoutId2);
@@ -338,7 +329,7 @@ export default function PolygonDrawingMap({
     areaLayersRef.current.forEach(l => l.remove());
     areaLayersRef.current = [];
 
-    (polygons || []).forEach((poly, i) => {
+    (polygons || []).forEach((poly) => {
       if (!poly?.length) return;
       const lyr = L.polygon(poly.map(p => [p.lat, p.lng]), {
         color: polygonColor,
@@ -410,7 +401,11 @@ export default function PolygonDrawingMap({
           ? 'Drawing area shapes (semi-transparent). Use the polygon/rectangle tool on the map.'
           : 'Drawing shadow shapes (fully opaque — darker look for the emboss effect). Trace the building\'s shadow area.'}
       </p>
-      <div ref={mapRef} className={className} data-testid="polygon-drawing-map" />
+      <div
+        ref={mapRef}
+        data-testid="polygon-drawing-map"
+        style={{ height: '260px', width: '100%', minHeight: '180px' }}
+      />
     </div>
   );
 }

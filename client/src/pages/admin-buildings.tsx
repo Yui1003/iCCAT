@@ -540,7 +540,7 @@ export default function AdminBuildings() {
                     </div>
                   </div>
 
-                  <div className="h-[340px] rounded-lg overflow-hidden border p-2 bg-background">
+                  <div className="rounded-lg border p-2 bg-background">
                     <PolygonDrawingMap
                       centerLat={formData.lat}
                       centerLng={formData.lng}
@@ -550,7 +550,6 @@ export default function AdminBuildings() {
                       onShadowPolygonsChange={(s) => setShadowPolygons(s || [])}
                       polygonColor={formData.polygonColor || "#FACC15"}
                       polygonOpacity={formData.polygonOpacity || 0.3}
-                      className="h-[240px] w-full"
                       existingBuildings={buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id) as any}
                     />
                   </div>
