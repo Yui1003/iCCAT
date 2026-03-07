@@ -53,6 +53,7 @@ export default function PolygonDrawingMap({
   const existingLayersRef = useRef<any[]>([]);
   const [mode, setMode] = useState<'area' | 'shadow'>('area');
   const modeRef = useRef<'area' | 'shadow'>('area');
+  const [initTick, setInitTick] = useState(0);
 
   useEffect(() => {
     modeRef.current = mode;
@@ -63,11 +64,24 @@ export default function PolygonDrawingMap({
 
     const L = window.L;
     if (!L) {
-      console.error("Leaflet not loaded");
-      return;
+      const retryId = setTimeout(() => setInitTick(t => t + 1), 300);
+      return () => clearTimeout(retryId);
     }
 
-    const map = L.map(mapRef.current, {
+    if (!L.Control?.Draw) {
+      const retryId = setTimeout(() => setInitTick(t => t + 1), 300);
+      return () => clearTimeout(retryId);
+    }
+
+    let map: any;
+    let darkObserver: MutationObserver | undefined;
+    let resizeObserver: ResizeObserver | null = null;
+    let timeoutId1: ReturnType<typeof setTimeout>;
+    let timeoutId2: ReturnType<typeof setTimeout>;
+    let handleResize: () => void;
+
+    try {
+    map = L.map(mapRef.current, {
       center: [centerLat || 14.4025, centerLng || 120.8670],
       zoom: 18.5,
       minZoom: 17.5,
@@ -107,7 +121,7 @@ export default function PolygonDrawingMap({
       const next = isDark() ? darkTile : lightTile;
       if (next !== activeTile) { map.removeLayer(activeTile); next.addTo(map); activeTile = next; }
     };
-    const darkObserver = new MutationObserver(applyDarkMap);
+    darkObserver = new MutationObserver(applyDarkMap);
     darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
     const drawControl = new L.Control.Draw({
@@ -145,7 +159,6 @@ export default function PolygonDrawingMap({
 
     map.addControl(drawControl);
 
-    let resizeObserver: ResizeObserver | null = null;
     try {
       resizeObserver = new ResizeObserver(() => {
         if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
@@ -154,13 +167,14 @@ export default function PolygonDrawingMap({
     } catch (e) {}
 
     map.invalidateSize();
-    const handleResize = () => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); };
+    handleResize = () => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); };
     window.addEventListener('resize', handleResize);
     requestAnimationFrame(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); });
-    const timeoutId1 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 75);
-    const timeoutId2 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 250);
+    timeoutId1 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 75);
+    timeoutId2 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 250);
 
-    map.on(L.Draw.Event.CREATED, function (e: any) {
+    const createdEvent = L.Draw?.Event?.CREATED || 'draw:created';
+    map.on(createdEvent, function (e: any) {
       const layer = e.layer;
       const latlngs = layer.getLatLngs()[0];
       const coords: LatLng[] = latlngs.map((ll: any) => ({ lat: ll.lat, lng: ll.lng }));
@@ -233,18 +247,26 @@ export default function PolygonDrawingMap({
     setTimeout(updateBoundsBasedOnZoom, 350);
     map.on('zoomend', updateBoundsBasedOnZoom);
 
+    } catch (err) {
+      console.error('PolygonDrawingMap init error:', err);
+      if (map) {
+        try { map.remove(); } catch (_) {}
+      }
+      mapInstanceRef.current = null;
+    }
+
     return () => {
-      darkObserver.disconnect();
-      clearTimeout(timeoutId1);
-      clearTimeout(timeoutId2);
-      window.removeEventListener('resize', handleResize);
+      if (darkObserver) darkObserver.disconnect();
+      if (timeoutId1) clearTimeout(timeoutId1);
+      if (timeoutId2) clearTimeout(timeoutId2);
+      if (handleResize) window.removeEventListener('resize', handleResize);
       if (resizeObserver) resizeObserver.disconnect();
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try { mapInstanceRef.current.remove(); } catch (_) {}
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, [initTick]);
 
   function addDeleteControl(map: any, L: any, layer: any, onDelete: () => void) {
     const center = layer.getBounds().getCenter();

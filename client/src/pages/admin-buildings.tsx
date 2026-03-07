@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, Component } from "react";
+import type { ReactNode } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, MapPin, Building2, School, Hospital, Store, Home, Shapes } from "lucide-react";
+import { Plus, Pencil, Trash2, MapPin, Building2, School, Hospital, Store, Home, Shapes, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,36 @@ import type { Building, InsertBuilding, LatLng } from "@shared/schema";
 import { poiTypes, canHaveDepartments } from "@shared/schema";
 import { invalidateEndpointCache } from "@/lib/offline-data";
 import { motion } from "framer-motion";
+
+class DialogErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; message: string }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, message: "" };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, message: error?.message || "Unknown error" };
+  }
+  componentDidCatch(error: any, info: any) {
+    console.error("Dialog render error:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+          <AlertTriangle className="w-10 h-10 text-destructive" />
+          <div>
+            <p className="font-semibold text-foreground">Something went wrong loading this form.</p>
+            <p className="text-sm text-muted-foreground mt-1">{this.state.message}</p>
+          </div>
+          <Button variant="outline" onClick={() => this.setState({ hasError: false, message: "" })}>
+            Try Again
+          </Button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -242,6 +273,7 @@ export default function AdminBuildings() {
                   {editingBuilding ? "Edit Building" : "Add New Building"}
                 </DialogTitle>
               </DialogHeader>
+              <DialogErrorBoundary>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <Label htmlFor="name">Location Name *</Label>
@@ -602,6 +634,7 @@ export default function AdminBuildings() {
                   </Button>
                 </div>
               </form>
+              </DialogErrorBoundary>
             </DialogContent>
           </Dialog>
         </div>
