@@ -900,7 +900,7 @@ export default function CampusMap({
           color: polygonColor,
           fillColor: polygonColor,
           fillOpacity: polygonOpacity,
-          weight: isParkingHighlighted ? 3 : 2,
+          weight: 3,
           className: isParkingHighlighted ? 'parking-polygon-selectable building-polygon' : 'building-polygon'
         }).addTo(mapInstanceRef.current);
 
