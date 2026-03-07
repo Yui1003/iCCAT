@@ -37,6 +37,8 @@ const itemVariants = {
 export default function AdminBuildings() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBuilding, setEditingBuilding] = useState<Building | null>(null);
+  const [polygons, setPolygons] = useState<LatLng[][]>([]);
+  const [shadowPolygons, setShadowPolygons] = useState<LatLng[][]>([]);
   const [formData, setFormData] = useState<InsertBuilding>({
     name: "",
     type: "Building",
@@ -101,6 +103,12 @@ export default function AdminBuildings() {
   const handleOpenDialog = (building?: Building) => {
     if (building) {
       setEditingBuilding(building);
+      const loadedPolygons: LatLng[][] = (building as any).polygons?.length
+        ? (building as any).polygons
+        : building.polygon ? [building.polygon as unknown as LatLng[]] : [];
+      const loadedShadows: LatLng[][] = (building as any).shadowPolygons || [];
+      setPolygons(loadedPolygons);
+      setShadowPolygons(loadedShadows);
       setFormData({
         name: building.name,
         type: building.type || "Building",
@@ -119,6 +127,8 @@ export default function AdminBuildings() {
       });
     } else {
       setEditingBuilding(null);
+      setPolygons([]);
+      setShadowPolygons([]);
       setFormData({
         name: "",
         type: "Building",
@@ -148,10 +158,16 @@ export default function AdminBuildings() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = {
+      ...formData,
+      polygons: polygons.length ? polygons : null,
+      shadowPolygons: shadowPolygons.length ? shadowPolygons : null,
+      polygon: polygons.length ? polygons[0] : (formData.polygon || null),
+    } as any;
     if (editingBuilding) {
-      updateMutation.mutate({ id: editingBuilding.id, data: formData });
+      updateMutation.mutate({ id: editingBuilding.id, data: payload });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(payload);
     }
   };
 
@@ -492,29 +508,37 @@ export default function AdminBuildings() {
                     </div>
                   </div>
 
-                  <div className="h-[300px] rounded-lg overflow-hidden border">
+                  <div className="h-[340px] rounded-lg overflow-hidden border p-2 bg-background">
                     <PolygonDrawingMap
                       centerLat={formData.lat}
                       centerLng={formData.lng}
-                      polygon={formData.polygon as LatLng[] | null}
-                      onPolygonChange={(polygon) => setFormData({ ...formData, polygon: polygon as any })}
+                      polygons={polygons}
+                      onPolygonsChange={(p) => setPolygons(p || [])}
+                      shadowPolygons={shadowPolygons}
+                      onShadowPolygonsChange={(s) => setShadowPolygons(s || [])}
                       polygonColor={formData.polygonColor || "#FACC15"}
+                      polygonOpacity={formData.polygonOpacity || 0.3}
+                      className="h-[240px] w-full"
                       existingBuildings={buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id) as any}
                     />
                   </div>
-                  {formData.polygon && Array.isArray(formData.polygon) && formData.polygon.length > 0 && (
+                  {(polygons.length > 0 || shadowPolygons.length > 0) && (
                     <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                       <Shapes className="w-4 h-4" />
-                      <span>Polygon with {formData.polygon.length} points</span>
+                      <span>
+                        {polygons.length > 0 && `${polygons.length} area shape${polygons.length > 1 ? 's' : ''}`}
+                        {polygons.length > 0 && shadowPolygons.length > 0 && ', '}
+                        {shadowPolygons.length > 0 && `${shadowPolygons.length} shadow shape${shadowPolygons.length > 1 ? 's' : ''}`}
+                      </span>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => setFormData({ ...formData, polygon: null })}
+                        onClick={() => { setPolygons([]); setShadowPolygons([]); setFormData({ ...formData, polygon: null }); }}
                         data-testid="button-clear-polygon"
                         className="ml-auto text-destructive"
                       >
-                        Clear Polygon
+                        Clear All
                       </Button>
                     </div>
                   )}

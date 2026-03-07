@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface LatLng {
   lat: number;
@@ -17,9 +17,12 @@ interface Building {
 interface PolygonDrawingMapProps {
   centerLat: number;
   centerLng: number;
-  polygon?: LatLng[] | null;
-  onPolygonChange: (polygon: LatLng[] | null) => void;
+  polygons?: LatLng[][] | null;
+  onPolygonsChange: (polygons: LatLng[][] | null) => void;
+  shadowPolygons?: LatLng[][] | null;
+  onShadowPolygonsChange: (shadows: LatLng[][] | null) => void;
   polygonColor?: string;
+  polygonOpacity?: number;
   className?: string;
   existingBuildings?: Building[];
 }
@@ -33,16 +36,27 @@ declare global {
 export default function PolygonDrawingMap({
   centerLat,
   centerLng,
-  polygon,
-  onPolygonChange,
+  polygons,
+  onPolygonsChange,
+  shadowPolygons,
+  onShadowPolygonsChange,
   polygonColor = "#FACC15",
+  polygonOpacity = 0.4,
   className = "h-full w-full",
   existingBuildings = []
 }: PolygonDrawingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
-  const drawnItemsRef = useRef<any>(null);
   const drawControlRef = useRef<any>(null);
+  const areaLayersRef = useRef<any[]>([]);
+  const shadowLayersRef = useRef<any[]>([]);
+  const existingLayersRef = useRef<any[]>([]);
+  const [mode, setMode] = useState<'area' | 'shadow'>('area');
+  const modeRef = useRef<'area' | 'shadow'>('area');
+
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -96,9 +110,6 @@ export default function PolygonDrawingMap({
     const darkObserver = new MutationObserver(applyDarkMap);
     darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
-    const drawnItems = new L.FeatureGroup();
-    drawnItems.addTo(map);
-
     const drawControl = new L.Control.Draw({
       position: 'topright',
       draw: {
@@ -129,122 +140,96 @@ export default function PolygonDrawingMap({
           }
         }
       },
-      edit: {
-        featureGroup: drawnItems,
-        remove: true
-      }
+      edit: { remove: false, edit: false }
     });
 
     map.addControl(drawControl);
 
-    // Optimize tile loading with same pattern as campus-map
-    // Use ResizeObserver to handle dialog/container resize events
     let resizeObserver: ResizeObserver | null = null;
     try {
       resizeObserver = new ResizeObserver(() => {
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.invalidateSize();
-        }
+        if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
       });
-      resizeObserver.observe(mapRef.current);
-    } catch (e) {
-      console.error("ResizeObserver not supported");
-    }
+      resizeObserver.observe(mapRef.current!);
+    } catch (e) {}
 
-    // Invalidate size on initial load
     map.invalidateSize();
-
-    // Also handle window resize
-    const handleResize = () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-      }
-    };
-    
+    const handleResize = () => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); };
     window.addEventListener('resize', handleResize);
-
-    // Use requestAnimationFrame for immediate next paint
-    requestAnimationFrame(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-      }
-    });
-
-    // Trigger invalidateSize after minimal delays for fast tile rendering
-    const timeoutId1 = setTimeout(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-      }
-    }, 75);
-
-    const timeoutId2 = setTimeout(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-      }
-    }, 250);
+    requestAnimationFrame(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); });
+    const timeoutId1 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 75);
+    const timeoutId2 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 250);
 
     map.on(L.Draw.Event.CREATED, function (e: any) {
       const layer = e.layer;
-      drawnItems.clearLayers();
-      drawnItems.addLayer(layer);
-      
       const latlngs = layer.getLatLngs()[0];
-      const polygonCoords = latlngs.map((ll: any) => ({
-        lat: ll.lat,
-        lng: ll.lng
-      }));
-      
-      onPolygonChange(polygonCoords);
-    });
+      const coords: LatLng[] = latlngs.map((ll: any) => ({ lat: ll.lat, lng: ll.lng }));
 
-    map.on(L.Draw.Event.EDITED, function (e: any) {
-      const layers = e.layers;
-      layers.eachLayer((layer: any) => {
-        const latlngs = layer.getLatLngs()[0];
-        const polygonCoords = latlngs.map((ll: any) => ({
-          lat: ll.lat,
-          lng: ll.lng
-        }));
-        
-        onPolygonChange(polygonCoords);
-      });
-    });
+      if (modeRef.current === 'shadow') {
+        const color = (mapInstanceRef.current as any)._currentColor || polygonColor;
+        const shadowLayer = L.polygon(latlngs, {
+          color,
+          fillColor: color,
+          fillOpacity: 1.0,
+          weight: 2,
+          opacity: 1.0
+        });
+        shadowLayer.addTo(map);
+        shadowLayersRef.current.push(shadowLayer);
 
-    map.on(L.Draw.Event.DELETED, function () {
-      onPolygonChange(null);
+        const idx = shadowLayersRef.current.length - 1;
+        addDeleteControl(map, L, shadowLayer, () => {
+          shadowLayer.remove();
+          shadowLayersRef.current.splice(idx, 1);
+          const updated = shadowLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
+          onShadowPolygonsChange(updated.length ? updated : null);
+        });
+
+        const updated = shadowLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
+        onShadowPolygonsChange(updated);
+      } else {
+        const color = (mapInstanceRef.current as any)._currentColor || polygonColor;
+        const opacity = (mapInstanceRef.current as any)._currentOpacity ?? polygonOpacity;
+        const areaLayer = L.polygon(latlngs, {
+          color,
+          fillColor: color,
+          fillOpacity: opacity,
+          weight: 3
+        });
+        areaLayer.addTo(map);
+        areaLayersRef.current.push(areaLayer);
+
+        const idx = areaLayersRef.current.length - 1;
+        addDeleteControl(map, L, areaLayer, () => {
+          areaLayer.remove();
+          areaLayersRef.current.splice(idx, 1);
+          const updated = areaLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
+          onPolygonsChange(updated.length ? updated : null);
+        });
+
+        const updated = areaLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
+        onPolygonsChange(updated);
+      }
     });
 
     const updateBoundsBasedOnZoom = () => {
       if (!mapInstanceRef.current) return;
-      const map = mapInstanceRef.current;
-      const zoom = map.getZoom();
-      const L = window.L;
-      
-      const centerLatVal = 14.4025;
-      const centerLngVal = 120.8670;
-      
-      const campusBounds = L.latLngBounds(
-        L.latLng(14.3995, 120.8645),
-        L.latLng(14.4055, 120.8695)
-      );
-
+      const m = mapInstanceRef.current;
+      const zoom = m.getZoom();
+      const campusBounds = L.latLngBounds(L.latLng(14.3995, 120.8645), L.latLng(14.4055, 120.8695));
       let padding = 0.004;
       if (zoom >= 20) padding = 0.001;
       else if (zoom >= 19) padding = 0.002;
       else if (zoom >= 18) padding = 0.003;
-      
-      const dynamicBounds = L.latLngBounds(
-        L.latLng(centerLatVal - padding, centerLngVal - padding),
-        L.latLng(centerLatVal + padding, centerLngVal + padding)
-      );
-      map.setMaxBounds(dynamicBounds.extend(campusBounds));
+      const dynamicBounds = L.latLngBounds(L.latLng(14.4025 - padding, 120.8670 - padding), L.latLng(14.4025 + padding, 120.8670 + padding));
+      m.setMaxBounds(dynamicBounds.extend(campusBounds));
     };
 
     mapInstanceRef.current = map;
-    drawnItemsRef.current = drawnItems;
     drawControlRef.current = drawControl;
+    (map as any)._currentColor = polygonColor;
+    (map as any)._currentOpacity = polygonOpacity;
 
-    // Set initial bounds and update on zoom
     setTimeout(updateBoundsBasedOnZoom, 350);
     map.on('zoomend', updateBoundsBasedOnZoom);
 
@@ -253,62 +238,143 @@ export default function PolygonDrawingMap({
       clearTimeout(timeoutId1);
       clearTimeout(timeoutId2);
       window.removeEventListener('resize', handleResize);
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
+      if (resizeObserver) resizeObserver.disconnect();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
     };
-  }, [polygonColor]);
+  }, []);
+
+  function addDeleteControl(map: any, L: any, layer: any, onDelete: () => void) {
+    const center = layer.getBounds().getCenter();
+    const icon = L.divIcon({
+      html: `<button style="background:#ef4444;color:white;border:none;border-radius:50%;width:22px;height:22px;font-size:14px;line-height:22px;text-align:center;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.4);">×</button>`,
+      className: '',
+      iconAnchor: [11, 11]
+    });
+    const marker = L.marker(center, { icon, interactive: true, zIndexOffset: 1000 });
+    marker.addTo(map);
+    marker.on('click', () => {
+      onDelete();
+      marker.remove();
+    });
+    layer.on('remove', () => marker.remove());
+  }
 
   useEffect(() => {
-    if (!mapInstanceRef.current || !window.L) return;
-    
-    const lat = centerLat || 14.4025;
-    const lng = centerLng || 120.8670;
-    mapInstanceRef.current.setView([lat, lng], 18.5);
+    if (!mapInstanceRef.current) return;
+    (mapInstanceRef.current as any)._currentColor = polygonColor;
+    (mapInstanceRef.current as any)._currentOpacity = polygonOpacity;
+  }, [polygonColor, polygonOpacity]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    mapInstanceRef.current.setView([centerLat || 14.4025, centerLng || 120.8670], 18.5);
   }, [centerLat, centerLng]);
 
   useEffect(() => {
-    if (!mapInstanceRef.current || !drawnItemsRef.current || !window.L) return;
-
+    if (!mapInstanceRef.current || !window.L) return;
     const L = window.L;
-    drawnItemsRef.current.clearLayers();
+    const map = mapInstanceRef.current;
 
-    // Render other existing building polygons as non-clickable (for reference)
-    if (existingBuildings && existingBuildings.length > 0) {
+    existingLayersRef.current.forEach(l => l.remove());
+    existingLayersRef.current = [];
+
+    if (existingBuildings?.length > 0) {
       existingBuildings.forEach((building) => {
         if (building.polygon && Array.isArray(building.polygon) && building.polygon.length > 0) {
-          const buildingColor = building.polygonColor || "#9CA3AF";
-          const polygonLatLngs = building.polygon.map(p => [p.lat, p.lng]);
-          
-          L.polygon(polygonLatLngs, {
-            color: buildingColor,
-            fillColor: buildingColor,
-            fillOpacity: 0.15,
-            weight: 2,
-            opacity: 0.5,
-            dashArray: '5, 5',
-            interactive: false
-          }).addTo(mapInstanceRef.current);
+          const color = building.polygonColor || "#9CA3AF";
+          const lyr = L.polygon(building.polygon.map((p: LatLng) => [p.lat, p.lng]), {
+            color, fillColor: color, fillOpacity: 0.15, weight: 2, opacity: 0.5, dashArray: '5, 5', interactive: false
+          }).addTo(map);
+          existingLayersRef.current.push(lyr);
         }
       });
     }
+  }, [existingBuildings]);
 
-    if (polygon && polygon.length > 0) {
-      const latlngs = polygon.map((p: LatLng) => [p.lat, p.lng]);
-      const polygonLayer = L.polygon(latlngs, {
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.L) return;
+    const L = window.L;
+    const map = mapInstanceRef.current;
+
+    areaLayersRef.current.forEach(l => l.remove());
+    areaLayersRef.current = [];
+
+    (polygons || []).forEach((poly, i) => {
+      if (!poly?.length) return;
+      const lyr = L.polygon(poly.map(p => [p.lat, p.lng]), {
         color: polygonColor,
         fillColor: polygonColor,
-        fillOpacity: 0.4,
+        fillOpacity: polygonOpacity,
         weight: 3
-      });
-      
-      drawnItemsRef.current.addLayer(polygonLayer);
-    }
-  }, [polygon, polygonColor, existingBuildings]);
+      }).addTo(map);
+      areaLayersRef.current.push(lyr);
 
-  return <div ref={mapRef} className={className} data-testid="polygon-drawing-map" />;
+      addDeleteControl(map, L, lyr, () => {
+        lyr.remove();
+        areaLayersRef.current.splice(areaLayersRef.current.indexOf(lyr), 1);
+        const updated = areaLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
+        onPolygonsChange(updated.length ? updated : null);
+      });
+    });
+  }, [polygons, polygonColor, polygonOpacity]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.L) return;
+    const L = window.L;
+    const map = mapInstanceRef.current;
+
+    shadowLayersRef.current.forEach(l => l.remove());
+    shadowLayersRef.current = [];
+
+    (shadowPolygons || []).forEach((poly) => {
+      if (!poly?.length) return;
+      const lyr = L.polygon(poly.map(p => [p.lat, p.lng]), {
+        color: polygonColor,
+        fillColor: polygonColor,
+        fillOpacity: 1.0,
+        weight: 2,
+        opacity: 1.0
+      }).addTo(map);
+      shadowLayersRef.current.push(lyr);
+
+      addDeleteControl(map, L, lyr, () => {
+        lyr.remove();
+        shadowLayersRef.current.splice(shadowLayersRef.current.indexOf(lyr), 1);
+        const updated = shadowLayersRef.current.map(l => l.getLatLngs()[0].map((ll: any) => ({ lat: ll.lat, lng: ll.lng })));
+        onShadowPolygonsChange(updated.length ? updated : null);
+      });
+    });
+  }, [shadowPolygons, polygonColor]);
+
+  return (
+    <div className="flex flex-col gap-0">
+      <div className="flex gap-2 mb-2">
+        <button
+          type="button"
+          onClick={() => setMode('area')}
+          data-testid="button-mode-area"
+          className={`flex-1 px-3 py-1.5 text-sm rounded font-medium border transition-colors ${mode === 'area' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}
+        >
+          + Add Area Shape
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('shadow')}
+          data-testid="button-mode-shadow"
+          className={`flex-1 px-3 py-1.5 text-sm rounded font-medium border transition-colors ${mode === 'shadow' ? 'bg-zinc-800 text-white border-zinc-700 dark:bg-zinc-600' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}
+        >
+          + Add Shadow Shape
+        </button>
+      </div>
+      <p className="text-xs text-muted-foreground mb-2">
+        {mode === 'area'
+          ? 'Drawing area shapes (semi-transparent). Use the polygon/rectangle tool on the map.'
+          : 'Drawing shadow shapes (fully opaque — darker look for the emboss effect). Trace the building\'s shadow area.'}
+      </p>
+      <div ref={mapRef} className={className} data-testid="polygon-drawing-map" />
+    </div>
+  );
 }

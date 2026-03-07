@@ -888,24 +888,43 @@ export default function CampusMap({
         }
       }
       
-      if (building.polygon && Array.isArray(building.polygon) && building.polygon.length > 2) {
-        const latlngs = building.polygon.map((p: any) => [p.lat, p.lng]);
-        
-        // During parking selection, use yellow highlight for parking polygons
-        const isParkingHighlighted = parkingSelectionMode && parkingTypeFilter && building.type === parkingTypeFilter;
-        const polygonColor = isParkingHighlighted ? '#FACC15' : ((building as any).polygonColor || '#FACC15');
-        const polygonOpacity = isParkingHighlighted ? 0.5 : ((building as any).polygonOpacity || 0.3);
-        
-        const polygon = L.polygon(latlngs, {
+      const isParkingHighlighted = parkingSelectionMode && parkingTypeFilter && building.type === parkingTypeFilter;
+      const polygonColor = isParkingHighlighted ? '#FACC15' : ((building as any).polygonColor || '#FACC15');
+      const polygonOpacity = isParkingHighlighted ? 0.5 : ((building as any).polygonOpacity || 0.3);
+
+      // Collect all area shapes: prefer new polygons[], fall back to legacy polygon
+      const areaShapes: any[][] = (building as any).polygons?.length
+        ? (building as any).polygons
+        : (building.polygon && Array.isArray(building.polygon) && (building.polygon as any[]).length > 2 ? [building.polygon] : []);
+
+      areaShapes.forEach((shape: any[]) => {
+        if (!shape || shape.length < 3) return;
+        const latlngs = shape.map((p: any) => [p.lat, p.lng]);
+        const poly = L.polygon(latlngs, {
           color: polygonColor,
           fillColor: polygonColor,
           fillOpacity: polygonOpacity,
           weight: 3,
           className: isParkingHighlighted ? 'parking-polygon-selectable building-polygon' : 'building-polygon'
         }).addTo(mapInstanceRef.current);
+        polygonsRef.current.push(poly);
+      });
 
-        polygonsRef.current.push(polygon);
-      }
+      // Shadow shapes: fully opaque, same color
+      const shadowShapes: any[][] = (building as any).shadowPolygons || [];
+      shadowShapes.forEach((shape: any[]) => {
+        if (!shape || shape.length < 3) return;
+        const latlngs = shape.map((p: any) => [p.lat, p.lng]);
+        const poly = L.polygon(latlngs, {
+          color: polygonColor,
+          fillColor: polygonColor,
+          fillOpacity: 1.0,
+          weight: 2,
+          opacity: 1.0,
+          className: 'building-polygon'
+        }).addTo(mapInstanceRef.current);
+        polygonsRef.current.push(poly);
+      });
     });
   }, [buildings, hidePolygonsInNavigation, hidePolygons, parkingSelectionMode, parkingTypeFilter]);
 
