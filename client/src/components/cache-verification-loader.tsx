@@ -86,9 +86,9 @@ export function CacheVerificationLoader({ onComplete }: { onComplete: () => void
           }
 
           if (hasStaticCache) {
-            const staticCache = await caches.open('iccat-v11');
+            const staticCache = await caches.open('iccat-v14');
             const allCached = await staticCache.keys();
-            tilesCached = allCached.filter(req => req.url.includes('tile.openstreetmap.org')).length;
+            tilesCached = allCached.filter(req => req.url.includes('tile.thunderforest.com')).length;
           }
 
           // Update status

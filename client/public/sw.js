@@ -1,12 +1,12 @@
 /**
- * ICCAT Service Worker v10
+ * ICCAT Service Worker v11
  * Complete offline support with auto-caching of all assets
  * Compatible with PWABuilder
  */
 
-const CACHE_NAME = 'iccat-v13';
-const DATA_CACHE_NAME = 'iccat-data-v13';
-const IMAGE_CACHE_NAME = 'iccat-images-v13';
+const CACHE_NAME = 'iccat-v14';
+const DATA_CACHE_NAME = 'iccat-data-v14';
+const IMAGE_CACHE_NAME = 'iccat-images-v14';
 
 // Static assets to cache immediately
 const urlsToCache = [
@@ -47,66 +47,15 @@ function latLngToTile(lat, lng, zoom) {
 }
 
 function generateEssentialTileUrls() {
-  const tiles = [];
-  
-  const bounds = {
-    north: 14.408,
-    south: 14.397,
-    east: 120.872,
-    west: 120.860
-  };
-  
-  const essentialZooms = [17, 18, 19];
-  
-  console.log('[SW] Generating ESSENTIAL tile URLs (zoom 17-18 only)...');
-  
-  essentialZooms.forEach(zoom => {
-    const topLeft = latLngToTile(bounds.north, bounds.west, zoom);
-    const bottomRight = latLngToTile(bounds.south, bounds.east, zoom);
-    
-    console.log(`[SW] Zoom ${zoom}: tiles from (${topLeft.x},${topLeft.y}) to (${bottomRight.x},${bottomRight.y})`);
-    
-    for (let x = topLeft.x; x <= bottomRight.x; x++) {
-      for (let y = topLeft.y; y <= bottomRight.y; y++) {
-        const subdomains = ['a', 'b', 'c'];
-        const index = Math.abs(x + y) % subdomains.length;
-        const subdomain = subdomains[index];
-        tiles.push(`https://${subdomain}.tile.openstreetmap.org/${zoom}/${x}/${y}.png`);
-      }
-    }
-  });
-  
-  console.log(`[SW] Generated ${tiles.length} ESSENTIAL map tile URLs for pre-caching`);
-  return tiles;
+  // Thunderforest tiles require an API key that is only available at runtime in the browser.
+  // Tiles are cached on first use by the tile.thunderforest.com fetch handler below.
+  // Pre-caching OSM tiles here is intentionally skipped to avoid stale tile issues.
+  console.log('[SW] Tile pre-caching skipped (Thunderforest requires runtime API key)');
+  return [];
 }
 
 function generateBackgroundTileUrls() {
-  const tiles = [];
-  
-  const bounds = {
-    north: 14.408,
-    south: 14.397,
-    east: 120.872,
-    west: 120.860
-  };
-  
-  const backgroundZooms = [16, 20];
-  
-  backgroundZooms.forEach(zoom => {
-    const topLeft = latLngToTile(bounds.north, bounds.west, zoom);
-    const bottomRight = latLngToTile(bounds.south, bounds.east, zoom);
-    
-    for (let x = topLeft.x; x <= bottomRight.x; x++) {
-      for (let y = topLeft.y; y <= bottomRight.y; y++) {
-        const subdomains = ['a', 'b', 'c'];
-        const index = Math.abs(x + y) % subdomains.length;
-        const subdomain = subdomains[index];
-        tiles.push(`https://${subdomain}.tile.openstreetmap.org/${zoom}/${x}/${y}.png`);
-      }
-    }
-  });
-  
-  return tiles;
+  return [];
 }
 
 async function cacheBackgroundTiles() {
@@ -346,48 +295,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle OpenStreetMap tiles - cache first for performance
-  if (url.origin.includes('tile.openstreetmap.org')) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then((cache) => {
-        return cache.match(request).then((response) => {
-          if (response) {
-            return response;
-          }
-          return fetch(request)
-            .then((response) => {
-              if (response.status === 200) {
-                try {
-                  cache.put(request, response.clone());
-                } catch (cacheError) {
-                  console.warn(`[SW] Failed to cache map tile: ${url.pathname}`, cacheError.message);
-                }
-              }
-              return response;
-            })
-            .catch((error) => {
-              // Return placeholder tile when offline
-              return new Response(
-                new Blob([new Uint8Array([
-                  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
-                  0, 0, 1, 0, 0, 0, 1, 0, 8, 6, 0, 0, 0, 92, 114, 168, 229,
-                  0, 0, 0, 1, 115, 82, 71, 66, 0, 174, 206, 28, 233, 0, 0, 0,
-                  4, 103, 65, 77, 65, 0, 0, 177, 143, 11, 252, 97, 5, 0, 0, 0,
-                  9, 112, 72, 89, 115, 0, 0, 14, 195, 0, 0, 14, 195, 1, 199, 111,
-                  168, 100, 0, 0, 0, 23, 73, 68, 65, 84, 120, 94, 237, 193, 1,
-                  13, 0, 0, 0, 194, 160, 247, 79, 109, 14, 55, 160, 0, 0, 0, 0,
-                  0, 0, 230, 7, 32, 0, 0, 1, 225, 33, 177, 39, 0, 0, 0, 0, 73,
-                  69, 78, 68, 174, 66, 96, 130
-                ])], { type: 'image/png' })
-              );
-            });
-        });
-      })
-    );
-    return;
-  }
-
-  // Handle Thunderforest dark tiles - cache first for performance and offline use
+  // Handle Thunderforest tiles - cache first for performance and offline use
   if (url.hostname.includes('tile.thunderforest.com')) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {

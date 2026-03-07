@@ -387,5 +387,5 @@ svg {
 
 
 .building-polygon {
-  filter: drop-shadow(3px 4px 4px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(5px 5px 0px rgba(0, 0, 0, 0.35));
 }
