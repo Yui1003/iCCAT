@@ -178,11 +178,22 @@ export function buildIndoorGraph(
     if ((node.type === 'stairway' || node.type === 'elevator') && (node.connectedFloorIds?.length ?? 0) > 0) {
       const currentKey = nodeKey(node.id, node.floorId);
       const connectedFloors = node.connectedFloorIds || [];
+      const pairedNodeId = (node as any).pairedNodeId;
 
       connectedFloors.forEach(connectedFloorId => {
-        const connectedNode = indoorNodes.find(n => 
-          n.id === node.id && n.floorId === connectedFloorId
-        );
+        // Prefer the explicitly paired node, otherwise skip (no auto-connection to random stairs)
+        let connectedNode: typeof indoorNodes[0] | undefined;
+        if (pairedNodeId) {
+          connectedNode = indoorNodes.find(n =>
+            n.id === pairedNodeId && n.floorId === connectedFloorId
+          );
+        }
+        // Fallback: if no pairedNodeId set, connect to same-id node (legacy behaviour when only one stair exists)
+        if (!connectedNode && !pairedNodeId) {
+          connectedNode = indoorNodes.find(n =>
+            n.id === node.id && n.floorId === connectedFloorId
+          );
+        }
 
         if (connectedNode) {
           const connectedKey = nodeKey(connectedNode.id, connectedFloorId);

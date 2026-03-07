@@ -3232,8 +3232,15 @@ export default function Navigation() {
     }
     
     try {
-      // Find the entrance stairway on the next floor: it must connect back to the current floor
-      const entranceNode = indoorNodes.find(n => {
+      // Find the entrance stairway on the next floor.
+      // Priority 1: use pairedNodeId from the stair we just arrived at (currentSegmentEndNode)
+      const prevStair = currentSegmentEndNode;
+      const prevStairPairedId = prevStair ? (prevStair as any).pairedNodeId : null;
+
+      const entranceNode = (prevStairPairedId
+        ? indoorNodes.find(n => n.id === prevStairPairedId && n.floorId === nextFloor.id)
+        : null
+      ) || indoorNodes.find(n => {
         if ((n.type !== 'stairway' && n.type !== 'elevator') || n.floorId !== nextFloor.id) {
           return false;
         }

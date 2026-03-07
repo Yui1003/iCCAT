@@ -434,6 +434,7 @@ export const indoorNodes = pgTable("indoor_nodes", {
   roomId: varchar("room_id"), // Reference to room (required for room nodes, null for hallway/stairway/elevator)
   connectedBuildingNodeId: varchar("connected_building_node_id"), // For entrance nodes - connects to outdoor building node
   connectedFloorIds: text("connected_floor_ids").array().default([]), // For stairway/elevator - list of floor IDs this connects to
+  pairedNodeId: varchar("paired_node_id"), // For stairway/elevator - the specific node ID on the connected floor this leads to
   label: text("label"), // Display name for the node
   description: text("description"), // Description for room nodes
   category: text("category"), // Category for room nodes (e.g. Classroom, Laboratory)
@@ -446,6 +447,7 @@ export const insertIndoorNodeSchema = createInsertSchema(indoorNodes).omit({ id:
   roomId: z.string().nullable().optional(),
   connectedBuildingNodeId: z.string().nullable().optional(),
   connectedFloorIds: z.array(z.string()).default([]),
+  pairedNodeId: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
   imageUrl: z.string().nullable().optional(),

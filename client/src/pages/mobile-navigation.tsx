@@ -354,8 +354,10 @@ export default function MobileNavigation() {
 
         const isDark = () => document.documentElement.classList.contains('dark');
         const osmAttrib = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-        const lightTile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: osmAttrib,
+        const tfKey = import.meta.env.VITE_THUNDERFOREST_API_KEY || '';
+        const lightTile = L.tileLayer(`https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${tfKey}`, {
+          attribution: osmAttrib + ' © <a href="https://www.thunderforest.com/">Thunderforest</a>',
+          subdomains: 'abc',
           maxZoom: 19,
           minZoom: 17.5,
           crossOrigin: 'anonymous',
@@ -365,7 +367,6 @@ export default function MobileNavigation() {
           updateWhenIdle: true,
           bounds: [[14.398, 120.861], [14.408, 120.871]],
         });
-        const tfKey = import.meta.env.VITE_THUNDERFOREST_API_KEY || '';
         const darkTile = L.tileLayer(`https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png?apikey=${tfKey}`, {
           attribution: osmAttrib + ' © <a href="https://www.thunderforest.com/">Thunderforest</a>',
           subdomains: 'abc',

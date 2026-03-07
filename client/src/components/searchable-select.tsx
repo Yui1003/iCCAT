@@ -10,6 +10,7 @@ interface SearchableSelectProps {
   placeholder?: string;
   testId?: string;
   icon?: React.ReactNode;
+  disabled?: boolean;
 }
 
 export default function SearchableSelect({
@@ -18,7 +19,8 @@ export default function SearchableSelect({
   onSelect,
   placeholder = "Select an option",
   testId = "searchable-select",
-  icon
+  icon,
+  disabled = false
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,8 +56,9 @@ export default function SearchableSelect({
       <Button
         type="button"
         variant="outline"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
         data-testid={testId}
+        disabled={disabled}
         className="w-full justify-start text-left font-normal hover:bg-accent"
       >
         {icon && <span className="mr-2 flex-shrink-0">{icon}</span>}
@@ -65,7 +68,7 @@ export default function SearchableSelect({
         <ChevronDown className="ml-2 h-4 w-4 opacity-50 flex-shrink-0" />
       </Button>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-input rounded-md shadow-lg z-[1010]">
           <div className="p-2 border-b border-input sticky top-0 bg-background">
             <Input

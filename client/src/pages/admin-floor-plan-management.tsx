@@ -60,6 +60,7 @@ export default function AdminFloorPlanManagement() {
   const [x, setX] = useState("");
   const [y, setY] = useState("");
   const [connectedFloorIds, setConnectedFloorIds] = useState<string[]>([]);
+  const [pairedNodeId, setPairedNodeId] = useState<string>("");
 
   const { toast } = useToast();
 
@@ -276,6 +277,7 @@ export default function AdminFloorPlanManagement() {
       setX(node.x.toString());
       setY(node.y.toString());
       setConnectedFloorIds(node.connectedFloorIds || []);
+      setPairedNodeId((node as any).pairedNodeId || "");
     } else {
       setEditingNode(null);
       setNodeSelectedBuildingId("");
@@ -291,6 +293,7 @@ export default function AdminFloorPlanManagement() {
       setX("");
       setY("");
       setConnectedFloorIds([]);
+      setPairedNodeId("");
     }
     setNodeDialogOpen(true);
   };
@@ -335,7 +338,8 @@ export default function AdminFloorPlanManagement() {
       labelY: nodeLabelY,
       x: parseFloat(x),
       y: parseFloat(y),
-      connectedFloorIds: connectedFloorIds
+      connectedFloorIds: connectedFloorIds,
+      pairedNodeId: pairedNodeId || null
     };
 
     if (editingNode) {
@@ -424,6 +428,7 @@ export default function AdminFloorPlanManagement() {
                           }}
                           placeholder="Select building"
                           testId="select-building"
+                          disabled={!!editingPath}
                         />
                       </div>
                       <div>
@@ -434,6 +439,7 @@ export default function AdminFloorPlanManagement() {
                           onSelect={setSelectedFloorId}
                           placeholder="Select floor"
                           testId="select-floor"
+                          disabled={!!editingPath}
                         />
                       </div>
                     </div>
@@ -492,14 +498,26 @@ export default function AdminFloorPlanManagement() {
                       </div>
                     )}
 
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={waypoints.length < 2 || !selectedFloorId}
-                      data-testid="button-submit-path"
-                    >
-                      {editingPath ? 'Update Path' : 'Create Path'}
-                    </Button>
+                    {editingPath && waypoints.length < 2 ? (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        className="w-full"
+                        data-testid="button-delete-path-confirm"
+                        onClick={() => { deleteRoomPath.mutate(editingPath.id); }}
+                      >
+                        Delete Path
+                      </Button>
+                    ) : (
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={waypoints.length < 2 || !selectedFloorId}
+                        data-testid="button-submit-path"
+                      >
+                        {editingPath ? 'Update Path' : 'Create Path'}
+                      </Button>
+                    )}
                   </form>
                 </DialogContent>
               </Dialog>
@@ -839,6 +857,34 @@ export default function AdminFloorPlanManagement() {
                             </div>
                           ))}
                         </div>
+                      </div>
+                    )}
+
+                    {(nodeType === 'stairway' || nodeType === 'elevator') && connectedFloorIds.length > 0 && (
+                      <div>
+                        <Label>Paired Stair/Elevator Node on Connected Floor</Label>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Select the specific node on the connected floor that this stair/elevator leads to. This ensures navigation uses the correct staircase.
+                        </p>
+                        <SearchableSelect
+                          options={[
+                            { id: "", name: "— None (use any stair on next floor) —" },
+                            ...indoorNodes
+                              .filter(n =>
+                                connectedFloorIds.includes(n.floorId) &&
+                                (n.type === 'stairway' || n.type === 'elevator') &&
+                                n.id !== editingNode?.id
+                              )
+                              .map(n => ({
+                                id: n.id,
+                                name: `${n.label || n.type} (${floors.find(f => f.id === n.floorId)?.floorName || n.floorId})`
+                              }))
+                          ]}
+                          selectedId={pairedNodeId || ""}
+                          onSelect={(val) => setPairedNodeId(val)}
+                          placeholder="Select paired node"
+                          testId="select-paired-node"
+                        />
                       </div>
                     )}
 
