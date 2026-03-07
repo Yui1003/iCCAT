@@ -668,6 +668,7 @@ export default function AdminFloorPlanManagement() {
                           }}
                           placeholder="Select building"
                           testId="select-node-building"
+                          disabled={!!editingNode}
                         />
                       </div>
                       <div>
@@ -678,6 +679,7 @@ export default function AdminFloorPlanManagement() {
                           onSelect={setNodeSelectedFloorId}
                           placeholder="Select floor"
                           testId="select-node-floor"
+                          disabled={!!editingNode}
                         />
                       </div>
                     </div>

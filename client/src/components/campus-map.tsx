@@ -901,7 +901,7 @@ export default function CampusMap({
           fillColor: polygonColor,
           fillOpacity: polygonOpacity,
           weight: isParkingHighlighted ? 3 : 2,
-          className: isParkingHighlighted ? 'parking-polygon-selectable' : ''
+          className: isParkingHighlighted ? 'parking-polygon-selectable building-polygon' : 'building-polygon'
         }).addTo(mapInstanceRef.current);
 
         polygonsRef.current.push(polygon);
@@ -950,7 +950,7 @@ export default function CampusMap({
         fillColor: color,
         fillOpacity: 0.35,
         weight: 3,
-        className: `navigation-polygon navigation-${type}`
+        className: `navigation-polygon navigation-${type} building-polygon`
       }).addTo(mapInstanceRef.current);
 
       // Add a pulsing animation effect via CSS class

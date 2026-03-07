@@ -384,3 +384,8 @@ svg {
 .leaflet-marker-icon {
   z-index: 1001 !important;
 }
+
+
+.building-polygon {
+  filter: drop-shadow(3px 4px 4px rgba(0, 0, 0, 0.55));
+}
