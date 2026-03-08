@@ -31,6 +31,7 @@ export default function MobileNavigation() {
   const [completedPhases, setCompletedPhases] = useState<number[]>([]);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showNavPanel, setShowNavPanel] = useState(true);
+  const [isPreviewMode, setIsPreviewMode] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const touchHandlerRef = useRef<((e: TouchEvent) => void) | null>(null);
@@ -108,6 +109,12 @@ export default function MobileNavigation() {
   const isNavigationComplete = hasIndoorDestination 
     ? navigationPhase === 'indoor' && currentIndoorFloor?.id === destinationRoom?.floorId && floorsInRoute.length > 0 && floorsInRoute[floorsInRoute.length - 1]?.id === currentIndoorFloor?.id
     : allOutdoorPhasesCompleted;
+
+  const handleStartNavigatingMobile = () => {
+    setIsPreviewMode(false);
+    setCurrentPhaseIndex(0);
+    setCompletedPhases([]);
+  };
 
   const handleAdvancePhase = () => {
     if (!route) return;
@@ -548,13 +555,20 @@ export default function MobileNavigation() {
       let allCoordinates: Array<{ lat: number; lng: number }> = [];
       let phasesWithPolylines = 0;
 
-      // Draw each phase
+      // Draw phases: preview = all phases; active = only the current phase
+      const phasesToDraw = isPreviewMode
+        ? route.phases
+        : [route.phases[currentPhaseIndex]].filter(Boolean);
+
       route.phases.forEach((phase: RoutePhase, index: number) => {
         const color = phase.color || getPhaseColor(index);
         const isCompleted = completedPhases.includes(index);
         const isCurrent = index === currentPhaseIndex;
+        const shouldDraw = isPreviewMode || isCurrent;
 
         console.log(`Phase ${index} check:`, { hasPolyline: !!phase.polyline, isArray: Array.isArray(phase.polyline), length: phase.polyline?.length || 0 });
+
+        if (!shouldDraw) return;
 
         if (phase.polyline && Array.isArray(phase.polyline) && phase.polyline.length > 0) {
           phasesWithPolylines++;
@@ -566,8 +580,8 @@ export default function MobileNavigation() {
             {
               color: color,
               weight: isCurrent ? 5 : 3,
-              opacity: isCompleted ? 0.5 : 1,
-              dashArray: isCompleted ? '5, 5' : 'none',
+              opacity: isPreviewMode && isCompleted ? 0.5 : 1,
+              dashArray: isPreviewMode && isCompleted ? '5, 5' : 'none',
               lineCap: 'round',
               lineJoin: 'round',
             }
@@ -579,6 +593,8 @@ export default function MobileNavigation() {
           console.warn(`Phase ${index} has no polyline data!`);
         }
       });
+      // Suppress unused variable warning when not in preview mode
+      void phasesToDraw;
 
       console.log(`Total phases with polylines: ${phasesWithPolylines}/${route.phases.length}`);
 
@@ -619,7 +635,7 @@ export default function MobileNavigation() {
     // Start drawing with a small delay to ensure map is ready
     const timer = setTimeout(drawRoute, 100);
     return () => clearTimeout(timer);
-  }, [route, currentPhaseIndex, completedPhases, navigationPhase, buildings]);
+  }, [route, currentPhaseIndex, completedPhases, navigationPhase, buildings, isPreviewMode]);
 
   // Calculate indoor path polyline for current floor using proper pathfinding
   // NOTE: This useMemo MUST be before any early returns to satisfy React hooks rules
@@ -960,8 +976,10 @@ export default function MobileNavigation() {
             {navigationPhase === 'indoor' ? 'Indoor Navigation' : 'Navigation'}
           </h1>
           <p className="text-xs text-muted-foreground">
-            {navigationPhase === 'indoor' 
+            {navigationPhase === 'indoor'
               ? `${currentIndoorFloor?.floorName || `Floor ${currentIndoorFloor?.floorNumber}` || 'Floor'} - ${destinationRoom?.label || route.destinationRoomName || 'Destination'}`
+              : isPreviewMode
+              ? 'Route Overview'
               : `Phase ${currentPhaseIndex + 1} of ${route.phases.length}`
             }
           </p>
@@ -1032,7 +1050,16 @@ export default function MobileNavigation() {
         >
           {/* Progress Indicator */}
           <div className="p-4 border-b border-card-border flex-shrink-0">
-            {navigationPhase === 'outdoor' ? (
+            {isPreviewMode ? (
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-3 h-3 text-green-500" />
+                  <span className="text-xs font-medium text-foreground truncate">{route.startName}</span>
+                </div>
+                <NavigationIcon className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                <span className="text-xs font-medium text-foreground truncate">{route.endName}</span>
+              </div>
+            ) : navigationPhase === 'outdoor' ? (
               <>
                 <div className="flex items-center gap-2 mb-3">
                   {route.phases.map((phase: RoutePhase, index: number) => {
@@ -1131,8 +1158,8 @@ export default function MobileNavigation() {
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {navigationPhase === 'outdoor' ? (
               <>
-                {/* Current Phase Info */}
-                <div>
+                {/* Current Phase Info — hidden in preview mode */}
+                {!isPreviewMode && <div>
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-sm font-semibold text-foreground">
                       Current Phase
@@ -1180,10 +1207,10 @@ export default function MobileNavigation() {
                       <span className="font-medium text-foreground capitalize">{currentPhase.mode}</span>
                     </div>
                   </div>
-                </div>
+                </div>}
 
-                {/* Directions */}
-                <div>
+                {/* Directions — hidden in preview mode */}
+                {!isPreviewMode && <div>
                   <h3 className="text-sm font-medium text-foreground mb-2">Directions</h3>
                   <div className="space-y-2">
                     {currentPhase.steps.map((step: RouteStep, stepIndex: number) => (
@@ -1202,11 +1229,13 @@ export default function MobileNavigation() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </div>}
 
-                {/* All Phases */}
+                {/* All Phases / Route Overview */}
                 <div>
-                  <h3 className="text-sm font-medium text-foreground mb-2">All Phases</h3>
+                  <h3 className="text-sm font-medium text-foreground mb-2">
+                    {isPreviewMode ? 'Route Overview' : 'All Phases'}
+                  </h3>
                   <div className="space-y-1">
                     {route.phases.map((phase: RoutePhase, index: number) => {
                       const isCompleted = completedPhases.includes(index);
@@ -1444,6 +1473,16 @@ export default function MobileNavigation() {
           {/* Action Buttons */}
           <div className="border-t border-card-border p-4 flex-shrink-0 space-y-3">
             {navigationPhase === 'outdoor' ? (
+              isPreviewMode ? (
+                <Button
+                  className="w-full text-sm"
+                  size="sm"
+                  onClick={handleStartNavigatingMobile}
+                  data-testid="button-start-navigating-mobile"
+                >
+                  Start Navigating
+                </Button>
+              ) : (
               <>
                 {!allOutdoorPhasesCompleted && (
                   <Button
@@ -1481,6 +1520,7 @@ export default function MobileNavigation() {
                   </div>
                 )}
               </>
+              )
             ) : (
               <>
                 {isOnDestinationFloor ? (

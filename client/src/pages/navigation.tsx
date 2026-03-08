@@ -93,6 +93,7 @@ export default function Navigation() {
   const [roomFinderFloorPlan, setRoomFinderFloorPlan] = useState<{ floor: Floor; rooms: Room[] } | null>(null);
   const [selectedRoomForNav, setSelectedRoomForNav] = useState<{ id: string; name: string; buildingName: string } | null>(null);
   const [navigationPhase, setNavigationPhase] = useState<'outdoor' | 'indoor' | null>(null);
+  const [activeNavPhaseIndex, setActiveNavPhaseIndex] = useState<number | null>(null);
   const [destinationRoom, setDestinationRoom] = useState<IndoorNode | null>(null);
   const [currentIndoorFloor, setCurrentIndoorFloor] = useState<Floor | null>(null);
   const [floorsInRoute, setFloorsInRoute] = useState<string[]>([]);
@@ -2835,6 +2836,7 @@ export default function Navigation() {
     setSavedRouteId(null);
     setWaypoints([]);
     setNavigationPhase(null);
+    setActiveNavPhaseIndex(null);
     setDestinationRoom(null);
     setSelectedRoomForNav(null);
     setSelectedFloor(null);
@@ -4082,6 +4084,16 @@ export default function Navigation() {
     ? rooms.filter(r => r.floorId === selectedFloor.id)
     : [];
 
+  // Handle starting active navigation (from preview mode)
+  const handleStartNavigating = () => {
+    setActiveNavPhaseIndex(0);
+  };
+
+  // Handle proceeding to the next phase during active navigation
+  const handleProceedToNextPhase = () => {
+    setActiveNavPhaseIndex(prev => (prev ?? 0) + 1);
+  };
+
   // Handle done navigating
   const handleDoneNavigating = () => {
     setShowFeedbackDialog(true);
@@ -4523,115 +4535,142 @@ export default function Navigation() {
               )}
 
               <div>
-                {route.phases && route.phases.length > 0 ? (
-                  <>
-                    {route.phases.map((phase, phaseIndex) => {
-                      // Calculate ETA based on distance and travel mode
-                      const parseDistance = (distStr: string): number => {
-                        const match = distStr.match(/(\d+(?:\.\d+)?)\s*m/);
-                        return match ? parseFloat(match[1]) : 0;
-                      };
-                      
-                      const distanceMeters = parseDistance(phase.distance);
-                      // Average speeds: walking ~1.4 m/s, driving ~10 m/s
-                      const speed = phase.mode === 'walking' ? 1.4 : 10;
-                      const seconds = distanceMeters / speed;
-                      const minutes = Math.ceil(seconds / 60);
-                      const eta = minutes > 0 ? `${minutes} min` : '< 1 min';
-                      
-                      // Convert phase color to RGB for text contrast
-                      const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
-                        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                        return result ? {
-                          r: parseInt(result[1], 16),
-                          g: parseInt(result[2], 16),
-                          b: parseInt(result[3], 16)
-                        } : null;
-                      };
-                      
-                      const phaseRgb = hexToRgb(phase.color);
-                      const isLightColor = phaseRgb ? 
-                        (phaseRgb.r * 299 + phaseRgb.g * 587 + phaseRgb.b * 114) / 1000 > 128 : 
-                        false;
-                      
-                      // Check if this is an indoor phase (indoor phases use color #ef4444)
-                      const isIndoorPhase = phase.color === '#ef4444';
-                      
-                      return (
-                        <div key={phaseIndex} className="mb-6">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div 
-                              className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                isLightColor ? 'text-black' : 'text-white'
-                              }`}
-                              style={{ backgroundColor: phase.color }}
-                              data-testid={`phase-badge-${phaseIndex}`}
-                            >
-                              {phaseIndex + 1}
+                {(() => {
+                  // Shared helpers
+                  const parseDistStr = (distStr: string): number => {
+                    const match = distStr.match(/(\d+(?:\.\d+)?)\s*m/);
+                    return match ? parseFloat(match[1]) : 0;
+                  };
+                  const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+                    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                    return result ? {
+                      r: parseInt(result[1], 16),
+                      g: parseInt(result[2], 16),
+                      b: parseInt(result[3], 16)
+                    } : null;
+                  };
+                  const renderPhaseRow = (phase: typeof route.phases[0], displayIndex: number, key: number) => {
+                    const distanceMeters = parseDistStr(phase.distance);
+                    const speed = phase.mode === 'walking' ? 1.4 : 10;
+                    const minutes = Math.ceil((distanceMeters / speed) / 60);
+                    const eta = minutes > 0 ? `${minutes} min` : '< 1 min';
+                    const phaseRgb = hexToRgb(phase.color);
+                    const isLightColor = phaseRgb
+                      ? (phaseRgb.r * 299 + phaseRgb.g * 587 + phaseRgb.b * 114) / 1000 > 128
+                      : false;
+                    const isIndoorPhase = phase.color === '#ef4444';
+                    return (
+                      <div key={key} className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div
+                            className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isLightColor ? 'text-black' : 'text-white'}`}
+                            style={{ backgroundColor: phase.color }}
+                            data-testid={`phase-badge-${displayIndex}`}
+                          >
+                            {displayIndex + 1}
+                          </div>
+                          <h4 className="text-sm font-semibold text-foreground">
+                            {phase.mode === 'driving'
+                              ? `${route.vehicleType === 'bike' ? 'Ride' : 'Drive'} to ${phase.endName}`
+                              : `Walk to ${phase.endName}`}
+                          </h4>
+                          {!isIndoorPhase && (
+                            <div className="text-xs text-muted-foreground ml-auto flex gap-2">
+                              <span>{phase.distance}</span>
+                              <span>•</span>
+                              <span>{eta}</span>
                             </div>
-                            <h4 className="text-sm font-semibold text-foreground">
-                              {phase.mode === 'driving' 
-                                ? `${route.vehicleType === 'bike' ? 'Ride' : 'Drive'} to ${phase.endName}`
-                                : `Walk to ${phase.endName}`}
-                            </h4>
-                            {/* Hide distance and time estimates for indoor phases */}
-                            {!isIndoorPhase && (
-                              <div className="text-xs text-muted-foreground ml-auto flex gap-2">
-                                <span>{phase.distance}</span>
-                                <span>•</span>
-                                <span>{eta}</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="space-y-3 pl-8">
-                            {phase.steps.map((step, stepIndex) => (
-                              <div
-                                key={stepIndex}
-                                className="flex gap-3"
-                                data-testid={`route-phase-${phaseIndex}-step-${stepIndex}`}
-                              >
-                                <div className="flex-shrink-0 w-6 h-6 bg-card border border-border rounded-full flex items-center justify-center text-xs font-medium text-muted-foreground">
-                                  {stepIndex + 1}
-                                </div>
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-foreground">{step.instruction}</p>
-                                  {/* Hide step distance for indoor phases */}
-                                  {!isIndoorPhase && (
-                                    <p className="text-xs text-muted-foreground">{step.distance}</p>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                          )}
                         </div>
-                      );
-                    })}
-                  </>
-                ) : (
-                  <>
-                    <h4 className="text-sm font-medium text-foreground mb-3">Directions</h4>
-                    <div className="space-y-3">
-                      {route.steps.map((step, index) => (
-                        <div
-                          key={index}
-                          className="flex gap-3"
-                          data-testid={`route-step-${index}`}
-                        >
-                          <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
-                            {index + 1}
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-foreground">{step.instruction}</p>
-                            <p className="text-xs text-muted-foreground">{step.distance}</p>
-                          </div>
+                        <div className="space-y-3 pl-8">
+                          {phase.steps.map((step, stepIndex) => (
+                            <div
+                              key={stepIndex}
+                              className="flex gap-3"
+                              data-testid={`route-phase-${displayIndex}-step-${stepIndex}`}
+                            >
+                              <div className="flex-shrink-0 w-6 h-6 bg-card border border-border rounded-full flex items-center justify-center text-xs font-medium text-muted-foreground">
+                                {stepIndex + 1}
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-foreground">{step.instruction}</p>
+                                {!isIndoorPhase && (
+                                  <p className="text-xs text-muted-foreground">{step.distance}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </>
-                )}
+                      </div>
+                    );
+                  };
 
-                {/* Phase-specific Navigation Buttons */}
+                  if (route.phases && route.phases.length > 0) {
+                    if (activeNavPhaseIndex === null) {
+                      // Preview mode: show all phases
+                      return <>{route.phases.map((phase, i) => renderPhaseRow(phase, i, i))}</>;
+                    } else {
+                      // Active mode: show only the current phase with a progress label
+                      const phase = route.phases[activeNavPhaseIndex];
+                      const phaseRgb = hexToRgb(phase?.color ?? '#000');
+                      const isLightColor = phaseRgb
+                        ? (phaseRgb.r * 299 + phaseRgb.g * 587 + phaseRgb.b * 114) / 1000 > 128
+                        : false;
+                      return (
+                        <>
+                          <div className="flex items-center gap-2 mb-4 px-1">
+                            <div
+                              className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${isLightColor ? 'text-black' : 'text-white'}`}
+                              style={{ backgroundColor: phase?.color }}
+                            >
+                              {activeNavPhaseIndex + 1}
+                            </div>
+                            <span className="text-xs font-medium text-muted-foreground">
+                              Phase {activeNavPhaseIndex + 1} of {route.phases.length}
+                            </span>
+                            <div className="flex-1 flex gap-1 ml-1">
+                              {route.phases.map((_, i) => (
+                                <div
+                                  key={i}
+                                  className="flex-1 h-1 rounded-full"
+                                  style={{
+                                    backgroundColor: route.phases[i].color,
+                                    opacity: i <= activeNavPhaseIndex ? 1 : 0.25,
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          {phase && renderPhaseRow(phase, activeNavPhaseIndex, activeNavPhaseIndex)}
+                        </>
+                      );
+                    }
+                  } else {
+                    // No phases — single step route (existing directions display)
+                    return (
+                      <>
+                        <h4 className="text-sm font-medium text-foreground mb-3">Directions</h4>
+                        <div className="space-y-3">
+                          {route.steps.map((step, index) => (
+                            <div key={index} className="flex gap-3" data-testid={`route-step-${index}`}>
+                              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                                {index + 1}
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-foreground">{step.instruction}</p>
+                                <p className="text-xs text-muted-foreground">{step.distance}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  }
+                })()}
+
+                {/* Navigation Buttons */}
                 {navigationPhase === 'indoor' && destinationRoom && currentIndoorFloor ? (
+                  // Indoor navigation buttons — unchanged
                   <div className="space-y-3 mt-6">
                     {currentIndoorFloor.id !== destinationRoom.floorId ? (
                       <Button
@@ -4660,7 +4699,33 @@ export default function Navigation() {
                       Go Back
                     </Button>
                   </div>
+                ) : route.phases && route.phases.length > 0 && activeNavPhaseIndex === null ? (
+                  // Preview mode — Start Navigating
+                  <Button
+                    className="w-full mt-6"
+                    onClick={handleStartNavigating}
+                    data-testid="button-start-navigating"
+                  >
+                    Start Navigating
+                  </Button>
+                ) : route.phases && route.phases.length > 0 && activeNavPhaseIndex !== null && activeNavPhaseIndex < route.phases.length - 1 ? (
+                  // Active mode, not last phase — Proceed to Next Phase
+                  <Button
+                    className="w-full mt-6"
+                    onClick={handleProceedToNextPhase}
+                    data-testid="button-proceed-next-phase"
+                  >
+                    <span className="flex flex-col items-start leading-tight">
+                      <span>Proceed to Next Phase</span>
+                      <span className="text-xs opacity-75 font-normal">
+                        {route.phases[activeNavPhaseIndex + 1]?.mode === 'driving'
+                          ? `${route.vehicleType === 'bike' ? 'Ride' : 'Drive'} to ${route.phases[activeNavPhaseIndex + 1]?.endName}`
+                          : `Walk to ${route.phases[activeNavPhaseIndex + 1]?.endName}`}
+                      </span>
+                    </span>
+                  </Button>
                 ) : (navigationPhase === 'outdoor' || navigationPhase === null) && destinationRoom && route ? (
+                  // Last phase with indoor destination
                   <Button
                     className="w-full mt-6"
                     onClick={handleReachedBuilding}
@@ -4669,6 +4734,7 @@ export default function Navigation() {
                     Reached the Building
                   </Button>
                 ) : (
+                  // Last phase, no indoor destination — Done Navigating
                   <Button
                     className="w-full mt-6"
                     onClick={handleDoneNavigating}
@@ -4764,7 +4830,13 @@ export default function Navigation() {
               selectedBuilding={selectedBuilding}
               routePolyline={route?.polyline}
               routeMode={route?.mode}
-              routePhases={route?.phases}
+              routePhases={
+                route?.phases
+                  ? (activeNavPhaseIndex !== null
+                      ? [route.phases[activeNavPhaseIndex]].filter(Boolean) as typeof route.phases
+                      : route.phases)
+                  : undefined
+              }
               parkingLocation={route?.parkingLocation}
               hidePolygonsInNavigation={!!route}
               waypointsData={
