@@ -75,7 +75,7 @@ export default function Navigation() {
   const [mode, setMode] = useState<'walking' | 'driving' | 'accessible'>('walking');
   const [vehicleType, setVehicleType] = useState<VehicleType | null>(null);
   const [showVehicleSelector, setShowVehicleSelector] = useState(false);
-  const [pendingNavigationData, setPendingNavigationData] = useState<{start: any, end: Building, mode: 'walking' | 'driving' | 'accessible'} | null>(null);
+  const [pendingNavigationData, setPendingNavigationData] = useState<{start: any, end: Building, mode: 'walking' | 'driving' | 'accessible', waypoints: Building[]} | null>(null);
   const [route, setRoute] = useState<NavigationRoute | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
@@ -2325,7 +2325,10 @@ export default function Navigation() {
     // If driving mode and no vehicle type selected, show vehicle selector
     // Skip vehicle selection for accessible mode - it uses PWD-friendly walkpaths only
     if (mode === 'driving' && !vehicleType) {
-      setPendingNavigationData({ start: selectedStart, end: selectedEnd, mode });
+      const pendingWaypoints = validWaypoints
+        .map(id => buildings.find(b => b.id === id))
+        .filter(Boolean) as Building[];
+      setPendingNavigationData({ start: selectedStart, end: selectedEnd, mode, waypoints: pendingWaypoints });
       setShowVehicleSelector(true);
       const duration = performance.now() - routeStartTime;
       trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, hasWaypoints: validWaypoints.length > 0, vehicleSelected: false });
@@ -2715,16 +2718,64 @@ export default function Navigation() {
     setShowVehicleSelector(false);
 
     if (pendingNavigationData) {
-      const { start, end, mode } = pendingNavigationData;
+      const { start, end, mode, waypoints: pendingWaypoints } = pendingNavigationData;
       
-      // Try two-phase route with selected vehicle
+      // Set state early for consistency
+      setSelectedStart(start);
+      setSelectedEnd(end);
+      setMode(mode);
+      setPendingNavigationData(null);
+
+      // If there are waypoints, route through the proper waypoint parking flow
+      if (pendingWaypoints && pendingWaypoints.length > 0) {
+        const parkingAreas = getParkingAreasForVehicle(selectedVehicle);
+        if (parkingAreas.length === 0) {
+          toast({
+            title: "No Parking Available",
+            description: `No ${capitalizeVehicleType(selectedVehicle)} parking areas found on campus.`,
+            variant: "destructive"
+          });
+          return;
+        }
+
+        setPendingWaypointDrivingRoute({
+          start,
+          end,
+          waypoints: pendingWaypoints,
+          vehicleType: selectedVehicle
+        });
+
+        const startIsGate = isGate(start);
+        if (startIsGate) {
+          // Start is a gate - user is already driving, only ask for waypoint parking
+          setWaypointParkingMode('waypoint');
+          setParkingSelectionMode(true);
+          setShowParkingSelector(true);
+
+          toast({
+            title: "Select Parking Near Stop",
+            description: `Tap on the ${capitalizeVehicleType(selectedVehicle)} parking area where you want to park near ${pendingWaypoints[0].name}.`,
+            variant: "default"
+          });
+        } else {
+          // Start is a building - first ask for origin parking (where car is parked)
+          setWaypointParkingMode('origin');
+          setParkingSelectionMode(true);
+          setShowParkingSelector(true);
+
+          toast({
+            title: "Select Your Parking Location",
+            description: `Tap on the ${capitalizeVehicleType(selectedVehicle)} parking area where your vehicle is parked.`,
+            variant: "default"
+          });
+        }
+        return;
+      }
+      
+      // No waypoints - try two-phase route with selected vehicle
       const twoPhaseRoute = await generateTwoPhaseRoute(start, end, selectedVehicle);
       if (twoPhaseRoute) {
         setRoute(twoPhaseRoute);
-        setSelectedStart(start);
-        setSelectedEnd(end);
-        setMode(mode);
-        setPendingNavigationData(null);
 
         // Save two-phase route for QR code generation
         try {
@@ -2777,9 +2828,6 @@ export default function Navigation() {
             steps,
             totalDistance
           });
-          setSelectedStart(start);
-          setSelectedEnd(end);
-          setMode(fallbackMode);
 
           // Save fallback route for QR code generation
           try {
@@ -2822,8 +2870,6 @@ export default function Navigation() {
           variant: "destructive"
         });
       }
-      
-      setPendingNavigationData(null);
     }
   };
 
