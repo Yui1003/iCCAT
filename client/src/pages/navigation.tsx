@@ -2290,7 +2290,7 @@ export default function Navigation() {
         end,
         mode: 'driving',
         vehicleType: vType,
-        parkingLocation: waypointParking,
+        parkingLocation: currentParking ?? undefined,
         polyline: allPolylines,
         steps: allSteps,
         totalDistance: `${totalDistanceMeters} m`,
@@ -2489,57 +2489,10 @@ export default function Navigation() {
         return;
       }
 
-      if (parkingSelectionMode) {
-        const duration = performance.now() - routeStartTime;
-        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'two-phase-pending' });
-        return;
-      }
-
-      const fallbackMode = vehicleType === 'bike' ? 'walking' : 'driving';
-      setMode(fallbackMode);
-      if (vehicleType === 'bike') {
-        setVehicleType(null);
-      }
-      
-      toast({
-        title: "Using Direct Route",
-        description: `Parking navigation unavailable. Showing direct ${fallbackMode} route instead.`,
-        variant: "default"
-      });
-      
-      const routePolyline = await calculateRouteClientSide(
-        selectedStart,
-        selectedEnd,
-        fallbackMode
-      );
-      
-      if (!routePolyline) {
-        toast({
-          title: "No Route Found",
-          description: "Unable to find a route to the selected destination.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      const { steps, totalDistance } = generateSmartSteps(
-        routePolyline,
-        fallbackMode,
-        selectedStart.name,
-        selectedEnd.name
-      );
-      
-      setRoute({
-        start: selectedStart as Building,
-        end: selectedEnd,
-        mode: fallbackMode,
-        polyline: routePolyline,
-        steps,
-        totalDistance
-      });
-
+      // generateTwoPhaseRoute returned null — it has already set up parking selection mode
+      // or shown an error toast. Either way, just return and wait for the user.
       const duration = performance.now() - routeStartTime;
-      trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: fallbackMode, vehicleType, routeType: 'fallback' });
+      trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'two-phase-pending' });
     } catch (error) {
       console.error('Error generating driving route:', error);
       toast({
@@ -4552,7 +4505,7 @@ export default function Navigation() {
                   Starting Point
                 </label>
                 <SearchableStartingPointSelect
-                  selectedId={selectedStart?.id}
+                  selectedId={selectedStart?.id === kioskBuilding?.id ? 'kiosk' : selectedStart?.id}
                   onSelect={(id) => {
                     if (id === 'kiosk') {
                       setSelectedStart((kioskBuilding || KIOSK_LOCATION) as any);
