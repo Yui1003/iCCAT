@@ -3,6 +3,14 @@ import { pgTable, text, varchar, integer, real, jsonb, timestamp, pgEnum, boolea
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Custom POI type interface (stored in Firestore, not PostgreSQL)
+export interface CustomPoiType {
+  id: string;
+  name: string;
+  icon: string | null; // uploaded image URL or null (uses otherIcon fallback)
+}
+export type InsertCustomPoiType = Omit<CustomPoiType, 'id'>;
+
 // POI Types enum
 export const poiTypes = [
   "Building",

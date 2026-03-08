@@ -505,6 +505,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POI Types management (custom types, hidden built-ins, icon overrides)
+  app.get('/api/poi-types', async (req, res) => {
+    try {
+      const [customTypes, hiddenBuiltinTypes, iconOverrides] = await Promise.all([
+        storage.getCustomPoiTypes(),
+        storage.getHiddenBuiltinPoiTypes(),
+        storage.getPoiTypeIconOverrides(),
+      ]);
+      res.json({ customTypes, hiddenBuiltinTypes, iconOverrides });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch POI types' });
+    }
+  });
+
+  app.post('/api/poi-types', async (req, res) => {
+    try {
+      const { name, icon } = req.body;
+      if (!name || typeof name !== 'string') {
+        return res.status(400).json({ error: 'name is required' });
+      }
+      const customType = await storage.createCustomPoiType({ name: name.trim(), icon: icon || null });
+      res.status(201).json(customType);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to create custom POI type' });
+    }
+  });
+
+  app.patch('/api/poi-types/:id', async (req, res) => {
+    try {
+      const { name, icon } = req.body;
+      if (!name || typeof name !== 'string') {
+        return res.status(400).json({ error: 'name is required' });
+      }
+      const updated = await storage.updateCustomPoiType(req.params.id, { name: name.trim(), icon: icon ?? null });
+      if (!updated) return res.status(404).json({ error: 'Custom POI type not found' });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update custom POI type' });
+    }
+  });
+
+  app.delete('/api/poi-types/custom/:id', async (req, res) => {
+    try {
+      await storage.deleteCustomPoiType(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete custom POI type' });
+    }
+  });
+
+  app.post('/api/poi-types/hide/:name', async (req, res) => {
+    try {
+      await storage.hideBuiltinPoiType(decodeURIComponent(req.params.name));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to hide POI type' });
+    }
+  });
+
+  app.delete('/api/poi-types/hide/:name', async (req, res) => {
+    try {
+      await storage.unhideBuiltinPoiType(decodeURIComponent(req.params.name));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to unhide POI type' });
+    }
+  });
+
+  app.put('/api/poi-types/icon/:name', async (req, res) => {
+    try {
+      const { iconUrl } = req.body;
+      if (!iconUrl || typeof iconUrl !== 'string') {
+        return res.status(400).json({ error: 'iconUrl is required' });
+      }
+      await storage.setPoiTypeIconOverride(decodeURIComponent(req.params.name), iconUrl);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to set icon override' });
+    }
+  });
+
+  app.delete('/api/poi-types/icon/:name', async (req, res) => {
+    try {
+      await storage.deletePoiTypeIconOverride(decodeURIComponent(req.params.name));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to reset icon override' });
+    }
+  });
+
   app.get('/api/floors', async (req, res) => {
     try {
       const floors = await storage.getFloors();

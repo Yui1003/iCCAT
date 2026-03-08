@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, MapPin, Building2, School, Hospital, Store, Home, Shapes } from "lucide-react";
+import { Plus, Pencil, Trash2, MapPin, Building2, School, Hospital, Store, Home, Shapes, Settings, Eye, EyeOff, RotateCcw, Upload, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,14 +8,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
 import CampusMap from "@/components/campus-map";
 import PolygonDrawingMap from "@/components/polygon-drawing-map";
 import ImageUploadInput from "@/components/image-upload-input";
-import type { Building, InsertBuilding, LatLng } from "@shared/schema";
+import type { Building, InsertBuilding, LatLng, CustomPoiType } from "@shared/schema";
 import { poiTypes, canHaveDepartments } from "@shared/schema";
+import { getPoiTypeIconUrl, BUILTIN_ICON_MAP } from "@/lib/poi-type-icons";
 import { invalidateEndpointCache } from "@/lib/offline-data";
 import { motion } from "framer-motion";
 
@@ -66,11 +69,123 @@ export default function AdminBuildings() {
     mapClickEnabledRef.current = mapClickEnabled;
   }, [mapClickEnabled]);
 
+  const [isManageTypesOpen, setIsManageTypesOpen] = useState(false);
+  const [newTypeName, setNewTypeName] = useState("");
+  const [newTypeIcon, setNewTypeIcon] = useState<string | null>(null);
+  const iconFileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingIconFor, setUploadingIconFor] = useState<string | null>(null);
+
   const { data: buildings = [], isLoading } = useQuery<Building[]>({
     queryKey: ['/api/buildings']
   });
 
-  const sortedPoiTypes = useMemo(() => [...poiTypes].sort(), []);
+  const { data: poiTypesData, isLoading: isPoiTypesLoading } = useQuery<{
+    customTypes: CustomPoiType[];
+    hiddenBuiltinTypes: string[];
+    iconOverrides: Record<string, string>;
+  }>({ queryKey: ['/api/poi-types'] });
+
+  const activeTypes = useMemo(() => {
+    const hidden = new Set(poiTypesData?.hiddenBuiltinTypes || []);
+    const builtin = [...poiTypes].filter(t => !hidden.has(t));
+    const custom = (poiTypesData?.customTypes || []).map(c => c.name);
+    return [...builtin, ...custom].sort();
+  }, [poiTypesData]);
+
+  // Upload icon helper for type management
+  const uploadIconFile = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'building');
+    formData.append('id', 'poi-type-icon');
+    const res = await fetch('/api/upload-image', { method: 'POST', body: formData });
+    if (!res.ok) throw new Error('Upload failed');
+    const data = await res.json();
+    return data.url as string;
+  };
+
+  const createTypeMutation = useMutation({
+    mutationFn: (data: { name: string; icon: string | null }) =>
+      apiRequest('POST', '/api/poi-types', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/poi-types'] });
+      setNewTypeName("");
+      setNewTypeIcon(null);
+      toast({ title: "Custom type created" });
+    },
+    onError: () => toast({ title: "Failed to create type", variant: "destructive" }),
+  });
+
+  const deleteCustomTypeMutation = useMutation({
+    mutationFn: (id: string) => apiRequest('DELETE', `/api/poi-types/custom/${id}`, null),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/poi-types'] });
+      toast({ title: "Custom type deleted" });
+    },
+    onError: () => toast({ title: "Failed to delete type", variant: "destructive" }),
+  });
+
+  const hideTypeMutation = useMutation({
+    mutationFn: (name: string) => apiRequest('POST', `/api/poi-types/hide/${encodeURIComponent(name)}`, null),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/poi-types'] }),
+    onError: () => toast({ title: "Failed to hide type", variant: "destructive" }),
+  });
+
+  const unhideTypeMutation = useMutation({
+    mutationFn: (name: string) => apiRequest('DELETE', `/api/poi-types/hide/${encodeURIComponent(name)}`, null),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/poi-types'] }),
+    onError: () => toast({ title: "Failed to restore type", variant: "destructive" }),
+  });
+
+  const setIconOverrideMutation = useMutation({
+    mutationFn: ({ name, iconUrl }: { name: string; iconUrl: string }) =>
+      apiRequest('PUT', `/api/poi-types/icon/${encodeURIComponent(name)}`, { iconUrl }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/poi-types'] });
+      toast({ title: "Icon updated" });
+    },
+    onError: () => toast({ title: "Failed to update icon", variant: "destructive" }),
+  });
+
+  const resetIconOverrideMutation = useMutation({
+    mutationFn: (name: string) => apiRequest('DELETE', `/api/poi-types/icon/${encodeURIComponent(name)}`, null),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/poi-types'] });
+      toast({ title: "Icon reset to default" });
+    },
+    onError: () => toast({ title: "Failed to reset icon", variant: "destructive" }),
+  });
+
+  const updateCustomTypeIconMutation = useMutation({
+    mutationFn: ({ id, name, iconUrl }: { id: string; name: string; iconUrl: string }) =>
+      apiRequest('PATCH', `/api/poi-types/${id}`, { name, icon: iconUrl }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/poi-types'] });
+      toast({ title: "Icon updated" });
+    },
+    onError: () => toast({ title: "Failed to update icon", variant: "destructive" }),
+  });
+
+  const handleIconFileChange = async (e: React.ChangeEvent<HTMLInputElement>, context: { type: 'builtin'; name: string } | { type: 'custom'; id: string; name: string } | { type: 'new' }) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingIconFor(context.type === 'new' ? '__new__' : context.name);
+    try {
+      const iconUrl = await uploadIconFile(file);
+      if (context.type === 'new') {
+        setNewTypeIcon(iconUrl);
+      } else if (context.type === 'builtin') {
+        setIconOverrideMutation.mutate({ name: context.name, iconUrl });
+      } else {
+        updateCustomTypeIconMutation.mutate({ id: context.id, name: context.name, iconUrl });
+      }
+    } catch {
+      toast({ title: "Icon upload failed", variant: "destructive" });
+    } finally {
+      setUploadingIconFor(null);
+      if (iconFileInputRef.current) iconFileInputRef.current.value = '';
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: (data: InsertBuilding) => apiRequest('POST', '/api/buildings', data),
@@ -255,22 +370,51 @@ export default function AdminBuildings() {
                   <Select
                     value={formData.type}
                     onValueChange={(value) => {
-                      setFormData({ 
-                        ...formData, 
+                      if (value === '__manage__') {
+                        setIsManageTypesOpen(true);
+                        return;
+                      }
+                      setFormData({
+                        ...formData,
                         type: value,
                         departments: canHaveDepartments(value as any) ? formData.departments : []
                       });
                     }}
                   >
                     <SelectTrigger id="type" data-testid="select-poi-type">
-                      <SelectValue placeholder="Select location type" />
+                      <SelectValue placeholder="Select location type">
+                        {formData.type && (
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={getPoiTypeIconUrl(formData.type, poiTypesData?.iconOverrides, poiTypesData?.customTypes)}
+                              alt={formData.type}
+                              className="w-4 h-4 object-contain flex-shrink-0"
+                            />
+                            <span>{formData.type}</span>
+                          </div>
+                        )}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="z-[10000] max-h-[300px]">
-                      {sortedPoiTypes.map((type) => (
+                      {activeTypes.map((type) => (
                         <SelectItem key={type} value={type}>
-                          {type}
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes)}
+                              alt={type}
+                              className="w-4 h-4 object-contain flex-shrink-0"
+                            />
+                            <span>{type}</span>
+                          </div>
                         </SelectItem>
                       ))}
+                      <Separator className="my-1" />
+                      <SelectItem value="__manage__" data-testid="button-manage-types">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Settings className="w-4 h-4" />
+                          <span>Manage Types...</span>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -313,6 +457,7 @@ export default function AdminBuildings() {
                         onMapClick={handleMapClick}
                         centerLat={formData.lat}
                         centerLng={formData.lng}
+                        poiTypeData={poiTypesData}
                       />
                     </div>
 
@@ -382,6 +527,7 @@ export default function AdminBuildings() {
                         onMapClick={handleNodeMapClick}
                         centerLat={formData.nodeLat ?? formData.lat}
                         centerLng={formData.nodeLng ?? formData.lng}
+                        poiTypeData={poiTypesData}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -600,7 +746,7 @@ export default function AdminBuildings() {
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <Card className="h-[600px] overflow-hidden">
-              <CampusMap buildings={buildings} onBuildingClick={handleOpenDialog} />
+              <CampusMap buildings={buildings} onBuildingClick={handleOpenDialog} poiTypeData={poiTypesData} />
             </Card>
           </div>
 
@@ -631,9 +777,16 @@ export default function AdminBuildings() {
                     </SelectTrigger>
                     <SelectContent className="z-[100] max-h-[300px]">
                       <SelectItem value="All Types">All Types</SelectItem>
-                      {sortedPoiTypes.map((type) => (
+                      {activeTypes.map((type) => (
                         <SelectItem key={type} value={type}>
-                          {type}
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes)}
+                              alt={type}
+                              className="w-4 h-4 object-contain flex-shrink-0"
+                            />
+                            <span>{type}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -720,6 +873,203 @@ export default function AdminBuildings() {
           </div>
         </div>
       </div>
+
+      {/* Manage POI Types Dialog */}
+      <Dialog open={isManageTypesOpen} onOpenChange={setIsManageTypesOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto z-[10001]">
+          <DialogHeader>
+            <DialogTitle>Manage Location Types</DialogTitle>
+          </DialogHeader>
+
+          {/* Hidden file input for icon uploads */}
+          <input
+            ref={iconFileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={() => {}}
+          />
+
+          {/* Add Custom Type */}
+          <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+            <h3 className="font-semibold text-sm">Add Custom Type</h3>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Type name (e.g. Meditation Room)"
+                value={newTypeName}
+                onChange={(e) => setNewTypeName(e.target.value)}
+                data-testid="input-new-type-name"
+                className="flex-1"
+              />
+            </div>
+            {newTypeIcon && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <img src={newTypeIcon} alt="icon preview" className="w-8 h-8 object-contain rounded border" />
+                <span>Icon selected</span>
+                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setNewTypeIcon(null)}>Remove</Button>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-testid="button-upload-new-type-icon"
+                disabled={uploadingIconFor === '__new__'}
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e) => handleIconFileChange(e as any, { type: 'new' });
+                  input.click();
+                }}
+              >
+                <Upload className="w-3 h-3 mr-1" />
+                {uploadingIconFor === '__new__' ? 'Uploading...' : 'Upload Icon (optional)'}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                data-testid="button-add-custom-type"
+                disabled={!newTypeName.trim() || createTypeMutation.isPending}
+                onClick={() => {
+                  if (!newTypeName.trim()) return;
+                  createTypeMutation.mutate({ name: newTypeName.trim(), icon: newTypeIcon });
+                }}
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                {createTypeMutation.isPending ? 'Adding...' : 'Add Type'}
+              </Button>
+            </div>
+          </div>
+
+          {isPoiTypesLoading ? (
+            <div className="py-8 text-center text-muted-foreground text-sm">Loading types...</div>
+          ) : (
+            <div className="space-y-4">
+              {/* Built-in Types */}
+              <div>
+                <h3 className="font-semibold text-sm mb-2">Built-in Types</h3>
+                <div className="space-y-1">
+                  {[...poiTypes].sort().map((type) => {
+                    const isHidden = poiTypesData?.hiddenBuiltinTypes?.includes(type);
+                    const hasOverride = !!poiTypesData?.iconOverrides?.[type];
+                    return (
+                      <div
+                        key={type}
+                        data-testid={`poi-type-row-${type}`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-opacity ${isHidden ? 'opacity-40 bg-muted/20' : 'bg-muted/30'}`}
+                      >
+                        <img
+                          src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes)}
+                          alt={type}
+                          className="w-6 h-6 object-contain flex-shrink-0"
+                        />
+                        <span className="flex-1 text-sm">{type}</span>
+                        {isHidden && <Badge variant="secondary" className="text-xs">Hidden</Badge>}
+                        <div className="flex gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            title="Replace Icon"
+                            data-testid={`button-replace-icon-${type}`}
+                            disabled={uploadingIconFor === type}
+                            onClick={() => {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = 'image/*';
+                              input.onchange = (e) => handleIconFileChange(e as any, { type: 'builtin', name: type });
+                              input.click();
+                            }}
+                          >
+                            {uploadingIconFor === type ? <Upload className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
+                          </Button>
+                          {hasOverride && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              title="Reset Icon"
+                              data-testid={`button-reset-icon-${type}`}
+                              onClick={() => resetIconOverrideMutation.mutate(type)}
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                            </Button>
+                          )}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            title={isHidden ? 'Restore' : 'Hide'}
+                            data-testid={`button-toggle-hide-${type}`}
+                            onClick={() => isHidden ? unhideTypeMutation.mutate(type) : hideTypeMutation.mutate(type)}
+                          >
+                            {isHidden ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Custom Types */}
+              {(poiTypesData?.customTypes?.length ?? 0) > 0 && (
+                <div>
+                  <Separator className="mb-3" />
+                  <h3 className="font-semibold text-sm mb-2">Custom Types</h3>
+                  <div className="space-y-1">
+                    {poiTypesData!.customTypes.map((ct) => (
+                      <div
+                        key={ct.id}
+                        data-testid={`custom-type-row-${ct.id}`}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/30"
+                      >
+                        <img
+                          src={getPoiTypeIconUrl(ct.name, poiTypesData?.iconOverrides, poiTypesData?.customTypes)}
+                          alt={ct.name}
+                          className="w-6 h-6 object-contain flex-shrink-0"
+                        />
+                        <span className="flex-1 text-sm">{ct.name}</span>
+                        <div className="flex gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            title="Replace Icon"
+                            data-testid={`button-replace-icon-custom-${ct.id}`}
+                            disabled={uploadingIconFor === ct.name}
+                            onClick={() => {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = 'image/*';
+                              input.onchange = (e) => handleIconFileChange(e as any, { type: 'custom', id: ct.id, name: ct.name });
+                              input.click();
+                            }}
+                          >
+                            {uploadingIconFor === ct.name ? <Upload className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            title="Delete type"
+                            data-testid={`button-delete-custom-type-${ct.id}`}
+                            onClick={() => deleteCustomTypeMutation.mutate(ct.id)}
+                          >
+                            <Trash2 className="w-3 h-3 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }

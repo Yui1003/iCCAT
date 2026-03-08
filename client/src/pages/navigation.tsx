@@ -22,8 +22,9 @@ import RoomFinderDialog from "@/components/room-finder-dialog";
 import SearchableStartingPointSelect from "@/components/searchable-starting-point-select";
 import SearchableDestinationSelect from "@/components/searchable-destination-select";
 import SearchableWaypointSelect from "@/components/searchable-waypoint-select";
-import type { Building, NavigationRoute, Staff, Floor, Room, VehicleType, RouteStep, RoutePhase, IndoorNode, RoomPath, LatLng } from "@shared/schema";
+import type { Building, NavigationRoute, Staff, Floor, Room, VehicleType, RouteStep, RoutePhase, IndoorNode, RoomPath, LatLng, CustomPoiType } from "@shared/schema";
 import { poiTypes, KIOSK_LOCATION } from "@shared/schema";
+import { getPoiTypeIconUrl } from "@/lib/poi-type-icons";
 import { useGlobalInactivity } from "@/hooks/use-inactivity";
 import { findShortestPath, findNearestAccessibleEndpoint } from "@/lib/pathfinding";
 import { buildIndoorGraph, findRoomPath, connectOutdoorToIndoor } from "@/lib/indoor-pathfinding";
@@ -79,8 +80,9 @@ export default function Navigation() {
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<Floor | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(Array.from(poiTypes).sort());
-  const sortedPoiTypes = useMemo(() => [...poiTypes].sort((a, b) => a.localeCompare(b)), []);
+  const [activeTypesInitialized, setActiveTypesInitialized] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
+
   const [showDirectionsDialog, setShowDirectionsDialog] = useState(false);
   const [directionsDestination, setDirectionsDestination] = useState<Building | null>(null);
   const [showQRCode, setShowQRCode] = useState(false);
@@ -132,6 +134,26 @@ export default function Navigation() {
   const { data: buildings = [] } = useQuery<Building[]>({
     queryKey: ['/api/buildings']
   });
+
+  const { data: poiTypesData } = useQuery<{
+    customTypes: CustomPoiType[];
+    hiddenBuiltinTypes: string[];
+    iconOverrides: Record<string, string>;
+  }>({ queryKey: ['/api/poi-types'] });
+
+  const activePoiTypes = useMemo(() => {
+    const hidden = new Set(poiTypesData?.hiddenBuiltinTypes || []);
+    const builtin = [...poiTypes].filter(t => !hidden.has(t));
+    const custom = (poiTypesData?.customTypes || []).map(c => c.name);
+    return [...builtin, ...custom].sort();
+  }, [poiTypesData]);
+
+  useEffect(() => {
+    if (poiTypesData && !activeTypesInitialized) {
+      setSelectedTypes(activePoiTypes);
+      setActiveTypesInitialized(true);
+    }
+  }, [poiTypesData, activePoiTypes, activeTypesInitialized]);
 
   const { data: staff = [] } = useQuery<Staff[]>({
     queryKey: ['/api/staff']
@@ -4144,7 +4166,7 @@ export default function Navigation() {
                       data-testid="select-marker-filter"
                     >
                       <span>
-                        {selectedTypes.length === poiTypes.length 
+                        {selectedTypes.length === activePoiTypes.length 
                           ? "All Types" 
                           : `${selectedTypes.length} Selected`}
                       </span>
@@ -4157,7 +4179,7 @@ export default function Navigation() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setSelectedTypes(Array.from(poiTypes))}
+                          onClick={() => setSelectedTypes(activePoiTypes)}
                           className="flex-1"
                         >
                           Select All
@@ -4172,7 +4194,7 @@ export default function Navigation() {
                         </Button>
                       </div>
                       <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {[...poiTypes].sort((a, b) => a.localeCompare(b)).map((type) => (
+                        {activePoiTypes.map((type) => (
                           <div key={type} className="flex items-center space-x-2">
                             <Checkbox
                               id={`type-${type}`}
@@ -4185,6 +4207,11 @@ export default function Navigation() {
                                 }
                               }}
                               data-testid={`checkbox-marker-type-${type}`}
+                            />
+                            <img
+                              src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes)}
+                              alt={type}
+                              className="w-4 h-4 object-contain flex-shrink-0"
                             />
                             <label 
                               htmlFor={`type-${type}`}
@@ -4351,7 +4378,7 @@ export default function Navigation() {
 
               <div className="pt-4 border-t border-border">
                 <h3 className="text-sm font-medium text-foreground mb-3">
-                  {selectedTypes.length === poiTypes.length ? "All Locations" : "Filtered Locations"}
+                  {selectedTypes.length === activePoiTypes.length ? "All Locations" : "Filtered Locations"}
                 </h3>
                 <div className="space-y-2">
                   {buildings.length === 0 ? (
@@ -4838,6 +4865,7 @@ export default function Navigation() {
                   ? getParkingAreasForVehicle(vehicleType).map(p => p.id)
                   : []
               }
+              poiTypeData={poiTypesData}
             />
           )}
         </main>

@@ -18,7 +18,8 @@ import type {
   IndoorNode, InsertIndoorNode,
   RoomPath, InsertRoomPath,
   KioskUptime, InsertKioskUptime,
-  RoutePhase
+  RoutePhase,
+  CustomPoiType, InsertCustomPoiType
 } from "@shared/schema";
 import type { AnalyticsEvent, AnalyticsSummary } from "@shared/analytics-schema";
 import { AnalyticsEventType } from "@shared/analytics-schema";
@@ -164,6 +165,18 @@ export interface IStorage {
   getAllKioskUptimes(): Promise<KioskUptime[]>;
   deleteAllKioskUptimes(): Promise<void>;
   deleteKioskUptime(id: string): Promise<boolean>;
+
+  // Custom POI Types
+  getCustomPoiTypes(): Promise<CustomPoiType[]>;
+  createCustomPoiType(type: InsertCustomPoiType): Promise<CustomPoiType>;
+  updateCustomPoiType(id: string, type: InsertCustomPoiType): Promise<CustomPoiType | undefined>;
+  deleteCustomPoiType(id: string): Promise<boolean>;
+  getHiddenBuiltinPoiTypes(): Promise<string[]>;
+  hideBuiltinPoiType(name: string): Promise<void>;
+  unhideBuiltinPoiType(name: string): Promise<void>;
+  getPoiTypeIconOverrides(): Promise<Record<string, string>>;
+  setPoiTypeIconOverride(typeName: string, iconUrl: string): Promise<void>;
+  deletePoiTypeIconOverride(typeName: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1623,6 +1636,104 @@ export class DatabaseStorage implements IStorage {
       console.error('Firestore error deleting kiosk uptime:', error);
       throw new Error('Failed to delete kiosk uptime record');
     }
+  }
+
+  // Custom POI Types
+  async getCustomPoiTypes(): Promise<CustomPoiType[]> {
+    try {
+      const snapshot = await db.collection('customPoiTypes').get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CustomPoiType));
+    } catch (error) {
+      console.error('Firestore error getting custom POI types:', error);
+      return [];
+    }
+  }
+
+  async createCustomPoiType(type: InsertCustomPoiType): Promise<CustomPoiType> {
+    try {
+      const id = randomUUID();
+      const customType: CustomPoiType = { id, ...type };
+      await db.collection('customPoiTypes').doc(id).set(customType);
+      return customType;
+    } catch (error) {
+      console.error('Firestore error creating custom POI type:', error);
+      throw new Error('Failed to create custom POI type');
+    }
+  }
+
+  async updateCustomPoiType(id: string, type: InsertCustomPoiType): Promise<CustomPoiType | undefined> {
+    try {
+      const doc = await db.collection('customPoiTypes').doc(id).get();
+      if (!doc.exists) return undefined;
+      const updated: CustomPoiType = { id, ...type };
+      await db.collection('customPoiTypes').doc(id).set(updated);
+      return updated;
+    } catch (error) {
+      console.error('Firestore error updating custom POI type:', error);
+      throw new Error('Failed to update custom POI type');
+    }
+  }
+
+  async deleteCustomPoiType(id: string): Promise<boolean> {
+    try {
+      await db.collection('customPoiTypes').doc(id).delete();
+      return true;
+    } catch (error) {
+      console.error('Firestore error deleting custom POI type:', error);
+      return false;
+    }
+  }
+
+  private async getJsonSetting<T>(key: string, fallback: T): Promise<T> {
+    try {
+      const setting = await this.getSetting(key);
+      if (!setting?.value) return fallback;
+      return JSON.parse(setting.value) as T;
+    } catch {
+      return fallback;
+    }
+  }
+
+  private async setJsonSetting(key: string, value: unknown): Promise<void> {
+    const json = JSON.stringify(value);
+    const existing = await this.getSetting(key);
+    if (existing) {
+      await this.updateSetting(key, json);
+    } else {
+      await this.createSetting({ key, value: json });
+    }
+  }
+
+  async getHiddenBuiltinPoiTypes(): Promise<string[]> {
+    return this.getJsonSetting<string[]>('hiddenBuiltinPoiTypes', []);
+  }
+
+  async hideBuiltinPoiType(name: string): Promise<void> {
+    const current = await this.getHiddenBuiltinPoiTypes();
+    if (!current.includes(name)) {
+      await this.setJsonSetting('hiddenBuiltinPoiTypes', [...current, name]);
+    }
+  }
+
+  async unhideBuiltinPoiType(name: string): Promise<void> {
+    const current = await this.getHiddenBuiltinPoiTypes();
+    await this.setJsonSetting('hiddenBuiltinPoiTypes', current.filter(n => n !== name));
+  }
+
+  async getPoiTypeIconOverrides(): Promise<Record<string, string>> {
+    return this.getJsonSetting<Record<string, string>>('poiTypeIconOverrides', {});
+  }
+
+  async setPoiTypeIconOverride(typeName: string, iconUrl: string): Promise<void> {
+    const current = await this.getPoiTypeIconOverrides();
+    await this.setJsonSetting('poiTypeIconOverrides', { ...current, [typeName]: iconUrl });
+  }
+
+  async deletePoiTypeIconOverride(typeName: string): Promise<void> {
+    const current = await this.getPoiTypeIconOverrides();
+    const updated = { ...current };
+    delete updated[typeName];
+    await this.setJsonSetting('poiTypeIconOverrides', updated);
   }
 }
 
