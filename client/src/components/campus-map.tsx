@@ -675,7 +675,24 @@ export default function CampusMap({
         });
 
         const startMarker = L.marker(allPoints[0], { icon: startIcon }).addTo(mapInstanceRef.current);
+        if (navigationStartBuilding?.name) {
+          startMarker.bindTooltip(navigationStartBuilding.name, {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -24],
+            className: 'bg-green-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
+          });
+        }
+        
         const endMarker = L.marker(allPoints[allPoints.length - 1], { icon: endIcon }).addTo(mapInstanceRef.current);
+        if (navigationEndBuilding?.name) {
+          endMarker.bindTooltip(navigationEndBuilding.name, {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -24],
+            className: 'bg-red-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
+          });
+        }
         
         routeMarkersRef.current.push(startMarker, endMarker);
 
@@ -721,6 +738,14 @@ export default function CampusMap({
               iconAnchor: [20, 40],
             });
             const waypointMarker = L.marker({ lat: waypoint.lat, lng: waypoint.lng }, { icon: waypointIcon }).addTo(mapInstanceRef.current);
+            if (waypoint.name) {
+              waypointMarker.bindTooltip(waypoint.name, {
+                permanent: true,
+                direction: 'top',
+                offset: [0, -24],
+                className: 'bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
+              });
+            }
             routeMarkersRef.current.push(waypointMarker);
           });
         }
@@ -767,7 +792,24 @@ export default function CampusMap({
         });
 
         const startMarker = L.marker(routePolyline[0], { icon: startIcon }).addTo(mapInstanceRef.current);
+        if (navigationStartBuilding?.name) {
+          startMarker.bindTooltip(navigationStartBuilding.name, {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -24],
+            className: 'bg-green-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
+          });
+        }
+        
         const endMarker = L.marker(routePolyline[routePolyline.length - 1], { icon: endIcon }).addTo(mapInstanceRef.current);
+        if (navigationEndBuilding?.name) {
+          endMarker.bindTooltip(navigationEndBuilding.name, {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -24],
+            className: 'bg-red-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
+          });
+        }
         
         routeMarkersRef.current.push(startMarker, endMarker);
 
@@ -787,6 +829,14 @@ export default function CampusMap({
               iconAnchor: [20, 40],
             });
             const waypointMarker = L.marker({ lat: waypoint.lat, lng: waypoint.lng }, { icon: waypointIcon }).addTo(mapInstanceRef.current);
+            if (waypoint.name) {
+              waypointMarker.bindTooltip(waypoint.name, {
+                permanent: true,
+                direction: 'top',
+                offset: [0, -24],
+                className: 'bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
+              });
+            }
             routeMarkersRef.current.push(waypointMarker);
           });
         }
