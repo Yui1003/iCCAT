@@ -508,12 +508,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POI Types management (custom types, hidden built-ins, icon overrides)
   app.get('/api/poi-types', async (req, res) => {
     try {
-      const [customTypes, hiddenBuiltinTypes, iconOverrides] = await Promise.all([
+      const [customTypes, hiddenBuiltinTypes, iconOverrides, renames] = await Promise.all([
         storage.getCustomPoiTypes(),
         storage.getHiddenBuiltinPoiTypes(),
         storage.getPoiTypeIconOverrides(),
+        storage.getPoiTypeRenames(),
       ]);
-      res.json({ customTypes, hiddenBuiltinTypes, iconOverrides });
+      res.json({ customTypes, hiddenBuiltinTypes, iconOverrides, renames });
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch POI types' });
     }
@@ -592,6 +593,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: 'Failed to reset icon override' });
+    }
+  });
+
+  app.put('/api/poi-types/rename/:name', async (req, res) => {
+    try {
+      const { displayName } = req.body;
+      if (!displayName || typeof displayName !== 'string') {
+        return res.status(400).json({ error: 'displayName is required' });
+      }
+      await storage.setPoiTypeRename(decodeURIComponent(req.params.name), displayName.trim());
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to rename POI type' });
+    }
+  });
+
+  app.delete('/api/poi-types/rename/:name', async (req, res) => {
+    try {
+      await storage.deletePoiTypeRename(decodeURIComponent(req.params.name));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete rename' });
     }
   });
 

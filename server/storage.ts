@@ -177,6 +177,9 @@ export interface IStorage {
   getPoiTypeIconOverrides(): Promise<Record<string, string>>;
   setPoiTypeIconOverride(typeName: string, iconUrl: string): Promise<void>;
   deletePoiTypeIconOverride(typeName: string): Promise<void>;
+  getPoiTypeRenames(): Promise<Record<string, string>>;
+  setPoiTypeRename(originalName: string, displayName: string): Promise<void>;
+  deletePoiTypeRename(originalName: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1734,6 +1737,22 @@ export class DatabaseStorage implements IStorage {
     const updated = { ...current };
     delete updated[typeName];
     await this.setJsonSetting('poiTypeIconOverrides', updated);
+  }
+
+  async getPoiTypeRenames(): Promise<Record<string, string>> {
+    return this.getJsonSetting<Record<string, string>>('poiTypeRenames', {});
+  }
+
+  async setPoiTypeRename(originalName: string, displayName: string): Promise<void> {
+    const current = await this.getPoiTypeRenames();
+    await this.setJsonSetting('poiTypeRenames', { ...current, [originalName]: displayName });
+  }
+
+  async deletePoiTypeRename(originalName: string): Promise<void> {
+    const current = await this.getPoiTypeRenames();
+    const updated = { ...current };
+    delete updated[originalName];
+    await this.setJsonSetting('poiTypeRenames', updated);
   }
 }
 

@@ -139,13 +139,21 @@ export default function Navigation() {
     customTypes: CustomPoiType[];
     hiddenBuiltinTypes: string[];
     iconOverrides: Record<string, string>;
+    renames: Record<string, string>;
   }>({ queryKey: ['/api/poi-types'] });
 
   const activePoiTypes = useMemo(() => {
     const hidden = new Set(poiTypesData?.hiddenBuiltinTypes || []);
-    const builtin = [...poiTypes].filter(t => !hidden.has(t));
+    const renames = poiTypesData?.renames || {};
+    const builtin = [...poiTypes].filter(t => !hidden.has(t)).map(t => renames[t] ?? t);
     const custom = (poiTypesData?.customTypes || []).map(c => c.name);
     return [...builtin, ...custom].sort();
+  }, [poiTypesData]);
+
+  // Reverse rename map: displayName → originalName (for filter matching against building.type)
+  const reverseRenames = useMemo(() => {
+    const renames = poiTypesData?.renames || {};
+    return Object.fromEntries(Object.entries(renames).map(([orig, disp]) => [disp, orig]));
   }, [poiTypesData]);
 
   useEffect(() => {
@@ -4091,7 +4099,7 @@ export default function Navigation() {
 
   // Filter buildings by type and search query
   const filteredBuildings = buildings.filter(b => {
-    const matchesType = selectedTypes.includes(b.type);
+    const matchesType = selectedTypes.some(sel => sel === b.type || reverseRenames[sel] === b.type);
     const matchesSearch = searchQuery === "" || 
       b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (b.description && b.description.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -4209,7 +4217,7 @@ export default function Navigation() {
                               data-testid={`checkbox-marker-type-${type}`}
                             />
                             <img
-                              src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes)}
+                              src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes, poiTypesData?.renames)}
                               alt={type}
                               className="w-4 h-4 object-contain flex-shrink-0"
                             />
@@ -4392,7 +4400,7 @@ export default function Navigation() {
                         building.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         (building.description || "").toLowerCase().includes(searchQuery.toLowerCase());
                       
-                      const matchesType = selectedTypes.includes(building.type || "");
+                      const matchesType = selectedTypes.some(sel => sel === (building.type || "") || reverseRenames[sel] === (building.type || ""));
                       
                       return matchesSearch && matchesType;
                     });

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, MapPin, Building2, School, Hospital, Store, Home, Shapes, Settings, Eye, EyeOff, RotateCcw, Upload, ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, MapPin, Building2, School, Hospital, Store, Home, Shapes, Settings, Eye, EyeOff, RotateCcw, Upload, ImageIcon, Check, ChevronsUpDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -79,17 +81,34 @@ export default function AdminBuildings() {
     queryKey: ['/api/buildings']
   });
 
+  const [typeComboOpen, setTypeComboOpen] = useState(false);
+  const [renamingType, setRenamingType] = useState<string | null>(null);
+  const [renameInputValue, setRenameInputValue] = useState("");
+  const [showHiddenTypes, setShowHiddenTypes] = useState(false);
+
   const { data: poiTypesData, isLoading: isPoiTypesLoading } = useQuery<{
     customTypes: CustomPoiType[];
     hiddenBuiltinTypes: string[];
     iconOverrides: Record<string, string>;
+    renames: Record<string, string>;
   }>({ queryKey: ['/api/poi-types'] });
 
   const activeTypes = useMemo(() => {
     const hidden = new Set(poiTypesData?.hiddenBuiltinTypes || []);
-    const builtin = [...poiTypes].filter(t => !hidden.has(t));
+    const renames = poiTypesData?.renames || {};
+    const builtin = [...poiTypes].filter(t => !hidden.has(t)).map(t => renames[t] ?? t);
     const custom = (poiTypesData?.customTypes || []).map(c => c.name);
     return [...builtin, ...custom].sort();
+  }, [poiTypesData]);
+
+  // Map display name back to the original type name stored in buildings
+  const displayToOriginal = useMemo(() => {
+    const renames = poiTypesData?.renames || {};
+    const map: Record<string, string> = {};
+    for (const [orig, disp] of Object.entries(renames)) {
+      map[disp] = orig;
+    }
+    return map;
   }, [poiTypesData]);
 
   // Upload icon helper for type management
@@ -135,6 +154,28 @@ export default function AdminBuildings() {
     mutationFn: (name: string) => apiRequest('DELETE', `/api/poi-types/hide/${encodeURIComponent(name)}`, null),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/poi-types'] }),
     onError: () => toast({ title: "Failed to restore type", variant: "destructive" }),
+  });
+
+  const setRenameMutation = useMutation({
+    mutationFn: ({ originalName, displayName }: { originalName: string; displayName: string }) =>
+      apiRequest('PUT', `/api/poi-types/rename/${encodeURIComponent(originalName)}`, { displayName }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/poi-types'] });
+      setRenamingType(null);
+      toast({ title: "Type renamed" });
+    },
+    onError: () => toast({ title: "Failed to rename type", variant: "destructive" }),
+  });
+
+  const deleteRenameMutation = useMutation({
+    mutationFn: (originalName: string) =>
+      apiRequest('DELETE', `/api/poi-types/rename/${encodeURIComponent(originalName)}`, null),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/poi-types'] });
+      setRenamingType(null);
+      toast({ title: "Type name reset" });
+    },
+    onError: () => toast({ title: "Failed to reset name", variant: "destructive" }),
   });
 
   const setIconOverrideMutation = useMutation({
@@ -367,56 +408,84 @@ export default function AdminBuildings() {
 
                 <div>
                   <Label htmlFor="type">Type *</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) => {
-                      if (value === '__manage__') {
-                        setIsManageTypesOpen(true);
-                        return;
-                      }
-                      setFormData({
-                        ...formData,
-                        type: value,
-                        departments: canHaveDepartments(value as any) ? formData.departments : []
-                      });
-                    }}
-                  >
-                    <SelectTrigger id="type" data-testid="select-poi-type">
-                      <SelectValue placeholder="Select location type">
-                        {formData.type && (
+                  <Popover open={typeComboOpen} onOpenChange={setTypeComboOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="type"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={typeComboOpen}
+                        className="w-full justify-between font-normal"
+                        data-testid="select-poi-type"
+                      >
+                        {formData.type ? (
                           <div className="flex items-center gap-2">
                             <img
-                              src={getPoiTypeIconUrl(formData.type, poiTypesData?.iconOverrides, poiTypesData?.customTypes)}
+                              src={getPoiTypeIconUrl(formData.type, poiTypesData?.iconOverrides, poiTypesData?.customTypes, poiTypesData?.renames)}
                               alt={formData.type}
                               className="w-4 h-4 object-contain flex-shrink-0"
                             />
                             <span>{formData.type}</span>
                           </div>
+                        ) : (
+                          <span className="text-muted-foreground">Select location type</span>
                         )}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="z-[10000] max-h-[300px]">
-                      {activeTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes)}
-                              alt={type}
-                              className="w-4 h-4 object-contain flex-shrink-0"
-                            />
-                            <span>{type}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                      <Separator className="my-1" />
-                      <SelectItem value="__manage__" data-testid="button-manage-types">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Settings className="w-4 h-4" />
-                          <span>Manage Types...</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[10000]" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search types..." />
+                        <CommandList className="max-h-[280px]">
+                          <CommandEmpty>No type found.</CommandEmpty>
+                          <CommandGroup>
+                            {activeTypes.map((type) => {
+                              const originalType = displayToOriginal[type] ?? type;
+                              return (
+                                <CommandItem
+                                  key={type}
+                                  value={type}
+                                  onSelect={() => {
+                                    setFormData({
+                                      ...formData,
+                                      type: originalType,
+                                      departments: canHaveDepartments(originalType as any) ? formData.departments : []
+                                    });
+                                    setTypeComboOpen(false);
+                                  }}
+                                  data-testid={`type-option-${type}`}
+                                >
+                                  <img
+                                    src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes, poiTypesData?.renames)}
+                                    alt={type}
+                                    className="w-4 h-4 object-contain flex-shrink-0 mr-2"
+                                  />
+                                  {type}
+                                  {(formData.type === originalType || formData.type === type) && (
+                                    <Check className="ml-auto h-4 w-4" />
+                                  )}
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandGroup>
+                          <CommandSeparator />
+                          <CommandGroup>
+                            <CommandItem
+                              value="__manage__"
+                              onSelect={() => {
+                                setIsManageTypesOpen(true);
+                                setTypeComboOpen(false);
+                              }}
+                              data-testid="button-manage-types"
+                            >
+                              <Settings className="mr-2 h-4 w-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">Manage Types...</span>
+                            </CommandItem>
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div>
@@ -781,7 +850,7 @@ export default function AdminBuildings() {
                         <SelectItem key={type} value={type}>
                           <div className="flex items-center gap-2">
                             <img
-                              src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes)}
+                              src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes, poiTypesData?.renames)}
                               alt={type}
                               className="w-4 h-4 object-contain flex-shrink-0"
                             />
@@ -813,7 +882,7 @@ export default function AdminBuildings() {
                   const matchesSearch = searchQuery === "" || 
                     building.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     (building.type?.toLowerCase().includes(searchQuery.toLowerCase()));
-                  const matchesType = selectedTypeFilter === "All Types" || building.type === selectedTypeFilter;
+                  const matchesType = selectedTypeFilter === "All Types" || building.type === selectedTypeFilter || (displayToOriginal[selectedTypeFilter] && building.type === displayToOriginal[selectedTypeFilter]);
                   return matchesSearch && matchesType;
                 });
                 return (
@@ -838,7 +907,7 @@ export default function AdminBuildings() {
                             <div className="flex-1">
                               <h3 className="font-medium text-foreground">{building.name}</h3>
                               <p className="text-sm text-muted-foreground">
-                                {building.type || "Building"}
+                                {(poiTypesData?.renames || {})[building.type ?? ""] ?? building.type ?? "Building"}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {building.lat.toFixed(4)}, {building.lng.toFixed(4)}
@@ -947,67 +1016,136 @@ export default function AdminBuildings() {
             <div className="py-8 text-center text-muted-foreground text-sm">Loading types...</div>
           ) : (
             <div className="space-y-4">
-              {/* Built-in Types */}
+              {/* Built-in Types — visible */}
               <div>
                 <h3 className="font-semibold text-sm mb-2">Built-in Types</h3>
                 <div className="space-y-1">
-                  {[...poiTypes].sort().map((type) => {
-                    const isHidden = poiTypesData?.hiddenBuiltinTypes?.includes(type);
+                  {[...poiTypes].sort().filter(type => !poiTypesData?.hiddenBuiltinTypes?.includes(type)).map((type) => {
+                    const renames = poiTypesData?.renames || {};
+                    const displayName = renames[type] ?? type;
                     const hasOverride = !!poiTypesData?.iconOverrides?.[type];
+                    const hasRename = !!renames[type];
+                    const isRenaming = renamingType === type;
                     return (
                       <div
                         key={type}
                         data-testid={`poi-type-row-${type}`}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-opacity ${isHidden ? 'opacity-40 bg-muted/20' : 'bg-muted/30'}`}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/30"
                       >
                         <img
-                          src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes)}
-                          alt={type}
+                          src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes, renames)}
+                          alt={displayName}
                           className="w-6 h-6 object-contain flex-shrink-0"
                         />
-                        <span className="flex-1 text-sm">{type}</span>
-                        {isHidden && <Badge variant="secondary" className="text-xs">Hidden</Badge>}
-                        <div className="flex gap-1">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            title="Replace Icon"
-                            data-testid={`button-replace-icon-${type}`}
-                            disabled={uploadingIconFor === type}
-                            onClick={() => {
-                              const input = document.createElement('input');
-                              input.type = 'file';
-                              input.accept = 'image/*';
-                              input.onchange = (e) => handleIconFileChange(e as any, { type: 'builtin', name: type });
-                              input.click();
-                            }}
-                          >
-                            {uploadingIconFor === type ? <Upload className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
-                          </Button>
-                          {hasOverride && (
+                        {isRenaming ? (
+                          <div className="flex-1 flex items-center gap-1">
+                            <Input
+                              value={renameInputValue}
+                              onChange={(e) => setRenameInputValue(e.target.value)}
+                              className="h-7 text-sm flex-1"
+                              autoFocus
+                              data-testid={`input-rename-${type}`}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const trimmed = renameInputValue.trim();
+                                  if (!trimmed) return;
+                                  if (trimmed === type) {
+                                    deleteRenameMutation.mutate(type);
+                                  } else {
+                                    setRenameMutation.mutate({ originalName: type, displayName: trimmed });
+                                  }
+                                }
+                                if (e.key === 'Escape') setRenamingType(null);
+                              }}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-green-600"
+                              title="Save rename"
+                              onClick={() => {
+                                const trimmed = renameInputValue.trim();
+                                if (!trimmed) return;
+                                if (trimmed === type) {
+                                  deleteRenameMutation.mutate(type);
+                                } else {
+                                  setRenameMutation.mutate({ originalName: type, displayName: trimmed });
+                                }
+                              }}
+                            >
+                              <Check className="w-3 h-3" />
+                            </Button>
                             <Button
                               size="icon"
                               variant="ghost"
                               className="h-7 w-7"
-                              title="Reset Icon"
-                              data-testid={`button-reset-icon-${type}`}
-                              onClick={() => resetIconOverrideMutation.mutate(type)}
+                              title="Cancel"
+                              onClick={() => setRenamingType(null)}
                             >
-                              <RotateCcw className="w-3 h-3" />
+                              <X className="w-3 h-3" />
                             </Button>
-                          )}
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            title={isHidden ? 'Restore' : 'Hide'}
-                            data-testid={`button-toggle-hide-${type}`}
-                            onClick={() => isHidden ? unhideTypeMutation.mutate(type) : hideTypeMutation.mutate(type)}
-                          >
-                            {isHidden ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                          </Button>
-                        </div>
+                          </div>
+                        ) : (
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm">{displayName}</span>
+                            {hasRename && (
+                              <p className="text-xs text-muted-foreground">Originally: {type}</p>
+                            )}
+                          </div>
+                        )}
+                        {!isRenaming && (
+                          <div className="flex gap-1 flex-shrink-0">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              title="Rename"
+                              data-testid={`button-rename-${type}`}
+                              onClick={() => { setRenamingType(type); setRenameInputValue(displayName); }}
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              title="Replace Icon"
+                              data-testid={`button-replace-icon-${type}`}
+                              disabled={uploadingIconFor === type}
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/*';
+                                input.onchange = (e) => handleIconFileChange(e as any, { type: 'builtin', name: type });
+                                input.click();
+                              }}
+                            >
+                              {uploadingIconFor === type ? <Upload className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
+                            </Button>
+                            {hasOverride && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                title="Reset Icon"
+                                data-testid={`button-reset-icon-${type}`}
+                                onClick={() => resetIconOverrideMutation.mutate(type)}
+                              >
+                                <RotateCcw className="w-3 h-3" />
+                              </Button>
+                            )}
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              title="Delete type (hide from app)"
+                              data-testid={`button-delete-builtin-${type}`}
+                              onClick={() => hideTypeMutation.mutate(type)}
+                            >
+                              <Trash2 className="w-3 h-3 text-destructive" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1027,7 +1165,7 @@ export default function AdminBuildings() {
                         className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/30"
                       >
                         <img
-                          src={getPoiTypeIconUrl(ct.name, poiTypesData?.iconOverrides, poiTypesData?.customTypes)}
+                          src={getPoiTypeIconUrl(ct.name, poiTypesData?.iconOverrides, poiTypesData?.customTypes, poiTypesData?.renames)}
                           alt={ct.name}
                           className="w-6 h-6 object-contain flex-shrink-0"
                         />
@@ -1064,6 +1202,52 @@ export default function AdminBuildings() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Hidden (Deleted) Built-in Types */}
+              {(poiTypesData?.hiddenBuiltinTypes?.length ?? 0) > 0 && (
+                <div>
+                  <Separator className="mb-3" />
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors mb-2"
+                    onClick={() => setShowHiddenTypes(v => !v)}
+                    data-testid="button-toggle-hidden-types"
+                  >
+                    <EyeOff className="w-3 h-3" />
+                    Deleted Types ({poiTypesData!.hiddenBuiltinTypes.length})
+                    <span className="text-xs">{showHiddenTypes ? '▲' : '▼'}</span>
+                  </button>
+                  {showHiddenTypes && (
+                    <div className="space-y-1">
+                      {poiTypesData!.hiddenBuiltinTypes.map((type) => (
+                        <div
+                          key={type}
+                          data-testid={`hidden-type-row-${type}`}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/10 opacity-60"
+                        >
+                          <img
+                            src={getPoiTypeIconUrl(type, poiTypesData?.iconOverrides, poiTypesData?.customTypes, poiTypesData?.renames)}
+                            alt={type}
+                            className="w-6 h-6 object-contain flex-shrink-0 grayscale"
+                          />
+                          <span className="flex-1 text-sm line-through">{poiTypesData?.renames?.[type] ?? type}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            title="Restore type"
+                            data-testid={`button-restore-${type}`}
+                            onClick={() => unhideTypeMutation.mutate(type)}
+                          >
+                            <RotateCcw className="w-3 h-3 mr-1" />
+                            Restore
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

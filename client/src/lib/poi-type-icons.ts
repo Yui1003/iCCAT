@@ -67,17 +67,41 @@ export const BUILTIN_ICON_MAP: Record<string, string> = {
 };
 
 /**
+ * Build a reverse-rename map: displayName → originalName
+ */
+export function buildReverseRenames(renames: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(Object.entries(renames).map(([orig, disp]) => [disp, orig]));
+}
+
+/**
  * Resolves the display icon URL for a POI type.
  * Priority: custom type icon > icon override > built-in icon > otherIcon fallback
+ * Handles renamed types by reverse-mapping display names back to original names for icon lookup.
  */
 export function getPoiTypeIconUrl(
   poiType?: string | null,
   iconOverrides?: Record<string, string>,
-  customTypes?: CustomPoiType[]
+  customTypes?: CustomPoiType[],
+  renames?: Record<string, string>
 ): string {
   if (!poiType) return buildingIcon;
+
+  // 1. Custom type — matched by display name directly
   const customType = customTypes?.find(c => c.name === poiType);
   if (customType?.icon) return customType.icon;
+
+  // Build reverse rename map to resolve display name → original name
+  const reverseRenames = renames ? buildReverseRenames(renames) : {};
+  const originalName = reverseRenames[poiType] ?? poiType;
+
+  // 2. Icon override — try exact name first, then original name
   if (iconOverrides?.[poiType]) return iconOverrides[poiType];
-  return BUILTIN_ICON_MAP[poiType] || otherIcon;
+  if (originalName !== poiType && iconOverrides?.[originalName]) return iconOverrides[originalName];
+
+  // 3. Built-in icon map — try exact name first, then original name
+  if (BUILTIN_ICON_MAP[poiType]) return BUILTIN_ICON_MAP[poiType];
+  if (originalName !== poiType && BUILTIN_ICON_MAP[originalName]) return BUILTIN_ICON_MAP[originalName];
+
+  // 4. Fallback
+  return otherIcon;
 }

@@ -51,7 +51,7 @@ interface CampusMapProps {
   hidePolygons?: boolean;
   hideBuildingMarkers?: boolean;
   hidePaths?: boolean;
-  poiTypeData?: { customTypes: CustomPoiType[]; iconOverrides: Record<string, string> };
+  poiTypeData?: { customTypes: CustomPoiType[]; iconOverrides: Record<string, string>; renames?: Record<string, string> };
 }
 
 declare global {
@@ -462,7 +462,7 @@ export default function CampusMap({
           }
         }
         
-        const iconImage = getPoiTypeIconUrl(building.type, poiTypeData?.iconOverrides, poiTypeData?.customTypes);
+        const iconImage = getPoiTypeIconUrl(building.type, poiTypeData?.iconOverrides, poiTypeData?.customTypes, poiTypeData?.renames);
         
         // Check if this building should be highlighted for parking selection
         const isParkingMatch = parkingSelectionMode && parkingTypeFilter && building.type === parkingTypeFilter;
