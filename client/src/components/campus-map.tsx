@@ -891,40 +891,24 @@ export default function CampusMap({
       const isParkingHighlighted = parkingSelectionMode && parkingTypeFilter && building.type === parkingTypeFilter;
       const polygonColor = isParkingHighlighted ? '#FACC15' : ((building as any).polygonColor || '#FACC15');
       const polygonOpacity = isParkingHighlighted ? 0.5 : ((building as any).polygonOpacity || 0.3);
+      const polygonClass = isParkingHighlighted ? 'parking-polygon-selectable building-polygon' : 'building-polygon';
+      const polygonStyle = { color: polygonColor, fillColor: polygonColor, fillOpacity: polygonOpacity, weight: 3, className: polygonClass };
 
-      // Collect all area shapes: prefer new polygons[], fall back to legacy polygon
-      const areaShapes: any[][] = (building as any).polygons?.length
-        ? (building as any).polygons
-        : (building.polygon && Array.isArray(building.polygon) && (building.polygon as any[]).length > 2 ? [building.polygon] : []);
-
-      areaShapes.forEach((shape: any[]) => {
-        if (!shape || shape.length < 3) return;
-        const latlngs = shape.map((p: any) => [p.lat, p.lng]);
-        const poly = L.polygon(latlngs, {
-          color: polygonColor,
-          fillColor: polygonColor,
-          fillOpacity: polygonOpacity,
-          weight: 3,
-          className: isParkingHighlighted ? 'parking-polygon-selectable building-polygon' : 'building-polygon'
-        }).addTo(mapInstanceRef.current);
-        polygonsRef.current.push(poly);
-      });
-
-      // Shadow shapes: fully opaque, same color
-      const shadowShapes: any[][] = (building as any).shadowPolygons || [];
-      shadowShapes.forEach((shape: any[]) => {
-        if (!shape || shape.length < 3) return;
-        const latlngs = shape.map((p: any) => [p.lat, p.lng]);
-        const poly = L.polygon(latlngs, {
-          color: polygonColor,
-          fillColor: polygonColor,
-          fillOpacity: 1.0,
-          weight: 2,
-          opacity: 1.0,
-          className: 'building-polygon'
-        }).addTo(mapInstanceRef.current);
-        polygonsRef.current.push(poly);
-      });
+      // New: multi-polygon support
+      if ((building as any).polygons && Array.isArray((building as any).polygons) && (building as any).polygons.length > 0) {
+        ((building as any).polygons as any[][]).forEach((poly: any[]) => {
+          if (poly && poly.length > 2) {
+            const latlngs = poly.map((p: any) => [p.lat, p.lng]);
+            const polygon = L.polygon(latlngs, polygonStyle).addTo(mapInstanceRef.current);
+            polygonsRef.current.push(polygon);
+          }
+        });
+      } else if (building.polygon && Array.isArray(building.polygon) && building.polygon.length > 2) {
+        // Legacy single-polygon fallback
+        const latlngs = building.polygon.map((p: any) => [p.lat, p.lng]);
+        const polygon = L.polygon(latlngs, polygonStyle).addTo(mapInstanceRef.current);
+        polygonsRef.current.push(polygon);
+      }
     });
   }, [buildings, hidePolygonsInNavigation, hidePolygons, parkingSelectionMode, parkingTypeFilter]);
 
@@ -953,32 +937,37 @@ export default function CampusMap({
       waypoint: '#f59e0b'    // Amber/Orange for waypoints
     };
 
-    // Helper function to render a navigation polygon
+    // Helper function to render a navigation polygon (supports multi-polygon)
     const renderNavigationPolygon = (
-      building: NavigationBuilding | null | undefined, 
+      building: NavigationBuilding | null | undefined,
       color: string,
       type: string
     ) => {
-      if (!building?.polygon || !Array.isArray(building.polygon) || building.polygon.length < 3) {
-        return;
-      }
+      if (!building) return;
 
-      const latlngs = building.polygon.map(p => [p.lat, p.lng]);
-      const polygon = L.polygon(latlngs, {
-        color: color,
+      const style = {
+        color,
         fillColor: color,
         fillOpacity: 0.35,
         weight: 3,
         className: `navigation-polygon navigation-${type} building-polygon`
-      }).addTo(mapInstanceRef.current);
+      };
 
-      // Add a pulsing animation effect via CSS class
-      const element = polygon.getElement();
-      if (element) {
-        element.classList.add('navigation-polygon-highlight');
+      const addPoly = (latlngs: any[]) => {
+        const polygon = L.polygon(latlngs, style).addTo(mapInstanceRef.current);
+        const element = polygon.getElement();
+        if (element) element.classList.add('navigation-polygon-highlight');
+        navigationPolygonsRef.current.push(polygon);
+      };
+
+      // New: multi-polygon support
+      if ((building as any).polygons && Array.isArray((building as any).polygons) && (building as any).polygons.length > 0) {
+        ((building as any).polygons as any[][]).forEach((poly: any[]) => {
+          if (poly && poly.length >= 3) addPoly(poly.map((p: any) => [p.lat, p.lng]));
+        });
+      } else if (building.polygon && Array.isArray(building.polygon) && building.polygon.length >= 3) {
+        addPoly(building.polygon.map(p => [p.lat, p.lng]));
       }
-
-      navigationPolygonsRef.current.push(polygon);
     };
 
     // Render start building polygon (green)

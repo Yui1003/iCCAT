@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect, useMemo, Component } from "react";
-import type { ReactNode } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, MapPin, Building2, School, Hospital, Store, Home, Shapes, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, MapPin, Building2, School, Hospital, Store, Home, Shapes } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,36 +18,6 @@ import type { Building, InsertBuilding, LatLng } from "@shared/schema";
 import { poiTypes, canHaveDepartments } from "@shared/schema";
 import { invalidateEndpointCache } from "@/lib/offline-data";
 import { motion } from "framer-motion";
-
-class DialogErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; message: string }> {
-  constructor(props: { children: ReactNode }) {
-    super(props);
-    this.state = { hasError: false, message: "" };
-  }
-  static getDerivedStateFromError(error: any) {
-    return { hasError: true, message: error?.message || "Unknown error" };
-  }
-  componentDidCatch(error: any, info: any) {
-    console.error("Dialog render error:", error, info);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
-          <AlertTriangle className="w-10 h-10 text-destructive" />
-          <div>
-            <p className="font-semibold text-foreground">Something went wrong loading this form.</p>
-            <p className="text-sm text-muted-foreground mt-1">{this.state.message}</p>
-          </div>
-          <Button variant="outline" onClick={() => this.setState({ hasError: false, message: "" })}>
-            Try Again
-          </Button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -68,9 +37,7 @@ const itemVariants = {
 export default function AdminBuildings() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBuilding, setEditingBuilding] = useState<Building | null>(null);
-  const [polygons, setPolygons] = useState<LatLng[][]>([]);
-  const [shadowPolygons, setShadowPolygons] = useState<LatLng[][]>([]);
-  const [formData, setFormData] = useState<InsertBuilding>({
+  const [formData, setFormData] = useState<InsertBuilding & { polygons?: any }>({
     name: "",
     type: "Building",
     description: "",
@@ -82,6 +49,7 @@ export default function AdminBuildings() {
     image: "",
     markerIcon: "building",
     polygon: null,
+    polygons: null,
     polygonColor: "#FACC15",
     polygonOpacity: 0.3,
     images: [],
@@ -134,12 +102,6 @@ export default function AdminBuildings() {
   const handleOpenDialog = (building?: Building) => {
     if (building) {
       setEditingBuilding(building);
-      const loadedPolygons: LatLng[][] = (building as any).polygons?.length
-        ? (building as any).polygons
-        : building.polygon ? [building.polygon as unknown as LatLng[]] : [];
-      const loadedShadows: LatLng[][] = (building as any).shadowPolygons || [];
-      setPolygons(loadedPolygons);
-      setShadowPolygons(loadedShadows);
       setFormData({
         name: building.name,
         type: building.type || "Building",
@@ -151,15 +113,17 @@ export default function AdminBuildings() {
         departments: building.departments || [],
         image: building.image || "",
         markerIcon: building.markerIcon || "building",
-        polygon: building.polygon || null,
+        polygon: null,
+        polygons: (building as any).polygons ||
+          (building.polygon && Array.isArray(building.polygon) && (building.polygon as any[]).length > 0
+            ? [building.polygon]
+            : null),
         polygonColor: (building as any).polygonColor || "#FACC15",
         polygonOpacity: (building as any).polygonOpacity || 0.3,
         images: building.images || [],
       });
     } else {
       setEditingBuilding(null);
-      setPolygons([]);
-      setShadowPolygons([]);
       setFormData({
         name: "",
         type: "Building",
@@ -172,6 +136,7 @@ export default function AdminBuildings() {
         image: "",
         markerIcon: "building",
         polygon: null,
+        polygons: null,
         polygonColor: "#FACC15",
         polygonOpacity: 0.3,
         images: [],
@@ -189,16 +154,10 @@ export default function AdminBuildings() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
-      ...formData,
-      polygons: polygons.length ? polygons : null,
-      shadowPolygons: shadowPolygons.length ? shadowPolygons : null,
-      polygon: polygons.length ? polygons[0] : (formData.polygon || null),
-    } as any;
     if (editingBuilding) {
-      updateMutation.mutate({ id: editingBuilding.id, data: payload });
+      updateMutation.mutate({ id: editingBuilding.id, data: formData });
     } else {
-      createMutation.mutate(payload);
+      createMutation.mutate(formData);
     }
   };
 
@@ -273,7 +232,6 @@ export default function AdminBuildings() {
                   {editingBuilding ? "Edit Building" : "Add New Building"}
                 </DialogTitle>
               </DialogHeader>
-              <DialogErrorBoundary>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <Label htmlFor="name">Location Name *</Label>
@@ -540,36 +498,32 @@ export default function AdminBuildings() {
                     </div>
                   </div>
 
-                  <div className="rounded-lg border p-2 bg-background">
+                  <div className="h-[300px] rounded-lg overflow-hidden border">
                     <PolygonDrawingMap
                       centerLat={formData.lat}
                       centerLng={formData.lng}
-                      polygons={polygons}
-                      onPolygonsChange={(p) => setPolygons(p || [])}
-                      shadowPolygons={shadowPolygons}
-                      onShadowPolygonsChange={(s) => setShadowPolygons(s || [])}
+                      polygons={(formData as any).polygons as LatLng[][] | null}
+                      onPolygonsChange={(polygons) => setFormData({ ...formData, polygons } as any)}
                       polygonColor={formData.polygonColor || "#FACC15"}
-                      polygonOpacity={formData.polygonOpacity || 0.3}
                       existingBuildings={buildings.filter(b => !editingBuilding || b.id !== editingBuilding.id) as any}
                     />
                   </div>
-                  {(polygons.length > 0 || shadowPolygons.length > 0) && (
+                  {(formData as any).polygons && Array.isArray((formData as any).polygons) && (formData as any).polygons.length > 0 && (
                     <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                       <Shapes className="w-4 h-4" />
                       <span>
-                        {polygons.length > 0 && `${polygons.length} area shape${polygons.length > 1 ? 's' : ''}`}
-                        {polygons.length > 0 && shadowPolygons.length > 0 && ', '}
-                        {shadowPolygons.length > 0 && `${shadowPolygons.length} shadow shape${shadowPolygons.length > 1 ? 's' : ''}`}
+                        {(formData as any).polygons.length} polygon{(formData as any).polygons.length > 1 ? 's' : ''} &mdash;&nbsp;
+                        {(formData as any).polygons.reduce((sum: number, p: LatLng[]) => sum + p.length, 0)} total points
                       </span>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => { setPolygons([]); setShadowPolygons([]); setFormData({ ...formData, polygon: null }); }}
+                        onClick={() => setFormData({ ...formData, polygons: null } as any)}
                         data-testid="button-clear-polygon"
                         className="ml-auto text-destructive"
                       >
-                        Clear All
+                        Clear All Polygons
                       </Button>
                     </div>
                   )}
@@ -633,7 +587,6 @@ export default function AdminBuildings() {
                   </Button>
                 </div>
               </form>
-              </DialogErrorBoundary>
             </DialogContent>
           </Dialog>
         </div>
