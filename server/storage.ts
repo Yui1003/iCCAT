@@ -167,6 +167,18 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Firestore does not support nested arrays (Array<Array<...>>).
+  // polygons: LatLng[][] must be stored as { points: LatLng[] }[] and converted back on read.
+  private serializePolygons(polygons: any): { points: any[] }[] | null {
+    if (!polygons || !Array.isArray(polygons) || polygons.length === 0) return null;
+    return polygons.map((poly: any[]) => ({ points: Array.isArray(poly) ? poly : [] }));
+  }
+  private deserializePolygons(polygons: any): any[][] | null {
+    if (!polygons || !Array.isArray(polygons) || polygons.length === 0) return null;
+    // Support both serialized format { points: [...] } and raw nested arrays (legacy)
+    return polygons.map((p: any) => (p && Array.isArray(p.points) ? p.points : p));
+  }
+
   // Buildings
   async getBuildings(): Promise<Building[]> {
     if (FORCE_FALLBACK_MODE) {
@@ -175,7 +187,11 @@ export class DatabaseStorage implements IStorage {
     }
     try {
       const snapshot = await db.collection('buildings').get();
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Building));
+      return snapshot.docs.map(doc => {
+        const data = { id: doc.id, ...doc.data() } as any;
+        if (data.polygons) data.polygons = this.deserializePolygons(data.polygons);
+        return data as Building;
+      });
     } catch (error) {
       console.error('Firestore error, using fallback:', error);
       const data = loadFallbackData();
@@ -187,7 +203,9 @@ export class DatabaseStorage implements IStorage {
     try {
       const doc = await db.collection('buildings').doc(id).get();
       if (!doc.exists) return undefined;
-      return { id: doc.id, ...doc.data() } as Building;
+      const data = { id: doc.id, ...doc.data() } as any;
+      if (data.polygons) data.polygons = this.deserializePolygons(data.polygons);
+      return data as Building;
     } catch (error) {
       console.error('Firestore error, using fallback:', error);
       const data = loadFallbackData();
@@ -204,10 +222,12 @@ export class DatabaseStorage implements IStorage {
         markerIcon: insertBuilding.markerIcon || "building",
         nodeLat: insertBuilding.nodeLat ?? null,
         nodeLng: insertBuilding.nodeLng ?? null,
-        images: insertBuilding.images || []
+        images: insertBuilding.images || [],
+        polygons: this.serializePolygons((insertBuilding as any).polygons)
       } as Building;
       await db.collection('buildings').doc(id).set(building);
-      return building;
+      // Return with deserialized polygons so the frontend gets LatLng[][] back
+      return { ...building, polygons: this.deserializePolygons(building.polygons as any) } as Building;
     } catch (error) {
       console.error('Firestore error:', error);
       throw new Error('Cannot create building in fallback mode');
@@ -222,10 +242,12 @@ export class DatabaseStorage implements IStorage {
         markerIcon: insertBuilding.markerIcon || "building",
         nodeLat: insertBuilding.nodeLat ?? null,
         nodeLng: insertBuilding.nodeLng ?? null,
-        images: insertBuilding.images || []
+        images: insertBuilding.images || [],
+        polygons: this.serializePolygons((insertBuilding as any).polygons)
       } as Building;
       await db.collection('buildings').doc(id).set(building);
-      return building;
+      // Return with deserialized polygons so the frontend gets LatLng[][] back
+      return { ...building, polygons: this.deserializePolygons(building.polygons as any) } as Building;
     } catch (error) {
       console.error('Firestore error:', error);
       throw new Error('Cannot update building in fallback mode');

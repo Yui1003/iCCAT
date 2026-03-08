@@ -79,6 +79,9 @@ export default function AdminBuildings() {
       toast({ title: "Building created successfully" });
       handleCloseDialog();
     },
+    onError: () => {
+      toast({ title: "Failed to save building", variant: "destructive" });
+    },
   });
 
   const updateMutation = useMutation({
@@ -88,6 +91,9 @@ export default function AdminBuildings() {
       await invalidateEndpointCache('/api/buildings', queryClient);
       toast({ title: "Building updated successfully" });
       handleCloseDialog();
+    },
+    onError: () => {
+      toast({ title: "Failed to update building", variant: "destructive" });
     },
   });
 
