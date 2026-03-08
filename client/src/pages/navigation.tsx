@@ -126,6 +126,7 @@ export default function Navigation() {
   
   const [showDrivingAdvisory, setShowDrivingAdvisory] = useState(false);
   const [pendingDrivingAction, setPendingDrivingAction] = useState<(() => void) | null>(null);
+  const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
   
   const [pendingWaypointDrivingRoute, setPendingWaypointDrivingRoute] = useState<{
     start: Building | typeof KIOSK_LOCATION;
@@ -2074,6 +2075,7 @@ export default function Navigation() {
     vType: VehicleType,
     originParking: Building | null
   ) => {
+    setIsGeneratingRoute(true);
     try {
       const WALK_PROXIMITY_THRESHOLD = 100;
       const phases: NavigationRoute['phases'] = [];
@@ -2088,54 +2090,68 @@ export default function Navigation() {
       
       let currentLocation: Building;
       let currentParking: Building | null = originParking;
+
+      // Build allStops early so we can check first-stop proximity before the initial walk
+      const allStops = [...waypointBuildings, end];
       
       if (startIsGate) {
         currentLocation = start as Building;
         currentParking = null;
       } else if (originParking) {
-        let initialWalkPolyline: LatLng[] | null;
-        if (isKioskStart) {
-          if (kioskBuilding) {
-            initialWalkPolyline = await calculateRouteClientSide(kioskBuilding, originParking, 'walking');
-          } else {
-            initialWalkPolyline = await calculateRouteClientSide(KIOSK_LOCATION, originParking, 'walking');
-          }
+        // If the first stop is already close to the parked vehicle, skip the
+        // "walk to parking" opening phase and start directly from the building.
+        const firstStop = allStops[0];
+        const distToFirstStop = calculateDistance(
+          originParking.lat, originParking.lng,
+          firstStop.lat, firstStop.lng
+        );
+        const firstStopIsClose = distToFirstStop <= WALK_PROXIMITY_THRESHOLD;
+
+        if (firstStopIsClose) {
+          currentLocation = isKioskStart ? (kioskBuilding || start as Building) : (start as Building);
         } else {
-          initialWalkPolyline = await calculateRouteClientSide(start as Building, originParking, 'walking');
-        }
-        
-        if (!initialWalkPolyline) {
-          toast({
-            title: "Route Calculation Failed",
-            description: `Unable to calculate walking route to ${originParking.name}.`,
-            variant: "destructive"
+          let initialWalkPolyline: LatLng[] | null;
+          if (isKioskStart) {
+            if (kioskBuilding) {
+              initialWalkPolyline = await calculateRouteClientSide(kioskBuilding, originParking, 'walking');
+            } else {
+              initialWalkPolyline = await calculateRouteClientSide(KIOSK_LOCATION, originParking, 'walking');
+            }
+          } else {
+            initialWalkPolyline = await calculateRouteClientSide(start as Building, originParking, 'walking');
+          }
+          
+          if (!initialWalkPolyline) {
+            toast({
+              title: "Route Calculation Failed",
+              description: `Unable to calculate walking route to ${originParking.name}.`,
+              variant: "destructive"
+            });
+            return;
+          }
+          
+          const initialWalkPhase = generateSmartSteps(initialWalkPolyline, 'walking', startName, originParking.name);
+          phases.push({
+            mode: 'walking',
+            polyline: initialWalkPolyline,
+            steps: initialWalkPhase.steps,
+            distance: initialWalkPhase.totalDistance,
+            startName: startName,
+            endName: originParking.name,
+            color: '#10B981',
+            phaseIndex: 0,
+            startId: start.id,
+            endId: originParking.id
           });
-          return;
+          allPolylines = [...allPolylines, ...initialWalkPolyline];
+          allSteps = [...allSteps, ...initialWalkPhase.steps];
+          totalDistanceMeters += parseInt(initialWalkPhase.totalDistance.replace(' m', ''));
+          
+          currentLocation = originParking;
         }
-        
-        const initialWalkPhase = generateSmartSteps(initialWalkPolyline, 'walking', startName, originParking.name);
-        phases.push({
-          mode: 'walking',
-          polyline: initialWalkPolyline,
-          steps: initialWalkPhase.steps,
-          distance: initialWalkPhase.totalDistance,
-          startName: startName,
-          endName: originParking.name,
-          color: '#10B981',
-          phaseIndex: 0,
-          startId: start.id,
-          endId: originParking.id
-        });
-        allPolylines = [...allPolylines, ...initialWalkPolyline];
-        allSteps = [...allSteps, ...initialWalkPhase.steps];
-        totalDistanceMeters += parseInt(initialWalkPhase.totalDistance.replace(' m', ''));
-        
-        currentLocation = originParking;
       } else {
         currentLocation = start as Building;
       }
-      
-      const allStops = [...waypointBuildings, end];
       
       for (let i = 0; i < allStops.length; i++) {
         const destination = allStops[i];
@@ -2188,20 +2204,33 @@ export default function Navigation() {
             currentLocation = destination;
             
             if (!isLastStop) {
-              const walkBackPolyline = await calculateRouteClientSide(destination, currentParking, 'walking');
-              if (walkBackPolyline) {
-                const walkBackPhase = generateSmartSteps(walkBackPolyline, 'walking', destination.name, currentParking.name);
-                phases.push({
-                  mode: 'walking', polyline: walkBackPolyline, steps: walkBackPhase.steps, distance: walkBackPhase.totalDistance,
-                  startName: destination.name, endName: currentParking.name, color: '#10B981',
-                  phaseIndex: phases.length, startId: destination.id, endId: currentParking.id,
-                  note: `Walk back to your vehicle at ${currentParking.name}.`
-                });
-                allPolylines = [...allPolylines, ...walkBackPolyline];
-                allSteps = [...allSteps, ...walkBackPhase.steps];
-                totalDistanceMeters += parseInt(walkBackPhase.totalDistance.replace(' m', ''));
-                currentLocation = currentParking;
+              // Only walk back to parking if the NEXT stop is too far to walk directly.
+              // If the next stop is also close to currentParking, skip the detour and
+              // walk straight from this stop to the next one in the next iteration.
+              const nextStop = allStops[i + 1];
+              const nextDistFromParking = calculateDistance(
+                currentParking.lat, currentParking.lng,
+                nextStop.lat, nextStop.lng
+              );
+              const nextStopIsAlsoClose = nextDistFromParking <= WALK_PROXIMITY_THRESHOLD;
+
+              if (!nextStopIsAlsoClose) {
+                const walkBackPolyline = await calculateRouteClientSide(destination, currentParking, 'walking');
+                if (walkBackPolyline) {
+                  const walkBackPhase = generateSmartSteps(walkBackPolyline, 'walking', destination.name, currentParking.name);
+                  phases.push({
+                    mode: 'walking', polyline: walkBackPolyline, steps: walkBackPhase.steps, distance: walkBackPhase.totalDistance,
+                    startName: destination.name, endName: currentParking.name, color: '#10B981',
+                    phaseIndex: phases.length, startId: destination.id, endId: currentParking.id,
+                    note: `Walk back to your vehicle at ${currentParking.name}.`
+                  });
+                  allPolylines = [...allPolylines, ...walkBackPolyline];
+                  allSteps = [...allSteps, ...walkBackPhase.steps];
+                  totalDistanceMeters += parseInt(walkBackPhase.totalDistance.replace(' m', ''));
+                  currentLocation = currentParking;
+                }
               }
+              // else: next stop is also walkable from same parking — stay at destination
             }
             continue;
           }
@@ -2337,6 +2366,8 @@ export default function Navigation() {
         description: "Unable to calculate route with waypoints.",
         variant: "destructive"
       });
+    } finally {
+      setIsGeneratingRoute(false);
     }
   };
 
@@ -2345,6 +2376,7 @@ export default function Navigation() {
     end: Building,
     vehicleType: VehicleType
   ): Promise<NavigationRoute | null> => {
+    setIsGeneratingRoute(true);
     try {
       // SCENARIO 1: Destination is a matching parking lot - just drive there directly
       if (isParkingForVehicle(end, vehicleType)) {
@@ -2409,6 +2441,8 @@ export default function Navigation() {
         variant: "destructive"
       });
       return null;
+    } finally {
+      setIsGeneratingRoute(false);
     }
   };
 
@@ -2531,6 +2565,7 @@ export default function Navigation() {
       return;
     }
 
+    setIsGeneratingRoute(true);
     try {
       // Multi-stop navigation: use multi-phase route calculator
       if (validWaypoints.length > 0) {
@@ -2919,6 +2954,8 @@ export default function Navigation() {
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsGeneratingRoute(false);
     }
   };
 
@@ -5017,6 +5054,12 @@ export default function Navigation() {
               <span className="text-sm text-muted-foreground">Loading map...</span>
             </div>
           </div>
+          {isGeneratingRoute && (
+            <div className="absolute inset-0 z-[9998] bg-background/80 flex flex-col items-center justify-center gap-3" data-testid="overlay-generating-route">
+              <div className="w-8 h-8 rounded-full animate-spin" style={{ border: '3px solid hsl(var(--muted-foreground) / 0.2)', borderTopColor: 'hsl(var(--primary))' }} />
+              <span className="text-sm text-muted-foreground font-medium">Generating Route...</span>
+            </div>
+          )}
           {parkingSelectionMode && vehicleType && (
             <div className="absolute top-0 left-0 right-0 z-50 bg-yellow-500 text-yellow-900 px-4 py-3 shadow-lg flex items-center justify-between gap-3" data-testid="banner-parking-selection">
               <div className="flex items-center gap-2 flex-1">
