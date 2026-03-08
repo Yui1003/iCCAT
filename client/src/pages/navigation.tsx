@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, Navigation as NavigationIcon, TrendingUp, MapPin, Filter, Search, Users, Car, Bike, QrCode, Plus, X, GripVertical, Clock, ChevronDown, DoorOpen, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronUp, Navigation as NavigationIcon, TrendingUp, MapPin, Filter, Search, Users, Car, Bike, QrCode, Plus, X, GripVertical, Clock, ChevronDown, DoorOpen, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -127,6 +127,7 @@ export default function Navigation() {
   const [showDrivingAdvisory, setShowDrivingAdvisory] = useState(false);
   const [pendingDrivingAction, setPendingDrivingAction] = useState<(() => void) | null>(null);
   const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
+  const [isRouteConfirmed, setIsRouteConfirmed] = useState(false);
   
   const [pendingWaypointDrivingRoute, setPendingWaypointDrivingRoute] = useState<{
     start: Building | typeof KIOSK_LOCATION;
@@ -2292,20 +2293,31 @@ export default function Navigation() {
         currentParking = nearestParking;
         
         if (!isLastStop) {
-          const walkBackPolyline = await calculateRouteClientSide(destination, nearestParking, 'walking');
-          if (walkBackPolyline) {
-            const walkBackPhase = generateSmartSteps(walkBackPolyline, 'walking', destination.name, nearestParking.name);
-            phases.push({
-              mode: 'walking', polyline: walkBackPolyline, steps: walkBackPhase.steps, distance: walkBackPhase.totalDistance,
-              startName: destination.name, endName: nearestParking.name, color: '#10B981',
-              phaseIndex: phases.length, startId: destination.id, endId: nearestParking.id,
-              note: `Walk back to your vehicle at ${nearestParking.name}.`
-            });
-            allPolylines = [...allPolylines, ...walkBackPolyline];
-            allSteps = [...allSteps, ...walkBackPhase.steps];
-            totalDistanceMeters += parseInt(walkBackPhase.totalDistance.replace(' m', ''));
-            currentLocation = nearestParking;
+          // Only walk back to parking if the NEXT stop is too far to walk directly from it.
+          const nextStop = allStops[i + 1];
+          const nextDistFromParking = calculateDistance(
+            nearestParking.lat, nearestParking.lng,
+            nextStop.lat, nextStop.lng
+          );
+          const nextStopIsAlsoClose = nextDistFromParking <= WALK_PROXIMITY_THRESHOLD;
+
+          if (!nextStopIsAlsoClose) {
+            const walkBackPolyline = await calculateRouteClientSide(destination, nearestParking, 'walking');
+            if (walkBackPolyline) {
+              const walkBackPhase = generateSmartSteps(walkBackPolyline, 'walking', destination.name, nearestParking.name);
+              phases.push({
+                mode: 'walking', polyline: walkBackPolyline, steps: walkBackPhase.steps, distance: walkBackPhase.totalDistance,
+                startName: destination.name, endName: nearestParking.name, color: '#10B981',
+                phaseIndex: phases.length, startId: destination.id, endId: nearestParking.id,
+                note: `Walk back to your vehicle at ${nearestParking.name}.`
+              });
+              allPolylines = [...allPolylines, ...walkBackPolyline];
+              allSteps = [...allSteps, ...walkBackPhase.steps];
+              totalDistanceMeters += parseInt(walkBackPhase.totalDistance.replace(' m', ''));
+              currentLocation = nearestParking;
+            }
           }
+          // else: next stop is also walkable — stay at destination, walk directly next iteration
         }
       }
       
@@ -3144,6 +3156,7 @@ export default function Navigation() {
     setOutdoorRouteSnapshot(null);
     setShowDrivingAdvisory(false);
     setPendingDrivingAction(null);
+    setIsRouteConfirmed(false);
   };
 
   const handleNavigateToAccessibleEndpoint = async () => {
@@ -3884,6 +3897,16 @@ export default function Navigation() {
       title: "Floor Changed",
       description: `Back to ${prevFloor.floorName || `Floor ${prevFloor.floorNumber}`}`,
     });
+  };
+
+  const recalculateRoute = () => {
+    setRoute(null);
+    setIsRouteConfirmed(false);
+    if (mode === 'driving' && vehicleType) {
+      generateRouteAfterAdvisory();
+    } else {
+      generateRoute();
+    }
   };
 
   const handleAddWaypoint = () => {
@@ -4633,7 +4656,7 @@ export default function Navigation() {
                             <GripVertical className="w-3 h-3" />
                           </Button>
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <SearchableWaypointSelect
                             selectedId={waypointId}
                             onSelect={(id) => handleWaypointChange(index, id)}
@@ -4641,7 +4664,6 @@ export default function Navigation() {
                             excludeIds={[
                               selectedStart?.id || '',
                               selectedEnd?.id || '',
-                              ...waypoints.filter((_, i) => i !== index)
                             ].filter(Boolean)}
                             onRemove={() => handleRemoveWaypoint(index)}
                             testId="select-waypoint"
@@ -4732,6 +4754,128 @@ export default function Navigation() {
                   })()}
                 </div>
               </div>
+            </div>
+          ) : route && waypoints.filter(w => w !== '').length > 0 && !isRouteConfirmed ? (
+            /* Route Preview panel — shown after multi-stop route generation, before navigation starts */
+            <div className="space-y-5" data-testid="panel-route-preview">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-foreground">Route Preview</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetNavigation}
+                  data-testid="button-reset-preview"
+                >
+                  Restart
+                </Button>
+              </div>
+
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">From</p>
+                    <p className="font-medium text-foreground">{route.start.name}</p>
+                  </div>
+                  <TrendingUp className="w-5 h-5 text-muted-foreground" />
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">To</p>
+                    <p className="font-medium text-foreground">{route.end.name}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-sm flex-wrap">
+                  <span className="text-muted-foreground">Distance:</span>
+                  <span className="font-medium text-foreground">
+                    {route.phases && route.phases.length > 0
+                      ? (() => {
+                          const total = route.phases.reduce((sum, p) => {
+                            const d = parseInt(p.distance?.replace(' m','') || '0');
+                            return sum + (isNaN(d) ? 0 : d);
+                          }, 0);
+                          return total >= 1000 ? `${(total/1000).toFixed(1)} km` : `${total} m`;
+                        })()
+                      : route.totalDistance}
+                  </span>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="font-medium capitalize text-foreground">{route.mode}</span>
+                  {route.vehicleType && (
+                    <>
+                      <span className="text-muted-foreground">·</span>
+                      <span className="font-medium capitalize text-foreground">{route.vehicleType}</span>
+                    </>
+                  )}
+                </div>
+              </Card>
+
+              <div>
+                <p className="text-sm font-medium text-foreground mb-1">Stop Order</p>
+                <p className="text-xs text-muted-foreground mb-3">Reorder stops then recalculate, or start navigation when ready.</p>
+                <div className="space-y-2 bg-secondary/30 p-3 rounded-md">
+                  {/* Start (read-only) */}
+                  <div className="flex items-center gap-2 px-1 py-1">
+                    <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-sm font-medium text-foreground truncate">{route.start.name}</span>
+                    <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">Start</span>
+                  </div>
+
+                  {/* Reorderable waypoints */}
+                  {waypoints.filter(w => w !== '').map((waypointId, index, arr) => {
+                    const b = buildings.find(bld => bld.id === waypointId);
+                    return (
+                      <div key={`${waypointId}-${index}`} className="flex items-center gap-2 bg-background/60 rounded px-2 py-1.5" data-testid={`preview-stop-${index}`}>
+                        <span className="text-xs font-bold text-muted-foreground w-5 flex-shrink-0">{index + 1}</span>
+                        <span className="text-sm text-foreground flex-1 truncate min-w-0">{b?.name || waypointId}</span>
+                        <div className="flex gap-0.5 flex-shrink-0">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            onClick={() => handleMoveWaypoint(index, 'up')}
+                            disabled={index === 0}
+                            data-testid={`button-preview-move-up-${index}`}
+                          >
+                            <ChevronUp className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            onClick={() => handleMoveWaypoint(index, 'down')}
+                            disabled={index === arr.length - 1}
+                            data-testid={`button-preview-move-down-${index}`}
+                          >
+                            <ChevronDown className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* End (read-only) */}
+                  <div className="flex items-center gap-2 px-1 py-1">
+                    <MapPin className="w-4 h-4 text-destructive flex-shrink-0" />
+                    <span className="text-sm font-medium text-foreground truncate">{route.end.name}</span>
+                    <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">End</span>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={recalculateRoute}
+                data-testid="button-recalculate-route"
+              >
+                Recalculate Route
+              </Button>
+
+              <Button
+                className="w-full"
+                onClick={() => setIsRouteConfirmed(true)}
+                data-testid="button-start-navigation"
+              >
+                <NavigationIcon className="w-4 h-4 mr-2" />
+                Start Navigation
+              </Button>
             </div>
           ) : (
             <div className="space-y-6">
