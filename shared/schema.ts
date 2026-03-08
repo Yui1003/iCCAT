@@ -332,6 +332,7 @@ export interface RoutePhase {
   phaseIndex: number; // Phase number (0-indexed)
   startId: string; // Building ID
   endId: string; // Building ID
+  note?: string; // Optional advisory note for this phase (e.g., "Car is parked nearby, walk to destination")
 }
 
 export interface NavigationRoute {

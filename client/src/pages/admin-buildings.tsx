@@ -111,6 +111,10 @@ export default function AdminBuildings() {
     return map;
   }, [poiTypesData]);
 
+  const originalToDisplay = useMemo(() => {
+    return poiTypesData?.renames || {};
+  }, [poiTypesData]);
+
   // Upload icon helper for type management
   const uploadIconFile = async (file: File): Promise<string> => {
     const formData = new FormData();
@@ -381,13 +385,22 @@ export default function AdminBuildings() {
             <h1 className="text-3xl font-bold text-foreground">Building Management</h1>
             <p className="text-muted-foreground">Manage campus buildings and locations</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => handleOpenDialog()} data-testid="button-add-building">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Building
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              onClick={() => setIsManageTypesOpen(true)}
+              data-testid="button-manage-location-types"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Manage Location Types
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => handleOpenDialog()} data-testid="button-add-building">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Building
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
@@ -422,10 +435,10 @@ export default function AdminBuildings() {
                           <div className="flex items-center gap-2">
                             <img
                               src={getPoiTypeIconUrl(formData.type, poiTypesData?.iconOverrides, poiTypesData?.customTypes, poiTypesData?.renames)}
-                              alt={formData.type}
+                              alt={originalToDisplay[formData.type] || formData.type}
                               className="w-4 h-4 object-contain flex-shrink-0"
                             />
-                            <span>{formData.type}</span>
+                            <span>{originalToDisplay[formData.type] || formData.type}</span>
                           </div>
                         ) : (
                           <span className="text-muted-foreground">Select location type</span>
@@ -810,6 +823,7 @@ export default function AdminBuildings() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">

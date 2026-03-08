@@ -1,5 +1,5 @@
 import React from "react";
-import { Navigation, Car, Bike, Plus, X, GripVertical, MapPin, Clock } from "lucide-react";
+import { Navigation, Car, Bike, Plus, X, GripVertical, MapPin, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -37,12 +37,16 @@ export default function GetDirectionsDialog({
   const [mode, setMode] = React.useState<'walking' | 'driving' | 'accessible'>('walking');
   const [showVehicleSelector, setShowVehicleSelector] = React.useState(false);
   const [selectedVehicle, setSelectedVehicle] = React.useState<VehicleType | null>(null);
+  const [showDrivingAdvisory, setShowDrivingAdvisory] = React.useState(false);
+  const [pendingVehicle, setPendingVehicle] = React.useState<VehicleType | null>(null);
 
   // Reset state when dialog opens
   React.useEffect(() => {
     if (open) {
       setSelectedVehicle(null);
       setShowVehicleSelector(false);
+      setShowDrivingAdvisory(false);
+      setPendingVehicle(null);
       setSelectedStart("kiosk");
       setWaypoints([]);
       // Force walking mode for room navigation (indoor navigation)
@@ -85,9 +89,11 @@ export default function GetDirectionsDialog({
       // Filter out empty waypoints
       const validWaypoints = waypoints.filter(w => w !== '');
       
-      // Skip vehicle selector for accessible mode - it uses PWD-friendly walkpaths only
       if (mode === 'driving' && !selectedVehicle) {
         setShowVehicleSelector(true);
+      } else if (mode === 'driving' && selectedVehicle) {
+        setPendingVehicle(selectedVehicle);
+        setShowDrivingAdvisory(true);
       } else {
         onNavigate(selectedStart, validWaypoints, mode, selectedVehicle || undefined);
         onClose();
@@ -98,9 +104,18 @@ export default function GetDirectionsDialog({
   const handleVehicleSelection = (vehicle: VehicleType) => {
     setSelectedVehicle(vehicle);
     setShowVehicleSelector(false);
-    const validWaypoints = waypoints.filter(w => w !== '');
-    onNavigate(selectedStart, validWaypoints, mode, vehicle);
-    onClose();
+    setPendingVehicle(vehicle);
+    setShowDrivingAdvisory(true);
+  };
+
+  const handleAdvisoryAcknowledge = () => {
+    setShowDrivingAdvisory(false);
+    if (pendingVehicle) {
+      const validWaypoints = waypoints.filter(w => w !== '');
+      onNavigate(selectedStart, validWaypoints, mode, pendingVehicle);
+      setPendingVehicle(null);
+      onClose();
+    }
   };
 
   // Get list of building IDs to exclude from dropdowns
@@ -397,6 +412,61 @@ export default function GetDirectionsDialog({
               data-testid="button-directions-vehicle-cancel"
             >
               Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDrivingAdvisory} onOpenChange={(open) => {
+        if (!open) {
+          setShowDrivingAdvisory(false);
+          setPendingVehicle(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md z-[9999]" data-testid="dialog-directions-driving-advisory">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              Driving Advisory
+            </DialogTitle>
+            <DialogDescription>
+              Please read the following before proceeding with driving navigation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 pt-2">
+            <div className="flex items-start gap-3 p-3 rounded-md bg-muted">
+              <Car className="w-5 h-5 mt-0.5 shrink-0 text-muted-foreground" />
+              <p className="text-sm text-foreground">You cannot drive directly to your destination. You will need to park at the nearest designated parking area and walk to your target location.</p>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-md bg-muted">
+              <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0 text-destructive" />
+              <p className="text-sm text-foreground">Parking and stopping along the road is prohibited.</p>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-md bg-muted">
+              <Navigation className="w-5 h-5 mt-0.5 shrink-0 text-muted-foreground" />
+              <p className="text-sm text-foreground">Please follow the campus speed limit to ensure everyone's safety.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDrivingAdvisory(false);
+                setPendingVehicle(null);
+              }}
+              className="flex-1"
+              data-testid="button-directions-advisory-cancel"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAdvisoryAcknowledge}
+              className="flex-1"
+              data-testid="button-directions-advisory-acknowledge"
+            >
+              I Understand
             </Button>
           </div>
         </DialogContent>

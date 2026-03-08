@@ -1107,6 +1107,11 @@ export default function MobileNavigation() {
                     {currentPhase.endName}
                   </span>
                 </div>
+                {currentPhase.note && (
+                  <div className="mt-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-md" data-testid="text-phase-note">
+                    <p className="text-xs text-blue-700 dark:text-blue-300">{currentPhase.note}</p>
+                  </div>
+                )}
               </>
             ) : (
               <>

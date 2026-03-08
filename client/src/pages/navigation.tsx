@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, Navigation as NavigationIcon, TrendingUp, MapPin, Filter, Search, Users, Car, Bike, QrCode, Plus, X, GripVertical, Clock, ChevronDown, DoorOpen } from "lucide-react";
+import { ChevronLeft, Navigation as NavigationIcon, TrendingUp, MapPin, Filter, Search, Users, Car, Bike, QrCode, Plus, X, GripVertical, Clock, ChevronDown, DoorOpen, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -123,6 +123,10 @@ export default function Navigation() {
   const [waypointParkingMode, setWaypointParkingMode] = useState<'origin' | 'waypoint' | null>(null);
   const [selectedOriginParking, setSelectedOriginParking] = useState<Building | null>(null);
   const [selectedWaypointParking, setSelectedWaypointParking] = useState<Building | null>(null);
+  
+  const [showDrivingAdvisory, setShowDrivingAdvisory] = useState(false);
+  const [pendingDrivingAction, setPendingDrivingAction] = useState<(() => void) | null>(null);
+  
   const [pendingWaypointDrivingRoute, setPendingWaypointDrivingRoute] = useState<{
     start: Building | typeof KIOSK_LOCATION;
     end: Building;
@@ -298,92 +302,155 @@ export default function Navigation() {
                 }
               }
               
-              // For driving mode with vehicle type and no waypoints, use two-phase routing
-              if (effectiveMode === 'driving' && vehicleParam && waypointIds.length === 0) {
-                const twoPhaseRoute = await generateTwoPhaseRoute(startBuilding as any, endBuilding, vehicleParam);
-                if (twoPhaseRoute) {
-                  setRoute(twoPhaseRoute);
+              // For driving mode, show advisory first then proceed
+              if (effectiveMode === 'driving' && vehicleParam) {
+                const autoGenDrivingAction = async () => {
+                  const drivingStartTime = performance.now();
 
-                  // Save two-phase route for QR code generation
-                  try {
-                    const routeData: any = {
-                      startId: (startBuilding as any).id,
-                      endId: endBuilding.id,
-                      waypoints: [],
-                      mode: 'driving',
-                      vehicleType: vehicleParam,
-                      phases: twoPhaseRoute.phases || [],
-                      expiresAt: null
-                    };
+                  if (waypointIds.length === 0) {
+                    const twoPhaseRoute = await generateTwoPhaseRoute(startBuilding as any, endBuilding, vehicleParam);
+                    if (twoPhaseRoute) {
+                      setRoute(twoPhaseRoute);
 
-                    if (autoGenRoomData) {
-                      routeData.destinationRoomId = autoGenRoomData.id;
-                      routeData.destinationBuildingId = endBuilding.id;
-                      routeData.destinationFloorId = autoGenRoomData.floorId;
-                      routeData.destinationRoomName = autoGenRoomData.label || 'Room';
+                      try {
+                        const routeData: any = {
+                          startId: (startBuilding as any).id,
+                          endId: endBuilding.id,
+                          waypoints: [],
+                          mode: 'driving',
+                          vehicleType: vehicleParam,
+                          phases: twoPhaseRoute.phases || [],
+                          expiresAt: null
+                        };
+
+                        if (autoGenRoomData) {
+                          routeData.destinationRoomId = autoGenRoomData.id;
+                          routeData.destinationBuildingId = endBuilding.id;
+                          routeData.destinationFloorId = autoGenRoomData.floorId;
+                          routeData.destinationRoomName = autoGenRoomData.label || 'Room';
+                        }
+
+                        const res = await apiRequest('POST', '/api/routes', routeData);
+                        const response = await res.json();
+
+                        if (response.id) {
+                          setSavedRouteId(response.id);
+                        }
+                      } catch (error) {
+                        console.error('Error saving two-phase route:', error);
+                      }
+
+                      const duration = performance.now() - drivingStartTime;
+                      trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, vehicleType: vehicleParam, routeType: 'two-phase', source: 'autoGenerate' });
                     }
-
-                    const res = await apiRequest('POST', '/api/routes', routeData);
-                    const response = await res.json();
-
-                    if (response.id) {
-                      setSavedRouteId(response.id);
-                    }
-                  } catch (error) {
-                    console.error('Error saving two-phase route:', error);
+                    return;
                   }
 
-                  const duration = performance.now() - routeStartTime;
-                  trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, vehicleType: vehicleParam, routeType: 'two-phase', source: 'autoGenerate' });
-                  return;
-                }
-                // generateTwoPhaseRoute returned null — parking selection UI was triggered, wait for user
+                  const waypointBuildings = waypointIds
+                    .map(id => buildings.find(b => b.id === id))
+                    .filter(Boolean) as Building[];
+
+                  if (waypointBuildings.length > 0) {
+                    const parkingAreas = getParkingAreasForVehicle(vehicleParam);
+                    if (parkingAreas.length > 0) {
+                      const startIsGate = isGate(startBuilding as any);
+                      
+                      if (startIsGate) {
+                        await generateWaypointDrivingRoute(
+                          startBuilding as any,
+                          endBuilding,
+                          waypointBuildings,
+                          vehicleParam,
+                          null
+                        );
+                        const duration = performance.now() - drivingStartTime;
+                        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, vehicleType: vehicleParam, routeType: 'waypoint-driving-auto', source: 'autoGenerate' });
+                        return;
+                      } else {
+                        setPendingWaypointDrivingRoute({
+                          start: startBuilding as any,
+                          end: endBuilding,
+                          waypoints: waypointBuildings,
+                          vehicleType: vehicleParam
+                        });
+                        setWaypointParkingMode('origin');
+                        setParkingSelectionMode(true);
+                        setShowParkingSelector(true);
+                        toast({
+                          title: "Select Your Parking Location",
+                          description: `Tap on the ${capitalizeVehicleType(vehicleParam)} parking area where your vehicle is parked.`,
+                          variant: "default"
+                        });
+                        const duration = performance.now() - drivingStartTime;
+                        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, vehicleType: vehicleParam, routeType: 'waypoint-driving-pending', source: 'autoGenerate' });
+                        return;
+                      }
+                    }
+                  }
+
+                  const multiPhaseRoute = await calculateMultiPhaseRoute(
+                    startBuilding as any,
+                    waypointBuildings,
+                    endBuilding,
+                    effectiveMode
+                  );
+
+                  if (multiPhaseRoute) {
+                    const navigationRoute = multiPhaseToNavigationRoute(
+                      multiPhaseRoute,
+                      startBuilding as any,
+                      endBuilding,
+                      effectiveMode
+                    );
+
+                    if (vehicleParam) {
+                      navigationRoute.vehicleType = vehicleParam;
+                    }
+
+                    setRoute(navigationRoute);
+
+                    try {
+                      const routeData: any = {
+                        startId: (startBuilding as any).id,
+                        endId: endBuilding.id,
+                        waypoints: waypointIds,
+                        mode: effectiveMode,
+                        vehicleType: vehicleParam || null,
+                        phases: multiPhaseRoute.phases,
+                        expiresAt: null
+                      };
+
+                      if (autoGenRoomData) {
+                        routeData.destinationRoomId = autoGenRoomData.id;
+                        routeData.destinationBuildingId = endBuilding.id;
+                        routeData.destinationFloorId = autoGenRoomData.floorId;
+                        routeData.destinationRoomName = autoGenRoomData.label || 'Room';
+                      }
+
+                      const res = await apiRequest('POST', '/api/routes', routeData);
+                      const response = await res.json();
+
+                      if (response.id) {
+                        setSavedRouteId(response.id);
+                      }
+                    } catch (error) {
+                      console.error('Error saving multi-phase route:', error);
+                    }
+
+                    const duration = performance.now() - drivingStartTime;
+                    trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, hasWaypoints: waypointIds.length > 0, routeType: 'multi-phase', source: 'autoGenerate' });
+                  }
+                };
+
+                showDrivingAdvisoryThenProceed(autoGenDrivingAction);
                 return;
               }
 
-              // Multi-stop navigation
+              // Multi-stop navigation (non-driving)
               if (waypointIds.length > 0) {
                 const waypointBuildings = waypointIds
                   .map(id => buildings.find(b => b.id === id))
                   .filter(Boolean) as Building[];
-
-                // For driving mode with waypoints, trigger parking selection
-                if (effectiveMode === 'driving' && vehicleParam && waypointBuildings.length > 0) {
-                  const parkingAreas = getParkingAreasForVehicle(vehicleParam);
-                  if (parkingAreas.length > 0) {
-                    const startIsGate = isGate(startBuilding as any);
-                    
-                    setPendingWaypointDrivingRoute({
-                      start: startBuilding as any,
-                      end: endBuilding,
-                      waypoints: waypointBuildings,
-                      vehicleType: vehicleParam
-                    });
-                    
-                    if (startIsGate) {
-                      setWaypointParkingMode('waypoint');
-                      toast({
-                        title: "Select Parking Near Stop",
-                        description: `Tap on the ${capitalizeVehicleType(vehicleParam)} parking area where you want to park near ${waypointBuildings[0].name}.`,
-                        variant: "default"
-                      });
-                    } else {
-                      setWaypointParkingMode('origin');
-                      toast({
-                        title: "Select Your Parking Location",
-                        description: `Tap on the ${capitalizeVehicleType(vehicleParam)} parking area where your vehicle is parked.`,
-                        variant: "default"
-                      });
-                    }
-                    
-                    setParkingSelectionMode(true);
-                    setShowParkingSelector(true);
-                    
-                    const duration = performance.now() - routeStartTime;
-                    trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: effectiveMode, vehicleType: vehicleParam, routeType: 'waypoint-driving-pending', source: 'autoGenerate' });
-                    return;
-                  }
-                }
 
                 const multiPhaseRoute = await calculateMultiPhaseRoute(
                   startBuilding as any,
@@ -1296,24 +1363,8 @@ export default function Navigation() {
     // Handle waypoint driving route parking selection flow
     if (pendingWaypointDrivingRoute && vehicleType && waypointParkingMode) {
       if (waypointParkingMode === 'origin') {
-        // User selected origin parking, now ask for waypoint parking
+        // User selected origin parking - auto-select parking for all stops
         setSelectedOriginParking(parking);
-        setPendingWaypointDrivingRoute({
-          ...pendingWaypointDrivingRoute,
-          originParking: parking
-        });
-        setWaypointParkingMode('waypoint');
-        
-        const firstWaypoint = pendingWaypointDrivingRoute.waypoints[0];
-        toast({
-          title: "Select Parking Near Stop",
-          description: `Tap on the ${capitalizeVehicleType(vehicleType)} parking area where you want to park near ${firstWaypoint.name}.`,
-          variant: "default"
-        });
-        return;
-      } else if (waypointParkingMode === 'waypoint') {
-        // User selected waypoint parking, generate the full route
-        setSelectedWaypointParking(parking);
         setParkingSelectionMode(false);
         setShowParkingSelector(false);
         setWaypointParkingMode(null);
@@ -1323,8 +1374,26 @@ export default function Navigation() {
           pendingWaypointDrivingRoute.end,
           pendingWaypointDrivingRoute.waypoints,
           pendingWaypointDrivingRoute.vehicleType,
-          pendingWaypointDrivingRoute.originParking || null,
           parking
+        );
+        
+        setPendingWaypointDrivingRoute(null);
+        setSelectedOriginParking(null);
+        setSelectedWaypointParking(null);
+        return;
+      } else if (waypointParkingMode === 'waypoint') {
+        // Gate start - user selected first stop parking, use it as starting parking
+        setParkingSelectionMode(false);
+        setShowParkingSelector(false);
+        setWaypointParkingMode(null);
+        
+        // For gate starts, we auto-select from the first parking the user chose
+        await generateWaypointDrivingRoute(
+          pendingWaypointDrivingRoute.start,
+          pendingWaypointDrivingRoute.end,
+          pendingWaypointDrivingRoute.waypoints,
+          pendingWaypointDrivingRoute.vehicleType,
+          null
         );
         
         setPendingWaypointDrivingRoute(null);
@@ -1997,16 +2066,16 @@ export default function Navigation() {
     });
   };
 
-  // Generate driving route with waypoints using user-selected parking locations
+  // Generate driving route with waypoints using auto-selected parking locations
   const generateWaypointDrivingRoute = async (
     start: Building | typeof KIOSK_LOCATION,
     end: Building,
     waypointBuildings: Building[],
     vType: VehicleType,
-    originParking: Building | null,
-    waypointParking: Building
+    originParking: Building | null
   ) => {
     try {
+      const WALK_PROXIMITY_THRESHOLD = 100;
       const phases: NavigationRoute['phases'] = [];
       let allPolylines: LatLng[] = [];
       let allSteps: RouteStep[] = [];
@@ -2018,12 +2087,12 @@ export default function Navigation() {
       const waypointIds = waypointBuildings.map(w => w.id);
       
       let currentLocation: Building;
+      let currentParking: Building | null = originParking;
       
       if (startIsGate) {
-        // Start is a gate - user is already driving, begin from the gate
         currentLocation = start as Building;
+        currentParking = null;
       } else if (originParking) {
-        // Start is a building - first walk to origin parking
         let initialWalkPolyline: LatLng[] | null;
         if (isKioskStart) {
           if (kioskBuilding) {
@@ -2063,124 +2132,153 @@ export default function Navigation() {
         
         currentLocation = originParking;
       } else {
-        // Fallback - shouldn't happen
         currentLocation = start as Building;
       }
       
-      // Drive from current location to waypoint parking
-      const driveToWaypointParkingPolyline = await calculateRouteClientSide(currentLocation, waypointParking, 'driving');
-      if (!driveToWaypointParkingPolyline) {
-        toast({
-          title: "Route Calculation Failed",
-          description: `Unable to calculate driving route to ${waypointParking.name}.`,
-          variant: "destructive"
+      const allStops = [...waypointBuildings, end];
+      
+      for (let i = 0; i < allStops.length; i++) {
+        const destination = allStops[i];
+        const isLastStop = i === allStops.length - 1;
+        
+        if (isGate(destination) || isParkingForVehicle(destination, vType)) {
+          const drivePolyline = await calculateRouteClientSide(currentLocation, destination, 'driving');
+          if (!drivePolyline) {
+            toast({ title: "Route Calculation Failed", description: `Unable to calculate driving route to ${destination.name}.`, variant: "destructive" });
+            return;
+          }
+          const drivePhase = generateSmartSteps(drivePolyline, 'driving', currentLocation.name, destination.name);
+          phases.push({
+            mode: 'driving', polyline: drivePolyline, steps: drivePhase.steps, distance: drivePhase.totalDistance,
+            startName: currentLocation.name, endName: destination.name, color: '#3B82F6',
+            phaseIndex: phases.length, startId: currentLocation.id, endId: destination.id
+          });
+          allPolylines = [...allPolylines, ...drivePolyline];
+          allSteps = [...allSteps, ...drivePhase.steps];
+          totalDistanceMeters += parseInt(drivePhase.totalDistance.replace(' m', ''));
+          currentLocation = destination;
+          currentParking = isParkingForVehicle(destination, vType) ? destination : null;
+          continue;
+        }
+        
+        const nearestParking = findNearestParkingByType(destination, vType);
+        
+        if (currentParking) {
+          const distFromCurrentParking = calculateDistance(
+            currentParking.lat, currentParking.lng,
+            destination.lat, destination.lng
+          );
+          
+          if (distFromCurrentParking <= WALK_PROXIMITY_THRESHOLD || !nearestParking) {
+            const walkPolyline = await calculateRouteClientSide(currentLocation, destination, 'walking');
+            if (!walkPolyline) {
+              toast({ title: "Route Calculation Failed", description: `Unable to calculate walking route to ${destination.name}.`, variant: "destructive" });
+              return;
+            }
+            const walkPhase = generateSmartSteps(walkPolyline, 'walking', currentLocation.name, destination.name);
+            phases.push({
+              mode: 'walking', polyline: walkPolyline, steps: walkPhase.steps, distance: walkPhase.totalDistance,
+              startName: currentLocation.name, endName: destination.name, color: '#10B981',
+              phaseIndex: phases.length, startId: currentLocation.id, endId: destination.id,
+              note: `Your vehicle is parked nearby at ${currentParking.name}. No need to drive — just walk to ${destination.name}.`
+            });
+            allPolylines = [...allPolylines, ...walkPolyline];
+            allSteps = [...allSteps, ...walkPhase.steps];
+            totalDistanceMeters += parseInt(walkPhase.totalDistance.replace(' m', ''));
+            currentLocation = destination;
+            
+            if (!isLastStop) {
+              const walkBackPolyline = await calculateRouteClientSide(destination, currentParking, 'walking');
+              if (walkBackPolyline) {
+                const walkBackPhase = generateSmartSteps(walkBackPolyline, 'walking', destination.name, currentParking.name);
+                phases.push({
+                  mode: 'walking', polyline: walkBackPolyline, steps: walkBackPhase.steps, distance: walkBackPhase.totalDistance,
+                  startName: destination.name, endName: currentParking.name, color: '#10B981',
+                  phaseIndex: phases.length, startId: destination.id, endId: currentParking.id,
+                  note: `Walk back to your vehicle at ${currentParking.name}.`
+                });
+                allPolylines = [...allPolylines, ...walkBackPolyline];
+                allSteps = [...allSteps, ...walkBackPhase.steps];
+                totalDistanceMeters += parseInt(walkBackPhase.totalDistance.replace(' m', ''));
+                currentLocation = currentParking;
+              }
+            }
+            continue;
+          }
+        }
+        
+        if (!nearestParking) {
+          const walkPolyline = await calculateRouteClientSide(currentLocation, destination, 'walking');
+          if (!walkPolyline) {
+            toast({ title: "Route Calculation Failed", description: `Unable to calculate walking route to ${destination.name}.`, variant: "destructive" });
+            return;
+          }
+          const walkPhase = generateSmartSteps(walkPolyline, 'walking', currentLocation.name, destination.name);
+          phases.push({
+            mode: 'walking', polyline: walkPolyline, steps: walkPhase.steps, distance: walkPhase.totalDistance,
+            startName: currentLocation.name, endName: destination.name, color: '#10B981',
+            phaseIndex: phases.length, startId: currentLocation.id, endId: destination.id,
+            note: `No parking available nearby. Walking to ${destination.name}.`
+          });
+          allPolylines = [...allPolylines, ...walkPolyline];
+          allSteps = [...allSteps, ...walkPhase.steps];
+          totalDistanceMeters += parseInt(walkPhase.totalDistance.replace(' m', ''));
+          currentLocation = destination;
+          continue;
+        }
+        
+        const driveToParking = await calculateRouteClientSide(currentLocation, nearestParking, 'driving');
+        if (!driveToParking) {
+          toast({ title: "Route Calculation Failed", description: `Unable to calculate driving route to ${nearestParking.name}.`, variant: "destructive" });
+          return;
+        }
+        const drivePhase = generateSmartSteps(driveToParking, 'driving', currentLocation.name, nearestParking.name);
+        phases.push({
+          mode: 'driving', polyline: driveToParking, steps: drivePhase.steps, distance: drivePhase.totalDistance,
+          startName: currentLocation.name, endName: nearestParking.name, color: '#3B82F6',
+          phaseIndex: phases.length, startId: currentLocation.id, endId: nearestParking.id,
+          note: `Driving to ${nearestParking.name} — the nearest parking to ${destination.name}.`
         });
-        return;
-      }
-      
-      const driveToWaypointPhase = generateSmartSteps(driveToWaypointParkingPolyline, 'driving', currentLocation.name, waypointParking.name);
-      phases.push({
-        mode: 'driving',
-        polyline: driveToWaypointParkingPolyline,
-        steps: driveToWaypointPhase.steps,
-        distance: driveToWaypointPhase.totalDistance,
-        startName: currentLocation.name,
-        endName: waypointParking.name,
-        color: '#3B82F6',
-        phaseIndex: phases.length,
-        startId: currentLocation.id,
-        endId: waypointParking.id
-      });
-      allPolylines = [...allPolylines, ...driveToWaypointParkingPolyline];
-      allSteps = [...allSteps, ...driveToWaypointPhase.steps];
-      totalDistanceMeters += parseInt(driveToWaypointPhase.totalDistance.replace(' m', ''));
-      
-      // Walk from parking to first waypoint
-      const firstWaypoint = waypointBuildings[0];
-      const walkToWaypointPolyline = await calculateRouteClientSide(waypointParking, firstWaypoint, 'walking');
-      if (!walkToWaypointPolyline) {
-        toast({
-          title: "Route Calculation Failed",
-          description: `Unable to calculate walking route to ${firstWaypoint.name}.`,
-          variant: "destructive"
+        allPolylines = [...allPolylines, ...driveToParking];
+        allSteps = [...allSteps, ...drivePhase.steps];
+        totalDistanceMeters += parseInt(drivePhase.totalDistance.replace(' m', ''));
+        
+        const walkToDestination = await calculateRouteClientSide(nearestParking, destination, 'walking');
+        if (!walkToDestination) {
+          toast({ title: "Route Calculation Failed", description: `Unable to calculate walking route to ${destination.name}.`, variant: "destructive" });
+          return;
+        }
+        const walkPhase = generateSmartSteps(walkToDestination, 'walking', nearestParking.name, destination.name);
+        phases.push({
+          mode: 'walking', polyline: walkToDestination, steps: walkPhase.steps, distance: walkPhase.totalDistance,
+          startName: nearestParking.name, endName: destination.name, color: '#10B981',
+          phaseIndex: phases.length, startId: nearestParking.id, endId: destination.id,
+          note: `Walk from ${nearestParking.name} to ${destination.name}. Parking and stopping along the road is prohibited.`
         });
-        return;
+        allPolylines = [...allPolylines, ...walkToDestination];
+        allSteps = [...allSteps, ...walkPhase.steps];
+        totalDistanceMeters += parseInt(walkPhase.totalDistance.replace(' m', ''));
+        
+        currentLocation = destination;
+        currentParking = nearestParking;
+        
+        if (!isLastStop) {
+          const walkBackPolyline = await calculateRouteClientSide(destination, nearestParking, 'walking');
+          if (walkBackPolyline) {
+            const walkBackPhase = generateSmartSteps(walkBackPolyline, 'walking', destination.name, nearestParking.name);
+            phases.push({
+              mode: 'walking', polyline: walkBackPolyline, steps: walkBackPhase.steps, distance: walkBackPhase.totalDistance,
+              startName: destination.name, endName: nearestParking.name, color: '#10B981',
+              phaseIndex: phases.length, startId: destination.id, endId: nearestParking.id,
+              note: `Walk back to your vehicle at ${nearestParking.name}.`
+            });
+            allPolylines = [...allPolylines, ...walkBackPolyline];
+            allSteps = [...allSteps, ...walkBackPhase.steps];
+            totalDistanceMeters += parseInt(walkBackPhase.totalDistance.replace(' m', ''));
+            currentLocation = nearestParking;
+          }
+        }
       }
-      
-      const walkToWaypointPhase = generateSmartSteps(walkToWaypointPolyline, 'walking', waypointParking.name, firstWaypoint.name);
-      phases.push({
-        mode: 'walking',
-        polyline: walkToWaypointPolyline,
-        steps: walkToWaypointPhase.steps,
-        distance: walkToWaypointPhase.totalDistance,
-        startName: waypointParking.name,
-        endName: firstWaypoint.name,
-        color: '#10B981',
-        phaseIndex: phases.length,
-        startId: waypointParking.id,
-        endId: firstWaypoint.id
-      });
-      allPolylines = [...allPolylines, ...walkToWaypointPolyline];
-      allSteps = [...allSteps, ...walkToWaypointPhase.steps];
-      totalDistanceMeters += parseInt(walkToWaypointPhase.totalDistance.replace(' m', ''));
-      
-      // Walk back from waypoint to parking
-      const walkBackPolyline = await calculateRouteClientSide(firstWaypoint, waypointParking, 'walking');
-      if (!walkBackPolyline) {
-        toast({
-          title: "Route Calculation Failed",
-          description: `Unable to calculate return walking route from ${firstWaypoint.name}.`,
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      const walkBackPhase = generateSmartSteps(walkBackPolyline, 'walking', firstWaypoint.name, waypointParking.name);
-      phases.push({
-        mode: 'walking',
-        polyline: walkBackPolyline,
-        steps: walkBackPhase.steps,
-        distance: walkBackPhase.totalDistance,
-        startName: firstWaypoint.name,
-        endName: waypointParking.name,
-        color: '#10B981',
-        phaseIndex: phases.length,
-        startId: firstWaypoint.id,
-        endId: waypointParking.id
-      });
-      allPolylines = [...allPolylines, ...walkBackPolyline];
-      allSteps = [...allSteps, ...walkBackPhase.steps];
-      totalDistanceMeters += parseInt(walkBackPhase.totalDistance.replace(' m', ''));
-      
-      currentLocation = waypointParking;
-      
-      // Drive to final destination (end is a gate, so drive directly there)
-      const finalDrivePolyline = await calculateRouteClientSide(currentLocation, end, 'driving');
-      if (!finalDrivePolyline) {
-        toast({
-          title: "Route Calculation Failed",
-          description: `Unable to calculate driving route to ${end.name}.`,
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      const finalDrivePhase = generateSmartSteps(finalDrivePolyline, 'driving', currentLocation.name, end.name);
-      phases.push({
-        mode: 'driving',
-        polyline: finalDrivePolyline,
-        steps: finalDrivePhase.steps,
-        distance: finalDrivePhase.totalDistance,
-        startName: currentLocation.name,
-        endName: end.name,
-        color: '#3B82F6',
-        phaseIndex: phases.length,
-        startId: currentLocation.id,
-        endId: end.id
-      });
-      allPolylines = [...allPolylines, ...finalDrivePolyline];
-      allSteps = [...allSteps, ...finalDrivePhase.steps];
-      totalDistanceMeters += parseInt(finalDrivePhase.totalDistance.replace(' m', ''));
       
       // Construct the start object for the route
       const startForRoute = isKioskStart 
@@ -2314,6 +2412,144 @@ export default function Navigation() {
     }
   };
 
+  const generateRouteAfterAdvisory = async () => {
+    if (!selectedStart || !selectedEnd || !vehicleType) return;
+
+    const routeStartTime = performance.now();
+    const validWaypoints = waypoints.filter(w => w !== '');
+
+    try {
+      if (validWaypoints.length > 0) {
+        const waypointBuildings = validWaypoints
+          .map(id => buildings.find(b => b.id === id))
+          .filter(Boolean) as Building[];
+
+        const parkingAreas = getParkingAreasForVehicle(vehicleType);
+        if (parkingAreas.length === 0) {
+          toast({
+            title: "No Parking Available",
+            description: `No ${capitalizeVehicleType(vehicleType)} parking areas found on campus.`,
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (canStartDriving(selectedStart)) {
+          await generateWaypointDrivingRoute(selectedStart, selectedEnd, waypointBuildings, vehicleType, null);
+          const duration = performance.now() - routeStartTime;
+          trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'waypoint-driving-auto' });
+          return;
+        }
+
+        setPendingWaypointDrivingRoute({
+          start: selectedStart as Building,
+          end: selectedEnd,
+          waypoints: waypointBuildings,
+          vehicleType
+        });
+        setWaypointParkingMode('origin');
+        setParkingSelectionMode(true);
+        setShowParkingSelector(true);
+
+        toast({
+          title: "Select Your Parking Location",
+          description: `Tap on the ${capitalizeVehicleType(vehicleType)} parking area where your vehicle is parked.`,
+          variant: "default"
+        });
+        return;
+      }
+
+      const twoPhaseRoute = await generateTwoPhaseRoute(selectedStart, selectedEnd, vehicleType);
+      if (twoPhaseRoute) {
+        setRoute(twoPhaseRoute);
+
+        try {
+          const routeData = {
+            startId: selectedStart.id,
+            endId: selectedEnd.id,
+            waypoints: [],
+            mode: 'driving',
+            vehicleType: vehicleType,
+            phases: twoPhaseRoute.phases || [],
+            expiresAt: null
+          };
+
+          const res = await apiRequest('POST', '/api/routes', routeData);
+          const response = await res.json();
+
+          if (response.id) {
+            setSavedRouteId(response.id);
+          }
+        } catch (error) {
+          console.error('Error saving two-phase route:', error);
+        }
+
+        const duration = performance.now() - routeStartTime;
+        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'two-phase' });
+        return;
+      }
+
+      if (parkingSelectionMode) {
+        const duration = performance.now() - routeStartTime;
+        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'two-phase-pending' });
+        return;
+      }
+
+      const fallbackMode = vehicleType === 'bike' ? 'walking' : 'driving';
+      setMode(fallbackMode);
+      if (vehicleType === 'bike') {
+        setVehicleType(null);
+      }
+      
+      toast({
+        title: "Using Direct Route",
+        description: `Parking navigation unavailable. Showing direct ${fallbackMode} route instead.`,
+        variant: "default"
+      });
+      
+      const routePolyline = await calculateRouteClientSide(
+        selectedStart,
+        selectedEnd,
+        fallbackMode
+      );
+      
+      if (!routePolyline) {
+        toast({
+          title: "No Route Found",
+          description: "Unable to find a route to the selected destination.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const { steps, totalDistance } = generateSmartSteps(
+        routePolyline,
+        fallbackMode,
+        selectedStart.name,
+        selectedEnd.name
+      );
+      
+      setRoute({
+        start: selectedStart as Building,
+        end: selectedEnd,
+        mode: fallbackMode,
+        polyline: routePolyline,
+        steps,
+        totalDistance
+      });
+
+      const duration = performance.now() - routeStartTime;
+      trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: fallbackMode, vehicleType, routeType: 'fallback' });
+    } catch (error) {
+      console.error('Error generating driving route:', error);
+      toast({
+        title: "Navigation Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const generateRoute = async () => {
     if (!selectedStart || !selectedEnd) return;
 
@@ -2335,6 +2571,13 @@ export default function Navigation() {
       return;
     }
 
+    if (mode === 'driving' && vehicleType) {
+      showDrivingAdvisoryThenProceed(() => {
+        generateRouteAfterAdvisory();
+      });
+      return;
+    }
+
     try {
       // Multi-stop navigation: use multi-phase route calculator
       if (validWaypoints.length > 0) {
@@ -2342,9 +2585,8 @@ export default function Navigation() {
           .map(id => buildings.find(b => b.id === id))
           .filter(Boolean) as Building[];
 
-        // For driving mode with waypoints: check if we need parking selection first
-        if (mode === 'driving' && vehicleType && !canStartDriving(selectedStart)) {
-          // Start is a building - need user to select parking first
+        // For driving mode with waypoints
+        if (mode === 'driving' && vehicleType) {
           const parkingAreas = getParkingAreasForVehicle(vehicleType);
           
           if (parkingAreas.length === 0) {
@@ -2356,13 +2598,20 @@ export default function Navigation() {
             return;
           }
 
-          // Trigger parking selection mode with waypoints
-          setPendingDrivingRoute({
+          if (canStartDriving(selectedStart)) {
+            await generateWaypointDrivingRoute(selectedStart, selectedEnd, waypointBuildings, vehicleType, null);
+            const duration = performance.now() - routeStartTime;
+            trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'waypoint-driving-auto' });
+            return;
+          }
+
+          setPendingWaypointDrivingRoute({
             start: selectedStart as Building,
             end: selectedEnd,
-            vehicleType,
-            waypoints: waypointBuildings
+            waypoints: waypointBuildings,
+            vehicleType
           });
+          setWaypointParkingMode('origin');
           setParkingSelectionMode(true);
           setShowParkingSelector(true);
 
@@ -2461,6 +2710,13 @@ export default function Navigation() {
 
           const duration = performance.now() - routeStartTime;
           trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'two-phase' });
+          return;
+        }
+        // If parking selection mode was activated, user needs to interact with map first
+        // Don't fall through to fallback - wait for parking selection
+        if (parkingSelectionMode) {
+          const duration = performance.now() - routeStartTime;
+          trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'two-phase-pending' });
           return;
         }
         // If two-phase routing fails, fall back appropriately
@@ -2713,14 +2969,32 @@ export default function Navigation() {
     }
   };
 
-  const handleVehicleSelection = async (selectedVehicle: VehicleType) => {
+  const showDrivingAdvisoryThenProceed = (action: () => void) => {
+    setPendingDrivingAction(() => action);
+    setShowDrivingAdvisory(true);
+  };
+
+  const handleDrivingAdvisoryAcknowledge = () => {
+    setShowDrivingAdvisory(false);
+    if (pendingDrivingAction) {
+      pendingDrivingAction();
+      setPendingDrivingAction(null);
+    }
+  };
+
+  const handleVehicleSelection = (selectedVehicle: VehicleType) => {
     setVehicleType(selectedVehicle);
     setShowVehicleSelector(false);
 
+    showDrivingAdvisoryThenProceed(() => {
+      proceedAfterVehicleSelection(selectedVehicle);
+    });
+  };
+
+  const proceedAfterVehicleSelection = async (selectedVehicle: VehicleType) => {
     if (pendingNavigationData) {
       const { start, end, mode, waypoints: pendingWaypoints } = pendingNavigationData;
       
-      // Set state early for consistency
       setSelectedStart(start);
       setSelectedEnd(end);
       setMode(mode);
@@ -2738,27 +3012,16 @@ export default function Navigation() {
           return;
         }
 
-        setPendingWaypointDrivingRoute({
-          start,
-          end,
-          waypoints: pendingWaypoints,
-          vehicleType: selectedVehicle
-        });
-
         const startIsGate = isGate(start);
         if (startIsGate) {
-          // Start is a gate - user is already driving, only ask for waypoint parking
-          setWaypointParkingMode('waypoint');
-          setParkingSelectionMode(true);
-          setShowParkingSelector(true);
-
-          toast({
-            title: "Select Parking Near Stop",
-            description: `Tap on the ${capitalizeVehicleType(selectedVehicle)} parking area where you want to park near ${pendingWaypoints[0].name}.`,
-            variant: "default"
-          });
+          await generateWaypointDrivingRoute(start, end, pendingWaypoints, selectedVehicle, null);
         } else {
-          // Start is a building - first ask for origin parking (where car is parked)
+          setPendingWaypointDrivingRoute({
+            start,
+            end,
+            waypoints: pendingWaypoints,
+            vehicleType: selectedVehicle
+          });
           setWaypointParkingMode('origin');
           setParkingSelectionMode(true);
           setShowParkingSelector(true);
@@ -2889,6 +3152,8 @@ export default function Navigation() {
     setCurrentIndoorFloor(null);
     setFloorsInRoute([]);
     setOutdoorRouteSnapshot(null);
+    setShowDrivingAdvisory(false);
+    setPendingDrivingAction(null);
   };
 
   const handleNavigateToAccessibleEndpoint = async () => {
@@ -3753,27 +4018,17 @@ export default function Navigation() {
       // Check if start is a gate (user is already in vehicle)
       const startIsGate = isGate(start);
       
-      // Store pending waypoint driving route
-      setPendingWaypointDrivingRoute({
-        start,
-        end: directionsDestination,
-        waypoints: waypointBuildings,
-        vehicleType: selectedVehicle
-      });
-      
       if (startIsGate) {
-        // Start is a gate - user is already driving, only ask for waypoint parking
-        setWaypointParkingMode('waypoint');
-        setParkingSelectionMode(true);
-        setShowParkingSelector(true);
-        
-        toast({
-          title: "Select Parking Near Stop",
-          description: `Tap on the ${capitalizeVehicleType(selectedVehicle)} parking area where you want to park near ${waypointBuildings[0].name}.`,
-          variant: "default"
-        });
+        await generateWaypointDrivingRoute(start, directionsDestination, waypointBuildings, selectedVehicle, null);
+        const duration = performance.now() - routeStartTime;
+        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, vehicleType: selectedVehicle, routeType: 'waypoint-driving-auto', source: 'dialog' });
       } else {
-        // Start is a building - first ask for origin parking (where car is parked)
+        setPendingWaypointDrivingRoute({
+          start,
+          end: directionsDestination,
+          waypoints: waypointBuildings,
+          vehicleType: selectedVehicle
+        });
         setWaypointParkingMode('origin');
         setParkingSelectionMode(true);
         setShowParkingSelector(true);
@@ -3783,10 +4038,9 @@ export default function Navigation() {
           description: `Tap on the ${capitalizeVehicleType(selectedVehicle)} parking area where your vehicle is parked.`,
           variant: "default"
         });
+        const duration = performance.now() - routeStartTime;
+        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, vehicleType: selectedVehicle, routeType: 'waypoint-driving-pending', source: 'dialog' });
       }
-      
-      const duration = performance.now() - routeStartTime;
-      trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, vehicleType: selectedVehicle, routeType: 'waypoint-driving-pending', source: 'dialog' });
       return;
     }
 
@@ -4628,6 +4882,11 @@ export default function Navigation() {
                             </div>
                           )}
                         </div>
+                        {phase.note && (
+                          <div className="ml-8 mb-3 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-md" data-testid={`phase-note-${displayIndex}`}>
+                            <p className="text-xs text-blue-700 dark:text-blue-300">{phase.note}</p>
+                          </div>
+                        )}
                         <div className="space-y-3 pl-8">
                           {phase.steps.map((step, stepIndex) => (
                             <div
@@ -4810,8 +5069,10 @@ export default function Navigation() {
               <div className="flex items-center gap-2 flex-1">
                 <MapPin className="w-5 h-5 flex-shrink-0" />
                 <span className="font-medium">
-                  {drivingParkingMode === 'destination' 
+                  {drivingParkingMode === 'destination'
                     ? `Tap on a ${capitalizeVehicleType(vehicleType)} Parking area on the map to indicate where you want to park`
+                    : waypointParkingMode === 'waypoint'
+                    ? `Tap on a ${capitalizeVehicleType(vehicleType)} Parking area near your stop to park`
                     : `Tap on a ${capitalizeVehicleType(vehicleType)} Parking area on the map to indicate where your vehicle is parked`
                   }
                 </span>
@@ -5152,6 +5413,61 @@ export default function Navigation() {
               data-testid="button-vehicle-cancel"
             >
               Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDrivingAdvisory} onOpenChange={(open) => {
+        if (!open) {
+          setShowDrivingAdvisory(false);
+          setPendingDrivingAction(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md z-[9999]" data-testid="dialog-driving-advisory">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              Driving Advisory
+            </DialogTitle>
+            <DialogDescription>
+              Please read the following before proceeding with driving navigation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 pt-2">
+            <div className="flex items-start gap-3 p-3 rounded-md bg-muted">
+              <Car className="w-5 h-5 mt-0.5 shrink-0 text-muted-foreground" />
+              <p className="text-sm text-foreground">You cannot drive directly to your destination. You will need to park at the nearest designated parking area and walk to your target location.</p>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-md bg-muted">
+              <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0 text-destructive" />
+              <p className="text-sm text-foreground">Parking and stopping along the road is prohibited.</p>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-md bg-muted">
+              <NavigationIcon className="w-5 h-5 mt-0.5 shrink-0 text-muted-foreground" />
+              <p className="text-sm text-foreground">Please follow the campus speed limit to ensure everyone's safety.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDrivingAdvisory(false);
+                setPendingDrivingAction(null);
+              }}
+              className="flex-1"
+              data-testid="button-advisory-cancel"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDrivingAdvisoryAcknowledge}
+              className="flex-1"
+              data-testid="button-advisory-acknowledge"
+            >
+              I Understand
             </Button>
           </div>
         </DialogContent>
