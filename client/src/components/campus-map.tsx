@@ -674,6 +674,7 @@ export default function CampusMap({
           iconAnchor: [20, 40],
         });
 
+        // Only show start marker at beginning of first phase
         const startMarker = L.marker(allPoints[0], { icon: startIcon }).addTo(mapInstanceRef.current);
         if (navigationStartBuilding?.name) {
           startMarker.bindTooltip(navigationStartBuilding.name, {
@@ -684,6 +685,7 @@ export default function CampusMap({
           });
         }
         
+        // Only show end marker at end of last phase
         const endMarker = L.marker(allPoints[allPoints.length - 1], { icon: endIcon }).addTo(mapInstanceRef.current);
         if (navigationEndBuilding?.name) {
           endMarker.bindTooltip(navigationEndBuilding.name, {

@@ -4452,13 +4452,14 @@ export default function Navigation() {
             <Button 
               variant="outline" 
               onClick={() => setShowRoomFinder(true)}
+              disabled={!!route}
               data-testid="button-room-finder"
             >
               <DoorOpen className="w-4 h-4 mr-2" />
               Room Finder
             </Button>
-            <Link href="/staff">
-              <Button variant="default" data-testid="button-staff-finder">
+            <Link href={route ? '#' : '/staff'}>
+              <Button variant="default" disabled={!!route} data-testid="button-staff-finder">
                 <Users className="w-4 h-4 mr-2" />
                 Staff Finder
               </Button>

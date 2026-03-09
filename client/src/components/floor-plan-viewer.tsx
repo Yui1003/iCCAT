@@ -65,6 +65,7 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
   const panXRef = useRef(0);
   const panYRef = useRef(0);
   const gestureRef = useRef({ isDragging: false, lastX: 0, lastY: 0, lastDist: 0, wasDragging: false, startX: 0, startY: 0 });
+  const [isLoadingImage, setIsLoadingImage] = useState(false);
 
   const updateZoom = (v: number) => { zoomRef.current = v; setZoom(v); };
   const updatePanX = (v: number) => { panXRef.current = v; setPanX(v); };
@@ -74,18 +75,23 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
 
   useEffect(() => {
     if (floor.floorPlanImage) {
+      setIsLoadingImage(true);
       const imageLoadStart = performance.now();
       const img = new Image();
       img.src = floor.floorPlanImage;
       img.onload = () => {
         const imageLoadDuration = performance.now() - imageLoadStart;
         setImage(img);
+        setIsLoadingImage(false);
         trackEvent(AnalyticsEventType.IMAGE_LOAD, Math.max(1, Math.round(imageLoadDuration)), {
           action: 'floor_plan_image_loaded',
           floorId: floor.id,
           floorName: floor.floorName,
           imageSize: img.width + 'x' + img.height
         });
+      };
+      img.onerror = () => {
+        setIsLoadingImage(false);
       };
     }
   }, [floor.floorPlanImage, floor.id, floor.floorName]);
@@ -103,6 +109,17 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setLineDash([]);
+
+    // Show loading overlay if image is loading
+    if (isLoadingImage) {
+      ctx.fillStyle = '#f3f4f6';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Floor plan loading...', canvas.width / 2, canvas.height / 2);
+      return;
+    }
 
     ctx.save();
     ctx.scale(zoom, zoom);
@@ -264,7 +281,7 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
     }
 
     ctx.restore();
-  }, [image, zoom, panX, panY, rooms, highlightedRoomId, showPathTo, indoorNodes, floor.id, pathPolyline]);
+  }, [image, zoom, panX, panY, rooms, highlightedRoomId, showPathTo, indoorNodes, floor.id, pathPolyline, isLoadingImage]);
 
   const getRoomColor = (type: string) => {
     const colors: Record<string, string> = {

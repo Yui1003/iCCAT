@@ -132,7 +132,10 @@ export default function PolygonDrawingMap({
       },
       edit: {
         featureGroup: drawnItems,
-        remove: true
+        remove: true,
+        poly: {
+          allowIntersection: false
+        }
       }
     });
 
