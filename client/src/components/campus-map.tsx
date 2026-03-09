@@ -717,7 +717,7 @@ export default function CampusMap({
           routeMarkersRef.current.push(connectorMarker);
         }
 
-        // End marker — full red pin when last phase, nothing otherwise
+        // End marker — full red pin when last phase, connector dot otherwise
         if (showEndPin) {
           const endMarker = L.marker(allPoints[allPoints.length - 1], { icon: endIcon }).addTo(mapInstanceRef.current);
           if (navigationEndBuilding?.name) {
@@ -729,6 +729,18 @@ export default function CampusMap({
             });
           }
           routeMarkersRef.current.push(endMarker);
+        } else {
+          // Intermediate phase — show a connector dot at the end with the destination name
+          const endConnectorMarker = L.marker(allPoints[allPoints.length - 1], { icon: connectorIcon }).addTo(mapInstanceRef.current);
+          if (navigationEndBuilding?.name) {
+            endConnectorMarker.bindTooltip(navigationEndBuilding.name, {
+              permanent: true,
+              direction: 'top',
+              offset: [0, -12],
+              className: 'bg-red-700 text-white px-2 py-1 rounded-lg shadow-md text-xs font-semibold'
+            });
+          }
+          routeMarkersRef.current.push(endConnectorMarker);
         }
 
         // Render parking marker for driving modes (Car, Motorcycle, Bike)

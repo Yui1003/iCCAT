@@ -98,23 +98,14 @@ export default function PolygonDrawingMap({
     let editLayerGroup: any = null;
     let editPolygonLayers: any[] = [];
 
-    // Vertex marker: solid blue circle using divIcon so L.marker draggable works
+    // Vertex marker: small white circle that sits ON the thick polygon outline (OSM style)
+    // 20×20 transparent hit area contains a 9×9 visible white dot — large hit area for easy drag
     function makeVertexIcon() {
       return L.divIcon({
-        html: '<div style="width:14px;height:14px;border-radius:50%;background:#3b82f6;border:2px solid #ffffff;box-shadow:0 1px 4px rgba(0,0,0,.5);cursor:grab;box-sizing:border-box;pointer-events:auto;"></div>',
+        html: '<div style="width:20px;height:20px;display:flex;align-items:center;justify-content:center;cursor:grab;pointer-events:auto;"><div style="width:9px;height:9px;border-radius:50%;background:#ffffff;border:1.5px solid #3b82f6;box-shadow:0 0 0 1px rgba(0,0,0,.25);box-sizing:border-box;flex-shrink:0;"></div></div>',
         className: '',
-        iconSize: [14, 14],
-        iconAnchor: [7, 7],
-      });
-    }
-
-    // Midpoint marker: smaller semi-transparent circle shown between vertices
-    function makeMidpointIcon() {
-      return L.divIcon({
-        html: '<div style="width:10px;height:10px;border-radius:50%;background:rgba(59,130,246,0.55);border:1.5px solid #ffffff;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:copy;box-sizing:border-box;pointer-events:auto;"></div>',
-        className: '',
-        iconSize: [10, 10],
-        iconAnchor: [5, 5],
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
       });
     }
 
@@ -147,50 +138,46 @@ export default function PolygonDrawingMap({
         rings.forEach((ring: any[], ringIndex: number) => {
           const n = ring.length;
 
-          // ── Midpoint markers — clicking inserts a new vertex ──────────────
+          // ── Transparent edge-click lines — clicking inserts a new vertex ──
           for (let i = 0; i < n; i++) {
             const a = ring[i];
             const b = ring[(i + 1) % n];
-            const midLat = (a.lat + b.lat) / 2;
-            const midLng = (a.lng + b.lng) / 2;
+            const capturedI = i;
 
-            const midMarker = L.marker([midLat, midLng], {
-              icon: makeMidpointIcon(),
-              draggable: false,
-              zIndexOffset: 100,
+            const edgeLine = L.polyline([a, b], {
+              color: 'transparent',
+              weight: 14,
+              opacity: 0,
+              interactive: true,
               bubblingMouseEvents: false,
             });
 
-            const capturedI = i;
-            const capturedMidLat = midLat;
-            const capturedMidLng = midLng;
-
-            midMarker.on('click', (e: any) => {
+            edgeLine.on('click', (e: any) => {
               L.DomEvent.stopPropagation(e);
               const currentRings = getPolygonLatLngs(polygonLayer);
-              // Deep-copy rings so we don't mutate Leaflet's internal reference
+              // Deep-copy rings to avoid mutating Leaflet's internal reference
               const newRings = currentRings.map((r: any[]) => [...r]);
-              newRings[ringIndex].splice(capturedI + 1, 0, L.latLng(capturedMidLat, capturedMidLng));
+              newRings[ringIndex].splice(capturedI + 1, 0, e.latlng);
               polygonLayer.setLatLngs(newRings);
               polygonLayer.redraw();
               buildEditUI();
               emitChange();
             });
 
-            editLayerGroup.addLayer(midMarker);
+            editLayerGroup.addLayer(edgeLine);
           }
 
-          // ── Draggable vertex markers ──────────────────────────────────────
+          // ── Draggable vertex markers — all vertices (original + inserted) ─
           ring.forEach((latlng: any, vIdx: number) => {
             const marker = L.marker([latlng.lat, latlng.lng], {
               icon: makeVertexIcon(),
-              draggable: true,       // Leaflet handles all mouse/touch drag internally
+              draggable: true,        // Leaflet native drag — no map-pan conflict
               zIndexOffset: 200,
               autoPanOnFocus: false,
               bubblingMouseEvents: false,
             });
 
-            // Reshape polygon in real time as the marker is dragged
+            // Reshape polygon in real time while dragging
             marker.on('drag', () => {
               const newLatLng = marker.getLatLng();
               const currentRings = getPolygonLatLngs(polygonLayer);
@@ -200,7 +187,7 @@ export default function PolygonDrawingMap({
               polygonLayer.redraw();
             });
 
-            // Rebuild midpoint markers at updated positions after drag ends
+            // Rebuild edge lines at updated positions after drag ends
             marker.on('dragend', () => {
               buildEditUI();
               emitChange();
@@ -431,7 +418,7 @@ export default function PolygonDrawingMap({
             color: polygonColor,
             fillColor: polygonColor,
             fillOpacity: 0.4,
-            weight: 3
+            weight: 6
           });
           drawnItemsRef.current.addLayer(polygonLayer);
         }
