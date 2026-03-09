@@ -5349,7 +5349,7 @@ export default function Navigation() {
                 !route?.phases ||
                 activeNavPhaseIndex === route.phases.length - 1
               }
-              parkingLocation={route?.parkingLocation}
+              parkingLocation={activeNavPhaseIndex === null ? route?.parkingLocation : null}
               hidePolygonsInNavigation={!!route}
               waypointsData={
                 route && waypoints.length > 0 && activeNavPhaseIndex === null
@@ -5366,12 +5366,12 @@ export default function Navigation() {
                       if (activeNavPhaseIndex !== null && route.phases && route.phases[activeNavPhaseIndex]) {
                         const phase = route.phases[activeNavPhaseIndex];
                         const b = buildings.find(bld => bld.id === phase.startId);
-                        return b ? { id: b.id, name: b.name, lat: b.lat, lng: b.lng, polygon: b.polygon as Array<{ lat: number; lng: number }> | null } : null;
+                        return b ? { id: b.id, name: b.name, lat: b.lat, lng: b.lng, polygon: b.polygon as Array<{ lat: number; lng: number }> | null, polygons: (b as any).polygons || null } : null;
                       }
                       // Preview mode: show the overall start building
                       if (selectedStart && 'id' in selectedStart) {
                         const b = buildings.find(bld => bld.id === selectedStart.id);
-                        return b ? { id: b.id, name: b.name, lat: b.lat, lng: b.lng, polygon: b.polygon as Array<{ lat: number; lng: number }> | null } : null;
+                        return b ? { id: b.id, name: b.name, lat: b.lat, lng: b.lng, polygon: b.polygon as Array<{ lat: number; lng: number }> | null, polygons: (b as any).polygons || null } : null;
                       }
                       return null;
                     })()
@@ -5384,12 +5384,12 @@ export default function Navigation() {
                       if (activeNavPhaseIndex !== null && route.phases && route.phases[activeNavPhaseIndex]) {
                         const phase = route.phases[activeNavPhaseIndex];
                         const b = buildings.find(bld => bld.id === phase.endId);
-                        return b ? { id: b.id, name: b.name, lat: b.lat, lng: b.lng, polygon: b.polygon as Array<{ lat: number; lng: number }> | null } : null;
+                        return b ? { id: b.id, name: b.name, lat: b.lat, lng: b.lng, polygon: b.polygon as Array<{ lat: number; lng: number }> | null, polygons: (b as any).polygons || null } : null;
                       }
                       // Preview mode: show the overall end building
                       if (selectedEnd) {
                         const b = buildings.find(bld => bld.id === selectedEnd.id);
-                        return b ? { id: b.id, name: b.name, lat: b.lat, lng: b.lng, polygon: b.polygon as Array<{ lat: number; lng: number }> | null } : null;
+                        return b ? { id: b.id, name: b.name, lat: b.lat, lng: b.lng, polygon: b.polygon as Array<{ lat: number; lng: number }> | null, polygons: (b as any).polygons || null } : null;
                       }
                       return null;
                     })()
@@ -5404,7 +5404,8 @@ export default function Navigation() {
                         name: parkingBuilding.name,
                         lat: parkingBuilding.lat,
                         lng: parkingBuilding.lng,
-                        polygon: parkingBuilding.polygon as Array<{ lat: number; lng: number }> | null
+                        polygon: parkingBuilding.polygon as Array<{ lat: number; lng: number }> | null,
+                        polygons: (parkingBuilding as any).polygons || null
                       } : null;
                     })()
                   : null
@@ -5429,7 +5430,8 @@ export default function Navigation() {
                           name: b.name,
                           lat: b.lat,
                           lng: b.lng,
-                          polygon: b.polygon as Array<{ lat: number; lng: number }> | null
+                          polygon: b.polygon as Array<{ lat: number; lng: number }> | null,
+                          polygons: (b as any).polygons || null
                         }));
                     })()
                   : []
@@ -5442,7 +5444,8 @@ export default function Navigation() {
                         name: wp.name,
                         lat: wp.lat,
                         lng: wp.lng,
-                        polygon: wp.polygon as Array<{ lat: number; lng: number }> | null
+                        polygon: wp.polygon as Array<{ lat: number; lng: number }> | null,
+                        polygons: (wp as any).polygons || null
                       }))
                   : []
               }

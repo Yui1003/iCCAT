@@ -47,7 +47,6 @@ export default function PolygonDrawingMap({
   const onPolygonsChangeRef = useRef(onPolygonsChange);
   const polygonColorRef = useRef(polygonColor);
 
-  // Keep refs updated without re-running the main effect
   useEffect(() => { onPolygonsChangeRef.current = onPolygonsChange; }, [onPolygonsChange]);
   useEffect(() => { polygonColorRef.current = polygonColor; }, [polygonColor]);
 
@@ -95,33 +94,37 @@ export default function PolygonDrawingMap({
     drawnItems.addTo(map);
 
     // ─── OSM-style Custom Vertex Editor ────────────────────────────────────────
-    // State for the custom editor
     let editMode = false;
-    let editLayerGroup: any = null;  // L.LayerGroup holding vertex markers & edge clickables
-    let editPolygonLayers: any[] = []; // The actual polygon layers being edited
+    let editLayerGroup: any = null;
+    let editPolygonLayers: any[] = [];
 
-    const VERTEX_STYLE = {
-      radius: 6,
-      color: '#ffffff',
-      weight: 2,
-      fillColor: '#3b82f6',
-      fillOpacity: 1,
-      interactive: true,
-      bubblingMouseEvents: false,
-    };
+    // Vertex marker: solid blue circle using divIcon so L.marker draggable works
+    function makeVertexIcon() {
+      return L.divIcon({
+        html: '<div style="width:14px;height:14px;border-radius:50%;background:#3b82f6;border:2px solid #ffffff;box-shadow:0 1px 4px rgba(0,0,0,.5);cursor:grab;box-sizing:border-box;pointer-events:auto;"></div>',
+        className: '',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      });
+    }
 
+    // Midpoint marker: smaller semi-transparent circle shown between vertices
+    function makeMidpointIcon() {
+      return L.divIcon({
+        html: '<div style="width:10px;height:10px;border-radius:50%;background:rgba(59,130,246,0.55);border:1.5px solid #ffffff;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:copy;box-sizing:border-box;pointer-events:auto;"></div>',
+        className: '',
+        iconSize: [10, 10],
+        iconAnchor: [5, 5],
+      });
+    }
+
+    // Returns rings as [[L.LatLng, ...], ...] always
     function getPolygonLatLngs(layer: any): any[][] {
       const raw = layer.getLatLngs();
-      // Polygon returns [[latlng, ...]] for simple polygons
       if (Array.isArray(raw[0]) || (raw[0] && raw[0].lat === undefined)) {
         return raw;
       }
       return [raw];
-    }
-
-    function setPolygonLatLngs(layer: any, rings: any[][]): void {
-      layer.setLatLngs(rings);
-      layer.redraw();
     }
 
     function destroyEditUI() {
@@ -144,119 +147,74 @@ export default function PolygonDrawingMap({
         rings.forEach((ring: any[], ringIndex: number) => {
           const n = ring.length;
 
-          // ── Edge clickable lines (transparent, thick — capture edge clicks) ──
+          // ── Midpoint markers — clicking inserts a new vertex ──────────────
           for (let i = 0; i < n; i++) {
             const a = ring[i];
             const b = ring[(i + 1) % n];
-            const edgeLine = L.polyline([a, b], {
-              color: 'transparent',
-              weight: 12,
-              opacity: 0,
-              interactive: true,
+            const midLat = (a.lat + b.lat) / 2;
+            const midLng = (a.lng + b.lng) / 2;
+
+            const midMarker = L.marker([midLat, midLng], {
+              icon: makeMidpointIcon(),
+              draggable: false,
+              zIndexOffset: 100,
               bubblingMouseEvents: false,
             });
 
-            // Capture the indices at creation time
-            const iIdx = i;
-            edgeLine.on('click', (e: any) => {
+            const capturedI = i;
+            const capturedMidLat = midLat;
+            const capturedMidLng = midLng;
+
+            midMarker.on('click', (e: any) => {
               L.DomEvent.stopPropagation(e);
-              // Insert new vertex between i and i+1 at the clicked point
-              const newLatLng = e.latlng;
               const currentRings = getPolygonLatLngs(polygonLayer);
-              const currentRing = currentRings[ringIndex];
-              currentRing.splice(iIdx + 1, 0, newLatLng);
-              setPolygonLatLngs(polygonLayer, currentRings);
-              buildEditUI(); // Rebuild with new vertex
+              // Deep-copy rings so we don't mutate Leaflet's internal reference
+              const newRings = currentRings.map((r: any[]) => [...r]);
+              newRings[ringIndex].splice(capturedI + 1, 0, L.latLng(capturedMidLat, capturedMidLng));
+              polygonLayer.setLatLngs(newRings);
+              polygonLayer.redraw();
+              buildEditUI();
+              emitChange();
             });
 
-            editLayerGroup.addLayer(edgeLine);
+            editLayerGroup.addLayer(midMarker);
           }
 
-          // ── Vertex markers ──────────────────────────────────────────────────
+          // ── Draggable vertex markers ──────────────────────────────────────
           ring.forEach((latlng: any, vIdx: number) => {
-            const marker = L.circleMarker(latlng, { ...VERTEX_STYLE });
+            const marker = L.marker([latlng.lat, latlng.lng], {
+              icon: makeVertexIcon(),
+              draggable: true,       // Leaflet handles all mouse/touch drag internally
+              zIndexOffset: 200,
+              autoPanOnFocus: false,
+              bubblingMouseEvents: false,
+            });
 
-            let dragging = false;
-            let startLatLng: any = null;
-            let markerStartPos: any = null;
+            // Reshape polygon in real time as the marker is dragged
+            marker.on('drag', () => {
+              const newLatLng = marker.getLatLng();
+              const currentRings = getPolygonLatLngs(polygonLayer);
+              const newRings = currentRings.map((r: any[]) => [...r]);
+              newRings[ringIndex][vIdx] = newLatLng;
+              polygonLayer.setLatLngs(newRings);
+              polygonLayer.redraw();
+            });
 
-            const onMouseDown = (e: any) => {
-              L.DomEvent.stopPropagation(e);
-              dragging = true;
-              startLatLng = e.latlng;
-              markerStartPos = marker.getLatLng();
-              map.dragging.disable();
+            // Rebuild midpoint markers at updated positions after drag ends
+            marker.on('dragend', () => {
+              buildEditUI();
+              emitChange();
+            });
 
-              const onMouseMove = (moveEvt: any) => {
-                if (!dragging) return;
-                const newPos = moveEvt.latlng;
-                marker.setLatLng(newPos);
-                // Update polygon ring in place
-                const currentRings = getPolygonLatLngs(polygonLayer);
-                currentRings[ringIndex][vIdx] = newPos;
-                setPolygonLatLngs(polygonLayer, currentRings);
-              };
-
-              const onMouseUp = () => {
-                if (!dragging) return;
-                dragging = false;
-                map.dragging.enable();
-                map.off('mousemove', onMouseMove);
-                map.off('mouseup', onMouseUp);
-                // Rebuild UI after drag ends to re-sync edge positions
-                buildEditUI();
-                // Emit change
-                emitChange();
-              };
-
-              map.on('mousemove', onMouseMove);
-              map.on('mouseup', onMouseUp);
-            };
-
-            // Touch support
-            const onTouchStart = (e: any) => {
-              L.DomEvent.stopPropagation(e);
-              dragging = true;
-              map.dragging.disable();
-
-              const onTouchMove = (moveEvt: any) => {
-                if (!dragging) return;
-                const touch = moveEvt.originalEvent?.touches?.[0];
-                if (!touch) return;
-                const newPos = map.containerPointToLatLng(
-                  L.point(touch.clientX - map.getContainer().getBoundingClientRect().left,
-                           touch.clientY - map.getContainer().getBoundingClientRect().top)
-                );
-                marker.setLatLng(newPos);
-                const currentRings = getPolygonLatLngs(polygonLayer);
-                currentRings[ringIndex][vIdx] = newPos;
-                setPolygonLatLngs(polygonLayer, currentRings);
-              };
-
-              const onTouchEnd = () => {
-                if (!dragging) return;
-                dragging = false;
-                map.dragging.enable();
-                map.off('touchmove', onTouchMove);
-                map.off('touchend', onTouchEnd);
-                buildEditUI();
-                emitChange();
-              };
-
-              map.on('touchmove', onTouchMove);
-              map.on('touchend', onTouchEnd);
-            };
-
-            marker.on('mousedown', onMouseDown);
-            marker.on('touchstart', onTouchStart);
-
-            // Right-click to delete vertex (only if more than 3)
+            // Right-click / two-finger tap to delete vertex (min 3 kept)
             marker.on('contextmenu', (e: any) => {
               L.DomEvent.stopPropagation(e);
               const currentRings = getPolygonLatLngs(polygonLayer);
               if (currentRings[ringIndex].length <= 3) return;
-              currentRings[ringIndex].splice(vIdx, 1);
-              setPolygonLatLngs(polygonLayer, currentRings);
+              const newRings = currentRings.map((r: any[]) => [...r]);
+              newRings[ringIndex].splice(vIdx, 1);
+              polygonLayer.setLatLngs(newRings);
+              polygonLayer.redraw();
               buildEditUI();
               emitChange();
             });
@@ -276,10 +234,6 @@ export default function PolygonDrawingMap({
       });
       onPolygonsChangeRef.current(result.length > 0 ? result : null);
     }
-
-    // ── Override Leaflet.Draw edit to be a no-op (we handle editing ourselves) ──
-    // We keep Leaflet.Draw ONLY for the draw toolbar (draw new polygons)
-    // and the delete button. For editing we use our custom vertex editor above.
 
     const drawControl = new L.Control.Draw({
       position: 'topright',
@@ -311,20 +265,16 @@ export default function PolygonDrawingMap({
       edit: {
         featureGroup: drawnItems,
         remove: true,
-        edit: false,  // Disable Leaflet.Draw native edit; we use custom editor
+        edit: false,  // disabled — we use the custom editor above
       }
     });
 
     map.addControl(drawControl);
 
-    // ── Custom Edit button injected into toolbar ─────────────────────────────
-    // We inject a custom Edit button into the Leaflet.Draw toolbar container
-    // because we disabled the native edit. We do it after adding the control.
+    // ── Custom Edit toggle button injected into Leaflet.Draw toolbar ─────────
     const injectEditButton = () => {
       const toolbar = mapRef.current?.querySelector('.leaflet-draw-toolbar') as HTMLElement | null;
       if (!toolbar) return;
-
-      // Avoid injecting twice
       if (toolbar.querySelector('.custom-edit-btn')) return;
 
       const editBtn = document.createElement('a');
@@ -339,14 +289,12 @@ export default function PolygonDrawingMap({
         e.stopPropagation();
 
         if (editMode) {
-          // Save & exit edit mode
           editMode = false;
           editPolygonLayers = [];
           destroyEditUI();
           editBtn.classList.remove('leaflet-draw-toolbar-button-enabled');
           emitChange();
         } else {
-          // Enter edit mode
           editMode = true;
           editPolygonLayers = [];
           drawnItems.eachLayer((layer: any) => {
@@ -358,14 +306,11 @@ export default function PolygonDrawingMap({
         }
       });
 
-      // Insert before the first child (draw polygon button area) or append
       toolbar.insertBefore(editBtn, toolbar.firstChild);
     };
 
-    // Delay to allow toolbar to render
     setTimeout(injectEditButton, 300);
 
-    // ── Helper: extract all polygons from drawnItems ─────────────────────────
     const extractPolygons = (): LatLng[][] => {
       const result: LatLng[][] = [];
       drawnItems.eachLayer((layer: any) => {
@@ -376,7 +321,6 @@ export default function PolygonDrawingMap({
       return result;
     };
 
-    // Resize handling
     let resizeObserver: ResizeObserver | null = null;
     try {
       resizeObserver = new ResizeObserver(() => {
@@ -392,7 +336,6 @@ export default function PolygonDrawingMap({
     const tid1 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 75);
     const tid2 = setTimeout(() => { if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize(); }, 250);
 
-    // ── Event: new shape drawn ───────────────────────────────────────────────
     map.on(L.Draw.Event.CREATED, (e: any) => {
       const layer = e.layer;
       drawnItems.addLayer(layer);
@@ -400,9 +343,7 @@ export default function PolygonDrawingMap({
       onPolygonsChangeRef.current(all.length > 0 ? all : null);
     });
 
-    // ── Event: shape deleted ─────────────────────────────────────────────────
     map.on(L.Draw.Event.DELETED, () => {
-      // If deleted while in edit mode, exit edit mode
       if (editMode) {
         editMode = false;
         editPolygonLayers = [];
@@ -448,7 +389,7 @@ export default function PolygonDrawingMap({
         mapInstanceRef.current = null;
       }
     };
-  }, []); // Only run once
+  }, []);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
@@ -463,7 +404,6 @@ export default function PolygonDrawingMap({
     const L = window.L;
     drawnItemsRef.current.clearLayers();
 
-    // Render other existing building polygons as non-clickable reference layers
     if (existingBuildings && existingBuildings.length > 0) {
       existingBuildings.forEach((building) => {
         const buildingColor = building.polygonColor || "#9CA3AF";
@@ -483,7 +423,6 @@ export default function PolygonDrawingMap({
       });
     }
 
-    // Load each polygon as its own editable layer
     if (polygons && polygons.length > 0) {
       polygons.forEach((poly) => {
         if (poly && poly.length > 0) {

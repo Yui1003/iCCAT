@@ -401,7 +401,7 @@ export default function AdminBuildings() {
                   Add Building
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" onScroll={() => { if (typeComboOpen) setTypeComboOpen(false); }}>
               <DialogHeader>
                 <DialogTitle>
                   {editingBuilding ? "Edit Building" : "Add New Building"}

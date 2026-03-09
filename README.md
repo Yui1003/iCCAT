@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.4.4 DEV
+V3.4.5 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -20,3 +20,4 @@ MULTI PHASE FOR STOP BY
         poi type scroll
         polygon drawing
 3.4.4 - Fix Bugs from 3.4.3
+3.4.5 - Fix Bugs from 3.4.4
