@@ -110,34 +110,8 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setLineDash([]);
 
-    // Show loading overlay with animation if image is loading
+    // Clear and return early while image is loading (HTML overlay handles the UI)
     if (isLoadingImage) {
-      ctx.fillStyle = 'rgba(243, 244, 246, 0.95)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Draw animated loading spinner
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const radius = 20;
-      const time = (Date.now() % 2000) / 2000;
-      const rotation = time * Math.PI * 2;
-      
-      ctx.strokeStyle = '#e5e7eb';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-      ctx.stroke();
-      
-      ctx.strokeStyle = '#3b82f6';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, rotation, rotation + Math.PI * 1.5);
-      ctx.stroke();
-      
-      ctx.fillStyle = '#6b7280';
-      ctx.font = '16px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Floor plan loading...', centerX, centerY + 50);
       return;
     }
 
@@ -618,7 +592,7 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
             </Button>
           </div>
         </div>
-        <div className="flex-1 overflow-hidden" ref={containerRef}>
+        <div className="flex-1 overflow-hidden relative" ref={containerRef}>
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
@@ -629,6 +603,12 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
             className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
             data-testid="floor-plan-canvas"
           />
+          {isLoadingImage && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 dark:bg-gray-900/90 pointer-events-none z-10">
+              <div className="w-10 h-10 rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-blue-500 animate-spin mb-3" />
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Floor plan loading...</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -868,6 +848,12 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
               onMouseLeave={handleMouseLeave}
               data-testid="canvas-floor-plan"
             />
+            {isLoadingImage && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 dark:bg-gray-900/90 pointer-events-none z-10">
+                <div className="w-10 h-10 rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-blue-500 animate-spin mb-3" />
+                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Floor plan loading...</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

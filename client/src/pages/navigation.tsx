@@ -4460,19 +4460,24 @@ export default function Navigation() {
             <ThemeToggle />
             <Button 
               variant="outline" 
-              onClick={() => setShowRoomFinder(true)}
+              onClick={() => { if (!route) setShowRoomFinder(true); }}
               disabled={!!route}
+              className={route ? 'pointer-events-none' : ''}
               data-testid="button-room-finder"
             >
               <DoorOpen className="w-4 h-4 mr-2" />
               Room Finder
             </Button>
-            <Link href={route ? '#' : '/staff'}>
-              <Button variant="default" disabled={!!route} data-testid="button-staff-finder">
-                <Users className="w-4 h-4 mr-2" />
-                Staff Finder
-              </Button>
-            </Link>
+            <Button
+              variant="default"
+              onClick={() => { if (!route) navigate('/staff'); }}
+              disabled={!!route}
+              className={route ? 'pointer-events-none' : ''}
+              data-testid="button-staff-finder"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Staff Finder
+            </Button>
           </div>
         </div>
       </header>
@@ -5338,10 +5343,16 @@ export default function Navigation() {
                       : route.phases)
                   : undefined
               }
+              isFirstPhase={activeNavPhaseIndex === null || activeNavPhaseIndex === 0}
+              isLastPhase={
+                activeNavPhaseIndex === null ||
+                !route?.phases ||
+                activeNavPhaseIndex === route.phases.length - 1
+              }
               parkingLocation={route?.parkingLocation}
               hidePolygonsInNavigation={!!route}
               waypointsData={
-                route && waypoints.length > 0
+                route && waypoints.length > 0 && activeNavPhaseIndex === null
                   ? waypoints
                       .map(id => buildings.find(b => b.id === id))
                       .filter((b): b is Building => !!b)
@@ -5349,35 +5360,43 @@ export default function Navigation() {
                   : []
               }
               navigationStartBuilding={
-                route && selectedStart && 'id' in selectedStart
+                route
                   ? (() => {
-                      const startBuilding = buildings.find(b => b.id === selectedStart.id);
-                      return startBuilding ? {
-                        id: startBuilding.id,
-                        name: startBuilding.name,
-                        lat: startBuilding.lat,
-                        lng: startBuilding.lng,
-                        polygon: startBuilding.polygon as Array<{ lat: number; lng: number }> | null
-                      } : null;
+                      // During per-phase navigation, show the phase start building
+                      if (activeNavPhaseIndex !== null && route.phases && route.phases[activeNavPhaseIndex]) {
+                        const phase = route.phases[activeNavPhaseIndex];
+                        const b = buildings.find(bld => bld.id === phase.startId);
+                        return b ? { id: b.id, name: b.name, lat: b.lat, lng: b.lng, polygon: b.polygon as Array<{ lat: number; lng: number }> | null } : null;
+                      }
+                      // Preview mode: show the overall start building
+                      if (selectedStart && 'id' in selectedStart) {
+                        const b = buildings.find(bld => bld.id === selectedStart.id);
+                        return b ? { id: b.id, name: b.name, lat: b.lat, lng: b.lng, polygon: b.polygon as Array<{ lat: number; lng: number }> | null } : null;
+                      }
+                      return null;
                     })()
                   : null
               }
               navigationEndBuilding={
-                route && selectedEnd
+                route
                   ? (() => {
-                      const endBuilding = buildings.find(b => b.id === selectedEnd.id);
-                      return endBuilding ? {
-                        id: endBuilding.id,
-                        name: endBuilding.name,
-                        lat: endBuilding.lat,
-                        lng: endBuilding.lng,
-                        polygon: endBuilding.polygon as Array<{ lat: number; lng: number }> | null
-                      } : null;
+                      // During per-phase navigation, show the phase end building
+                      if (activeNavPhaseIndex !== null && route.phases && route.phases[activeNavPhaseIndex]) {
+                        const phase = route.phases[activeNavPhaseIndex];
+                        const b = buildings.find(bld => bld.id === phase.endId);
+                        return b ? { id: b.id, name: b.name, lat: b.lat, lng: b.lng, polygon: b.polygon as Array<{ lat: number; lng: number }> | null } : null;
+                      }
+                      // Preview mode: show the overall end building
+                      if (selectedEnd) {
+                        const b = buildings.find(bld => bld.id === selectedEnd.id);
+                        return b ? { id: b.id, name: b.name, lat: b.lat, lng: b.lng, polygon: b.polygon as Array<{ lat: number; lng: number }> | null } : null;
+                      }
+                      return null;
                     })()
                   : null
               }
               navigationParkingBuilding={
-                route?.parkingLocation
+                activeNavPhaseIndex === null && route?.parkingLocation
                   ? (() => {
                       const parkingBuilding = buildings.find(b => b.id === route.parkingLocation?.id);
                       return parkingBuilding ? {
@@ -5391,24 +5410,17 @@ export default function Navigation() {
                   : null
               }
               navigationParkingBuildings={
-                route?.phases
+                activeNavPhaseIndex === null && route?.phases
                   ? (() => {
-                      // Extract ALL parking locations from route phases (both origin and destination parking)
                       const parkingTypes = ['Car Parking', 'Motorcycle Parking', 'Bike Parking'];
                       const parkingIds = new Set<string>();
-                      
-                      // Collect all unique parking IDs from phase start/end points
                       route.phases.forEach(phase => {
                         if (phase.startId) parkingIds.add(phase.startId);
                         if (phase.endId) parkingIds.add(phase.endId);
                       });
-                      
-                      // Also include the main parkingLocation if set
                       if (route.parkingLocation?.id) {
                         parkingIds.add(route.parkingLocation.id);
                       }
-                      
-                      // Filter to only actual parking buildings and convert to navigation building format
                       return Array.from(parkingIds)
                         .map(id => buildings.find(b => b.id === id))
                         .filter((b): b is Building => !!b && parkingTypes.includes(b.type || ''))
@@ -5423,7 +5435,7 @@ export default function Navigation() {
                   : []
               }
               navigationWaypointBuildings={
-                route && route.waypoints && route.waypoints.length > 0
+                activeNavPhaseIndex === null && route && route.waypoints && route.waypoints.length > 0
                   ? route.waypoints
                       .map(wp => ({
                         id: wp.id,

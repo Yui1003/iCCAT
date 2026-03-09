@@ -30,6 +30,9 @@ export default function BuildingInfoModal({
   onOpenFloorPlan,
   onGetDirections
 }: BuildingInfoModalProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [activeTab, setActiveTab] = useState("overview");
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -72,6 +75,40 @@ export default function BuildingInfoModal({
     }
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.modal-header')) {
+      setIsDragging(true);
+      setDragOffset({
+        x: e.clientX - position.x,
+        y: e.clientY - position.y
+      });
+    }
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        setPosition({
+          x: e.clientX - dragOffset.x,
+          y: e.clientY - dragOffset.y
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset]);
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -85,10 +122,15 @@ export default function BuildingInfoModal({
         <Card
           ref={modalRef}
           className="relative w-full shadow-2xl overflow-hidden"
+          style={{
+            transform: `translate(${position.x}px, ${position.y}px)`,
+            cursor: isDragging ? 'grabbing' : 'default'
+          }}
           data-testid="modal-building-info"
         >
           <div
-            className="modal-header bg-primary p-4 flex items-center justify-between"
+            className="modal-header bg-primary p-4 flex items-center justify-between cursor-grab active:cursor-grabbing"
+            onMouseDown={handleMouseDown}
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary-foreground/20 rounded-lg flex items-center justify-center">

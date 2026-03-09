@@ -27,6 +27,8 @@ interface CampusMapProps {
   routePolyline?: Array<{ lat: number; lng: number }>;
   routeMode?: 'walking' | 'driving' | 'accessible';
   routePhases?: RoutePhase[];
+  isFirstPhase?: boolean;
+  isLastPhase?: boolean;
   parkingLocation?: Building | null;
   className?: string;
   onMapClick?: (lat: number, lng: number) => void;
@@ -105,6 +107,8 @@ export default function CampusMap({
   hideBuildingMarkers = false,
   hidePaths = false,
   poiTypeData,
+  isFirstPhase,
+  isLastPhase,
   onPathClick
 }: CampusMapProps & { onPathClick?: (path: any) => void }) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -648,6 +652,11 @@ export default function CampusMap({
       const allPoints = mergedPoints;
       
       if (allPoints.length > 1) {
+        // Determine whether to show full start/end pins or intermediate connector dots
+        const showStartPin = isFirstPhase !== false;
+        const showEndPin = isLastPhase !== false;
+        const phaseColor = routePhases && routePhases.length > 0 ? (routePhases[0].color || '#3b82f6') : '#3b82f6';
+
         const startIcon = L.divIcon({
           html: `
             <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
@@ -674,29 +683,53 @@ export default function CampusMap({
           iconAnchor: [20, 40],
         });
 
-        // Only show start marker at beginning of first phase
-        const startMarker = L.marker(allPoints[0], { icon: startIcon }).addTo(mapInstanceRef.current);
-        if (navigationStartBuilding?.name) {
-          startMarker.bindTooltip(navigationStartBuilding.name, {
-            permanent: true,
-            direction: 'top',
-            offset: [0, -24],
-            className: 'bg-green-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
-          });
+        // Intermediate connector dot (used when we are mid-route, not the first phase)
+        const connectorIcon = L.divIcon({
+          html: `<div style="width:16px;height:16px;background:${phaseColor};border:3px solid white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>`,
+          className: 'route-connector-marker',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        });
+
+        // Start marker — full green pin when first phase, small connector dot otherwise
+        if (showStartPin) {
+          const startMarker = L.marker(allPoints[0], { icon: startIcon }).addTo(mapInstanceRef.current);
+          if (navigationStartBuilding?.name) {
+            startMarker.bindTooltip(navigationStartBuilding.name, {
+              permanent: true,
+              direction: 'top',
+              offset: [0, -24],
+              className: 'bg-green-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
+            });
+          }
+          routeMarkersRef.current.push(startMarker);
+        } else {
+          // Show a small connector dot at the start of this intermediate phase
+          const connectorMarker = L.marker(allPoints[0], { icon: connectorIcon }).addTo(mapInstanceRef.current);
+          if (navigationStartBuilding?.name) {
+            connectorMarker.bindTooltip(navigationStartBuilding.name, {
+              permanent: true,
+              direction: 'top',
+              offset: [0, -12],
+              className: 'bg-gray-700 text-white px-2 py-1 rounded-lg shadow-md text-xs font-semibold'
+            });
+          }
+          routeMarkersRef.current.push(connectorMarker);
         }
-        
-        // Only show end marker at end of last phase
-        const endMarker = L.marker(allPoints[allPoints.length - 1], { icon: endIcon }).addTo(mapInstanceRef.current);
-        if (navigationEndBuilding?.name) {
-          endMarker.bindTooltip(navigationEndBuilding.name, {
-            permanent: true,
-            direction: 'top',
-            offset: [0, -24],
-            className: 'bg-red-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
-          });
+
+        // End marker — full red pin when last phase, nothing otherwise
+        if (showEndPin) {
+          const endMarker = L.marker(allPoints[allPoints.length - 1], { icon: endIcon }).addTo(mapInstanceRef.current);
+          if (navigationEndBuilding?.name) {
+            endMarker.bindTooltip(navigationEndBuilding.name, {
+              permanent: true,
+              direction: 'top',
+              offset: [0, -24],
+              className: 'bg-red-600 text-white px-3 py-2 rounded-lg shadow-lg font-semibold'
+            });
+          }
+          routeMarkersRef.current.push(endMarker);
         }
-        
-        routeMarkersRef.current.push(startMarker, endMarker);
 
         // Render parking marker for driving modes (Car, Motorcycle, Bike)
         // The parking marker shows where to park before walking to destination
@@ -854,7 +887,7 @@ export default function CampusMap({
       
       mapInstanceRef.current.setView([lat, lng], 17.5, { animate: false });
     }
-  }, [routePolyline, routeMode, routePhases, parkingLocation, centerLat, centerLng]);
+  }, [routePolyline, routeMode, routePhases, isFirstPhase, isLastPhase, parkingLocation, centerLat, centerLng]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;

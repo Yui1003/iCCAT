@@ -449,7 +449,7 @@ export default function AdminBuildings() {
                     <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[10000]" align="start" side="bottom" sideOffset={5}>
                       <Command>
                         <CommandInput placeholder="Search types..." />
-                        <CommandList className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20">
+                        <CommandList className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20" onWheel={(e) => e.stopPropagation()}>
                           <CommandEmpty>No type found.</CommandEmpty>
                           <CommandGroup>
                             {activeTypes.map((type) => {
