@@ -3955,6 +3955,8 @@ export default function Navigation() {
     setIsGeneratingRoute(true);
     const routeStartTime = performance.now();
 
+    try {
+
     const start = startId === 'kiosk' 
       ? (kioskBuilding || KIOSK_LOCATION) as any
       : buildings.find(b => b.id === startId);
@@ -4383,6 +4385,10 @@ export default function Navigation() {
       }
     } catch (error) {
       console.error('Error generating route:', error);
+    }
+
+    } finally {
+      setIsGeneratingRoute(false);
     }
   };
 

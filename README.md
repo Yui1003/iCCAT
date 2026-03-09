@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.4.7 DEV
+V3.4.8 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -28,4 +28,7 @@ MULTI PHASE FOR STOP BY
         POI Type Scroll
         Generating Route Overlay for all "Get Direction" buttons
         Polygon Drawing Map
-        
+3.4.8 - Fixed Polygon Drawing Map
+        Adjusted Max Zoom Level for Polygon Drawing Map and Path Drawing Map
+        Pending: Fix Map Tile Caching
+                 Fix Generating Route overlay stuck on Get Direction Button        

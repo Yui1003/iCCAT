@@ -67,7 +67,7 @@ export default function PolygonDrawingMap({
       center: [centerLat || 14.4025, centerLng || 120.8670],
       zoom: 18.5,
       minZoom: 17.5,
-      maxZoom: 21,
+      maxZoom: 23,
       zoomControl: true,
       attributionControl: true,
     });
@@ -77,12 +77,12 @@ export default function PolygonDrawingMap({
     const tfKey = import.meta.env.VITE_THUNDERFOREST_API_KEY || '';
     const lightTile = L.tileLayer(`https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${tfKey}`, {
       attribution: osmAttrib + ' © <a href="https://www.thunderforest.com/">Thunderforest</a>',
-      subdomains: 'abc', maxZoom: 21, maxNativeZoom: 19,
+      subdomains: 'abc', maxZoom: 23, maxNativeZoom: 19,
       crossOrigin: true, detectRetina: true, updateWhenIdle: false, updateWhenZooming: true, keepBuffer: 4,
     });
     const darkTile = L.tileLayer(`https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png?apikey=${tfKey}`, {
       attribution: osmAttrib + ' © <a href="https://www.thunderforest.com/">Thunderforest</a>',
-      subdomains: 'abc', maxZoom: 21, maxNativeZoom: 19,
+      subdomains: 'abc', maxZoom: 23, maxNativeZoom: 19,
       crossOrigin: true, detectRetina: true, updateWhenIdle: false, updateWhenZooming: true, keepBuffer: 4,
     });
     let activeTile = isDark() ? darkTile : lightTile;

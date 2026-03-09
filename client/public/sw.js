@@ -7,6 +7,7 @@
 const CACHE_NAME = 'iccat-v14';
 const DATA_CACHE_NAME = 'iccat-data-v14';
 const IMAGE_CACHE_NAME = 'iccat-images-v14';
+const TILE_CACHE_NAME = 'iccat-tiles-v1';
 
 // Static assets to cache immediately
 const urlsToCache = [
@@ -189,12 +190,25 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName !== DATA_CACHE_NAME && cacheName !== IMAGE_CACHE_NAME) {
+          if (cacheName !== CACHE_NAME && cacheName !== DATA_CACHE_NAME && cacheName !== IMAGE_CACHE_NAME && cacheName !== TILE_CACHE_NAME) {
             console.log('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    }).then(() => {
+      // Evict any stale Thunderforest tiles that were previously stored inside the
+      // static-asset cache (CACHE_NAME). They now live in TILE_CACHE_NAME and will
+      // be re-fetched fresh on next use via the network-first handler.
+      return caches.open(CACHE_NAME).then((cache) => {
+        return cache.keys().then((keys) => {
+          const staleOldTiles = keys.filter((req) => req.url.includes('tile.thunderforest.com'));
+          if (staleOldTiles.length > 0) {
+            console.log(`[SW] Removing ${staleOldTiles.length} stale Thunderforest tiles from static cache...`);
+          }
+          return Promise.all(staleOldTiles.map((req) => cache.delete(req)));
+        });
+      });
     }).then(() => {
       console.log('[SW] Starting background tile caching...');
       cacheBackgroundTiles();
@@ -295,42 +309,43 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle Thunderforest tiles - cache first for performance and offline use
+  // Handle Thunderforest tiles - network-first so OSM edits are always visible;
+  // falls back to cache when offline. Covers both cycle (light) and transport-dark (dark) layers.
   if (url.hostname.includes('tile.thunderforest.com')) {
+    const transparentPng = new Response(
+      new Blob([new Uint8Array([
+        137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
+        0, 0, 1, 0, 0, 0, 1, 0, 8, 6, 0, 0, 0, 92, 114, 168, 229,
+        0, 0, 0, 1, 115, 82, 71, 66, 0, 174, 206, 28, 233, 0, 0, 0,
+        4, 103, 65, 77, 65, 0, 0, 177, 143, 11, 252, 97, 5, 0, 0, 0,
+        9, 112, 72, 89, 115, 0, 0, 14, 195, 0, 0, 14, 195, 1, 199, 111,
+        168, 100, 0, 0, 0, 23, 73, 68, 65, 84, 120, 94, 237, 193, 1,
+        13, 0, 0, 0, 194, 160, 247, 79, 109, 14, 55, 160, 0, 0, 0, 0,
+        0, 0, 230, 7, 32, 0, 0, 1, 225, 33, 177, 39, 0, 0, 0, 0, 73,
+        69, 78, 68, 174, 66, 96, 130
+      ])], { type: 'image/png' })
+    );
     event.respondWith(
-      caches.open(CACHE_NAME).then((cache) => {
-        return cache.match(request).then((response) => {
-          if (response) {
-            return response;
-          }
-          return fetch(request)
-            .then((response) => {
-              if (response.status === 200) {
-                try {
-                  cache.put(request, response.clone());
-                } catch (cacheError) {
-                  console.warn(`[SW] Failed to cache Thunderforest tile: ${url.pathname}`, cacheError.message);
-                }
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse.status === 200) {
+            caches.open(TILE_CACHE_NAME).then((cache) => {
+              try {
+                cache.put(request, networkResponse.clone());
+              } catch (cacheError) {
+                console.warn(`[SW] Failed to cache tile: ${url.pathname}`, cacheError.message);
               }
-              return response;
-            })
-            .catch((error) => {
-              return new Response(
-                new Blob([new Uint8Array([
-                  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
-                  0, 0, 1, 0, 0, 0, 1, 0, 8, 6, 0, 0, 0, 92, 114, 168, 229,
-                  0, 0, 0, 1, 115, 82, 71, 66, 0, 174, 206, 28, 233, 0, 0, 0,
-                  4, 103, 65, 77, 65, 0, 0, 177, 143, 11, 252, 97, 5, 0, 0, 0,
-                  9, 112, 72, 89, 115, 0, 0, 14, 195, 0, 0, 14, 195, 1, 199, 111,
-                  168, 100, 0, 0, 0, 23, 73, 68, 65, 84, 120, 94, 237, 193, 1,
-                  13, 0, 0, 0, 194, 160, 247, 79, 109, 14, 55, 160, 0, 0, 0, 0,
-                  0, 0, 230, 7, 32, 0, 0, 1, 225, 33, 177, 39, 0, 0, 0, 0, 73,
-                  69, 78, 68, 174, 66, 96, 130
-                ])], { type: 'image/png' })
-              );
             });
-        });
-      })
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.open(TILE_CACHE_NAME).then((cache) => {
+            return cache.match(request).then((cached) => {
+              return cached || transparentPng;
+            });
+          });
+        })
     );
     return;
   }

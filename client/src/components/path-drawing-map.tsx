@@ -153,7 +153,7 @@ export default function PathDrawingMap({
       center: [14.4025, 120.8670],
       zoom: 18.5,
       minZoom: 17.5,
-      maxZoom: 22,
+      maxZoom: 23,
       zoomControl: true,
       attributionControl: true,
       dragging: true, // Will be toggled based on isDrawing
@@ -190,13 +190,13 @@ export default function PathDrawingMap({
     const lightTile = L.tileLayer(`https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${tfKey}`, {
       attribution: osmAttrib + ' © <a href="https://www.thunderforest.com/">Thunderforest</a>',
       subdomains: 'abc',
-      maxZoom: 22,
+      maxZoom: 23,
       maxNativeZoom: 19,
     });
     const darkTile = L.tileLayer(`https://{s}.tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png?apikey=${tfKey}`, {
       attribution: osmAttrib + ' © <a href="https://www.thunderforest.com/">Thunderforest</a>',
       subdomains: 'abc',
-      maxZoom: 22,
+      maxZoom: 23,
       maxNativeZoom: 19,
     });
     let activeTile = isDark() ? darkTile : lightTile;
@@ -725,7 +725,7 @@ export default function PathDrawingMap({
       // Only fit bounds on initial load with existing nodes, not on every node addition
       if (!hasInitializedBoundsRef.current && nodes.length > 1) {
         const bounds = L.latLngBounds(nodes);
-        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 22 });
+        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 23 });
         hasInitializedBoundsRef.current = true;
       }
     }
