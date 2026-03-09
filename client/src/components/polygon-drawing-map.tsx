@@ -138,6 +138,44 @@ export default function PolygonDrawingMap({
         }
       }
     });
+    
+    // Customize edit markers to use small dots instead of boxes
+    if (window.L && window.L.Edit && window.L.Edit.Poly) {
+      const PolyEditClass = window.L.Edit.Poly;
+      PolyEditClass.prototype.refreshMarkers = function() {
+        if (this._markerGroup) {
+          this._markerGroup.clearLayers();
+        } else {
+          this._markerGroup = new window.L.FeatureGroup();
+        }
+        
+        this._latlngs.forEach((latLngs: any, index: number) => {
+          latLngs.forEach((latLng: any, markerIndex: number) => {
+            const isMiddle = markerIndex !== 0 && markerIndex !== latLngs.length - 1;
+            
+            const marker = window.L.circleMarker(latLng, {
+              radius: isMiddle ? 4 : 5,
+              weight: 1,
+              color: '#ffffff',
+              fillColor: isMiddle ? '#fbbf24' : '#3b82f6',
+              fillOpacity: 0.8,
+              dashArray: '0',
+              opacity: 1,
+              interactive: true
+            });
+            
+            (marker as any)._index = markerIndex;
+            (marker as any)._multiIndex = index;
+            marker.on('mousedown', (e: any) => this._onMarkerMouseDown(e, marker), this);
+            marker.on('touchstart', (e: any) => this._onMarkerMouseDown(e, marker), this);
+            
+            this._markerGroup.addLayer(marker);
+          });
+        });
+        
+        this._featureGroup.addLayer(this._markerGroup);
+      };
+    }
 
     map.addControl(drawControl);
 

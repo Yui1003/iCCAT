@@ -4423,11 +4423,20 @@ export default function Navigation() {
   };
 
   // Filter buildings by type and search query
+  // If in active navigation phase, only show buildings relevant to that phase
   const filteredBuildings = buildings.filter(b => {
     const matchesType = selectedTypes.some(sel => sel === b.type || reverseRenames[sel] === b.type);
     const matchesSearch = searchQuery === "" || 
       b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (b.description && b.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    // If actively navigating a specific phase, filter to only show buildings in that phase
+    if (route && activeNavPhaseIndex !== null && route.phases && route.phases[activeNavPhaseIndex]) {
+      const currentPhase = route.phases[activeNavPhaseIndex];
+      const isPhaseBuilding = b.id === currentPhase.startId || b.id === currentPhase.endId;
+      return matchesType && matchesSearch && isPhaseBuilding;
+    }
+    
     return matchesType && matchesSearch;
   });
 

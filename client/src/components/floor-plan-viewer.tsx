@@ -110,14 +110,34 @@ export default function FloorPlanViewer({ floor, rooms = [], indoorNodes = [], o
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setLineDash([]);
 
-    // Show loading overlay if image is loading
+    // Show loading overlay with animation if image is loading
     if (isLoadingImage) {
-      ctx.fillStyle = '#f3f4f6';
+      ctx.fillStyle = 'rgba(243, 244, 246, 0.95)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#9ca3af';
+      
+      // Draw animated loading spinner
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = 20;
+      const time = (Date.now() % 2000) / 2000;
+      const rotation = time * Math.PI * 2;
+      
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, rotation, rotation + Math.PI * 1.5);
+      ctx.stroke();
+      
+      ctx.fillStyle = '#6b7280';
       ctx.font = '16px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('Floor plan loading...', canvas.width / 2, canvas.height / 2);
+      ctx.fillText('Floor plan loading...', centerX, centerY + 50);
       return;
     }
 

@@ -446,10 +446,10 @@ export default function AdminBuildings() {
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[10000]" align="start">
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[10000]" align="start" side="bottom" sideOffset={5}>
                       <Command>
                         <CommandInput placeholder="Search types..." />
-                        <CommandList className="max-h-[280px] overflow-y-auto">
+                        <CommandList className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20">
                           <CommandEmpty>No type found.</CommandEmpty>
                           <CommandGroup>
                             {activeTypes.map((type) => {
