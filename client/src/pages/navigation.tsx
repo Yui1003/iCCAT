@@ -3952,6 +3952,7 @@ export default function Navigation() {
   ) => {
     if (!directionsDestination) return;
 
+    setIsGeneratingRoute(true);
     const routeStartTime = performance.now();
 
     const start = startId === 'kiosk' 

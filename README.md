@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.4.6 DEV
+V3.4.7 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -22,3 +22,10 @@ MULTI PHASE FOR STOP BY
 3.4.4 - Fix Bugs from 3.4.3
 3.4.5 - Fix Bugs from 3.4.4
 3.4.6 - Fix Bugs from 3.4.5
+3.4.7 - Fixed Bugs:
+        Multi-Phase Route
+        Floor Plan Viewer
+        POI Type Scroll
+        Generating Route Overlay for all "Get Direction" buttons
+        Polygon Drawing Map
+        

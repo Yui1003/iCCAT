@@ -46,6 +46,10 @@ export default function PolygonDrawingMap({
   const drawControlRef = useRef<any>(null);
   const onPolygonsChangeRef = useRef(onPolygonsChange);
   const polygonColorRef = useRef(polygonColor);
+  // Tracks whether the custom vertex editor is active so the polygons useEffect
+  // doesn't clear/recreate layers while the user is mid-edit (which would invalidate
+  // the editPolygonLayers references and break subsequent drags)
+  const editModeActiveRef = useRef(false);
 
   useEffect(() => { onPolygonsChangeRef.current = onPolygonsChange; }, [onPolygonsChange]);
   useEffect(() => { polygonColorRef.current = polygonColor; }, [polygonColor]);
@@ -276,13 +280,17 @@ export default function PolygonDrawingMap({
         e.stopPropagation();
 
         if (editMode) {
+          // Exit edit mode — clear ref BEFORE emitChange so the polygons
+          // useEffect is allowed to reload layers with the saved coordinates
           editMode = false;
+          editModeActiveRef.current = false;
           editPolygonLayers = [];
           destroyEditUI();
           editBtn.classList.remove('leaflet-draw-toolbar-button-enabled');
           emitChange();
         } else {
           editMode = true;
+          editModeActiveRef.current = true;
           editPolygonLayers = [];
           drawnItems.eachLayer((layer: any) => {
             editPolygonLayers.push(layer);
@@ -333,6 +341,7 @@ export default function PolygonDrawingMap({
     map.on(L.Draw.Event.DELETED, () => {
       if (editMode) {
         editMode = false;
+        editModeActiveRef.current = false;
         editPolygonLayers = [];
         destroyEditUI();
       }
@@ -387,6 +396,10 @@ export default function PolygonDrawingMap({
 
   useEffect(() => {
     if (!mapInstanceRef.current || !drawnItemsRef.current || !window.L) return;
+    // Don't clear/reload layers while the user is actively editing vertices —
+    // doing so would invalidate the polygon layer references in editPolygonLayers
+    // and cause subsequent drags to update stale removed layers instead of the map
+    if (editModeActiveRef.current) return;
 
     const L = window.L;
     drawnItemsRef.current.clearLayers();
