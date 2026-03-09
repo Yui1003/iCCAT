@@ -5340,6 +5340,7 @@ export default function Navigation() {
             <CampusMap
               buildings={filteredBuildings}
               onBuildingClick={setSelectedBuilding}
+              enablePolygonClick={true}
               selectedBuilding={selectedBuilding}
               routePolyline={route?.polyline}
               routeMode={route?.mode}

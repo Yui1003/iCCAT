@@ -54,6 +54,7 @@ interface CampusMapProps {
   hideBuildingMarkers?: boolean;
   hidePaths?: boolean;
   poiTypeData?: { customTypes: CustomPoiType[]; iconOverrides: Record<string, string>; renames?: Record<string, string> };
+  enablePolygonClick?: boolean;
 }
 
 declare global {
@@ -109,7 +110,8 @@ export default function CampusMap({
   poiTypeData,
   isFirstPhase,
   isLastPhase,
-  onPathClick
+  onPathClick,
+  enablePolygonClick = false
 }: CampusMapProps & { onPathClick?: (path: any) => void }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -928,12 +930,22 @@ export default function CampusMap({
       const polygonClass = isParkingHighlighted ? 'parking-polygon-selectable building-polygon' : 'building-polygon';
       const polygonStyle = { color: polygonColor, fillColor: polygonColor, fillOpacity: polygonOpacity, weight: 3, className: polygonClass };
 
+      const attachPolygonClick = (polygon: any) => {
+        if (enablePolygonClick) {
+          polygon.getElement() && (polygon.getElement().style.cursor = 'pointer');
+          polygon.on('click', () => {
+            if (onBuildingClick) onBuildingClick(building);
+          });
+        }
+      };
+
       // New: multi-polygon support
       if ((building as any).polygons && Array.isArray((building as any).polygons) && (building as any).polygons.length > 0) {
         ((building as any).polygons as any[][]).forEach((poly: any[]) => {
           if (poly && poly.length > 2) {
             const latlngs = poly.map((p: any) => [p.lat, p.lng]);
             const polygon = L.polygon(latlngs, polygonStyle).addTo(mapInstanceRef.current);
+            attachPolygonClick(polygon);
             polygonsRef.current.push(polygon);
           }
         });
@@ -941,10 +953,11 @@ export default function CampusMap({
         // Legacy single-polygon fallback
         const latlngs = building.polygon.map((p: any) => [p.lat, p.lng]);
         const polygon = L.polygon(latlngs, polygonStyle).addTo(mapInstanceRef.current);
+        attachPolygonClick(polygon);
         polygonsRef.current.push(polygon);
       }
     });
-  }, [buildings, hidePolygonsInNavigation, hidePolygons, parkingSelectionMode, parkingTypeFilter]);
+  }, [buildings, hidePolygonsInNavigation, hidePolygons, parkingSelectionMode, parkingTypeFilter, enablePolygonClick, onBuildingClick]);
 
   // Render navigation-specific building polygons with highlight colors
   useEffect(() => {
