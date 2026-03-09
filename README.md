@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.4.8 DEV
+V3.4.8 PRODUCTION
 
 -------------- WHAT'S NEW ---------------------
 
@@ -30,5 +30,5 @@ MULTI PHASE FOR STOP BY
         Polygon Drawing Map
 3.4.8 - Fixed Polygon Drawing Map
         Adjusted Max Zoom Level for Polygon Drawing Map and Path Drawing Map
-        Pending: Fix Map Tile Caching
-                 Fix Generating Route overlay stuck on Get Direction Button        
+        Fixed Map Tile Caching
+        Fixed Generating Route overlay stuck on Get Direction Button        
