@@ -65,6 +65,7 @@ export default function PathDrawingMap({
   const dragStartPosRef = useRef<{ lat: number; lng: number } | null>(null);
   const [isDrawing, setIsDrawing] = useState(true);
   const [currentZoom, setCurrentZoom] = useState(18.5);
+  const [nodesHistory, setNodesHistory] = useState<PathNode[][]>([]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L || !isDrawing) return;
@@ -314,6 +315,7 @@ export default function PathDrawingMap({
         }
 
         const newNode = { lat: newNodeLatLng.lat, lng: newNodeLatLng.lng };
+        setNodesHistory(prev => [...prev, nodes]);
         onNodesChange([...nodes, newNode]);
       }
     };
@@ -423,7 +425,7 @@ export default function PathDrawingMap({
         marker.on('click', (e: any) => {
           L.DomEvent.stopPropagation(e);
           if (isDrawing) {
-            // Auto-add building location as waypoint when clicked
+            setNodesHistory(prev => [...prev, nodes]);
             onNodesChange([...nodes, { lat: building.lat, lng: building.lng }]);
           }
         });
@@ -509,6 +511,7 @@ export default function PathDrawingMap({
                   n => Math.abs(n.lat - node.lat) < 0.00001 && Math.abs(n.lng - node.lng) < 0.00001
                 );
                 if (!alreadyExists) {
+                  setNodesHistory(prev => [...prev, nodes]);
                   onNodesChange([...nodes, { lat: node.lat, lng: node.lng }]);
                 }
               }
@@ -698,6 +701,7 @@ export default function PathDrawingMap({
 
           connectedMarkersRef.current = [];
           dragStartPosRef.current = null;
+          setNodesHistory(prev => [...prev, nodes]);
           onNodesChange(newNodes);
         });
 
@@ -705,6 +709,7 @@ export default function PathDrawingMap({
           L.DomEvent.stopPropagation(e);
           if (!isDrawing) {
             const newNodes = nodes.filter((_, i) => i !== index);
+            setNodesHistory(prev => [...prev, nodes]);
             onNodesChange(newNodes);
           }
         });
@@ -712,6 +717,7 @@ export default function PathDrawingMap({
         marker.on('contextmenu', (e: any) => {
           L.DomEvent.stopPropagation(e);
           const newNodes = nodes.filter((_, i) => i !== index);
+          setNodesHistory(prev => [...prev, nodes]);
           onNodesChange(newNodes);
         });
 
@@ -726,6 +732,27 @@ export default function PathDrawingMap({
           smoothFactor: 1,
           interactive: false
         }).addTo(mapInstanceRef.current);
+
+        for (let i = 0; i < nodes.length - 1; i++) {
+          const capturedI = i;
+          const a = nodes[i];
+          const b = nodes[i + 1];
+          const edgeLine = L.polyline([[a.lat, a.lng], [b.lat, b.lng]], {
+            color: 'transparent',
+            weight: 20,
+            opacity: 0,
+            interactive: true,
+            bubblingMouseEvents: false,
+          }).addTo(mapInstanceRef.current);
+          edgeLine.on('dblclick', (e: any) => {
+            L.DomEvent.stopPropagation(e);
+            const newNodes = [...nodes];
+            newNodes.splice(capturedI + 1, 0, { lat: e.latlng.lat, lng: e.latlng.lng });
+            setNodesHistory(prev => [...prev, nodes]);
+            onNodesChange(newNodes);
+          });
+          markersRef.current.push(edgeLine);
+        }
       }
 
       // Only fit bounds on initial load with existing nodes, not on every node addition
@@ -738,12 +765,17 @@ export default function PathDrawingMap({
   }, [nodes, mode, isDrawing, onNodesChange, existingPaths, currentPathId, buildings, currentZoom, polarTracking, polarIncrement]);
 
   const handleUndo = () => {
-    if (nodes.length > 0) {
-      onNodesChange(nodes.slice(0, -1));
+    if (nodesHistory.length > 0) {
+      const prev = nodesHistory[nodesHistory.length - 1];
+      setNodesHistory(h => h.slice(0, -1));
+      onNodesChange(prev);
     }
   };
 
   const handleClear = () => {
+    if (nodes.length > 0) {
+      setNodesHistory(prev => [...prev, nodes]);
+    }
     onNodesChange([]);
   };
 
@@ -783,7 +815,7 @@ export default function PathDrawingMap({
             size="sm"
             variant="outline"
             onClick={handleUndo}
-            disabled={nodes.length === 0}
+            disabled={nodesHistory.length === 0}
             data-testid="button-undo"
           >
             <Undo className="w-4 h-4" />

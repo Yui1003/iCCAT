@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.5.0 PRODUCTION
+V3.5.1 PRODUCTION
 
 -------------- WHAT'S NEW ---------------------
 
@@ -35,3 +35,7 @@ MULTI PHASE FOR STOP BY
 3.4.9 - Allowed clicking on building polygon marker
 3.5.0 - Fixed Waypoint Deletion
         Fixed Custom Room Nodes
+3.5.1 - Added Path add Waypoint
+        Added overlay on admin pages
+        Fixed Room Selector Dropdown box scroll
+           

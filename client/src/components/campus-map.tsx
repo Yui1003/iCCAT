@@ -55,6 +55,8 @@ interface CampusMapProps {
   hidePaths?: boolean;
   poiTypeData?: { customTypes: CustomPoiType[]; iconOverrides: Record<string, string>; renames?: Record<string, string> };
   enablePolygonClick?: boolean;
+  draggableMarkerId?: string;
+  onMarkerDrag?: (lat: number, lng: number) => void;
 }
 
 declare global {
@@ -111,7 +113,9 @@ export default function CampusMap({
   isFirstPhase,
   isLastPhase,
   onPathClick,
-  enablePolygonClick = false
+  enablePolygonClick = false,
+  draggableMarkerId,
+  onMarkerDrag
 }: CampusMapProps & { onPathClick?: (path: any) => void }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -497,11 +501,20 @@ export default function CampusMap({
         // Set high z-index for parking markers during selection mode to ensure visibility above polygons
         const markerZIndex = isParkingMatch ? 1000 : 0;
         
+        const isDraggable = draggableMarkerId !== undefined && building.id === draggableMarkerId;
         const marker = L.marker([building.lat, building.lng], { 
           icon,
-          zIndexOffset: markerZIndex
+          zIndexOffset: markerZIndex,
+          draggable: isDraggable,
         })
           .addTo(mapInstanceRef.current);
+
+        if (isDraggable && onMarkerDrag) {
+          marker.on('dragend', (e: any) => {
+            const pos = e.target.getLatLng();
+            onMarkerDrag(pos.lat, pos.lng);
+          });
+        }
 
         if (showBuildingTooltips) {
           marker.bindTooltip(building.name, tooltipOptions);
@@ -600,7 +613,7 @@ export default function CampusMap({
       });
       }
     }
-  }, [buildings, onBuildingClick, selectedBuilding, currentZoom, routePolyline, routePhases, parkingSelectionMode, parkingTypeFilter, onParkingSelected, highlightedParkingIds, hideKiosk, hideBuildingMarkers]);
+  }, [buildings, onBuildingClick, selectedBuilding, currentZoom, routePolyline, routePhases, parkingSelectionMode, parkingTypeFilter, onParkingSelected, highlightedParkingIds, hideKiosk, hideBuildingMarkers, draggableMarkerId, onMarkerDrag]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;

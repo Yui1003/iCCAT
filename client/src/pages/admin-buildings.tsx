@@ -379,7 +379,14 @@ export default function AdminBuildings() {
 
   return (
     <AdminLayout>
-      <div className="p-8">
+      <div className="p-8 relative">
+        {(isLoading || isPoiTypesLoading) && (
+          <div className="absolute inset-0 z-50 bg-background/90 flex flex-col items-center justify-center gap-3">
+            <div className="w-8 h-8 rounded-full animate-spin" style={{ border: '3px solid hsl(var(--muted-foreground) / 0.2)', borderTopColor: 'hsl(var(--primary))' }} />
+            <span className="text-base font-semibold text-foreground">Building Management</span>
+            <span className="text-sm text-muted-foreground">Loading...</span>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Building Management</h1>
@@ -537,6 +544,8 @@ export default function AdminBuildings() {
                           { ...formData, id: "preview", name: formData.name || "New Building", markerIcon: formData.markerIcon, images: formData.images || [] }
                         ] as any}
                         onMapClick={handleMapClick}
+                        draggableMarkerId="preview"
+                        onMarkerDrag={handleMapClick}
                         centerLat={formData.lat}
                         centerLng={formData.lng}
                         poiTypeData={poiTypesData}
@@ -607,6 +616,8 @@ export default function AdminBuildings() {
                           }
                         ] as any}
                         onMapClick={handleNodeMapClick}
+                        draggableMarkerId="preview-node"
+                        onMarkerDrag={handleNodeMapClick}
                         centerLat={formData.nodeLat ?? formData.lat}
                         centerLng={formData.nodeLng ?? formData.lng}
                         poiTypeData={poiTypesData}

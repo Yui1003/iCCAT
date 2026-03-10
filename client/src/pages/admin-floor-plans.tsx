@@ -34,7 +34,7 @@ export default function AdminFloorPlans() {
   const [buildingSearch, setBuildingSearch] = useState("");
   const { toast } = useToast();
 
-  const { data: buildings = [] } = useQuery<Building[]>({
+  const { data: buildings = [], isLoading: isLoadingBuildings } = useQuery<Building[]>({
     queryKey: ['/api/buildings']
   });
 
@@ -153,7 +153,14 @@ export default function AdminFloorPlans() {
 
   return (
     <AdminLayout>
-      <div className="p-8">
+      <div className="p-8 relative">
+        {isLoadingBuildings && (
+          <div className="absolute inset-0 z-50 bg-background/90 flex flex-col items-center justify-center gap-3">
+            <div className="w-8 h-8 rounded-full animate-spin" style={{ border: '3px solid hsl(var(--muted-foreground) / 0.2)', borderTopColor: 'hsl(var(--primary))' }} />
+            <span className="text-base font-semibold text-foreground">Floor Plans</span>
+            <span className="text-sm text-muted-foreground">Loading...</span>
+          </div>
+        )}
         <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Floor Plan Management</h1>

@@ -7,7 +7,7 @@ import logoImage from "@assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { Walkthrough, useWalkthrough } from "@/components/walkthrough";
 
-export const APP_VERSION = "3.5.0";
+export const APP_VERSION = "3.5.1";
 
 const TIME_PHASES = [
   { start: 5 * 60, end: 6 * 60, img: "/assets/Homepage Engine/5AM - 6AM.png" },

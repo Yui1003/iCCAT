@@ -208,7 +208,14 @@ export default function AdminStaff() {
 
   return (
     <AdminLayout>
-      <div className="p-8">
+      <div className="p-8 relative">
+        {isLoading && (
+          <div className="absolute inset-0 z-50 bg-background/90 flex flex-col items-center justify-center gap-3">
+            <div className="w-8 h-8 rounded-full animate-spin" style={{ border: '3px solid hsl(var(--muted-foreground) / 0.2)', borderTopColor: 'hsl(var(--primary))' }} />
+            <span className="text-base font-semibold text-foreground">Staff Management</span>
+            <span className="text-sm text-muted-foreground">Loading...</span>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Staff Management</h1>
@@ -362,7 +369,7 @@ export default function AdminStaff() {
                       <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[1002]">
                         <Command>
                           <CommandInput placeholder="Search room..." />
-                          <CommandList className="max-h-60 overflow-y-auto">
+                          <CommandList className="max-h-60 overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
                             <CommandEmpty>No room nodes found.</CommandEmpty>
                             <CommandGroup>
                               <CommandItem

@@ -47,7 +47,7 @@ export default function AdminPaths() {
     queryKey: ['/api/buildings']
   });
 
-  const { data: walkpaths = [] } = useQuery<any[]>({
+  const { data: walkpaths = [], isLoading: isLoadingPaths } = useQuery<any[]>({
     queryKey: ['/api/walkpaths']
   });
 
@@ -239,7 +239,14 @@ export default function AdminPaths() {
 
   return (
     <AdminLayout>
-      <div className="p-8">
+      <div className="p-8 relative">
+        {isLoadingPaths && (
+          <div className="absolute inset-0 z-50 bg-background/90 flex flex-col items-center justify-center gap-3">
+            <div className="w-8 h-8 rounded-full animate-spin" style={{ border: '3px solid hsl(var(--muted-foreground) / 0.2)', borderTopColor: 'hsl(var(--primary))' }} />
+            <span className="text-base font-semibold text-foreground">Path Management</span>
+            <span className="text-sm text-muted-foreground">Loading...</span>
+          </div>
+        )}
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Path Management</h1>
