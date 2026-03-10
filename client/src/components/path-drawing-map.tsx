@@ -605,7 +605,7 @@ export default function PathDrawingMap({
               if (currentPathId && path.id === currentPathId) return;
               if (path.nodes && path.nodes.length > 0) {
                 path.nodes.forEach((pNode, nIdx) => {
-                  if (Math.abs(pNode.lat - startPos.lat) < 0.00001 && Math.abs(pNode.lng - startPos.lng) < 0.00001) {
+                  if (pNode.lat.toFixed(6) === startPos.lat.toFixed(6) && pNode.lng.toFixed(6) === startPos.lng.toFixed(6)) {
                     const key = `${path.id || 'unknown'}-${nIdx}`;
                     const existingMarker = existingPathMarkersRef.current.get(key);
                     if (existingMarker) {
@@ -678,7 +678,7 @@ export default function PathDrawingMap({
               if (path.nodes && path.nodes.length > 0) {
                 let pathModified = false;
                 const updatedNodes = path.nodes.map((pNode) => {
-                  if (Math.abs(pNode.lat - origPos.lat) < 0.00001 && Math.abs(pNode.lng - origPos.lng) < 0.00001) {
+                  if (pNode.lat.toFixed(6) === origPos.lat.toFixed(6) && pNode.lng.toFixed(6) === origPos.lng.toFixed(6)) {
                     pathModified = true;
                     return { lat: newLatLng.lat, lng: newLatLng.lng };
                   }
@@ -707,6 +707,12 @@ export default function PathDrawingMap({
             const newNodes = nodes.filter((_, i) => i !== index);
             onNodesChange(newNodes);
           }
+        });
+
+        marker.on('contextmenu', (e: any) => {
+          L.DomEvent.stopPropagation(e);
+          const newNodes = nodes.filter((_, i) => i !== index);
+          onNodesChange(newNodes);
         });
 
         markersRef.current.push(marker);

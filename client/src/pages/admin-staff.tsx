@@ -173,7 +173,7 @@ export default function AdminStaff() {
       floors.filter(f => f.buildingId === formData.buildingId).map(f => f.id)
     );
     return indoorNodes
-      .filter(n => n.type === 'room' && buildingFloorIds.has(n.floorId))
+      .filter(n => !['entrance', 'stairway', 'elevator', 'hallway'].includes(n.type) && buildingFloorIds.has(n.floorId))
       .sort((a, b) => (a.label || '').localeCompare(b.label || ''));
   }, [formData.buildingId, floors, indoorNodes]);
 
@@ -359,10 +359,10 @@ export default function AdminStaff() {
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-full p-0 z-[1002]">
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[1002]">
                         <Command>
                           <CommandInput placeholder="Search room..." />
-                          <CommandList>
+                          <CommandList className="max-h-60 overflow-y-auto">
                             <CommandEmpty>No room nodes found.</CommandEmpty>
                             <CommandGroup>
                               <CommandItem
