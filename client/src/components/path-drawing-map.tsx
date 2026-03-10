@@ -738,13 +738,13 @@ export default function PathDrawingMap({
           const a = nodes[i];
           const b = nodes[i + 1];
           const edgeLine = L.polyline([[a.lat, a.lng], [b.lat, b.lng]], {
-            color: 'transparent',
+            color: '#000000',
             weight: 20,
-            opacity: 0,
+            opacity: 0.001,
             interactive: true,
             bubblingMouseEvents: false,
           }).addTo(mapInstanceRef.current);
-          edgeLine.on('dblclick', (e: any) => {
+          edgeLine.on('contextmenu', (e: any) => {
             L.DomEvent.stopPropagation(e);
             const newNodes = [...nodes];
             newNodes.splice(capturedI + 1, 0, { lat: e.latlng.lat, lng: e.latlng.lng });
@@ -784,7 +784,7 @@ export default function PathDrawingMap({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant={isDrawing ? "default" : "secondary"}>
-            {isDrawing ? 'Drawing Mode: Click to add waypoints' : 'Edit Mode: Click waypoints to remove'}
+            {isDrawing ? 'Drawing Mode: Click to add waypoints' : 'Edit Mode: Right-click waypoint to remove • Right-click segment to insert'}
           </Badge>
           <Badge variant="outline">
             {nodes.length} waypoint{nodes.length !== 1 ? 's' : ''}

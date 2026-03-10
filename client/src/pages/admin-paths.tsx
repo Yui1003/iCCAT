@@ -326,7 +326,7 @@ export default function AdminPaths() {
                 <div className="w-full">
                   <Label>Draw Path on Map</Label>
                   <p className="text-xs text-muted-foreground mb-2">
-                    🏢 Orange markers = buildings (click to snap path) • Gray dots = existing waypoints • Click map to add waypoints
+                    🏢 Orange markers = buildings (click to snap path) • Gray dots = existing waypoints • Click map to add waypoints • Right-click segment to insert waypoint
                   </p>
                   <div className="w-full border rounded-md overflow-hidden" style={{ height: '450px', display: 'block' }}>
                     <PathDrawingMap
