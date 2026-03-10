@@ -38,3 +38,4 @@ MULTI PHASE FOR STOP BY
 3.5.1 - Added overlay on admin pages
         Fixed Room Selector Dropdown box scroll
 3.5.2 - Added Path add Waypoint
+3.5.3 - Added node on Path preview map

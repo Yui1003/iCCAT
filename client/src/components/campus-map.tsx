@@ -57,6 +57,7 @@ interface CampusMapProps {
   enablePolygonClick?: boolean;
   draggableMarkerId?: string;
   onMarkerDrag?: (lat: number, lng: number) => void;
+  showPathNodes?: boolean;
 }
 
 declare global {
@@ -115,7 +116,8 @@ export default function CampusMap({
   onPathClick,
   enablePolygonClick = false,
   draggableMarkerId,
-  onMarkerDrag
+  onMarkerDrag,
+  showPathNodes = false
 }: CampusMapProps & { onPathClick?: (path: any) => void }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -1164,9 +1166,40 @@ export default function CampusMap({
       });
     }
 
+    if (showPathNodes && existingPaths.length > 0) {
+      const coordCount = new Map<string, { lat: number; lng: number; count: number }>();
+      existingPaths.forEach((path) => {
+        if (!path.nodes || !Array.isArray(path.nodes)) return;
+        const seen = new Set<string>();
+        path.nodes.forEach((node: { lat: number; lng: number }) => {
+          const key = `${node.lat.toFixed(6)},${node.lng.toFixed(6)}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          if (coordCount.has(key)) {
+            coordCount.get(key)!.count++;
+          } else {
+            coordCount.set(key, { lat: node.lat, lng: node.lng, count: 1 });
+          }
+        });
+      });
+
+      const junctionIcon = L.divIcon({
+        html: `<div style="width:8px;height:8px;border-radius:50%;background:#f97316;border:2px solid #fff;box-shadow:0 0 4px 2px rgba(249,115,22,0.5);"></div>`,
+        className: 'path-junction-dot',
+        iconSize: [8, 8],
+        iconAnchor: [4, 4],
+      });
+
+      coordCount.forEach(({ lat, lng, count }) => {
+        if (count >= 2) {
+          L.marker([lat, lng], { icon: junctionIcon, interactive: false }).addTo(layerGroup);
+        }
+      });
+    }
+
     layerGroup.addTo(mapInstanceRef.current);
     pathsLayerRef.current = layerGroup;
-  }, [existingPaths, pathsColor, onPathClick, thinPaths, showBuildingNodes, buildings, hidePaths]);
+  }, [existingPaths, pathsColor, onPathClick, thinPaths, showBuildingNodes, buildings, hidePaths, showPathNodes]);
 
   return <div ref={mapRef} className={className} data-testid="map-container" />;
 }

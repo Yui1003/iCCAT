@@ -453,6 +453,7 @@ export default function AdminPaths() {
                     hidePolygons
                     thinPaths
                     showBuildingNodes={showBuildingNodes}
+                    showPathNodes={showBuildingNodes}
                     hideBuildingMarkers={!showBuildingMarkers}
                     hidePaths={!showPathDashes}
                     onPathClick={(path) => handleOpenDialog(path, 'walkpath')}
@@ -601,6 +602,7 @@ export default function AdminPaths() {
                     hidePolygons
                     thinPaths
                     showBuildingNodes={showBuildingNodes}
+                    showPathNodes={showBuildingNodes}
                     hideBuildingMarkers={!showBuildingMarkers}
                     hidePaths={!showPathDashes}
                     onPathClick={(path) => handleOpenDialog(path, 'drivepath')}
