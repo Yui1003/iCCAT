@@ -406,26 +406,28 @@ export default function CampusMap({
     // to reduce clutter and make the pathway more visible
     const isNavigating = !!(routePolyline && routePolyline.length > 0) || !!(routePhases && routePhases.length > 0);
     
-    // Adjust marker sizes based on zoom level
-    // When zoomed out (< 18), use smaller sizes to prevent overcrowding
-    // When zoomed in (>= 18), use normal sizes
-    const isZoomedOut = currentZoom < 18;
+    // Gradually scale marker sizes across zoom levels
     const isMaxZoom = currentZoom >= 21;
-    
-    // Check if we are in admin view (based on URL)
     const isAdminView = window.location.pathname.startsWith('/admin/');
     const showBuildingTooltips = isMaxZoom && !isAdminView;
 
-    // Standardized sizes for better consistency
-    // Even smaller sizes for zoomed out view to reduce overcrowding
-    const kioskSize = isZoomedOut 
-      ? { img: 'w-6 h-6', icon: 24, ping: 'w-4 h-4' } 
-      : { img: 'w-10 h-10', icon: 40, ping: 'w-7 h-7' };
-    const buildingSize = isZoomedOut 
-      ? { img: 'w-5 h-5', icon: 20, ping: 'w-3 h-3' } 
-      : { img: 'w-8 h-8', icon: 32, ping: 'w-6 h-6' };
+    const z = currentZoom;
+    let bIcon: number;
+    if      (z < 18.0) bIcon = 16;
+    else if (z < 18.5) bIcon = 20;
+    else if (z < 19.0) bIcon = 24;
+    else if (z < 19.5) bIcon = 28;
+    else if (z < 20.0) bIcon = 32;
+    else if (z < 20.5) bIcon = 36;
+    else               bIcon = 40;
 
-    // Use a simpler approach for tooltip collision: only show one tooltip if markers are very close
+    const kIcon = bIcon + 8;
+    const bPing = Math.round(bIcon * 0.6);
+    const kPing = Math.round(kIcon * 0.6);
+
+    const buildingSize = { icon: bIcon, imgPx: bIcon - 2, pingPx: bPing };
+    const kioskSize    = { icon: kIcon, imgPx: kIcon - 2, pingPx: kPing };
+
     const tooltipOptions = {
       permanent: true,
       direction: 'top' as any,
@@ -447,9 +449,9 @@ export default function CampusMap({
         const kioskIconHtml = L.divIcon({
           html: `
             <div class="relative flex items-center justify-center">
-              <div class="absolute ${kioskSize.ping} bg-blue-500/30 rounded-full animate-ping"></div>
+              <div class="absolute bg-blue-500/30 rounded-full animate-ping" style="width:${kioskSize.pingPx}px;height:${kioskSize.pingPx}px;"></div>
               <div class="relative">
-                <img src="${BUILTIN_ICON_MAP['Kiosk']}" alt="You are Here" class="${kioskSize.img} object-contain drop-shadow-lg" />
+                <img src="${BUILTIN_ICON_MAP['Kiosk']}" alt="You are Here" class="object-contain drop-shadow-lg" style="width:${kioskSize.imgPx}px;height:${kioskSize.imgPx}px;" />
               </div>
             </div>
           `,
@@ -499,9 +501,9 @@ export default function CampusMap({
         const icon = L.divIcon({
           html: `
             <div class="relative flex items-center justify-center ${pulseClass}">
-              <div class="absolute ${buildingSize.ping} ${pingColor} rounded-full animate-ping ${scaleClass}"></div>
+              <div class="absolute ${pingColor} rounded-full animate-ping ${scaleClass}" style="width:${buildingSize.pingPx}px;height:${buildingSize.pingPx}px;"></div>
               <div class="relative ${scaleClass} ${highlightClass} rounded-lg">
-                <img src="${iconImage}" alt="${building.type || 'Building'}" class="${buildingSize.img} object-contain" />
+                <img src="${iconImage}" alt="${building.type || 'Building'}" class="object-contain" style="width:${buildingSize.imgPx}px;height:${buildingSize.imgPx}px;" />
               </div>
             </div>
           `,

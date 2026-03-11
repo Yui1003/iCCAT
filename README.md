@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.5.7 DEV
+V3.5.8 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -56,3 +56,4 @@ MULTI PHASE FOR STOP BY
         Make the OSM Contributor license smaller
         Delete Confirmation Modal for Deleting Location (POI) Type (THE DELETE CONFIRMATION IS UNDER THE MANAGE LOCATION TYPE DIALOG)
 3.5.7 - OSM Attribution
+3.5.8 - Building Marker Size
