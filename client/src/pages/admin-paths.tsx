@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect, memo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Route as RouteIcon, Plus, Pencil, Trash2, Accessibility, HelpCircle, Building2, MapPin, GitBranch } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -22,6 +22,22 @@ interface PathNode {
   lat: number;
   lng: number;
 }
+
+const PathNameInput = memo(({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
+  const [local, setLocal] = useState(value);
+  useEffect(() => { setLocal(value); }, [value]);
+  return (
+    <Input
+      id="name"
+      name="pathNameField"
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={() => onChange(local)}
+      required
+      data-testid="input-path-name"
+    />
+  );
+});
 
 export default function AdminPaths() {
   const [activeTab, setActiveTab] = useState("walkpaths");
@@ -161,6 +177,9 @@ export default function AdminPaths() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const formEl = e.target as HTMLFormElement;
+    const currentPathName = (new FormData(formEl).get('pathNameField') as string) || pathName;
+    if (currentPathName !== pathName) setPathName(currentPathName);
     
     // If no waypoints, delete the path if it exists
     if (pathNodes.length === 0 && editingPath) {
@@ -180,7 +199,7 @@ export default function AdminPaths() {
 
     // Base data for all path types
     const baseData = {
-      name: pathName,
+      name: currentPathName,
       nodes: pathNodes
     };
 
@@ -270,13 +289,7 @@ export default function AdminPaths() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="name">Path Name</Label>
-                  <Input
-                    id="name"
-                    value={pathName}
-                    onChange={(e) => setPathName(e.target.value)}
-                    required
-                    data-testid="input-path-name"
-                  />
+                  <PathNameInput value={pathName} onChange={setPathName} />
                 </div>
                 
                 {/* PWD Friendly and Strictly PWD Only toggles - only show for walkpaths */}

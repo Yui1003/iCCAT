@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
@@ -22,6 +23,8 @@ import { cn } from "@/lib/utils";
 export default function AdminStaff() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [deletingStaffId, setDeletingStaffId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState<InsertStaff>({
     name: "",
@@ -439,6 +442,7 @@ export default function AdminStaff() {
                     type="staff"
                     id={editingStaff?.id || 'new'}
                     testId="staff-photo"
+                    onUploadingChange={setIsUploading}
                   />
 
                 <div className="flex gap-3 justify-end">
@@ -452,10 +456,10 @@ export default function AdminStaff() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={createMutation.isPending || updateMutation.isPending}
+                    disabled={createMutation.isPending || updateMutation.isPending || isUploading}
                     data-testid="button-save-staff"
                   >
-                    {editingStaff ? "Update" : "Create"}
+                    {isUploading ? "Uploading..." : editingStaff ? "Update" : "Create"}
                   </Button>
                 </div>
               </form>
@@ -561,11 +565,7 @@ export default function AdminStaff() {
                     size="sm"
                     variant="outline"
                     className="flex-1 text-destructive hover:bg-destructive/10"
-                    onClick={() => {
-                      if (confirm("Are you sure you want to delete this staff member?")) {
-                        deleteMutation.mutate(member.id);
-                      }
-                    }}
+                    onClick={() => setDeletingStaffId(member.id)}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete
@@ -651,11 +651,7 @@ export default function AdminStaff() {
                           size="sm"
                           variant="outline"
                           className="flex-1 text-destructive hover:bg-destructive/10"
-                          onClick={() => {
-                            if (confirm("Are you sure you want to delete this staff member?")) {
-                              deleteMutation.mutate(member.id);
-                            }
-                          }}
+                          onClick={() => setDeletingStaffId(member.id)}
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Delete
@@ -700,11 +696,7 @@ export default function AdminStaff() {
                     size="sm"
                     variant="outline"
                     className="flex-1 text-destructive hover:bg-destructive/10"
-                    onClick={() => {
-                      if (confirm("Are you sure you want to delete this staff member?")) {
-                        deleteMutation.mutate(member.id);
-                      }
-                    }}
+                    onClick={() => setDeletingStaffId(member.id)}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete
@@ -715,6 +707,32 @@ export default function AdminStaff() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!deletingStaffId} onOpenChange={(open) => !open && setDeletingStaffId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Staff Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this staff member? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-staff">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-staff"
+              onClick={() => {
+                if (deletingStaffId) {
+                  deleteMutation.mutate(deletingStaffId);
+                  setDeletingStaffId(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }

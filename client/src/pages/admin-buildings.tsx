@@ -78,6 +78,7 @@ export default function AdminBuildings() {
   const iconFileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingIconFor, setUploadingIconFor] = useState<string | null>(null);
   const [deletingCustomTypeId, setDeletingCustomTypeId] = useState<string | null>(null);
+  const [deletingBuildingId, setDeletingBuildingId] = useState<string | null>(null);
 
   const { data: buildings = [], isLoading } = useQuery<Building[]>({
     queryKey: ['/api/buildings']
@@ -952,7 +953,7 @@ export default function AdminBuildings() {
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                onClick={() => deleteMutation.mutate(building.id)}
+                                onClick={() => setDeletingBuildingId(building.id)}
                                 data-testid={`button-delete-${building.id}`}
                               >
                                 <Trash2 className="w-4 h-4 text-destructive" />
@@ -1282,8 +1283,34 @@ export default function AdminBuildings() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deletingCustomTypeId} onOpenChange={(open) => { if (!open) setDeletingCustomTypeId(null); }}>
+      <AlertDialog open={!!deletingBuildingId} onOpenChange={(open) => { if (!open) setDeletingBuildingId(null); }}>
         <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Building</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this building? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-building">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-building"
+              onClick={() => {
+                if (deletingBuildingId) {
+                  deleteMutation.mutate(deletingBuildingId);
+                  setDeletingBuildingId(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deletingCustomTypeId} onOpenChange={(open) => { if (!open) setDeletingCustomTypeId(null); }}>
+        <AlertDialogContent className="z-[10002]">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete POI Type</AlertDialogTitle>
             <AlertDialogDescription>

@@ -194,9 +194,17 @@ export default function CampusMap({
     });
     let activeTile = isDark() ? darkTile : lightTile;
     activeTile.addTo(map);
+
+    const shortenAttribution = () => {
+      const attr = map.getContainer().querySelector('.leaflet-control-attribution');
+      if (attr) attr.innerHTML = '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OSM</a> · <a href="https://www.thunderforest.com/" target="_blank">Thunderforest</a>';
+    };
+    setTimeout(shortenAttribution, 500);
+    map.on('baselayerchange layeradd', shortenAttribution);
+
     const applyDarkMap = () => {
       const next = isDark() ? darkTile : lightTile;
-      if (next !== activeTile) { map.removeLayer(activeTile); next.addTo(map); activeTile = next; }
+      if (next !== activeTile) { map.removeLayer(activeTile); next.addTo(map); activeTile = next; setTimeout(shortenAttribution, 200); }
     };
     const darkObserver = new MutationObserver(applyDarkMap);
     darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });

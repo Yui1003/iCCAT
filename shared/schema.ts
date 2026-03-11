@@ -210,7 +210,9 @@ export const events = pgTable("events", {
   endTime: text("end_time"),
   location: text("location"),
   buildingId: varchar("building_id"),
+  roomId: varchar("room_id"),
   image: text("image"),
+  images: text("images").array().default([]),
   classification: eventClassificationEnum("classification").notNull().default("Event"),
 });
 

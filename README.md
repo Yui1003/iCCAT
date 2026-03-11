@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.5.5 DEV
+V3.5.6 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -40,17 +40,18 @@ MULTI PHASE FOR STOP BY
 3.5.2 - Added Path add Waypoint
 3.5.3 - Added node on Path preview map
 3.5.4 - Path Preview Color Coding and Filtering
+        Color Coding Scheme for Event Types
+        Display Multiple Events When Selecting a Day in the Event Calendar
+        Improve Placement of “Add Stop” Option in Navigation Panel
+        Enable Drag-and-Drop Reordering for Added Stops Before Generating Route
+        Standardize Map Marker Size and Improve Marker Scaling on Zoom
+3.5.5 - Fix event list page
+3.5.6 - AMBOBONG DI NAAYOS
         Improved Search Behavior for Navigation
         Optimization for Text Input When Adding Paths
         Delete Confirmation Modal for Events
         Make Room Field Optional When Adding Events
         End Date Should Not Be Earlier Than Start Date in Event Creation
         Disable Update Button While Image Upload Is in Progress
-        Color Coding Scheme for Event Types
-        Display Multiple Events When Selecting a Day in the Event Calendar
-        Improve Placement of “Add Stop” Option in Navigation Panel
-        Enable Drag-and-Drop Reordering for Added Stops Before Generating Route
         Make the OSM Contributor license smaller
-        Standardize Map Marker Size and Improve Marker Scaling on Zoom
-        Delete Confirmation Modal for Deleting Location (POI) Type
-3.5.5 - Fix event list page
+        Delete Confirmation Modal for Deleting Location (POI) Type (THE DELETE CONFIRMATION IS UNDER THE MANAGE LOCATION TYPE DIALOG)
