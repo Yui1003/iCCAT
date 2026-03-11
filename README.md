@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.5.4 DEV
+V3.5.5 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -53,3 +53,4 @@ MULTI PHASE FOR STOP BY
         Make the OSM Contributor license smaller
         Standardize Map Marker Size and Improve Marker Scaling on Zoom
         Delete Confirmation Modal for Deleting Location (POI) Type
+3.5.5 - Fix event list page

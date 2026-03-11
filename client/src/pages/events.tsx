@@ -152,6 +152,7 @@ export default function Events() {
   const [directionsDestination, setDirectionsDestination] = useState<string | null>(null);
   const [classificationFilter, setClassificationFilter] = useState<string>("all");
   const [showPastEvents, setShowPastEvents] = useState(false);
+  const [showPastAnnouncements, setShowPastAnnouncements] = useState(false);
   const [, navigate] = useLocation();
 
   const { data: events = [], isLoading } = useQuery<Event[]>({
@@ -216,6 +217,18 @@ export default function Events() {
     skipSnaps: false,
   });
 
+  const [eventsEmblaRef, eventsEmblaApi] = useEmblaCarousel({
+    align: 'start',
+    containScroll: 'trimSnaps',
+    skipSnaps: false,
+  });
+
+  const [announcementsEmblaRef, announcementsEmblaApi] = useEmblaCarousel({
+    align: 'start',
+    containScroll: 'trimSnaps',
+    skipSnaps: false,
+  });
+
   // Separate achievements from date-based events
   const achievements = filteredEvents
     .filter(event => event.classification === "Achievement");
@@ -229,6 +242,23 @@ export default function Events() {
   const ended = dateBasedEvents
     .filter(event => getEventStatus(event.date, event.time) === 'past')
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+  // Per-classification arrays for "All Types" separated view (always from all events, not filteredEvents)
+  const allEvents = events;
+  const ongoingEventsList = allEvents
+    .filter(e => e.classification === "Event" && getEventStatus(e.date, e.time) === 'upcoming')
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const pastEventsList = allEvents
+    .filter(e => e.classification === "Event" && getEventStatus(e.date, e.time) === 'past')
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const ongoingAnnouncementsList = allEvents
+    .filter(e => e.classification === "Announcement" && getEventStatus(e.date, e.time) === 'upcoming')
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const pastAnnouncementsList = allEvents
+    .filter(e => e.classification === "Announcement" && getEventStatus(e.date, e.time) === 'past')
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const allAchievementsList = allEvents
+    .filter(e => e.classification === "Achievement");
 
   return (
     <div className="min-h-screen bg-background">
@@ -311,15 +341,180 @@ export default function Events() {
               <Card key={i} className="h-96 animate-pulse bg-muted" />
             ))}
           </div>
+        ) : classificationFilter === "all" ? (
+          /* ── ALL TYPES: Three separate classified rows ── */
+          (ongoingEventsList.length === 0 && pastEventsList.length === 0 &&
+           ongoingAnnouncementsList.length === 0 && pastAnnouncementsList.length === 0 &&
+           allAchievementsList.length === 0) ? (
+            <div className="text-center py-16">
+              <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-medium text-foreground mb-2">No Events Yet</h3>
+              <p className="text-muted-foreground">Check back soon for upcoming events and announcements</p>
+            </div>
+          ) : (
+            <div className="space-y-10">
+
+              {/* ── Row 1: Events ── */}
+              {(ongoingEventsList.length > 0 || pastEventsList.length > 0) && (
+                <div>
+                  <div className="flex items-center gap-4 mb-3">
+                    <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                      <span className="inline-block w-3 h-3 rounded-full bg-orange-500" />
+                      Events
+                    </h2>
+                    {pastEventsList.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPastEvents(!showPastEvents)}
+                        className="flex items-center gap-2"
+                        data-testid="button-toggle-past-events"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        {showPastEvents ? "Hide Past" : "Show Past"} ({pastEventsList.length})
+                      </Button>
+                    )}
+                    <Separator className="flex-1" />
+                    {ongoingEventsList.length > 1 && (
+                      <CarouselNavigation emblaApi={eventsEmblaApi} carouselName="events" />
+                    )}
+                  </div>
+                  {ongoingEventsList.length > 1 && (
+                    <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1" data-testid="swipe-guide-events">
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      Swipe to explore more
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </p>
+                  )}
+                  {ongoingEventsList.length > 0 ? (
+                    <div className="overflow-hidden" ref={eventsEmblaRef} data-testid="carousel-events">
+                      <div className="flex gap-6">
+                        {ongoingEventsList.map((event) => (
+                          <div key={event.id} className="flex-shrink-0 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+                            <EventCard event={event} onSelect={setSelectedEvent} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No upcoming events.</p>
+                  )}
+                  {pastEventsList.length > 0 && showPastEvents && (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold text-muted-foreground mb-3">Past Events</h3>
+                      <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
+                        {pastEventsList.map((event) => (
+                          <EventCard key={event.id} event={event} onSelect={setSelectedEvent} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Row 2: Announcements ── */}
+              {(ongoingAnnouncementsList.length > 0 || pastAnnouncementsList.length > 0) && (
+                <div>
+                  <div className="flex items-center gap-4 mb-3">
+                    <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                      <span className="inline-block w-3 h-3 rounded-full bg-blue-500" />
+                      Announcements
+                    </h2>
+                    {pastAnnouncementsList.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPastAnnouncements(!showPastAnnouncements)}
+                        className="flex items-center gap-2"
+                        data-testid="button-toggle-past-announcements"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        {showPastAnnouncements ? "Hide Past" : "Show Past"} ({pastAnnouncementsList.length})
+                      </Button>
+                    )}
+                    <Separator className="flex-1" />
+                    {ongoingAnnouncementsList.length > 1 && (
+                      <CarouselNavigation emblaApi={announcementsEmblaApi} carouselName="announcements" />
+                    )}
+                  </div>
+                  {ongoingAnnouncementsList.length > 1 && (
+                    <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1" data-testid="swipe-guide-announcements">
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      Swipe to explore more
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </p>
+                  )}
+                  {ongoingAnnouncementsList.length > 0 ? (
+                    <div className="overflow-hidden" ref={announcementsEmblaRef} data-testid="carousel-announcements">
+                      <div className="flex gap-6">
+                        {ongoingAnnouncementsList.map((event) => (
+                          <div key={event.id} className="flex-shrink-0 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+                            <EventCard event={event} onSelect={setSelectedEvent} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No upcoming announcements.</p>
+                  )}
+                  {pastAnnouncementsList.length > 0 && showPastAnnouncements && (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold text-muted-foreground mb-3">Past Announcements</h3>
+                      <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
+                        {pastAnnouncementsList.map((event) => (
+                          <EventCard key={event.id} event={event} onSelect={setSelectedEvent} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Row 3: Achievements ── */}
+              {allAchievementsList.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-4 mb-3">
+                    <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                      <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
+                      Achievements
+                    </h2>
+                    <Separator className="flex-1" />
+                    {allAchievementsList.length > 1 && (
+                      <CarouselNavigation emblaApi={achievementsEmblaApi} carouselName="achievements" />
+                    )}
+                  </div>
+                  {allAchievementsList.length > 1 && (
+                    <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1" data-testid="swipe-guide-achievements">
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      Swipe to explore more
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </p>
+                  )}
+                  <div className="overflow-hidden" ref={achievementsEmblaRef} data-testid="carousel-achievements">
+                    <div className="flex gap-6">
+                      {allAchievementsList.map((event) => (
+                        <div key={event.id} className="flex-shrink-0 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+                          <EventCard event={event} onSelect={setSelectedEvent} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )
         ) : filteredEvents.length === 0 ? (
+          /* ── SPECIFIC FILTER: empty state ── */
           <div className="text-center py-16">
             <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-xl font-medium text-foreground mb-2">
-              {classificationFilter === "all" ? "No Events Yet" : `No ${classificationFilter}s Found`}
+              {`No ${classificationFilter}s Found`}
             </h3>
             <p className="text-muted-foreground">Check back soon for upcoming events and announcements</p>
           </div>
         ) : (
+          /* ── SPECIFIC FILTER: single classification view ── */
           <div className="space-y-8">
             {/* Ongoing/Upcoming Events - Horizontal Swipeable Carousel */}
             {ongoingUpcoming.length > 0 && (
