@@ -197,7 +197,7 @@ export default function CampusMap({
 
     const shortenAttribution = () => {
       const attr = map.getContainer().querySelector('.leaflet-control-attribution');
-      if (attr) attr.innerHTML = '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OSM</a> · <a href="https://www.thunderforest.com/" target="_blank">Thunderforest</a>';
+      if (attr) attr.innerHTML = '© OpenStreetMap contributors © Thunderforest';
     };
     setTimeout(shortenAttribution, 500);
     map.on('baselayerchange layeradd', shortenAttribution);
