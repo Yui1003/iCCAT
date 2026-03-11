@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, MapPin, Building2, School, Hospital, Store, Home, Shapes, Settings, Eye, EyeOff, RotateCcw, Upload, ImageIcon, Check, ChevronsUpDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
@@ -76,6 +77,7 @@ export default function AdminBuildings() {
   const [newTypeIcon, setNewTypeIcon] = useState<string | null>(null);
   const iconFileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingIconFor, setUploadingIconFor] = useState<string | null>(null);
+  const [deletingCustomTypeId, setDeletingCustomTypeId] = useState<string | null>(null);
 
   const { data: buildings = [], isLoading } = useQuery<Building[]>({
     queryKey: ['/api/buildings']
@@ -1219,7 +1221,7 @@ export default function AdminBuildings() {
                             className="h-7 w-7"
                             title="Delete type"
                             data-testid={`button-delete-custom-type-${ct.id}`}
-                            onClick={() => deleteCustomTypeMutation.mutate(ct.id)}
+                            onClick={() => setDeletingCustomTypeId(ct.id)}
                           >
                             <Trash2 className="w-3 h-3 text-destructive" />
                           </Button>
@@ -1279,6 +1281,32 @@ export default function AdminBuildings() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deletingCustomTypeId} onOpenChange={(open) => { if (!open) setDeletingCustomTypeId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete POI Type</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this custom POI type? This action cannot be undone. Any buildings using this type will need to be reassigned.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-custom-type">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-custom-type"
+              onClick={() => {
+                if (deletingCustomTypeId) {
+                  deleteCustomTypeMutation.mutate(deletingCustomTypeId);
+                  setDeletingCustomTypeId(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }

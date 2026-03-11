@@ -35,6 +35,7 @@ export default function AdminPaths() {
   const [strictlyPwdOnly, setStrictlyPwdOnly] = useState(false); // Strictly PWD-only by default
   const [walkpathSearch, setWalkpathSearch] = useState("");
   const [drivepathSearch, setDrivepathSearch] = useState("");
+  const [walkpathPwdFilter, setWalkpathPwdFilter] = useState<'all' | 'regular' | 'pwdFriendly' | 'pwdOnly'>('all');
   const [polarTracking, setPolarTracking] = useState(false);
   const [polarIncrement, setPolarIncrement] = useState(45);
   const [showBuildingMarkers, setShowBuildingMarkers] = useState(true);
@@ -464,7 +465,7 @@ export default function AdminPaths() {
               <div>
                 <Card className="p-6 flex flex-col h-[600px]">
                   <h2 className="text-lg font-semibold text-foreground mb-4">Walking Paths</h2>
-                  <div className="mb-4">
+                  <div className="mb-4 space-y-2">
                     <Label htmlFor="search-walkpaths" className="text-sm">Search Walking Paths</Label>
                     <Input
                       id="search-walkpaths"
@@ -474,6 +475,25 @@ export default function AdminPaths() {
                       data-testid="input-search-walkpaths"
                       className="mt-1"
                     />
+                    <div className="flex gap-1 flex-wrap">
+                      {(['all', 'regular', 'pwdFriendly', 'pwdOnly'] as const).map((f) => (
+                        <button
+                          key={f}
+                          onClick={() => setWalkpathPwdFilter(f)}
+                          data-testid={`button-pwd-filter-${f}`}
+                          className={`text-xs px-2 py-1 rounded-full border transition-colors ${
+                            walkpathPwdFilter === f
+                              ? f === 'all' ? 'bg-primary text-primary-foreground border-primary'
+                                : f === 'regular' ? 'bg-green-500 text-white border-green-500'
+                                : f === 'pwdFriendly' ? 'bg-blue-500 text-white border-blue-500'
+                                : 'bg-amber-500 text-white border-amber-500'
+                              : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                          }`}
+                        >
+                          {f === 'all' ? 'All' : f === 'regular' ? 'Regular' : f === 'pwdFriendly' ? 'PWD Friendly' : 'PWD Only'}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   {walkpaths.length === 0 ? (
                     <div className="text-center py-8">
@@ -484,9 +504,14 @@ export default function AdminPaths() {
                     const sortedWalkpaths = [...walkpaths].sort((a, b) => 
                       (a.name || "").localeCompare(b.name || "")
                     );
-                    const filteredWalkpaths = sortedWalkpaths.filter((path) => 
-                      walkpathSearch === "" || (path.name || "").toLowerCase().includes(walkpathSearch.toLowerCase())
-                    );
+                    const filteredWalkpaths = sortedWalkpaths.filter((path) => {
+                      const matchesSearch = walkpathSearch === "" || (path.name || "").toLowerCase().includes(walkpathSearch.toLowerCase());
+                      const matchesPwd = walkpathPwdFilter === 'all'
+                        || (walkpathPwdFilter === 'pwdOnly' && path.strictlyPwdOnly === true)
+                        || (walkpathPwdFilter === 'pwdFriendly' && path.isPwdFriendly !== false && path.strictlyPwdOnly !== true)
+                        || (walkpathPwdFilter === 'regular' && path.isPwdFriendly === false && path.strictlyPwdOnly !== true);
+                      return matchesSearch && matchesPwd;
+                    });
                     return (
                       <div className="space-y-3 overflow-y-auto flex-1 pr-2">
                         {filteredWalkpaths.length === 0 ? (
@@ -508,17 +533,17 @@ export default function AdminPaths() {
                                       {path.name || `Path ${index + 1}`}
                                     </p>
                                     {path.strictlyPwdOnly === true ? (
-                                      <Badge variant="secondary" className="text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                      <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                                         <Accessibility className="w-3 h-3 mr-1" />
                                         PWD Only
                                       </Badge>
                                     ) : path.isPwdFriendly !== false ? (
-                                      <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                                      <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                                         <Accessibility className="w-3 h-3 mr-1" />
                                         PWD Friendly
                                       </Badge>
                                     ) : (
-                                      <Badge variant="outline" className="text-xs text-muted-foreground">
+                                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                                         Regular
                                       </Badge>
                                     )}

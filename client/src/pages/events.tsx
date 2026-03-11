@@ -19,6 +19,7 @@ import { useGlobalInactivity } from "@/hooks/use-inactivity";
 import useEmblaCarousel from "embla-carousel-react";
 import { trackEvent } from "@/lib/analytics-tracker";
 import { AnalyticsEventType } from "@shared/analytics-schema";
+import { cn } from "@/lib/utils";
 
 // Helper function to determine if event is upcoming/ongoing (green) or past (red)
 function getEventStatus(date: string, time?: string | null): 'upcoming' | 'past' {
@@ -69,6 +70,28 @@ function getEventStatus(date: string, time?: string | null): 'upcoming' | 'past'
   
   // Otherwise, event is past
   return 'past';
+}
+
+function formatEventDate(dateStr: string): string {
+  if (!dateStr) return dateStr;
+  try {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
+
+function getClassificationBadgeClass(classification: string | null | undefined) {
+  switch (classification) {
+    case "Event": return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
+    case "Announcement": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+    case "Achievement": return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+    default: return "";
+  }
 }
 
 // Carousel Navigation Component
@@ -194,12 +217,18 @@ export default function Events() {
   });
 
   // Separate achievements from date-based events
-  const achievements = filteredEvents.filter(event => event.classification === "Achievement");
+  const achievements = filteredEvents
+    .filter(event => event.classification === "Achievement");
   const dateBasedEvents = filteredEvents.filter(event => event.classification !== "Achievement");
 
   // Separate ongoing/upcoming from ended events (only for non-achievements)
-  const ongoingUpcoming = dateBasedEvents.filter(event => getEventStatus(event.date, event.time) === 'upcoming');
-  const ended = dateBasedEvents.filter(event => getEventStatus(event.date, event.time) === 'past');
+  // Sort by earliest date first
+  const ongoingUpcoming = dateBasedEvents
+    .filter(event => getEventStatus(event.date, event.time) === 'upcoming')
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const ended = dateBasedEvents
+    .filter(event => getEventStatus(event.date, event.time) === 'past')
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
   return (
     <div className="min-h-screen bg-background">
@@ -295,7 +324,7 @@ export default function Events() {
             {/* Ongoing/Upcoming Events - Horizontal Swipeable Carousel */}
             {ongoingUpcoming.length > 0 && (
               <div>
-                <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center gap-4 mb-3">
                   <h2 className="text-2xl font-bold text-foreground">Ongoing & Upcoming</h2>
                   {ended.length > 0 && (
                     <Button
@@ -313,6 +342,13 @@ export default function Events() {
                     <CarouselNavigation emblaApi={ongoingEmblaApi} carouselName="ongoing" />
                   )}
                 </div>
+                {ongoingUpcoming.length > 1 && (
+                  <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1" data-testid="swipe-guide-ongoing">
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    Swipe to explore more
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </p>
+                )}
                 <div className="overflow-hidden" ref={ongoingEmblaRef} data-testid="carousel-ongoing-upcoming">
                   <div className="flex gap-6">
                     {ongoingUpcoming.map((event) => (
@@ -344,13 +380,20 @@ export default function Events() {
             {/* Achievements - Horizontal Swipeable Carousel */}
             {achievements.length > 0 && (
               <div>
-                <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center gap-4 mb-3">
                   <h2 className="text-2xl font-bold text-foreground">Achievements</h2>
                   <Separator className="flex-1" />
                   {achievements.length > 1 && (
                     <CarouselNavigation emblaApi={achievementsEmblaApi} carouselName="achievements" />
                   )}
                 </div>
+                {achievements.length > 1 && (
+                  <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1" data-testid="swipe-guide-achievements">
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    Swipe to explore more
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </p>
+                )}
                 <div className="overflow-hidden" ref={achievementsEmblaRef} data-testid="carousel-achievements">
                   <div className="flex gap-6">
                     {achievements.map((event) => (
@@ -399,18 +442,27 @@ export default function Events() {
             </div>
 
             <div className="p-6">
-              {selectedEvent.image && (
-                <div className="w-full mb-6 rounded-lg overflow-hidden">
-                  <ProxiedImage
-                    src={selectedEvent.image}
-                    alt={selectedEvent.title}
-                    className="w-full h-auto rounded-lg"
-                  />
-                </div>
-              )}
+              {(() => {
+                const detailImages: string[] = (selectedEvent as any).images?.length
+                  ? (selectedEvent as any).images
+                  : (selectedEvent.image ? [selectedEvent.image] : []);
+                if (detailImages.length === 0) return null;
+                return (
+                  <div className="w-full mb-6 rounded-lg overflow-hidden">
+                    {detailImages.map((img, i) => (
+                      <ProxiedImage
+                        key={i}
+                        src={img}
+                        alt={`${selectedEvent.title} photo ${i + 1}`}
+                        className="w-full h-auto rounded-lg mb-2 last:mb-0"
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
 
               <div className="mb-4">
-                <Badge variant="secondary">
+                <Badge variant="secondary" className={getClassificationBadgeClass(selectedEvent.classification)}>
                   {selectedEvent.classification}
                 </Badge>
               </div>
@@ -429,7 +481,7 @@ export default function Events() {
                         : 'text-red-600 dark:text-red-500'
                     }`}>
                       <Calendar className="w-5 h-5" />
-                      <span>{selectedEvent.date}</span>
+                      <span>{formatEventDate(selectedEvent.date)}</span>
                     </div>
                     {selectedEvent.time && (
                       <div className={`flex items-center gap-2 ${
@@ -444,7 +496,7 @@ export default function Events() {
                   </div>
                   {selectedEvent.endDate && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground ml-7">
-                      → to {selectedEvent.endDate}
+                      → to {formatEventDate(selectedEvent.endDate)}
                       {selectedEvent.endTime && (
                         <>
                           <span>•</span>
@@ -524,6 +576,11 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // EventCard component to avoid duplication
 function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event) => void }) {
+  const cardImages: string[] = (event as any).images?.length
+    ? (event as any).images
+    : (event.image ? [event.image] : []);
+  const primaryImage = cardImages[0] || null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -537,13 +594,18 @@ function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event)
         onClick={() => onSelect(event)}
         data-testid={`event-card-${event.id}`}
       >
-      {event.image ? (
-        <div className="w-full overflow-hidden">
+      {primaryImage ? (
+        <div className="w-full overflow-hidden relative">
           <ProxiedImage
-            src={event.image}
+            src={primaryImage}
             alt={event.title}
             className="w-full h-auto"
           />
+          {cardImages.length > 1 && (
+            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+              +{cardImages.length - 1}
+            </div>
+          )}
         </div>
       ) : (
         <div className="w-full aspect-[4/3] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
@@ -553,7 +615,7 @@ function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event)
       
       <div className="p-6 flex flex-col flex-1">
         <div className="mb-3">
-          <Badge variant="secondary" className="mb-2">
+          <Badge variant="secondary" className={cn("mb-2", getClassificationBadgeClass(event.classification))}>
             {event.classification}
           </Badge>
         </div>
@@ -567,7 +629,7 @@ function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event)
           }`}>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              <span>{event.date}</span>
+              <span>{formatEventDate(event.date)}</span>
               {event.time && (
                 <>
                   <span>•</span>
@@ -578,7 +640,7 @@ function EventCard({ event, onSelect }: { event: Event; onSelect: (event: Event)
             </div>
             {event.endDate && (
               <div className="flex items-center gap-2 text-xs ml-6">
-                → {event.endDate}
+                → {formatEventDate(event.endDate)}
                 {event.endTime && (
                   <>
                     <span>•</span>

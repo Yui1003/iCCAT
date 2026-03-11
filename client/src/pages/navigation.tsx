@@ -88,6 +88,7 @@ export default function Navigation() {
   const [showQRCode, setShowQRCode] = useState(false);
   const [savedRouteId, setSavedRouteId] = useState<string | null>(null);
   const [waypoints, setWaypoints] = useState<string[]>([]);
+  const [dragWaypointIndex, setDragWaypointIndex] = useState<number | null>(null);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showRoomFinder, setShowRoomFinder] = useState(false);
   const [roomFinderFloorPlan, setRoomFinderFloorPlan] = useState<{ floor: Floor; rooms: Room[] } | null>(null);
@@ -3937,6 +3938,14 @@ export default function Navigation() {
     setWaypoints(newWaypoints);
   };
 
+  const handleWaypointDragDrop = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const newWaypoints = [...waypoints];
+    const [removed] = newWaypoints.splice(fromIndex, 1);
+    newWaypoints.splice(toIndex, 0, removed);
+    setWaypoints(newWaypoints);
+  };
+
   const handleGetDirections = () => {
     if (selectedBuilding) {
       setDirectionsDestination(selectedBuilding);
@@ -4601,6 +4610,77 @@ export default function Navigation() {
                 />
               </div>
 
+              {/* Stops Along the Way - between Start and Destination */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-foreground">
+                    Stops Along the Way
+                  </label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleAddWaypoint}
+                    data-testid="button-add-waypoint"
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add Stop
+                  </Button>
+                </div>
+
+                {waypoints.length > 0 && (
+                  <div className="space-y-2 bg-secondary/30 p-3 rounded-md">
+                    {waypoints.map((waypointId, index) => (
+                      <div
+                        key={index}
+                        className={`flex gap-2 items-center rounded-md transition-colors ${dragWaypointIndex === index ? 'opacity-50' : ''}`}
+                        draggable
+                        onDragStart={() => setDragWaypointIndex(index)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (dragWaypointIndex !== null) {
+                            handleWaypointDragDrop(dragWaypointIndex, index);
+                          }
+                          setDragWaypointIndex(null);
+                        }}
+                        onDragEnd={() => setDragWaypointIndex(null)}
+                        data-testid={`waypoint-row-${index}`}
+                      >
+                        <div
+                          className="cursor-grab active:cursor-grabbing flex-shrink-0 text-muted-foreground p-1"
+                          title="Drag to reorder"
+                        >
+                          <GripVertical className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <SearchableWaypointSelect
+                            selectedId={waypointId}
+                            onSelect={(id) => handleWaypointChange(index, id)}
+                            buildings={buildings}
+                            excludeIds={[
+                              selectedStart?.id || '',
+                              selectedEnd?.id || '',
+                            ].filter(Boolean)}
+                            onRemove={() => handleRemoveWaypoint(index)}
+                            testId="select-waypoint"
+                            index={index}
+                          />
+                        </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 text-destructive flex-shrink-0"
+                          onClick={() => handleRemoveWaypoint(index)}
+                          data-testid={`button-remove-waypoint-${index}`}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Destination
@@ -4633,78 +4713,6 @@ export default function Navigation() {
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
-              </div>
-
-              {/* Waypoints Section */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-foreground">
-                    Stops Along the Way
-                  </label>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleAddWaypoint}
-                    data-testid="button-add-waypoint"
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add Stop
-                  </Button>
-                </div>
-
-                {waypoints.length > 0 && (
-                  <div className="space-y-2 bg-secondary/30 p-3 rounded-md">
-                    {waypoints.map((waypointId, index) => (
-                      <div key={index} className="flex gap-2 items-center">
-                        <div className="flex gap-1 flex-shrink-0">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6"
-                            onClick={() => handleMoveWaypoint(index, 'up')}
-                            disabled={index === 0}
-                            data-testid={`button-move-waypoint-up-${index}`}
-                          >
-                            <GripVertical className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6"
-                            onClick={() => handleMoveWaypoint(index, 'down')}
-                            disabled={index === waypoints.length - 1}
-                            data-testid={`button-move-waypoint-down-${index}`}
-                          >
-                            <GripVertical className="w-3 h-3" />
-                          </Button>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <SearchableWaypointSelect
-                            selectedId={waypointId}
-                            onSelect={(id) => handleWaypointChange(index, id)}
-                            buildings={buildings}
-                            excludeIds={[
-                              selectedStart?.id || '',
-                              selectedEnd?.id || '',
-                            ].filter(Boolean)}
-                            onRemove={() => handleRemoveWaypoint(index)}
-                            testId="select-waypoint"
-                            index={index}
-                          />
-                        </div>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 text-destructive flex-shrink-0"
-                          onClick={() => handleRemoveWaypoint(index)}
-                          data-testid={`button-remove-waypoint-${index}`}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <Button

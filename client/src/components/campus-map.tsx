@@ -10,6 +10,8 @@ interface PathType {
   id: string;
   name?: string;
   nodes: Array<{ lat: number; lng: number }>;
+  isPwdFriendly?: boolean;
+  strictlyPwdOnly?: boolean;
 }
 
 interface NavigationBuilding {
@@ -1113,8 +1115,9 @@ export default function CampusMap({
 
     existingPaths.forEach((path) => {
       if (path.nodes && Array.isArray(path.nodes) && path.nodes.length > 0) {
+        const pathColorResolved = path.strictlyPwdOnly ? '#f59e0b' : path.isPwdFriendly ? '#3b82f6' : pathsColor;
         const polyline = L.polyline(path.nodes, {
-          color: pathsColor,
+          color: pathColorResolved,
           weight: pathWeight,
           opacity: 0.6,
           smoothFactor: 1,

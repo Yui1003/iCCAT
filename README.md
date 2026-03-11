@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.5.2 PRODUCTION
+V3.5.4 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -39,3 +39,17 @@ MULTI PHASE FOR STOP BY
         Fixed Room Selector Dropdown box scroll
 3.5.2 - Added Path add Waypoint
 3.5.3 - Added node on Path preview map
+3.5.4 - Path Preview Color Coding and Filtering
+        Improved Search Behavior for Navigation
+        Optimization for Text Input When Adding Paths
+        Delete Confirmation Modal for Events
+        Make Room Field Optional When Adding Events
+        End Date Should Not Be Earlier Than Start Date in Event Creation
+        Disable Update Button While Image Upload Is in Progress
+        Color Coding Scheme for Event Types
+        Display Multiple Events When Selecting a Day in the Event Calendar
+        Improve Placement of “Add Stop” Option in Navigation Panel
+        Enable Drag-and-Drop Reordering for Added Stops Before Generating Route
+        Make the OSM Contributor license smaller
+        Standardize Map Marker Size and Improve Marker Scaling on Zoom
+        Delete Confirmation Modal for Deleting Location (POI) Type
