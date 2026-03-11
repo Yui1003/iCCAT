@@ -1,4 +1,4 @@
-import type { Building, NavigationRoute, RoutePhase, LatLng, RouteStep } from "@shared/schema";
+import type { Building, NavigationRoute, RoutePhase, LatLng, RouteStep, Walkpath, Drivepath } from "@shared/schema";
 import { KIOSK_LOCATION } from "@shared/schema";
 import { getPhaseColor } from "@shared/phase-colors";
 import { findShortestPath } from "./pathfinding";
@@ -186,8 +186,19 @@ export async function calculateMultiPhaseRoute(
   destination: Building,
   mode: 'walking' | 'driving' | 'accessible'
 ): Promise<MultiStopRoute | null> {
-  // For accessible mode, use walkpaths (will be filtered by isPwdFriendly in pathfinding)
-  const paths = mode === 'driving' ? await getDrivepaths() : await getWalkpaths();
+  // Always fetch fresh paths from server so multi-phase uses the latest path network
+  const endpoint = mode === 'driving' ? '/api/drivepaths' : '/api/walkpaths';
+  let paths: (Walkpath | Drivepath)[];
+  try {
+    const res = await fetch(endpoint, { credentials: 'include', cache: 'no-cache' });
+    if (res.ok) {
+      paths = await res.json();
+    } else {
+      paths = mode === 'driving' ? await getDrivepaths() : await getWalkpaths();
+    }
+  } catch {
+    paths = mode === 'driving' ? await getDrivepaths() : await getWalkpaths();
+  }
   const phases: RoutePhase[] = [];
   
   // Create array of all stops: [start, ...waypoints, destination]
@@ -204,6 +215,10 @@ export async function calculateMultiPhaseRoute(
     if (!polyline) {
       console.error(`No route found for segment ${i + 1}: ${segmentStart.name} → ${segmentEnd.name}`);
       return null;
+    }
+    
+    if (polyline.length === 2) {
+      console.warn(`[MULTI-PHASE] Segment ${i + 1} (${segmentStart.name} → ${segmentEnd.name}) used a straight-line fallback — path network may not be connected for this segment.`);
     }
     
     // Generate turn-by-turn directions for this phase

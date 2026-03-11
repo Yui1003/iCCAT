@@ -276,7 +276,7 @@ export default function AdminStaff() {
                       <PopoverContent className="w-full p-0 z-[1002]">
                         <Command>
                           <CommandInput placeholder="Search department..." />
-                          <CommandList>
+                          <CommandList className="max-h-60 overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
                             <CommandEmpty>No department found.</CommandEmpty>
                             <CommandGroup>
                               {availableDepartments.map((dept) => (
@@ -323,7 +323,7 @@ export default function AdminStaff() {
                     <PopoverContent className="w-full p-0 z-[1002]">
                       <Command>
                         <CommandInput placeholder="Search building..." />
-                        <CommandList>
+                        <CommandList className="max-h-60 overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
                           <CommandEmpty>No building found.</CommandEmpty>
                           <CommandGroup>
                             {staffAllowedBuildings

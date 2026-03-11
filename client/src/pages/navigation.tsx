@@ -4423,6 +4423,11 @@ export default function Navigation() {
     setActiveNavPhaseIndex(prev => (prev ?? 0) + 1);
   };
 
+  // Handle going back to the previous phase during active navigation
+  const handleGoBackToPreviousPhase = () => {
+    setActiveNavPhaseIndex(prev => Math.max(0, (prev ?? 0) - 1));
+  };
+
   // Handle done navigating
   const handleDoneNavigating = () => {
     setShowFeedbackDialog(true);
@@ -5223,38 +5228,77 @@ export default function Navigation() {
                   </Button>
                 ) : route.phases && route.phases.length > 0 && activeNavPhaseIndex !== null && activeNavPhaseIndex < route.phases.length - 1 ? (
                   // Active mode, not last phase — Proceed to Next Phase
-                  <Button
-                    className="w-full mt-6"
-                    onClick={handleProceedToNextPhase}
-                    data-testid="button-proceed-next-phase"
-                  >
-                    <span className="flex flex-col items-start leading-tight">
-                      <span>Proceed to Next Phase</span>
-                      <span className="text-xs opacity-75 font-normal">
-                        {route.phases[activeNavPhaseIndex + 1]?.mode === 'driving'
-                          ? `${route.vehicleType === 'bike' ? 'Ride' : 'Drive'} to ${route.phases[activeNavPhaseIndex + 1]?.endName}`
-                          : `Walk to ${route.phases[activeNavPhaseIndex + 1]?.endName}`}
+                  <div className="flex flex-col gap-2 mt-6">
+                    <Button
+                      className="w-full"
+                      onClick={handleProceedToNextPhase}
+                      data-testid="button-proceed-next-phase"
+                    >
+                      <span className="flex flex-col items-start leading-tight">
+                        <span>Proceed to Next Phase</span>
+                        <span className="text-xs opacity-75 font-normal">
+                          {route.phases[activeNavPhaseIndex + 1]?.mode === 'driving'
+                            ? `${route.vehicleType === 'bike' ? 'Ride' : 'Drive'} to ${route.phases[activeNavPhaseIndex + 1]?.endName}`
+                            : `Walk to ${route.phases[activeNavPhaseIndex + 1]?.endName}`}
+                        </span>
                       </span>
-                    </span>
-                  </Button>
+                    </Button>
+                    {activeNavPhaseIndex > 0 && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleGoBackToPreviousPhase}
+                        data-testid="button-go-back-phase"
+                      >
+                        <ChevronLeft className="w-4 h-4 mr-2" />
+                        Go Back to Previous Phase
+                      </Button>
+                    )}
+                  </div>
                 ) : (navigationPhase === 'outdoor' || navigationPhase === null) && destinationRoom && route ? (
                   // Last phase with indoor destination
-                  <Button
-                    className="w-full mt-6"
-                    onClick={handleReachedBuilding}
-                    data-testid="button-reached-building"
-                  >
-                    Reached the Building
-                  </Button>
+                  <div className="flex flex-col gap-2 mt-6">
+                    <Button
+                      className="w-full"
+                      onClick={handleReachedBuilding}
+                      data-testid="button-reached-building"
+                    >
+                      Reached the Building
+                    </Button>
+                    {route.phases && route.phases.length > 1 && activeNavPhaseIndex !== null && activeNavPhaseIndex > 0 && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleGoBackToPreviousPhase}
+                        data-testid="button-go-back-phase-last"
+                      >
+                        <ChevronLeft className="w-4 h-4 mr-2" />
+                        Go Back to Previous Phase
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   // Last phase, no indoor destination — Done Navigating
-                  <Button
-                    className="w-full mt-6"
-                    onClick={handleDoneNavigating}
-                    data-testid="button-done-navigating"
-                  >
-                    Done Navigating
-                  </Button>
+                  <div className="flex flex-col gap-2 mt-6">
+                    <Button
+                      className="w-full"
+                      onClick={handleDoneNavigating}
+                      data-testid="button-done-navigating"
+                    >
+                      Done Navigating
+                    </Button>
+                    {route.phases && route.phases.length > 1 && activeNavPhaseIndex !== null && activeNavPhaseIndex > 0 && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleGoBackToPreviousPhase}
+                        data-testid="button-go-back-phase-last"
+                      >
+                        <ChevronLeft className="w-4 h-4 mr-2" />
+                        Go Back to Previous Phase
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

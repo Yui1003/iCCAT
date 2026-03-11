@@ -1,7 +1,7 @@
 import type { Walkpath, Drivepath, Building, Staff, Floor, Room, Event } from "@shared/schema";
 import baselineData from "./baseline-data.json";
 
-const DATA_CACHE_NAME = 'iccat-data-v9';
+export const DATA_CACHE_NAME = 'iccat-data-v9';
 
 let cachedBuildings: Building[] | null = null;
 let cachedWalkpaths: Walkpath[] | null = null;
@@ -156,6 +156,16 @@ export function clearPathCache() {
   cachedWalkpaths = null;
   cachedDrivepaths = null;
   console.log('[OFFLINE] Path cache cleared');
+}
+
+export function updateInMemoryCache(endpoint: string, data: any): void {
+  if (endpoint === '/api/walkpaths')  { cachedWalkpaths = data; return; }
+  if (endpoint === '/api/drivepaths') { cachedDrivepaths = data; return; }
+  if (endpoint === '/api/buildings')  { cachedBuildings = data; return; }
+  if (endpoint === '/api/staff')      { cachedStaff = data; return; }
+  if (endpoint === '/api/floors')     { cachedFloors = data; return; }
+  if (endpoint === '/api/rooms')      { cachedRooms = data; return; }
+  if (endpoint === '/api/events')     { cachedEvents = data; return; }
 }
 
 export async function deleteCacheStorageEntry(url: string): Promise<void> {

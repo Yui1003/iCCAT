@@ -57,3 +57,8 @@ MULTI PHASE FOR STOP BY
         Delete Confirmation Modal for Deleting Location (POI) Type (THE DELETE CONFIRMATION IS UNDER THE MANAGE LOCATION TYPE DIALOG)
 3.5.7 - OSM Attribution
 3.5.8 - Building Marker Size
+3.5.9 - Fix CacheStorage version used by firebase-listeners and cache-verification-loader
+        Update in-memory cache in offline-data.ts when SSE fires
+        Make multi-phase routing always use fresh path data
+        Add "Go Back to Previous Phase" button in multi-phase navigation
+        Fix building dropdown not scrollable with mouse wheel in admin/staff
