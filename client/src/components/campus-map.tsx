@@ -440,37 +440,36 @@ export default function CampusMap({
       // Skip marker rendering during navigation
     } else {
       if (!hideKiosk) {
-        // Find Kiosk building from database, fall back to constant if not found
+        // Only show kiosk marker if it exists in the filtered buildings list (respects filters like "Clear All")
         const kioskBuilding = buildings.find(b => b.type === 'Kiosk' || b.id === 'kiosk');
-        const kioskLat = kioskBuilding?.lat ?? KIOSK_LOCATION.lat;
-        const kioskLng = kioskBuilding?.lng ?? KIOSK_LOCATION.lng;
-        const kioskName = kioskBuilding?.name ?? KIOSK_LOCATION.name;
         
-        const kioskIconHtml = L.divIcon({
-          html: `
-            <div class="relative flex items-center justify-center">
-              <div class="absolute bg-blue-500/30 rounded-full animate-ping" style="width:${kioskSize.pingPx}px;height:${kioskSize.pingPx}px;"></div>
-              <div class="relative">
-                <img src="${BUILTIN_ICON_MAP['Kiosk']}" alt="You are Here" class="object-contain drop-shadow-lg" style="width:${kioskSize.imgPx}px;height:${kioskSize.imgPx}px;" />
+        if (kioskBuilding) {
+          const kioskIconHtml = L.divIcon({
+            html: `
+              <div class="relative flex items-center justify-center">
+                <div class="absolute bg-blue-500/30 rounded-full animate-ping" style="width:${kioskSize.pingPx}px;height:${kioskSize.pingPx}px;"></div>
+                <div class="relative">
+                  <img src="${BUILTIN_ICON_MAP['Kiosk']}" alt="You are Here" class="object-contain drop-shadow-lg" style="width:${kioskSize.imgPx}px;height:${kioskSize.imgPx}px;" />
+                </div>
               </div>
-            </div>
-          `,
-          className: 'kiosk-marker',
-          iconSize: [kioskSize.icon, kioskSize.icon],
-          iconAnchor: [kioskSize.icon / 2, kioskSize.icon / 2],
-        });
-
-        const kioskMarker = L.marker([kioskLat, kioskLng], { icon: kioskIconHtml })
-          .addTo(mapInstanceRef.current);
-          
-        if (showBuildingTooltips) {
-          kioskMarker.bindTooltip(kioskName, {
-            ...tooltipOptions,
-            className: 'bg-blue-600 text-white px-2 py-1 rounded shadow-md font-medium text-[10px] pointer-events-none opacity-90'
+            `,
+            className: 'kiosk-marker',
+            iconSize: [kioskSize.icon, kioskSize.icon],
+            iconAnchor: [kioskSize.icon / 2, kioskSize.icon / 2],
           });
-        }
 
-        markersRef.current.push(kioskMarker);
+          const kioskMarker = L.marker([kioskBuilding.lat, kioskBuilding.lng], { icon: kioskIconHtml })
+            .addTo(mapInstanceRef.current);
+            
+          if (showBuildingTooltips) {
+            kioskMarker.bindTooltip(kioskBuilding.name, {
+              ...tooltipOptions,
+              className: 'bg-blue-600 text-white px-2 py-1 rounded shadow-md font-medium text-[10px] pointer-events-none opacity-90'
+            });
+          }
+
+          markersRef.current.push(kioskMarker);
+        }
       }
 
       if (!hideBuildingMarkers) {

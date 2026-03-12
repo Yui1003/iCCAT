@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.6.4 DEV
+V3.6.5 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -74,3 +74,4 @@ MULTI PHASE FOR STOP BY
 3.6.3 - Mobile View Building names and markers
         Accessible mode multi phase with no PWD path connected.
 3.6.4 - Mobile Polygons Draw
+3.6.5 - Fixed Campus Mpa (removed hardcoded kiosk marker)
