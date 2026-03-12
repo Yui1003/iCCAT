@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.6.1 DEV
+V3.6.2 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -69,3 +69,5 @@ MULTI PHASE FOR STOP BY
         Change in Accessible Route Modal
 3.6.1 - Multi-stop Accessible Mode
         Mobile View
+3.6.2 - Admin Analytics Dark Mode
+        Mobile View for Accessible Multi Phase

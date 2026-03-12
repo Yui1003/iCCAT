@@ -486,13 +486,13 @@ export default function AdminAnalytics() {
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                    <XAxis dataKey="name" stroke="var(--color-muted-foreground)" />
-                    <YAxis stroke="var(--color-muted-foreground)" />
+                    <XAxis dataKey="name" stroke="var(--color-muted-foreground)" tick={{ fill: 'var(--color-muted-foreground)' }} />
+                    <YAxis stroke="var(--color-muted-foreground)" tick={{ fill: 'var(--color-muted-foreground)' }} />
                     <RechartsTooltip 
                       contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}
                       labelStyle={{ color: 'var(--color-foreground)' }}
                     />
-                    <Legend />
+                    <Legend wrapperStyle={{ color: 'var(--color-foreground)' }} />
                     <Bar dataKey="avg" fill="#3b82f6" name="Average" />
                     <Bar dataKey="min" fill="#10b981" name="Min" />
                     <Bar dataKey="max" fill="#ef4444" name="Max" />
@@ -510,7 +510,11 @@ export default function AdminAnalytics() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent, x, y, textAnchor }) => (
+                        <text x={x} y={y} textAnchor={textAnchor} fill="var(--color-foreground)" fontSize={12}>
+                          {`${name}: ${(percent * 100).toFixed(0)}%`}
+                        </text>
+                      )}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
@@ -534,13 +538,13 @@ export default function AdminAnalytics() {
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                  <XAxis dataKey="name" stroke="var(--color-muted-foreground)" />
-                  <YAxis stroke="var(--color-muted-foreground)" />
+                  <XAxis dataKey="name" stroke="var(--color-muted-foreground)" tick={{ fill: 'var(--color-muted-foreground)' }} />
+                  <YAxis stroke="var(--color-muted-foreground)" tick={{ fill: 'var(--color-muted-foreground)' }} />
                   <RechartsTooltip 
                     contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}
                     labelStyle={{ color: 'var(--color-foreground)' }}
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ color: 'var(--color-foreground)' }} />
                   <Line 
                     type="monotone" 
                     dataKey="count" 

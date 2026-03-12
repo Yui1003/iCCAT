@@ -111,6 +111,8 @@ export default function Navigation() {
   const [multiStopInaccessibleStops, setMultiStopInaccessibleStops] = useState<InaccessibleStopInfo[]>([]);
   // Tracks which phase indices in the active route have inaccessible destinations
   const [inaccessiblePhaseIndices, setInaccessiblePhaseIndices] = useState<number[]>([]);
+  // Route data to save when user clicks "Proceed Anyway" on multi-stop accessible warning
+  const [pendingRouteDataForSave, setPendingRouteDataForSave] = useState<any>(null);
   
   // Parking selection state - for when user needs to indicate where their vehicle is parked
   const [showParkingSelector, setShowParkingSelector] = useState(false);
@@ -2663,6 +2665,15 @@ export default function Navigation() {
         if (mode === 'accessible' && multiPhaseRoute.inaccessibleStops && multiPhaseRoute.inaccessibleStops.length > 0) {
           setMultiStopInaccessibleStops(multiPhaseRoute.inaccessibleStops);
           setPendingMultiPhaseNavRoute(navigationRoute);
+          setPendingRouteDataForSave({
+            startId: selectedStart.id,
+            endId: selectedEnd.id,
+            waypoints: validWaypoints,
+            mode,
+            vehicleType: vehicleType || null,
+            phases: multiPhaseRoute.phases,
+            expiresAt: null
+          });
           setShowMultiStopAccessibleWarning(true);
           return;
         }
@@ -3174,6 +3185,7 @@ export default function Navigation() {
     setPendingDrivingAction(null);
     setIsRouteConfirmed(false);
     setInaccessiblePhaseIndices([]);
+    setPendingRouteDataForSave(null);
   };
 
   const handleNavigateToAccessibleEndpoint = async () => {
@@ -4298,6 +4310,15 @@ export default function Navigation() {
         if (travelMode === 'accessible' && multiPhaseRoute.inaccessibleStops && multiPhaseRoute.inaccessibleStops.length > 0) {
           setMultiStopInaccessibleStops(multiPhaseRoute.inaccessibleStops);
           setPendingMultiPhaseNavRoute(navigationRoute);
+          setPendingRouteDataForSave({
+            startId: start.id,
+            endId: directionsDestination.id,
+            waypoints: waypointIds,
+            mode: travelMode,
+            vehicleType: selectedVehicle || null,
+            phases: multiPhaseRoute.phases,
+            expiresAt: null
+          });
           setShowMultiStopAccessibleWarning(true);
           const duration = performance.now() - routeStartTime;
           trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'multi-phase', inaccessibleStops: multiPhaseRoute.inaccessibleStops.length, source: 'dialog' });
@@ -5274,17 +5295,17 @@ export default function Navigation() {
                       </div>
                     )}
                     <Button
-                      className="w-full"
+                      className="w-full h-auto min-h-10 py-2 whitespace-normal text-left"
                       onClick={handleProceedToNextPhase}
                       data-testid="button-proceed-next-phase"
                     >
-                      <span className="flex flex-col items-start leading-tight">
-                        <span>
+                      <span className="flex flex-col items-start leading-tight w-full">
+                        <span className="break-words w-full">
                           {inaccessiblePhaseIndices.includes(activeNavPhaseIndex)
                             ? `I've Reached ${route.phases[activeNavPhaseIndex]?.endName} — Continue`
                             : 'Proceed to Next Phase'}
                         </span>
-                        <span className="text-xs opacity-75 font-normal">
+                        <span className="text-xs opacity-75 font-normal break-words w-full">
                           {route.phases[activeNavPhaseIndex + 1]?.mode === 'driving'
                             ? `${route.vehicleType === 'bike' ? 'Ride' : 'Drive'} to ${route.phases[activeNavPhaseIndex + 1]?.endName}`
                             : `Walk to ${route.phases[activeNavPhaseIndex + 1]?.endName}`}
@@ -5337,7 +5358,7 @@ export default function Navigation() {
                       </div>
                     )}
                     <Button
-                      className="w-full"
+                      className="w-full h-auto min-h-10 py-2 whitespace-normal text-left"
                       onClick={handleDoneNavigating}
                       data-testid="button-done-navigating"
                     >
@@ -5965,6 +5986,7 @@ export default function Navigation() {
                 setShowMultiStopAccessibleWarning(false);
                 setPendingMultiPhaseNavRoute(null);
                 setMultiStopInaccessibleStops([]);
+                setPendingRouteDataForSave(null);
               }}
               data-testid="button-multi-accessible-back"
             >
@@ -5972,13 +5994,25 @@ export default function Navigation() {
             </Button>
             <Button
               className="flex-1"
-              onClick={() => {
+              onClick={async () => {
                 setShowMultiStopAccessibleWarning(false);
                 if (pendingMultiPhaseNavRoute) {
                   setRoute(pendingMultiPhaseNavRoute);
                   setInaccessiblePhaseIndices(multiStopInaccessibleStops.map(s => s.phaseIndex));
                   setPendingMultiPhaseNavRoute(null);
                   setMultiStopInaccessibleStops([]);
+                  if (pendingRouteDataForSave) {
+                    try {
+                      const res = await apiRequest('POST', '/api/routes', pendingRouteDataForSave);
+                      const response = await res.json();
+                      if (response.id) {
+                        setSavedRouteId(response.id);
+                      }
+                    } catch (error) {
+                      console.error('Error saving route after proceed:', error);
+                    }
+                    setPendingRouteDataForSave(null);
+                  }
                 }
               }}
               data-testid="button-multi-accessible-proceed"
