@@ -29,7 +29,7 @@ import { useGlobalInactivity } from "@/hooks/use-inactivity";
 import { findShortestPath, findNearestAccessibleEndpoint } from "@/lib/pathfinding";
 import { buildIndoorGraph, findRoomPath, connectOutdoorToIndoor } from "@/lib/indoor-pathfinding";
 import { getWalkpaths, getDrivepaths } from "@/lib/offline-data";
-import { calculateMultiPhaseRoute, multiPhaseToNavigationRoute } from "@/lib/multi-phase-routes";
+import { calculateMultiPhaseRoute, multiPhaseToNavigationRoute, type InaccessibleStopInfo } from "@/lib/multi-phase-routes";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { calculateETA, parseDistance } from "@/lib/eta-calculator";
 import { generateIndoorSteps } from "@/lib/indoor-steps";
@@ -104,6 +104,11 @@ export default function Navigation() {
   const [showAccessibleFallbackDialog, setShowAccessibleFallbackDialog] = useState(false);
   const [accessibleFallbackEndpoint, setAccessibleFallbackEndpoint] = useState<{ lat: number; lng: number } | null>(null);
   const [originalDestinationName, setOriginalDestinationName] = useState<string | null>(null);
+
+  // Multi-stop accessible warning state
+  const [showMultiStopAccessibleWarning, setShowMultiStopAccessibleWarning] = useState(false);
+  const [pendingMultiPhaseNavRoute, setPendingMultiPhaseNavRoute] = useState<NavigationRoute | null>(null);
+  const [multiStopInaccessibleStops, setMultiStopInaccessibleStops] = useState<InaccessibleStopInfo[]>([]);
   
   // Parking selection state - for when user needs to indicate where their vehicle is parked
   const [showParkingSelector, setShowParkingSelector] = useState(false);
@@ -2652,6 +2657,14 @@ export default function Navigation() {
           navigationRoute.vehicleType = vehicleType;
         }
 
+        // For accessible mode: if some stops are inaccessible, warn before proceeding
+        if (mode === 'accessible' && multiPhaseRoute.inaccessibleStops && multiPhaseRoute.inaccessibleStops.length > 0) {
+          setMultiStopInaccessibleStops(multiPhaseRoute.inaccessibleStops);
+          setPendingMultiPhaseNavRoute(navigationRoute);
+          setShowMultiStopAccessibleWarning(true);
+          return;
+        }
+
         setRoute(navigationRoute);
 
         // Save route to database for QR code generation
@@ -4708,13 +4721,13 @@ export default function Navigation() {
                 <Tabs value={mode} onValueChange={(v) => setMode(v as 'walking' | 'driving' | 'accessible')}>
                   <TabsList className="w-full">
                     <TabsTrigger value="walking" className="flex-1" data-testid="tab-walking">
-                      Walking
+                      🚶 Walking
                     </TabsTrigger>
                     <TabsTrigger value="driving" className="flex-1" data-testid="tab-driving">
-                      Driving
+                      🚗 Driving
                     </TabsTrigger>
                     <TabsTrigger value="accessible" className="flex-1" data-testid="tab-accessible">
-                      Accessible
+                      ♿ Accessible
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -5831,7 +5844,20 @@ export default function Navigation() {
               </p>
               <Card className="p-3 bg-muted/50">
                 <p className="text-xs text-muted-foreground">
-                  Coordinates: {accessibleFallbackEndpoint.lat.toFixed(4)}°, {accessibleFallbackEndpoint.lng.toFixed(4)}°
+                  {(() => {
+                    if (!selectedStart || !accessibleFallbackEndpoint) return 'Location found';
+                    const lat1 = (selectedStart as any).lat ?? 0;
+                    const lng1 = (selectedStart as any).lng ?? 0;
+                    const lat2 = accessibleFallbackEndpoint.lat;
+                    const lng2 = accessibleFallbackEndpoint.lng;
+                    const R = 6371000;
+                    const dLat = (lat2 - lat1) * Math.PI / 180;
+                    const dLng = (lng2 - lng1) * Math.PI / 180;
+                    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+                    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                    const label = dist >= 1000 ? `${(dist / 1000).toFixed(1)} km` : `${Math.round(dist)} m`;
+                    return `${label} from your position`;
+                  })()}
                 </p>
               </Card>
             </div>
@@ -5854,6 +5880,64 @@ export default function Navigation() {
                 Navigate to Endpoint
               </Button>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Multi-stop Accessible Route Warning Dialog */}
+      <Dialog open={showMultiStopAccessibleWarning} onOpenChange={setShowMultiStopAccessibleWarning}>
+        <DialogContent className="z-[10002]" style={{ zIndex: 10002 }}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-yellow-500" />
+              Some Stops Are Not Accessible
+            </DialogTitle>
+            <DialogDescription>
+              The following stops along your route do not have wheelchair-accessible paths. The route will navigate to the nearest accessible endpoint of each inaccessible stop instead.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {multiStopInaccessibleStops.map((stop, i) => (
+              <div key={i} className="flex items-start gap-3 p-3 rounded-md bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">
+                <span className="text-yellow-600 dark:text-yellow-400 mt-0.5">⚠️</span>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{stop.buildingName}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {stop.nearestEndpoint
+                      ? 'Will route to nearest accessible endpoint'
+                      : 'No accessible path or endpoint found — this stop may be skipped'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setShowMultiStopAccessibleWarning(false);
+                setPendingMultiPhaseNavRoute(null);
+                setMultiStopInaccessibleStops([]);
+              }}
+              data-testid="button-multi-accessible-back"
+            >
+              Go Back to Route Creation
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={() => {
+                setShowMultiStopAccessibleWarning(false);
+                if (pendingMultiPhaseNavRoute) {
+                  setRoute(pendingMultiPhaseNavRoute);
+                  setPendingMultiPhaseNavRoute(null);
+                  setMultiStopInaccessibleStops([]);
+                }
+              }}
+              data-testid="button-multi-accessible-proceed"
+            >
+              Proceed Anyway
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

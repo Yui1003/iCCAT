@@ -39,6 +39,7 @@ export default function GetDirectionsDialog({
   const [selectedVehicle, setSelectedVehicle] = React.useState<VehicleType | null>(null);
   const [showDrivingAdvisory, setShowDrivingAdvisory] = React.useState(false);
   const [pendingVehicle, setPendingVehicle] = React.useState<VehicleType | null>(null);
+  const [dragWaypointIndex, setDragWaypointIndex] = React.useState<number | null>(null);
 
   // Reset state when dialog opens
   React.useEffect(() => {
@@ -70,17 +71,11 @@ export default function GetDirectionsDialog({
     setWaypoints(newWaypoints);
   };
 
-  const handleMoveWaypoint = (index: number, direction: 'up' | 'down') => {
-    if (
-      (direction === 'up' && index === 0) ||
-      (direction === 'down' && index === waypoints.length - 1)
-    ) {
-      return;
-    }
-
+  const handleWaypointDragDrop = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
     const newWaypoints = [...waypoints];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    [newWaypoints[index], newWaypoints[targetIndex]] = [newWaypoints[targetIndex], newWaypoints[index]];
+    const [removed] = newWaypoints.splice(fromIndex, 1);
+    newWaypoints.splice(toIndex, 0, removed);
     setWaypoints(newWaypoints);
   };
 
@@ -212,28 +207,27 @@ export default function GetDirectionsDialog({
                   Stops ({waypoints.length})
                 </label>
                 {waypoints.map((waypointId, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <div className="flex flex-col gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5"
-                        onClick={() => handleMoveWaypoint(index, 'up')}
-                        disabled={index === 0}
-                        data-testid={`button-waypoint-up-${index}`}
-                      >
-                        <GripVertical className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5"
-                        onClick={() => handleMoveWaypoint(index, 'down')}
-                        disabled={index === waypoints.length - 1}
-                        data-testid={`button-waypoint-down-${index}`}
-                      >
-                        <GripVertical className="w-3 h-3" />
-                      </Button>
+                  <div
+                    key={index}
+                    className={`flex items-center gap-2 ${dragWaypointIndex === index ? 'opacity-50' : ''}`}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (dragWaypointIndex !== null) {
+                        handleWaypointDragDrop(dragWaypointIndex, index);
+                        setDragWaypointIndex(null);
+                      }
+                    }}
+                  >
+                    <div
+                      className="cursor-grab active:cursor-grabbing p-1"
+                      draggable
+                      onDragStart={() => setDragWaypointIndex(index)}
+                      onDragEnd={() => setDragWaypointIndex(null)}
+                      title="Drag to reorder"
+                      data-testid={`drag-waypoint-${index}`}
+                    >
+                      <GripVertical className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <div className="flex-1">
                       <SearchableDestinationSelect

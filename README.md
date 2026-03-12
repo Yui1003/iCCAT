@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.5.8 DEV
+V3.6.0 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -62,3 +62,8 @@ MULTI PHASE FOR STOP BY
         Make multi-phase routing always use fresh path data
         Add "Go Back to Previous Phase" button in multi-phase navigation
         Fix building dropdown not scrollable with mouse wheel in admin/staff
+3.6.0 - Fixed Admin/Paths Map Preview
+        Draggable Stops for Get Direction Modal
+        Multi-stop Accessible Mode
+        Emoji on Left Sidebar Campus Navigation
+        Change in Accessible Route Modal

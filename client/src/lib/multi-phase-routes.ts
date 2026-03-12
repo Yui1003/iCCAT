@@ -1,13 +1,20 @@
 import type { Building, NavigationRoute, RoutePhase, LatLng, RouteStep, Walkpath, Drivepath } from "@shared/schema";
 import { KIOSK_LOCATION } from "@shared/schema";
 import { getPhaseColor } from "@shared/phase-colors";
-import { findShortestPath } from "./pathfinding";
+import { findShortestPath, findNearestAccessibleEndpoint } from "./pathfinding";
 import { getWalkpaths, getDrivepaths } from "./offline-data";
+
+export interface InaccessibleStopInfo {
+  stopIndex: number;
+  buildingName: string;
+  nearestEndpoint: { lat: number; lng: number } | null;
+}
 
 export interface MultiStopRoute {
   phases: RoutePhase[];
   totalDistance: string;
   waypoints: Building[];
+  inaccessibleStops?: InaccessibleStopInfo[];
 }
 
 /**
@@ -177,8 +184,33 @@ function generateSmartSteps(
 }
 
 /**
- * Calculate multi-phase route with waypoints
- * Each phase is a separate route calculation with its own color
+ * Build a synthetic Building object at a given lat/lng
+ */
+function makeSyntheticBuilding(name: string, lat: number, lng: number): Building {
+  return {
+    id: 'accessible-endpoint',
+    name,
+    lat,
+    lng,
+    nodeLat: lat,
+    nodeLng: lng,
+    entranceLat: lat,
+    entranceLng: lng,
+    polygon: null,
+    polygonColor: null,
+    description: '',
+    image: null,
+    type: 'building',
+    markerIcon: null,
+    departments: null,
+    polygonOpacity: null
+  } as Building;
+}
+
+/**
+ * Calculate multi-phase route with waypoints.
+ * For accessible mode, if a segment is inaccessible, automatically falls back to
+ * the nearest accessible endpoint of that building and records it in inaccessibleStops.
  */
 export async function calculateMultiPhaseRoute(
   start: Building | typeof KIOSK_LOCATION,
@@ -199,28 +231,48 @@ export async function calculateMultiPhaseRoute(
   } catch {
     paths = mode === 'driving' ? await getDrivepaths() : await getWalkpaths();
   }
+
   const phases: RoutePhase[] = [];
-  
+  const inaccessibleStops: InaccessibleStopInfo[] = [];
+
   // Create array of all stops: [start, ...waypoints, destination]
-  const allStops = [start as Building, ...waypoints, destination];
-  
+  // Each entry may be overridden by a nearest-endpoint substitute
+  const allStops: Building[] = [start as Building, ...waypoints, destination];
+
   // Calculate route for each segment
   for (let i = 0; i < allStops.length - 1; i++) {
     const segmentStart = allStops[i];
-    const segmentEnd = allStops[i + 1];
-    
+    let segmentEnd = allStops[i + 1];
+    const originalEndName = segmentEnd.name;
+
     // Find shortest path for this segment
-    const polyline = findShortestPath(segmentStart, segmentEnd, paths, mode);
-    
+    let polyline = findShortestPath(segmentStart, segmentEnd, paths, mode);
+
+    // For accessible mode: if no direct path, fall back to nearest accessible endpoint
+    if (!polyline && mode === 'accessible') {
+      const nearestEndpoint = findNearestAccessibleEndpoint(segmentEnd as Building, paths as any);
+      const stopIndex = i + 1; // index in allStops (0 = start)
+      inaccessibleStops.push({ stopIndex, buildingName: originalEndName, nearestEndpoint });
+
+      if (nearestEndpoint) {
+        console.warn(`[MULTI-PHASE] Stop "${originalEndName}" has no accessible path — routing to nearest accessible endpoint instead.`);
+        const substitute = makeSyntheticBuilding(`Nearest Accessible Point (${originalEndName})`, nearestEndpoint.lat, nearestEndpoint.lng);
+        // Update allStops so subsequent segments start from the right place
+        allStops[i + 1] = substitute;
+        segmentEnd = substitute;
+        polyline = findShortestPath(segmentStart, segmentEnd, paths, mode);
+      }
+    }
+
     if (!polyline) {
       console.error(`No route found for segment ${i + 1}: ${segmentStart.name} → ${segmentEnd.name}`);
       return null;
     }
-    
+
     if (polyline.length === 2) {
       console.warn(`[MULTI-PHASE] Segment ${i + 1} (${segmentStart.name} → ${segmentEnd.name}) used a straight-line fallback — path network may not be connected for this segment.`);
     }
-    
+
     // Generate turn-by-turn directions for this phase
     const { steps, totalDistance } = generateSmartSteps(
       polyline,
@@ -228,7 +280,7 @@ export async function calculateMultiPhaseRoute(
       segmentStart.name,
       segmentEnd.name
     );
-    
+
     // Create phase object with unique color
     const phase: RoutePhase = {
       mode,
@@ -242,10 +294,10 @@ export async function calculateMultiPhaseRoute(
       startId: segmentStart.id,
       endId: segmentEnd.id
     };
-    
+
     phases.push(phase);
   }
-  
+
   // Calculate total distance across all phases
   let totalMeters = 0;
   phases.forEach(phase => {
@@ -253,15 +305,16 @@ export async function calculateMultiPhaseRoute(
     const isKm = phase.distance.includes('km');
     totalMeters += isKm ? dist * 1000 : dist;
   });
-  
+
   const totalDistance = totalMeters >= 1000
     ? `${(totalMeters / 1000).toFixed(1)} km`
     : `${Math.round(totalMeters)} m`;
-  
+
   return {
     phases,
     totalDistance,
-    waypoints
+    waypoints,
+    inaccessibleStops: inaccessibleStops.length > 0 ? inaccessibleStops : undefined
   };
 }
 

@@ -14,7 +14,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin-layout";
 import CampusMap from "@/components/campus-map";
 import PathDrawingMap from "@/components/path-drawing-map";
-import type { Building } from "@shared/schema";
+import type { Building, CustomPoiType } from "@shared/schema";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { invalidateEndpointCache } from "@/lib/offline-data";
 
@@ -63,6 +63,12 @@ export default function AdminPaths() {
   const { data: buildings = [] } = useQuery<Building[]>({
     queryKey: ['/api/buildings']
   });
+
+  const { data: poiTypesData } = useQuery<{
+    customTypes: CustomPoiType[];
+    iconOverrides: Record<string, string>;
+    renames: Record<string, string>;
+  }>({ queryKey: ['/api/poi-types'] });
 
   const { data: walkpaths = [], isLoading: isLoadingPaths } = useQuery<any[]>({
     queryKey: ['/api/walkpaths']
@@ -471,6 +477,7 @@ export default function AdminPaths() {
                     hideBuildingMarkers={!showBuildingMarkers}
                     hidePaths={!showPathDashes}
                     onPathClick={(path) => handleOpenDialog(path, 'walkpath')}
+                    poiTypeData={poiTypesData}
                   />
                 </Card>
               </div>
@@ -644,6 +651,7 @@ export default function AdminPaths() {
                     hideBuildingMarkers={!showBuildingMarkers}
                     hidePaths={!showPathDashes}
                     onPathClick={(path) => handleOpenDialog(path, 'drivepath')}
+                    poiTypeData={poiTypesData}
                   />
                 </Card>
               </div>
