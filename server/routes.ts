@@ -376,11 +376,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/feedback/export', async (req, res) => {
     try {
-      const XLSX = await import('xlsx');
+      const { Workbook } = await import('exceljs');
       const feedbacks = await storage.getFeedbacks();
-      
-      // Format data for Excel
-      const excelData = feedbacks.map((f) => {
+
+      // Create workbook and worksheet
+      const workbook = new Workbook();
+      const worksheet = workbook.addWorksheet('Feedback');
+
+      // Add column headers
+      worksheet.columns = [
+        { header: 'Timestamp', key: 'timestamp', width: 20 },
+        { header: 'User #', key: 'userId', width: 12 },
+        { header: 'Functional Suitability', key: 'avgFunctionalSuitability', width: 18 },
+        { header: 'Performance Efficiency', key: 'avgPerformanceEfficiency', width: 18 },
+        { header: 'Compatibility', key: 'avgCompatibility', width: 15 },
+        { header: 'Usability', key: 'avgUsability', width: 15 },
+        { header: 'Reliability', key: 'avgReliability', width: 15 },
+        { header: 'Security', key: 'avgSecurity', width: 12 },
+        { header: 'Maintainability', key: 'avgMaintainability', width: 16 },
+        { header: 'Portability', key: 'avgPortability', width: 15 },
+        { header: 'UX Items', key: 'avgUxItems', width: 12 },
+        { header: 'Comments', key: 'comments', width: 35 }
+      ];
+
+      // Add data rows
+      feedbacks.forEach((f) => {
         let timestampDate: Date;
         const ts = f.timestamp as any;
         if (ts && typeof ts.toDate === 'function') {
@@ -394,13 +414,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           timestampDate = new Date();
         }
-        
+
         if (isNaN(timestampDate.getTime())) {
           timestampDate = new Date();
         }
-        
-        return {
-          'Timestamp': timestampDate.toLocaleString('en-US', {
+
+        worksheet.addRow({
+          timestamp: timestampDate.toLocaleString('en-US', {
             timeZone: 'Asia/Manila',
             year: '2-digit',
             month: '2-digit',
@@ -410,27 +430,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             second: '2-digit',
             hour12: true
           }),
-          'User #': f.userId ?? '',
-          'Functional Suitability': (f.avgFunctionalSuitability ?? 0).toFixed(2),
-          'Performance Efficiency': (f.avgPerformanceEfficiency ?? 0).toFixed(2),
-          'Compatibility': (f.avgCompatibility ?? 0).toFixed(2),
-          'Usability': (f.avgUsability ?? 0).toFixed(2),
-          'Reliability': (f.avgReliability ?? 0).toFixed(2),
-          'Security': (f.avgSecurity ?? 0).toFixed(2),
-          'Maintainability': (f.avgMaintainability ?? 0).toFixed(2),
-          'Portability': (f.avgPortability ?? 0).toFixed(2),
-          'UX Items': (f.avgUxItems ?? 0).toFixed(2),
-          'Comments': f.comments || ''
-        };
+          userId: f.userId ?? '',
+          avgFunctionalSuitability: (f.avgFunctionalSuitability ?? 0).toFixed(2),
+          avgPerformanceEfficiency: (f.avgPerformanceEfficiency ?? 0).toFixed(2),
+          avgCompatibility: (f.avgCompatibility ?? 0).toFixed(2),
+          avgUsability: (f.avgUsability ?? 0).toFixed(2),
+          avgReliability: (f.avgReliability ?? 0).toFixed(2),
+          avgSecurity: (f.avgSecurity ?? 0).toFixed(2),
+          avgMaintainability: (f.avgMaintainability ?? 0).toFixed(2),
+          avgPortability: (f.avgPortability ?? 0).toFixed(2),
+          avgUxItems: (f.avgUxItems ?? 0).toFixed(2),
+          comments: f.comments || ''
+        });
       });
 
-      // Create workbook and worksheet
-      const worksheet = XLSX.utils.json_to_sheet(excelData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Feedback');
-
       // Generate buffer
-      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      const buffer = await workbook.xlsx.writeBuffer();
 
       // Set headers for file download
       const filename = `iccat-feedbacks-${new Date().toISOString().split('T')[0]}.xlsx`;
