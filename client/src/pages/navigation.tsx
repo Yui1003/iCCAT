@@ -308,7 +308,7 @@ export default function Navigation() {
               const roomNodeId = params.get('roomNode');
               let autoGenRoomData: typeof indoorNodes[0] | null = null;
               if (roomNodeId && indoorNodes.length > 0) {
-                autoGenRoomData = indoorNodes.find(n => n.id === roomNodeId && n.type === 'room') || null;
+                autoGenRoomData = indoorNodes.find(n => n.id === roomNodeId) || null;
                 if (autoGenRoomData) {
                   setNavigationPhase('outdoor');
                 }
@@ -4277,7 +4277,7 @@ export default function Navigation() {
         let destinationRoomData: IndoorNode | null = null;
 
         if (selectedRoomForNav?.id) {
-          const selectedRoom = indoorNodes.find(n => n.id === selectedRoomForNav.id && n.type === 'room');
+          const selectedRoom = indoorNodes.find(n => n.id === selectedRoomForNav.id);
           if (selectedRoom) {
             // For two-phase navigation: outdoor phase only goes to building
             // Store the room info to use later when user reaches the building
@@ -5934,7 +5934,7 @@ export default function Navigation() {
             setDirectionsDestination(building);
             // If roomId provided, store room info for display
             if (roomId) {
-              const room = indoorNodes.find(n => n.id === roomId && n.type === 'room');
+              const room = indoorNodes.find(n => n.id === roomId);
               if (room) {
                 setSelectedRoomForNav({
                   id: roomId,
