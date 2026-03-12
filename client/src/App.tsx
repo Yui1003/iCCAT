@@ -213,12 +213,11 @@ function AppContent() {
     };
   }, []);
 
-  // Check if current route is an admin route
   const isAdminRoute = location?.startsWith('/admin/');
+  const isMobileNavRoute = window.location.pathname.startsWith('/navigate/');
 
-  // For admin routes, skip cache verification - just show router immediately
-  if (isAdminRoute) {
-    console.log('[APP] Admin route detected:', location, '- skipping cache verification');
+  if (isAdminRoute || isMobileNavRoute) {
+    console.log('[APP] Skipping cache verification for:', location);
     return (
       <>
         <Toaster />

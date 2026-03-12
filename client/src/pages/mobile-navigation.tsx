@@ -88,20 +88,47 @@ export default function MobileNavigation() {
     queryKey: ['/api/rooms'],
   });
 
-  // Check if route has indoor destination
-  const hasIndoorDestination = route?.destinationRoomId && route?.destinationBuildingId;
+  const urlRoomNodeId = useMemo(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('roomNode');
+  }, []);
 
-  // Get the destination building for indoor navigation
+  const resolvedIndoorData = useMemo(() => {
+    if (route?.destinationRoomId && route?.destinationBuildingId) {
+      return {
+        roomId: route.destinationRoomId,
+        buildingId: route.destinationBuildingId,
+        floorId: route.destinationFloorId,
+        roomName: route.destinationRoomName,
+      };
+    }
+    if (urlRoomNodeId && indoorNodes.length > 0) {
+      const fallbackNode = indoorNodes.find(n => n.id === urlRoomNodeId && n.type === 'room');
+      if (fallbackNode) {
+        const nodeFloor = floors.find(f => f.id === fallbackNode.floorId);
+        const nodeBuildingId = nodeFloor?.buildingId || route?.endId || null;
+        return {
+          roomId: fallbackNode.id,
+          buildingId: nodeBuildingId,
+          floorId: fallbackNode.floorId,
+          roomName: fallbackNode.label || 'Room',
+        };
+      }
+    }
+    return null;
+  }, [route, urlRoomNodeId, indoorNodes, floors]);
+
+  const hasIndoorDestination = !!resolvedIndoorData;
+
   const destinationBuilding = useMemo(() => {
-    if (!route?.destinationBuildingId || !buildings.length) return null;
-    return buildings.find(b => b.id === route.destinationBuildingId) || null;
-  }, [route?.destinationBuildingId, buildings]);
+    if (!resolvedIndoorData?.buildingId || !buildings.length) return null;
+    return buildings.find(b => b.id === resolvedIndoorData.buildingId) || null;
+  }, [resolvedIndoorData?.buildingId, buildings]);
 
-  // Get floors for the destination building
   const buildingFloors = useMemo(() => {
-    if (!route?.destinationBuildingId || !floors.length) return [];
-    return floors.filter(f => f.buildingId === route.destinationBuildingId).sort((a, b) => a.floorNumber - b.floorNumber);
-  }, [route?.destinationBuildingId, floors]);
+    if (!resolvedIndoorData?.buildingId || !floors.length) return [];
+    return floors.filter(f => f.buildingId === resolvedIndoorData.buildingId).sort((a, b) => a.floorNumber - b.floorNumber);
+  }, [resolvedIndoorData?.buildingId, floors]);
 
   // Check if all outdoor phases are completed
   const allOutdoorPhasesCompleted = route && completedPhases.length === route.phases.length;
@@ -165,15 +192,14 @@ export default function MobileNavigation() {
 
   // Handle reaching the building - transition to indoor navigation
   const handleReachedBuilding = () => {
-    if (!route || !route.destinationRoomId || !route.destinationBuildingId || !route.destinationFloorId) {
+    if (!resolvedIndoorData || !resolvedIndoorData.roomId || !resolvedIndoorData.buildingId || !resolvedIndoorData.floorId) {
       console.warn('[MOBILE] Missing indoor navigation data');
       return;
     }
 
-    // Find the destination room node
-    const roomNode = indoorNodes.find(n => n.id === route.destinationRoomId && n.type === 'room');
+    const roomNode = indoorNodes.find(n => n.id === resolvedIndoorData.roomId && n.type === 'room');
     if (!roomNode) {
-      console.error('[MOBILE] Destination room not found:', route.destinationRoomId);
+      console.error('[MOBILE] Destination room not found:', resolvedIndoorData.roomId);
       toast({
         title: "Error",
         description: "Could not find indoor navigation data.",
@@ -184,15 +210,13 @@ export default function MobileNavigation() {
 
     setDestinationRoom(roomNode);
 
-    // Calculate the indoor path and floors involved
-    const roomFloor = floors.find(f => f.id === route.destinationFloorId);
+    const roomFloor = floors.find(f => f.id === resolvedIndoorData.floorId);
     if (!roomFloor) {
-      console.error('[MOBILE] Destination floor not found:', route.destinationFloorId);
+      console.error('[MOBILE] Destination floor not found:', resolvedIndoorData.floorId);
       return;
     }
 
-    // Find building entrance (ground floor or floor level 1)
-    const buildingFloorsForDest = floors.filter(f => f.buildingId === route.destinationBuildingId).sort((a, b) => a.floorNumber - b.floorNumber);
+    const buildingFloorsForDest = floors.filter(f => f.buildingId === resolvedIndoorData.buildingId).sort((a, b) => a.floorNumber - b.floorNumber);
     const entranceFloor = buildingFloorsForDest.find(f => f.floorNumber === 1) || buildingFloorsForDest[0];
 
     if (!entranceFloor) {
@@ -200,7 +224,6 @@ export default function MobileNavigation() {
       return;
     }
 
-    // Calculate floors in route (from entrance to destination floor)
     let floorRoute: Floor[] = [];
     if (entranceFloor.id === roomFloor.id) {
       floorRoute = [entranceFloor];
@@ -209,10 +232,8 @@ export default function MobileNavigation() {
       const destLevel = roomFloor.floorNumber;
       
       if (destLevel > entranceLevel) {
-        // Going up
         floorRoute = buildingFloorsForDest.filter(f => f.floorNumber >= entranceLevel && f.floorNumber <= destLevel);
       } else {
-        // Going down
         floorRoute = buildingFloorsForDest.filter(f => f.floorNumber <= entranceLevel && f.floorNumber >= destLevel).reverse();
       }
     }
@@ -223,7 +244,7 @@ export default function MobileNavigation() {
 
     toast({
       title: "Indoor Navigation",
-      description: `Follow the path to ${roomNode.label || route.destinationRoomName || 'your destination'}`,
+      description: `Follow the path to ${roomNode.label || resolvedIndoorData.roomName || 'your destination'}`,
     });
   };
 

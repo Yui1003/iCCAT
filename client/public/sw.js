@@ -280,7 +280,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle API requests - network first, cache fallback
+  if (url.pathname.startsWith('/api/routes/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       caches.open(DATA_CACHE_NAME).then((cache) => {

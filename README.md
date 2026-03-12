@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.6.6 DEV
+V3.6.7 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -77,3 +77,6 @@ MULTI PHASE FOR STOP BY
 3.6.5 - Fixed Campus Mpa (removed hardcoded kiosk marker)
 3.6.6 - Fixed Vulnerability Issues
         Change libraries for Excel Export
+3.6.7 - Fixed Mobile Navigation Caching (removed)
+        Fixed Mobile Navigation Indoor Navigation not Imported
+        Fixed Events Indoor Navigation

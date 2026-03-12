@@ -14,9 +14,10 @@ interface QRCodeDialogProps {
   open: boolean;
   onClose: () => void;
   routeId: string;
+  roomNodeId?: string | null;
 }
 
-export default function QRCodeDialog({ open, onClose, routeId }: QRCodeDialogProps) {
+export default function QRCodeDialog({ open, onClose, routeId, roomNodeId }: QRCodeDialogProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,11 +27,12 @@ export default function QRCodeDialog({ open, onClose, routeId }: QRCodeDialogPro
       setQrDataUrl(null);
       generateQRCode();
     }
-  }, [open, routeId]);
+  }, [open, routeId, roomNodeId]);
 
   const generateQRCode = async () => {
     try {
-      const navigationUrl = `${window.location.origin}/navigate/${routeId}`;
+      const roomParam = roomNodeId ? `?roomNode=${roomNodeId}` : '';
+      const navigationUrl = `${window.location.origin}/navigate/${routeId}${roomParam}`;
       console.log('Generating QR code for URL:', navigationUrl);
 
       // Generate QR code as data URL

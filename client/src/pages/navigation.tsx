@@ -5771,6 +5771,7 @@ export default function Navigation() {
           open={showQRCode}
           onClose={() => setShowQRCode(false)}
           routeId={savedRouteId}
+          roomNodeId={new URLSearchParams(window.location.search).get('roomNode')}
         />
       )}
 
