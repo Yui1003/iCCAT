@@ -109,6 +109,8 @@ export default function Navigation() {
   const [showMultiStopAccessibleWarning, setShowMultiStopAccessibleWarning] = useState(false);
   const [pendingMultiPhaseNavRoute, setPendingMultiPhaseNavRoute] = useState<NavigationRoute | null>(null);
   const [multiStopInaccessibleStops, setMultiStopInaccessibleStops] = useState<InaccessibleStopInfo[]>([]);
+  // Tracks which phase indices in the active route have inaccessible destinations
+  const [inaccessiblePhaseIndices, setInaccessiblePhaseIndices] = useState<number[]>([]);
   
   // Parking selection state - for when user needs to indicate where their vehicle is parked
   const [showParkingSelector, setShowParkingSelector] = useState(false);
@@ -3171,6 +3173,7 @@ export default function Navigation() {
     setShowDrivingAdvisory(false);
     setPendingDrivingAction(null);
     setIsRouteConfirmed(false);
+    setInaccessiblePhaseIndices([]);
   };
 
   const handleNavigateToAccessibleEndpoint = async () => {
@@ -4291,6 +4294,16 @@ export default function Navigation() {
           setVehicleType(selectedVehicle);
         }
 
+        // For accessible mode: if some stops are inaccessible, warn before proceeding
+        if (travelMode === 'accessible' && multiPhaseRoute.inaccessibleStops && multiPhaseRoute.inaccessibleStops.length > 0) {
+          setMultiStopInaccessibleStops(multiPhaseRoute.inaccessibleStops);
+          setPendingMultiPhaseNavRoute(navigationRoute);
+          setShowMultiStopAccessibleWarning(true);
+          const duration = performance.now() - routeStartTime;
+          trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'multi-phase', inaccessibleStops: multiPhaseRoute.inaccessibleStops.length, source: 'dialog' });
+          return;
+        }
+
         setRoute(navigationRoute);
 
         // Save route to database for QR code generation
@@ -4860,15 +4873,16 @@ export default function Navigation() {
                   <div className="space-y-1.5" data-testid="section-route-overview">
                     {route.phases.map((phase, idx) => {
                       const isDriving = phase.mode === 'driving';
+                      const isAccessibleEndpointPhase = phase.note?.startsWith('[accessible-endpoint]');
                       const note = phase.note
-                        ? phase.note
+                        ? (isAccessibleEndpointPhase ? phase.note.replace('[accessible-endpoint] ', '') : phase.note)
                         : isDriving
                           ? 'Drive to next stop'
                           : 'Approaching destination';
                       return (
                         <div
                           key={idx}
-                          className={`flex items-start gap-2.5 rounded-md px-3 py-2 text-sm ${isDriving ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-emerald-500/10 border border-emerald-500/20'}`}
+                          className={`flex items-start gap-2.5 rounded-md px-3 py-2 text-sm ${isAccessibleEndpointPhase ? 'bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800' : isDriving ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-emerald-500/10 border border-emerald-500/20'}`}
                           data-testid={`overview-phase-${idx}`}
                         >
                           <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5 ${isDriving ? 'bg-blue-500 text-white' : 'bg-emerald-500 text-white'}`}>
@@ -4889,7 +4903,9 @@ export default function Navigation() {
                               </span>
                               <span className="text-xs text-muted-foreground flex-shrink-0 ml-auto">{phase.distance}</span>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{note}</p>
+                            <p className={`text-xs mt-0.5 leading-tight ${isAccessibleEndpointPhase ? 'text-yellow-700 dark:text-yellow-400' : 'text-muted-foreground'}`}>
+                              {isAccessibleEndpointPhase && <span className="font-semibold">⚠️ </span>}{note}
+                            </p>
                           </div>
                         </div>
                       );
@@ -5109,9 +5125,16 @@ export default function Navigation() {
                           )}
                         </div>
                         {phase.note && (
-                          <div className="ml-8 mb-3 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-md" data-testid={`phase-note-${displayIndex}`}>
-                            <p className="text-xs text-blue-700 dark:text-blue-300">{phase.note}</p>
-                          </div>
+                          phase.note.startsWith('[accessible-endpoint]') ? (
+                            <div className="ml-8 mb-3 px-3 py-2 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-md" data-testid={`phase-note-${displayIndex}`}>
+                              <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 mb-0.5">⚠️ Nearest Accessible Endpoint</p>
+                              <p className="text-xs text-yellow-700 dark:text-yellow-400">{phase.note.replace('[accessible-endpoint] ', '')}</p>
+                            </div>
+                          ) : (
+                            <div className="ml-8 mb-3 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-md" data-testid={`phase-note-${displayIndex}`}>
+                              <p className="text-xs text-blue-700 dark:text-blue-300">{phase.note}</p>
+                            </div>
+                          )
                         )}
                         <div className="space-y-3 pl-8">
                           {phase.steps.map((step, stepIndex) => (
@@ -5242,13 +5265,25 @@ export default function Navigation() {
                 ) : route.phases && route.phases.length > 0 && activeNavPhaseIndex !== null && activeNavPhaseIndex < route.phases.length - 1 ? (
                   // Active mode, not last phase — Proceed to Next Phase
                   <div className="flex flex-col gap-2 mt-6">
+                    {inaccessiblePhaseIndices.includes(activeNavPhaseIndex) && (
+                      <div className="p-3 rounded-md bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 mb-1">
+                        <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 mb-1">⚠️ Nearest Accessible Endpoint</p>
+                        <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                          You've reached the nearest accessible point to <strong>{route.phases[activeNavPhaseIndex]?.endName}</strong>. The building entrance may require a non-accessible path from here.
+                        </p>
+                      </div>
+                    )}
                     <Button
                       className="w-full"
                       onClick={handleProceedToNextPhase}
                       data-testid="button-proceed-next-phase"
                     >
                       <span className="flex flex-col items-start leading-tight">
-                        <span>Proceed to Next Phase</span>
+                        <span>
+                          {inaccessiblePhaseIndices.includes(activeNavPhaseIndex)
+                            ? `I've Reached ${route.phases[activeNavPhaseIndex]?.endName} — Continue`
+                            : 'Proceed to Next Phase'}
+                        </span>
                         <span className="text-xs opacity-75 font-normal">
                           {route.phases[activeNavPhaseIndex + 1]?.mode === 'driving'
                             ? `${route.vehicleType === 'bike' ? 'Ride' : 'Drive'} to ${route.phases[activeNavPhaseIndex + 1]?.endName}`
@@ -5293,12 +5328,22 @@ export default function Navigation() {
                 ) : (
                   // Last phase, no indoor destination — Done Navigating
                   <div className="flex flex-col gap-2 mt-6">
+                    {activeNavPhaseIndex !== null && inaccessiblePhaseIndices.includes(activeNavPhaseIndex) && (
+                      <div className="p-3 rounded-md bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 mb-1">
+                        <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 mb-1">⚠️ Nearest Accessible Endpoint</p>
+                        <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                          You've reached the nearest accessible point to <strong>{route.phases[activeNavPhaseIndex]?.endName}</strong>. The building entrance may require a non-accessible path from here.
+                        </p>
+                      </div>
+                    )}
                     <Button
                       className="w-full"
                       onClick={handleDoneNavigating}
                       data-testid="button-done-navigating"
                     >
-                      Done Navigating
+                      {activeNavPhaseIndex !== null && inaccessiblePhaseIndices.includes(activeNavPhaseIndex)
+                        ? `I've Reached ${route.phases[activeNavPhaseIndex]?.endName} — Done`
+                        : 'Done Navigating'}
                     </Button>
                     {route.phases && route.phases.length > 1 && activeNavPhaseIndex !== null && activeNavPhaseIndex > 0 && (
                       <Button
@@ -5845,18 +5890,19 @@ export default function Navigation() {
               <Card className="p-3 bg-muted/50">
                 <p className="text-xs text-muted-foreground">
                   {(() => {
-                    if (!selectedStart || !accessibleFallbackEndpoint) return 'Location found';
-                    const lat1 = (selectedStart as any).lat ?? 0;
-                    const lng1 = (selectedStart as any).lng ?? 0;
-                    const lat2 = accessibleFallbackEndpoint.lat;
-                    const lng2 = accessibleFallbackEndpoint.lng;
+                    if (!selectedEnd || !accessibleFallbackEndpoint) return 'Nearest accessible point found';
+                    // Distance from the nearest accessible endpoint TO the actual destination building
+                    const lat1 = accessibleFallbackEndpoint.lat;
+                    const lng1 = accessibleFallbackEndpoint.lng;
+                    const lat2 = (selectedEnd as any).lat ?? 0;
+                    const lng2 = (selectedEnd as any).lng ?? 0;
                     const R = 6371000;
                     const dLat = (lat2 - lat1) * Math.PI / 180;
                     const dLng = (lng2 - lng1) * Math.PI / 180;
                     const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
                     const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                     const label = dist >= 1000 ? `${(dist / 1000).toFixed(1)} km` : `${Math.round(dist)} m`;
-                    return `${label} from your position`;
+                    return `${label} from this endpoint to ${originalDestinationName ?? 'the destination'}`;
                   })()}
                 </p>
               </Card>
@@ -5930,6 +5976,7 @@ export default function Navigation() {
                 setShowMultiStopAccessibleWarning(false);
                 if (pendingMultiPhaseNavRoute) {
                   setRoute(pendingMultiPhaseNavRoute);
+                  setInaccessiblePhaseIndices(multiStopInaccessibleStops.map(s => s.phaseIndex));
                   setPendingMultiPhaseNavRoute(null);
                   setMultiStopInaccessibleStops([]);
                 }

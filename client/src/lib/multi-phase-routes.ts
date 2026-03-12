@@ -5,9 +5,9 @@ import { findShortestPath, findNearestAccessibleEndpoint } from "./pathfinding";
 import { getWalkpaths, getDrivepaths } from "./offline-data";
 
 export interface InaccessibleStopInfo {
-  stopIndex: number;
-  buildingName: string;
-  nearestEndpoint: { lat: number; lng: number } | null;
+  phaseIndex: number;       // Phase index in the route (0-based) where this stop is the end
+  buildingName: string;     // Original name of the inaccessible building
+  nearestEndpoint: { lat: number; lng: number } | null; // Nearest point on any accessible path
 }
 
 export interface MultiStopRoute {
@@ -242,35 +242,66 @@ export async function calculateMultiPhaseRoute(
   // Calculate route for each segment
   for (let i = 0; i < allStops.length - 1; i++) {
     const segmentStart = allStops[i];
-    let segmentEnd = allStops[i + 1];
-    const originalEndName = segmentEnd.name;
+    const originalSegmentEnd = allStops[i + 1];
+    let segmentEnd: Building = originalSegmentEnd;
+    const originalEndName = originalSegmentEnd.name;
 
     // Find shortest path for this segment
     let polyline = findShortestPath(segmentStart, segmentEnd, paths, mode);
+    let phaseEndName = originalEndName;
 
-    // For accessible mode: if no direct path, fall back to nearest accessible endpoint
+    // For accessible mode: if no direct accessible path, try 3-tier fallback
     if (!polyline && mode === 'accessible') {
-      const nearestEndpoint = findNearestAccessibleEndpoint(segmentEnd as Building, paths as any);
-      const stopIndex = i + 1; // index in allStops (0 = start)
-      inaccessibleStops.push({ stopIndex, buildingName: originalEndName, nearestEndpoint });
+      const nearestEndpoint = findNearestAccessibleEndpoint(originalSegmentEnd as Building, paths as any);
 
       if (nearestEndpoint) {
-        console.warn(`[MULTI-PHASE] Stop "${originalEndName}" has no accessible path — routing to nearest accessible endpoint instead.`);
-        const substitute = makeSyntheticBuilding(`Nearest Accessible Point (${originalEndName})`, nearestEndpoint.lat, nearestEndpoint.lng);
-        // Update allStops so subsequent segments start from the right place
-        allStops[i + 1] = substitute;
-        segmentEnd = substitute;
-        polyline = findShortestPath(segmentStart, segmentEnd, paths, mode);
+        console.warn(`[MULTI-PHASE] Stop "${originalEndName}" has no accessible path — trying nearest accessible endpoint.`);
+        const substitute = makeSyntheticBuilding(
+          `Nearest Accessible Point to ${originalEndName}`,
+          nearestEndpoint.lat,
+          nearestEndpoint.lng
+        );
+
+        // Tier 1: accessible routing to nearest endpoint
+        polyline = findShortestPath(segmentStart, substitute, paths, 'accessible');
+
+        // Tier 2: regular walkpaths to nearest endpoint
+        if (!polyline) {
+          console.warn(`[MULTI-PHASE] Tier 1 failed — trying regular walkpaths to nearest endpoint.`);
+          polyline = findShortestPath(segmentStart, substitute, paths, 'walking');
+        }
+
+        if (polyline) {
+          // Route this phase to the nearest endpoint.
+          // IMPORTANT: do NOT update allStops[i+1] — subsequent phases still start from the original building.
+          segmentEnd = substitute;
+          // Keep the phase endName as the original building so UI says "Walk to [Building]"
+          phaseEndName = originalEndName;
+        }
+
+        // Mark this stop as inaccessible regardless of whether endpoint routing succeeded
+        inaccessibleStops.push({ phaseIndex: i, buildingName: originalEndName, nearestEndpoint });
+      } else {
+        // No nearest endpoint found — still mark as inaccessible
+        inaccessibleStops.push({ phaseIndex: i, buildingName: originalEndName, nearestEndpoint: null });
+      }
+
+      // Tier 3 last resort: if endpoint routing also failed, route directly to the building via regular walkpaths
+      if (!polyline) {
+        console.warn(`[MULTI-PHASE] Endpoint routing failed — last resort: regular walkpaths directly to ${originalEndName}.`);
+        segmentEnd = originalSegmentEnd;
+        polyline = findShortestPath(segmentStart, originalSegmentEnd, paths, 'walking');
+        phaseEndName = originalEndName;
       }
     }
 
     if (!polyline) {
-      console.error(`No route found for segment ${i + 1}: ${segmentStart.name} → ${segmentEnd.name}`);
+      console.error(`No route found for segment ${i + 1}: ${segmentStart.name} → ${phaseEndName}`);
       return null;
     }
 
     if (polyline.length === 2) {
-      console.warn(`[MULTI-PHASE] Segment ${i + 1} (${segmentStart.name} → ${segmentEnd.name}) used a straight-line fallback — path network may not be connected for this segment.`);
+      console.warn(`[MULTI-PHASE] Segment ${i + 1} (${segmentStart.name} → ${phaseEndName}) used straight-line fallback.`);
     }
 
     // Generate turn-by-turn directions for this phase
@@ -278,7 +309,7 @@ export async function calculateMultiPhaseRoute(
       polyline,
       mode,
       segmentStart.name,
-      segmentEnd.name
+      phaseEndName
     );
 
     // Create phase object with unique color
@@ -288,12 +319,16 @@ export async function calculateMultiPhaseRoute(
       steps,
       distance: totalDistance,
       startName: segmentStart.name,
-      endName: segmentEnd.name,
+      endName: phaseEndName,
       color: getPhaseColor(i),
       phaseIndex: i,
       startId: segmentStart.id,
       endId: segmentEnd.id
     };
+
+    if (segmentEnd.id === 'accessible-endpoint') {
+      phase.note = `[accessible-endpoint] Nearest accessible point to ${originalEndName} — the building entrance may require a non-accessible path from here.`;
+    }
 
     phases.push(phase);
   }

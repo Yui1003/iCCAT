@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.6.0 DEV
+V3.6.1 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -67,3 +67,5 @@ MULTI PHASE FOR STOP BY
         Multi-stop Accessible Mode
         Emoji on Left Sidebar Campus Navigation
         Change in Accessible Route Modal
+3.6.1 - Multi-stop Accessible Mode
+        Mobile View
