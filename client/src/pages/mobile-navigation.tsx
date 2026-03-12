@@ -36,6 +36,7 @@ export default function MobileNavigation() {
   const mapInstanceRef = useRef<any>(null);
   const touchHandlerRef = useRef<((e: TouchEvent) => void) | null>(null);
   const navigationLayersRef = useRef<any[]>([]); // Track navigation-specific layers for cleanup
+  const drawTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Track retry timer for cleanup
 
   // Indoor navigation states
   const [navigationPhase, setNavigationPhase] = useState<NavigationPhase>('outdoor');
@@ -478,7 +479,7 @@ export default function MobileNavigation() {
       
       if (!mapInstanceRef.current || !window.L) {
         console.warn("Map not ready yet, retrying in 100ms...");
-        setTimeout(drawRoute, 100);
+        drawTimerRef.current = setTimeout(drawRoute, 100);
         return;
       }
 
@@ -516,21 +517,42 @@ export default function MobileNavigation() {
       };
 
       // Helper function to draw a building polygon with permanent name label (tracked for cleanup)
+      // Supports both legacy `polygon` (single) and newer `polygons` (multi-structure) fields
       const drawBuildingPolygon = (buildingId: string, color: string, label: string) => {
         const building = buildings.find(b => b.id === buildingId);
-        if (building?.polygon && Array.isArray(building.polygon) && building.polygon.length >= 3) {
-          const latlngs = building.polygon.map((p: any) => [p.lat, p.lng]);
-          const polygon = L.polygon(latlngs, {
-            color: color,
-            fillColor: color,
-            fillOpacity: 0.35,
-            weight: 3,
-          }).addTo(map).bindTooltip(
-            `<strong>${escapeHtml(building.name)}</strong><br/><span style="font-size:10px">${escapeHtml(label)}</span>`,
-            { permanent: true, direction: 'center', className: 'building-nav-label' }
-          );
+        if (!building) {
+          console.warn(`[MOBILE-NAV] Building not found for ID: ${buildingId}`);
+          return;
+        }
+
+        const polyStyle = { color, fillColor: color, fillOpacity: 0.35, weight: 3 };
+        const tooltipContent = `<strong>${escapeHtml(building.name)}</strong><br/><span style="font-size:10px">${escapeHtml(label)}</span>`;
+        const tooltipOpts = { permanent: true, direction: 'center' as const, className: 'building-nav-label' };
+
+        const bldg = building as any;
+
+        // Multi-polygon buildings (new format — `polygons` is Array<Array<{lat,lng}>>)
+        if (bldg.polygons && Array.isArray(bldg.polygons) && bldg.polygons.length > 0) {
+          let labeled = false;
+          (bldg.polygons as any[][]).forEach((poly: any[]) => {
+            if (!poly || poly.length < 3) return;
+            const latlngs = poly.map((p: any) => [p.lat, p.lng] as [number, number]);
+            const polygon = L.polygon(latlngs, polyStyle).addTo(map);
+            if (!labeled) {
+              polygon.bindTooltip(tooltipContent, tooltipOpts);
+              labeled = true;
+            }
+            navigationLayersRef.current.push(polygon);
+          });
+          console.log(`[MOBILE-NAV] Drew ${label} multi-polygon for ${building.name} (${bldg.polygons.length} parts)`);
+        // Legacy single-polygon buildings (`polygon` is Array<{lat,lng}>)
+        } else if (building.polygon && Array.isArray(building.polygon) && building.polygon.length >= 3) {
+          const latlngs = building.polygon.map((p: any) => [p.lat, p.lng] as [number, number]);
+          const polygon = L.polygon(latlngs, polyStyle).addTo(map).bindTooltip(tooltipContent, tooltipOpts);
           navigationLayersRef.current.push(polygon);
           console.log(`[MOBILE-NAV] Drew ${label} polygon for ${building.name}`);
+        } else {
+          console.warn(`[MOBILE-NAV] Building "${building.name}" has no polygon data (polygon=${!!building.polygon}, polygons=${!!(bldg.polygons)})`);
         }
       };
 
@@ -657,8 +679,15 @@ export default function MobileNavigation() {
     };
 
     // Start drawing with a small delay to ensure map is ready
-    const timer = setTimeout(drawRoute, 100);
-    return () => clearTimeout(timer);
+    // Use drawTimerRef so retries inside drawRoute are also cancelable
+    if (drawTimerRef.current) clearTimeout(drawTimerRef.current);
+    drawTimerRef.current = setTimeout(drawRoute, 100);
+    return () => {
+      if (drawTimerRef.current) {
+        clearTimeout(drawTimerRef.current);
+        drawTimerRef.current = null;
+      }
+    };
   }, [route, currentPhaseIndex, completedPhases, navigationPhase, buildings, isPreviewMode]);
 
   // Calculate indoor path polyline for current floor using proper pathfinding
@@ -1534,7 +1563,7 @@ export default function MobileNavigation() {
                       </div>
                     )}
                     <Button
-                      className="w-full text-sm"
+                      className="w-full text-sm whitespace-normal h-auto py-2 leading-tight"
                       size="sm"
                       onClick={handleAdvancePhase}
                       data-testid="button-advance-phase"
