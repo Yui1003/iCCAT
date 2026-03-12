@@ -528,38 +528,80 @@ export default function Navigation() {
               );
               let finalEndBuilding: Building = endBuilding;
 
-              // Accessible fallback: if no route found, find nearest accessible endpoint
+              // Accessible fallback: apply 4-case logic for start/end accessibility
               if (!routePolyline && effectiveMode === 'accessible') {
                 try {
                   const walkpathsRes = await fetch('/api/walkpaths', { credentials: 'include', cache: 'no-cache' });
                   if (walkpathsRes.ok) {
                     const walkpaths = await walkpathsRes.json();
-                    const nearestEndpoint = findNearestAccessibleEndpoint(endBuilding, walkpaths);
-                    if (nearestEndpoint) {
-                      setOriginalDestinationName(endBuilding.name);
-                      setAccessibleFallbackEndpoint(nearestEndpoint);
-                      setShowAccessibleFallbackDialog(true);
-                      const endpointBuilding: Building = {
-                        id: 'accessible-endpoint',
-                        name: 'Accessible Path End',
-                        lat: nearestEndpoint.lat,
-                        lng: nearestEndpoint.lng,
-                        nodeLat: nearestEndpoint.lat,
-                        nodeLng: nearestEndpoint.lng,
-                        entranceLat: nearestEndpoint.lat,
-                        entranceLng: nearestEndpoint.lng,
-                        polygon: null,
-                        polygonColor: null,
-                        description: '',
-                        image: null,
-                        type: 'building',
-                        markerIcon: null,
-                        departments: null,
-                        polygonOpacity: null
+                    const startEndpoint = findNearestAccessibleEndpoint(startBuilding as Building, walkpaths);
+                    const destEndpoint = findNearestAccessibleEndpoint(endBuilding, walkpaths);
+
+                    // Case 2: Start disconnected, end connected
+                    if (startEndpoint) {
+                      const syntheticStart: Building = {
+                        id: 'accessible-start-endpoint', name: 'Accessible Path Start',
+                        lat: startEndpoint.lat, lng: startEndpoint.lng,
+                        nodeLat: startEndpoint.lat, nodeLng: startEndpoint.lng,
+                        entranceLat: startEndpoint.lat, entranceLng: startEndpoint.lng,
+                        polygon: null, polygonColor: null, description: '', image: null,
+                        type: 'building', markerIcon: null, departments: null, polygonOpacity: null
                       };
-                      finalEndBuilding = endpointBuilding;
+                      routePolyline = await calculateRouteClientSide(syntheticStart, endBuilding, effectiveMode);
+                      if (routePolyline) {
+                        console.log('[ACCESSIBLE] Case 2 (auto): Start disconnected, routed from nearest accessible waypoint');
+                      }
+                    }
+
+                    // Case 3: Start connected, end disconnected
+                    if (!routePolyline && destEndpoint) {
+                      const endpointBuilding: Building = {
+                        id: 'accessible-endpoint', name: 'Accessible Path End',
+                        lat: destEndpoint.lat, lng: destEndpoint.lng,
+                        nodeLat: destEndpoint.lat, nodeLng: destEndpoint.lng,
+                        entranceLat: destEndpoint.lat, entranceLng: destEndpoint.lng,
+                        polygon: null, polygonColor: null, description: '', image: null,
+                        type: 'building', markerIcon: null, departments: null, polygonOpacity: null
+                      };
                       routePolyline = await calculateRouteClientSide(startBuilding as any, endpointBuilding, effectiveMode);
-                    } else {
+                      if (routePolyline) {
+                        console.log('[ACCESSIBLE] Case 3 (auto): End disconnected, routed to nearest accessible waypoint');
+                        finalEndBuilding = endpointBuilding;
+                        setOriginalDestinationName(endBuilding.name);
+                        setAccessibleFallbackEndpoint(destEndpoint);
+                        setShowAccessibleFallbackDialog(true);
+                      }
+                    }
+
+                    // Case 4: Both disconnected
+                    if (!routePolyline && startEndpoint && destEndpoint) {
+                      const syntheticStart: Building = {
+                        id: 'accessible-start-endpoint', name: 'Accessible Path Start',
+                        lat: startEndpoint.lat, lng: startEndpoint.lng,
+                        nodeLat: startEndpoint.lat, nodeLng: startEndpoint.lng,
+                        entranceLat: startEndpoint.lat, entranceLng: startEndpoint.lng,
+                        polygon: null, polygonColor: null, description: '', image: null,
+                        type: 'building', markerIcon: null, departments: null, polygonOpacity: null
+                      };
+                      const endpointBuilding: Building = {
+                        id: 'accessible-endpoint', name: 'Accessible Path End',
+                        lat: destEndpoint.lat, lng: destEndpoint.lng,
+                        nodeLat: destEndpoint.lat, nodeLng: destEndpoint.lng,
+                        entranceLat: destEndpoint.lat, entranceLng: destEndpoint.lng,
+                        polygon: null, polygonColor: null, description: '', image: null,
+                        type: 'building', markerIcon: null, departments: null, polygonOpacity: null
+                      };
+                      routePolyline = await calculateRouteClientSide(syntheticStart, endpointBuilding, effectiveMode);
+                      if (routePolyline) {
+                        console.log('[ACCESSIBLE] Case 4 (auto): Both disconnected, routed between nearest accessible waypoints');
+                        finalEndBuilding = endpointBuilding;
+                        setOriginalDestinationName(endBuilding.name);
+                        setAccessibleFallbackEndpoint(destEndpoint);
+                        setShowAccessibleFallbackDialog(true);
+                      }
+                    }
+
+                    if (!routePolyline) {
                       toast({
                         title: "No Accessible Route",
                         description: "No wheelchair-accessible path found to this destination.",
@@ -2835,7 +2877,8 @@ export default function Navigation() {
       let routePolyline: LatLng[] | null = null;
       let needsAccessibleFallback = false;
 
-      // Pre-check for accessible mode: verify destination is actually reachable via accessible paths
+      // Pre-check for accessible mode: verify route is reachable via accessible paths
+      // Apply 4-case logic: check both start and end accessibility
       if (mode === 'accessible') {
         try {
           const walkpathsRes = await fetch('/api/walkpaths', { 
@@ -2847,8 +2890,99 @@ export default function Navigation() {
             const testRoute = findShortestPath(selectedStart as Building, selectedEnd, walkpaths, 'accessible');
             
             if (!testRoute || testRoute.length === 0) {
-              console.log('[ACCESSIBLE] Destination not reachable via accessible paths - triggering fallback');
-              needsAccessibleFallback = true;
+              console.log('[ACCESSIBLE] Direct accessible path not found — applying 4-case logic');
+              const startEndpoint = findNearestAccessibleEndpoint(selectedStart as Building, walkpaths);
+              const destEndpoint = findNearestAccessibleEndpoint(selectedEnd, walkpaths);
+
+              // Case 2: Start disconnected, end connected
+              if (startEndpoint) {
+                const syntheticStart: Building = {
+                  id: 'accessible-start-endpoint', name: 'Accessible Path Start',
+                  lat: startEndpoint.lat, lng: startEndpoint.lng,
+                  nodeLat: startEndpoint.lat, nodeLng: startEndpoint.lng,
+                  entranceLat: startEndpoint.lat, entranceLng: startEndpoint.lng,
+                  polygon: null, polygonColor: null, description: '', image: null,
+                  type: 'building', markerIcon: null, departments: null, polygonOpacity: null
+                };
+                const case2Route = findShortestPath(syntheticStart, selectedEnd, walkpaths, 'accessible');
+                if (case2Route && case2Route.length > 0) {
+                  console.log('[ACCESSIBLE] Case 2: Start disconnected, routing from nearest accessible waypoint to destination');
+                  routePolyline = case2Route;
+                }
+              }
+
+              // Case 3: Start connected, end disconnected
+              if (!routePolyline && destEndpoint) {
+                const endpointBuilding: Building = {
+                  id: 'accessible-endpoint', name: 'Accessible Path End',
+                  lat: destEndpoint.lat, lng: destEndpoint.lng,
+                  nodeLat: destEndpoint.lat, nodeLng: destEndpoint.lng,
+                  entranceLat: destEndpoint.lat, entranceLng: destEndpoint.lng,
+                  polygon: null, polygonColor: null, description: '', image: null,
+                  type: 'building', markerIcon: null, departments: null, polygonOpacity: null
+                };
+                const case3Route = findShortestPath(selectedStart as Building, endpointBuilding, walkpaths, 'accessible');
+                if (case3Route && case3Route.length > 0) {
+                  console.log('[ACCESSIBLE] Case 3: End disconnected, routing to nearest accessible waypoint');
+                  routePolyline = case3Route;
+                  finalEnd = endpointBuilding;
+                  needsAccessibleFallback = true;
+                  setOriginalDestinationName(selectedEnd.name);
+                  setAccessibleFallbackEndpoint(destEndpoint);
+                  setShowAccessibleFallbackDialog(true);
+                }
+              }
+
+              // Case 4: Both disconnected
+              if (!routePolyline && startEndpoint && destEndpoint) {
+                const syntheticStart: Building = {
+                  id: 'accessible-start-endpoint', name: 'Accessible Path Start',
+                  lat: startEndpoint.lat, lng: startEndpoint.lng,
+                  nodeLat: startEndpoint.lat, nodeLng: startEndpoint.lng,
+                  entranceLat: startEndpoint.lat, entranceLng: startEndpoint.lng,
+                  polygon: null, polygonColor: null, description: '', image: null,
+                  type: 'building', markerIcon: null, departments: null, polygonOpacity: null
+                };
+                const endpointBuilding: Building = {
+                  id: 'accessible-endpoint', name: 'Accessible Path End',
+                  lat: destEndpoint.lat, lng: destEndpoint.lng,
+                  nodeLat: destEndpoint.lat, nodeLng: destEndpoint.lng,
+                  entranceLat: destEndpoint.lat, entranceLng: destEndpoint.lng,
+                  polygon: null, polygonColor: null, description: '', image: null,
+                  type: 'building', markerIcon: null, departments: null, polygonOpacity: null
+                };
+                const case4Route = findShortestPath(syntheticStart, endpointBuilding, walkpaths, 'accessible');
+                if (case4Route && case4Route.length > 0) {
+                  console.log('[ACCESSIBLE] Case 4: Both disconnected, routing between nearest accessible waypoints');
+                  routePolyline = case4Route;
+                  finalEnd = endpointBuilding;
+                  needsAccessibleFallback = true;
+                  setOriginalDestinationName(selectedEnd.name);
+                  setAccessibleFallbackEndpoint(destEndpoint);
+                  setShowAccessibleFallbackDialog(true);
+                }
+              }
+
+              // If still no route via any accessible case, try destination-only fallback with walking paths
+              if (!routePolyline && destEndpoint) {
+                console.log('[ACCESSIBLE] Accessible cases exhausted — trying walking path to nearest endpoint');
+                const endpointBuilding: Building = {
+                  id: 'accessible-endpoint', name: 'Accessible Path End',
+                  lat: destEndpoint.lat, lng: destEndpoint.lng,
+                  nodeLat: destEndpoint.lat, nodeLng: destEndpoint.lng,
+                  entranceLat: destEndpoint.lat, entranceLng: destEndpoint.lng,
+                  polygon: null, polygonColor: null, description: '', image: null,
+                  type: 'building', markerIcon: null, departments: null, polygonOpacity: null
+                };
+                finalEnd = endpointBuilding;
+                needsAccessibleFallback = true;
+                setOriginalDestinationName(selectedEnd.name);
+                setAccessibleFallbackEndpoint(destEndpoint);
+                setShowAccessibleFallbackDialog(true);
+              } else if (!routePolyline && !destEndpoint) {
+                console.log('[ACCESSIBLE] ❌ No accessible endpoints found at all');
+                needsAccessibleFallback = true;
+              }
             }
           }
         } catch (error) {
@@ -2857,69 +2991,12 @@ export default function Navigation() {
       }
 
       // If pre-check passed or not accessible mode, attempt normal routing
-      if (!needsAccessibleFallback) {
+      if (!needsAccessibleFallback && !routePolyline) {
         routePolyline = await calculateRouteClientSide(
           selectedStart,
-          selectedEnd,
+          finalEnd,
           mode
         );
-      }
-
-      // Fallback for accessible mode: if no route found or pre-check failed, find nearest accessible endpoint
-      if ((!routePolyline || needsAccessibleFallback) && mode === 'accessible') {
-        console.log('[ACCESSIBLE] No route found to destination. Finding nearest accessible endpoint...');
-        
-        try {
-          const walkpathsRes = await fetch('/api/walkpaths', { 
-            credentials: "include",
-            cache: 'no-cache'
-          });
-          if (!walkpathsRes.ok) throw new Error('Failed to fetch accessible paths');
-          const walkpaths = await walkpathsRes.json();
-          
-          const nearestEndpoint = findNearestAccessibleEndpoint(
-            selectedEnd,
-            walkpaths
-          );
-          
-          if (nearestEndpoint) {
-            console.log(`[ACCESSIBLE] ✅ Found nearest accessible endpoint at (${nearestEndpoint.lat.toFixed(5)}, ${nearestEndpoint.lng.toFixed(5)})`);
-            setOriginalDestinationName(selectedEnd.name);
-            setAccessibleFallbackEndpoint(nearestEndpoint);
-            setShowAccessibleFallbackDialog(true);
-            
-            // Create synthetic building at endpoint for routing
-            const endpointBuilding: Building = {
-              id: 'accessible-endpoint',
-              name: 'Accessible Path End',
-              lat: nearestEndpoint.lat,
-              lng: nearestEndpoint.lng,
-              nodeLat: nearestEndpoint.lat,
-              nodeLng: nearestEndpoint.lng,
-              entranceLat: nearestEndpoint.lat,
-              entranceLng: nearestEndpoint.lng,
-              polygon: null,
-              polygonColor: null,
-              description: '',
-              image: null,
-              type: 'building',
-              markerIcon: null,
-              departments: null,
-              polygonOpacity: null
-            };
-            
-            finalEnd = endpointBuilding;
-            routePolyline = await calculateRouteClientSide(
-              selectedStart,
-              endpointBuilding,
-              mode
-            );
-          } else {
-            console.log('[ACCESSIBLE] ❌ No accessible endpoints found');
-          }
-        } catch (fallbackError) {
-          console.error('[ACCESSIBLE] Error searching for accessible endpoint:', fallbackError);
-        }
       }
 
       if (!routePolyline) {
@@ -4100,6 +4177,8 @@ export default function Navigation() {
     // Single destination without waypoints
     if (waypointBuildings.length === 0) {
       try {
+        let dialogEffectiveStart: Building | typeof KIOSK_LOCATION = start;
+
         // Pre-check for accessible routes to detect unreachable destinations
         if (travelMode === 'accessible') {
           // Fetch walkpaths for accessible route checking
@@ -4124,43 +4203,62 @@ export default function Navigation() {
               console.log('[ACCESSIBLE] Connected accessible path exists, proceeding with normal routing');
               // Fall through to normal routing below
             } else {
-              // No connected path - find nearest accessible path waypoint to destination
-              console.log('[ACCESSIBLE] NO connected accessible path, finding nearest accessible waypoint');
-              const nearestWaypoint = findNearestAccessibleEndpoint(
-                directionsDestination,
-                walkpaths
-              );
-              
-              if (nearestWaypoint) {
-                // Accessible waypoint found - show fallback dialog
-                console.log('[ACCESSIBLE] Nearest accessible waypoint found, showing fallback dialog');
-                setOriginalDestinationName(directionsDestination.name);
-                setSelectedStart(start);
-                setSelectedEnd(directionsDestination);
-                setMode(travelMode);
-                setAccessibleFallbackEndpoint(nearestWaypoint);
-                setShowAccessibleFallbackDialog(true);
-                const duration = performance.now() - routeStartTime;
-                trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'waypoint', source: 'dialog' });
-                return;
-              } else {
-                // Completely unreachable - no accessible paths available
-                console.log('[ACCESSIBLE] NO accessible paths available on campus');
-                setOriginalDestinationName(directionsDestination.name);
-                setSelectedStart(start);
-                setSelectedEnd(directionsDestination);
-                setMode(travelMode);
-                setAccessibleFallbackEndpoint(null); // Null means completely unreachable
-                setShowAccessibleFallbackDialog(true);
-                const duration = performance.now() - routeStartTime;
-                trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'unreachable', source: 'dialog' });
-                return;
+              // Apply 4-case logic for start/end accessibility
+              console.log('[ACCESSIBLE] NO connected accessible path — applying 4-case logic');
+              const startEndpoint = findNearestAccessibleEndpoint(start as Building, walkpaths);
+              const destEndpoint = findNearestAccessibleEndpoint(directionsDestination, walkpaths);
+              let resolved = false;
+
+              // Case 2: Start disconnected, end connected
+              if (startEndpoint) {
+                const syntheticStart: Building = {
+                  id: 'accessible-start-endpoint', name: 'Accessible Path Start',
+                  lat: startEndpoint.lat, lng: startEndpoint.lng,
+                  nodeLat: startEndpoint.lat, nodeLng: startEndpoint.lng,
+                  entranceLat: startEndpoint.lat, entranceLng: startEndpoint.lng,
+                  polygon: null, polygonColor: null, description: '', image: null,
+                  type: 'building', markerIcon: null, departments: null, polygonOpacity: null
+                };
+                const case2Route = findShortestPath(syntheticStart, directionsDestination, walkpaths, 'accessible');
+                if (case2Route && case2Route.length > 0) {
+                  console.log('[ACCESSIBLE] Case 2 (dialog): Start disconnected, destination reachable — using synthetic start for routing');
+                  resolved = true;
+                  dialogEffectiveStart = syntheticStart;
+                }
+              }
+
+              if (!resolved) {
+                // Case 3 or 4: destination needs fallback
+                if (destEndpoint) {
+                  console.log('[ACCESSIBLE] Destination disconnected — showing fallback dialog');
+                  setOriginalDestinationName(directionsDestination.name);
+                  setSelectedStart(start);
+                  setSelectedEnd(directionsDestination);
+                  setMode(travelMode);
+                  setAccessibleFallbackEndpoint(destEndpoint);
+                  setShowAccessibleFallbackDialog(true);
+                  const duration = performance.now() - routeStartTime;
+                  trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'waypoint', source: 'dialog' });
+                  return;
+                } else {
+                  // Completely unreachable
+                  console.log('[ACCESSIBLE] NO accessible paths available on campus');
+                  setOriginalDestinationName(directionsDestination.name);
+                  setSelectedStart(start);
+                  setSelectedEnd(directionsDestination);
+                  setMode(travelMode);
+                  setAccessibleFallbackEndpoint(null);
+                  setShowAccessibleFallbackDialog(true);
+                  const duration = performance.now() - routeStartTime;
+                  trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode: travelMode, routeType: 'standard', routeFound: false, accessible: 'unreachable', source: 'dialog' });
+                  return;
+                }
               }
             }
           }
         }
 
-        const routePolyline = await calculateRouteClientSide(start, directionsDestination, travelMode);
+        const routePolyline = await calculateRouteClientSide(dialogEffectiveStart, directionsDestination, travelMode);
         
         if (!routePolyline) {
           toast({

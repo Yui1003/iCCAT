@@ -116,6 +116,17 @@ export default function MobileNavigation() {
     setCompletedPhases([]);
   };
 
+  const handleGoBackPhase = () => {
+    if (!route || currentPhaseIndex <= 0) return;
+    const prevIndex = currentPhaseIndex - 1;
+    setCompletedPhases(completedPhases.filter(idx => idx !== prevIndex));
+    setCurrentPhaseIndex(prevIndex);
+    toast({
+      title: "Previous Phase",
+      description: `Going back to ${route.phases[prevIndex].endName}`,
+    });
+  };
+
   const handleAdvancePhase = () => {
     if (!route) return;
 
@@ -498,7 +509,13 @@ export default function MobileNavigation() {
         waypoint: '#f59e0b'    // Amber/Orange for waypoints
       };
 
-      // Helper function to draw a building polygon (tracked for cleanup)
+      const escapeHtml = (str: string) => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      };
+
+      // Helper function to draw a building polygon with permanent name label (tracked for cleanup)
       const drawBuildingPolygon = (buildingId: string, color: string, label: string) => {
         const building = buildings.find(b => b.id === buildingId);
         if (building?.polygon && Array.isArray(building.polygon) && building.polygon.length >= 3) {
@@ -508,43 +525,50 @@ export default function MobileNavigation() {
             fillColor: color,
             fillOpacity: 0.35,
             weight: 3,
-          }).addTo(map).bindPopup(label);
+          }).addTo(map).bindTooltip(
+            `<strong>${escapeHtml(building.name)}</strong><br/><span style="font-size:10px">${escapeHtml(label)}</span>`,
+            { permanent: true, direction: 'center', className: 'building-nav-label' }
+          );
           navigationLayersRef.current.push(polygon);
           console.log(`[MOBILE-NAV] Drew ${label} polygon for ${building.name}`);
         }
       };
 
-      // Draw start building polygon (green)
-      if (route.startId) {
-        drawBuildingPolygon(route.startId, NAVIGATION_COLORS.start, 'Start');
-      }
+      if (isPreviewMode) {
+        // Preview mode: draw all buildings at once (start, destination, waypoints, parking)
+        if (route.startId) {
+          drawBuildingPolygon(route.startId, NAVIGATION_COLORS.start, 'Start');
+        }
 
-      // Draw destination building polygon (red) - use destinationBuildingId or endId
-      const destinationId = route.destinationBuildingId || route.endId;
-      if (destinationId) {
-        drawBuildingPolygon(destinationId, NAVIGATION_COLORS.end, 'Destination');
-      }
+        const destinationId = route.destinationBuildingId || route.endId;
+        if (destinationId) {
+          drawBuildingPolygon(destinationId, NAVIGATION_COLORS.end, 'Destination');
+        }
 
-      // Draw waypoint building polygons (amber/orange)
-      if (route.waypoints && Array.isArray(route.waypoints)) {
-        route.waypoints.forEach((waypointId: string, index: number) => {
-          drawBuildingPolygon(waypointId, NAVIGATION_COLORS.waypoint, `Stop ${index + 1}`);
-        });
-      }
+        if (route.waypoints && Array.isArray(route.waypoints)) {
+          route.waypoints.forEach((waypointId: string, index: number) => {
+            drawBuildingPolygon(waypointId, NAVIGATION_COLORS.waypoint, `Stop ${index + 1}`);
+          });
+        }
 
-      // Draw parking building polygon (blue) - for driving modes
-      // For two-phase driving routes: Phase 1 ends at parking, Phase 2 walks from parking to destination
-      if (route.mode === 'driving' && route.phases.length >= 2) {
-        const firstPhase = route.phases[0];
-        const secondPhase = route.phases[1];
-        
-        // In a two-phase driving route:
-        // - First phase: start → parking (driving)
-        // - Second phase: parking → destination (walking)
-        // The parking is the endId of first phase AND startId of second phase
-        if (firstPhase.endId && secondPhase?.startId === firstPhase.endId && firstPhase.endId !== destinationId) {
-          drawBuildingPolygon(firstPhase.endId, NAVIGATION_COLORS.parking, 'Parking');
-          console.log(`[MOBILE-NAV] Detected parking from phase transition: ${firstPhase.endId}`);
+        if (route.mode === 'driving' && route.phases.length >= 2) {
+          const firstPhase = route.phases[0];
+          const secondPhase = route.phases[1];
+          if (firstPhase.endId && secondPhase?.startId === firstPhase.endId && firstPhase.endId !== destinationId) {
+            drawBuildingPolygon(firstPhase.endId, NAVIGATION_COLORS.parking, 'Parking');
+          }
+        }
+      } else {
+        // Active mode: draw only current phase's start and destination buildings
+        const currentPhase = route.phases[currentPhaseIndex];
+        if (currentPhase) {
+          if (currentPhase.startId) {
+            drawBuildingPolygon(currentPhase.startId, NAVIGATION_COLORS.start, 'Phase Start');
+          }
+          const phaseDestId = currentPhase.originalEndId ?? currentPhase.endId;
+          if (phaseDestId) {
+            drawBuildingPolygon(phaseDestId, NAVIGATION_COLORS.end, 'Phase Destination');
+          }
         }
       }
 
@@ -1108,9 +1132,16 @@ export default function MobileNavigation() {
                   </span>
                 </div>
                 {currentPhase.note && (
-                  <div className="mt-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-md" data-testid="text-phase-note">
-                    <p className="text-xs text-blue-700 dark:text-blue-300">{currentPhase.note}</p>
-                  </div>
+                  currentPhase.note.startsWith('[accessible-endpoint]') ? (
+                    <div className="mt-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-md" data-testid="text-phase-note-accessible">
+                      <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 mb-0.5">⚠️ Nearest Accessible Endpoint</p>
+                      <p className="text-xs text-yellow-700 dark:text-yellow-400">{currentPhase.note.replace('[accessible-endpoint] ', '')}</p>
+                    </div>
+                  ) : (
+                    <div className="mt-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-md" data-testid="text-phase-note">
+                      <p className="text-xs text-blue-700 dark:text-blue-300">{currentPhase.note}</p>
+                    </div>
+                  )
                 )}
               </>
             ) : (
@@ -1286,6 +1317,9 @@ export default function MobileNavigation() {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-foreground truncate">
                               {phase.startName}
+                              {phase.note?.startsWith('[accessible-endpoint]') && (
+                                <span className="ml-1 text-yellow-600 dark:text-yellow-400" title="Nearest accessible endpoint">⚠️</span>
+                              )}
                             </p>
                             {/* Hide distance and time for indoor phases */}
                             {!isIndoorPhase && (
@@ -1490,20 +1524,47 @@ export default function MobileNavigation() {
               ) : (
               <>
                 {!allOutdoorPhasesCompleted && (
-                  <Button
-                    className="w-full text-sm"
-                    size="sm"
-                    onClick={handleAdvancePhase}
-                    data-testid="button-advance-phase"
-                    style={{
-                      backgroundColor: phaseColor,
-                      color: 'white',
-                    }}
-                  >
-                    {currentPhaseIndex < route.phases.length - 1
-                      ? `Reached ${currentPhase.endName}`
-                      : 'Complete'}
-                  </Button>
+                  <>
+                    {currentPhase.note?.startsWith('[accessible-endpoint]') && (
+                      <div className="mb-2 p-2.5 rounded-md bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">
+                        <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300 mb-0.5">⚠️ Nearest Accessible Endpoint</p>
+                        <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                          You've reached the nearest accessible point to <strong>{currentPhase.endName}</strong>. The building entrance may require a non-accessible path from here.
+                        </p>
+                      </div>
+                    )}
+                    <Button
+                      className="w-full text-sm"
+                      size="sm"
+                      onClick={handleAdvancePhase}
+                      data-testid="button-advance-phase"
+                      style={{
+                        backgroundColor: phaseColor,
+                        color: 'white',
+                      }}
+                    >
+                      {currentPhase.note?.startsWith('[accessible-endpoint]')
+                        ? (currentPhaseIndex < route.phases.length - 1
+                          ? `I've Reached ${currentPhase.endName} — Continue`
+                          : `I've Reached ${currentPhase.endName} — Done`)
+                        : (currentPhaseIndex < route.phases.length - 1
+                          ? `Reached ${currentPhase.endName}`
+                          : 'Complete')}
+                    </Button>
+
+                    {currentPhaseIndex > 0 && (
+                      <Button
+                        className="w-full text-sm"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleGoBackPhase}
+                        data-testid="button-go-back-phase"
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Go Back to Previous Phase
+                      </Button>
+                    )}
+                  </>
                 )}
 
                 {allOutdoorPhasesCompleted && hasIndoorDestination && (

@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.6.2 DEV
+V3.6.3 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -71,3 +71,5 @@ MULTI PHASE FOR STOP BY
         Mobile View
 3.6.2 - Admin Analytics Dark Mode
         Mobile View for Accessible Multi Phase
+3.6.3 - Mobile View Building names and markers
+        Accessible mode multi phase with no PWD path connected.

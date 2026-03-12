@@ -250,45 +250,77 @@ export async function calculateMultiPhaseRoute(
     let polyline = findShortestPath(segmentStart, segmentEnd, paths, mode);
     let phaseEndName = originalEndName;
 
-    // For accessible mode: if no direct accessible path, try 3-tier fallback
+    // For accessible mode: implement 4-case routing based on start/end accessibility
+    // Case 1: Both connected → direct path (already attempted above)
+    // Case 2: Start disconnected, end connected → start from nearest accessible waypoint to start, route to end
+    // Case 3: Start connected, end disconnected → start from start, route to nearest accessible waypoint to end
+    // Case 4: Both disconnected → route between nearest accessible waypoints for both
     if (!polyline && mode === 'accessible') {
-      const nearestEndpoint = findNearestAccessibleEndpoint(originalSegmentEnd as Building, paths as any);
+      const startEndpoint = findNearestAccessibleEndpoint(segmentStart, paths);
+      const destEndpoint = findNearestAccessibleEndpoint(originalSegmentEnd, paths);
+      let destWasSubstituted = false;
 
-      if (nearestEndpoint) {
-        console.warn(`[MULTI-PHASE] Stop "${originalEndName}" has no accessible path — trying nearest accessible endpoint.`);
-        const substitute = makeSyntheticBuilding(
-          `Nearest Accessible Point to ${originalEndName}`,
-          nearestEndpoint.lat,
-          nearestEndpoint.lng
+      // Case 2: Start disconnected, end connected
+      if (!polyline && startEndpoint) {
+        const syntheticStart = makeSyntheticBuilding(
+          `Nearest Accessible Point to ${segmentStart.name}`,
+          startEndpoint.lat,
+          startEndpoint.lng
         );
-
-        // Tier 1: accessible routing to nearest endpoint
-        polyline = findShortestPath(segmentStart, substitute, paths, 'accessible');
-
-        // Tier 2: regular walkpaths to nearest endpoint
-        if (!polyline) {
-          console.warn(`[MULTI-PHASE] Tier 1 failed — trying regular walkpaths to nearest endpoint.`);
-          polyline = findShortestPath(segmentStart, substitute, paths, 'walking');
+        syntheticStart.id = 'accessible-start-endpoint';
+        const attempt = findShortestPath(syntheticStart, originalSegmentEnd, paths, 'accessible');
+        if (attempt) {
+          console.log(`[MULTI-PHASE] Case 2: Start "${segmentStart.name}" disconnected — routing from nearest accessible waypoint to "${originalEndName}".`);
+          polyline = attempt;
         }
-
-        if (polyline) {
-          // Route this phase to the nearest endpoint.
-          // IMPORTANT: do NOT update allStops[i+1] — subsequent phases still start from the original building.
-          segmentEnd = substitute;
-          // Keep the phase endName as the original building so UI says "Walk to [Building]"
-          phaseEndName = originalEndName;
-        }
-
-        // Mark this stop as inaccessible regardless of whether endpoint routing succeeded
-        inaccessibleStops.push({ phaseIndex: i, buildingName: originalEndName, nearestEndpoint });
-      } else {
-        // No nearest endpoint found — still mark as inaccessible
-        inaccessibleStops.push({ phaseIndex: i, buildingName: originalEndName, nearestEndpoint: null });
       }
 
-      // Tier 3 last resort: if endpoint routing also failed, route directly to the building via regular walkpaths
+      // Case 3: Start connected, end disconnected
+      if (!polyline && destEndpoint) {
+        const syntheticDest = makeSyntheticBuilding(
+          `Nearest Accessible Point to ${originalEndName}`,
+          destEndpoint.lat,
+          destEndpoint.lng
+        );
+        const attempt = findShortestPath(segmentStart, syntheticDest, paths, 'accessible');
+        if (attempt) {
+          console.log(`[MULTI-PHASE] Case 3: End "${originalEndName}" disconnected — routing to nearest accessible waypoint.`);
+          polyline = attempt;
+          segmentEnd = syntheticDest;
+          destWasSubstituted = true;
+        }
+      }
+
+      // Case 4: Both disconnected
+      if (!polyline && startEndpoint && destEndpoint) {
+        const syntheticStart = makeSyntheticBuilding(
+          `Nearest Accessible Point to ${segmentStart.name}`,
+          startEndpoint.lat,
+          startEndpoint.lng
+        );
+        syntheticStart.id = 'accessible-start-endpoint';
+        const syntheticDest = makeSyntheticBuilding(
+          `Nearest Accessible Point to ${originalEndName}`,
+          destEndpoint.lat,
+          destEndpoint.lng
+        );
+        const attempt = findShortestPath(syntheticStart, syntheticDest, paths, 'accessible');
+        if (attempt) {
+          console.log(`[MULTI-PHASE] Case 4: Both "${segmentStart.name}" and "${originalEndName}" disconnected — routing between nearest accessible waypoints.`);
+          polyline = attempt;
+          segmentEnd = syntheticDest;
+          destWasSubstituted = true;
+        }
+      }
+
+      // Mark as inaccessible ONLY when the destination was substituted (cases 3 & 4)
+      if (destWasSubstituted) {
+        inaccessibleStops.push({ phaseIndex: i, buildingName: originalEndName, nearestEndpoint: destEndpoint });
+      }
+
+      // Last resort: if all accessible cases failed, try regular walkpaths
       if (!polyline) {
-        console.warn(`[MULTI-PHASE] Endpoint routing failed — last resort: regular walkpaths directly to ${originalEndName}.`);
+        console.warn(`[MULTI-PHASE] All accessible cases failed — last resort: regular walkpaths directly to ${originalEndName}.`);
         segmentEnd = originalSegmentEnd;
         polyline = findShortestPath(segmentStart, originalSegmentEnd, paths, 'walking');
         phaseEndName = originalEndName;
@@ -328,6 +360,8 @@ export async function calculateMultiPhaseRoute(
 
     if (segmentEnd.id === 'accessible-endpoint') {
       phase.note = `[accessible-endpoint] Nearest accessible point to ${originalEndName} — the building entrance may require a non-accessible path from here.`;
+      phase.originalEndId = originalSegmentEnd.id;
+      phase.originalEndName = originalEndName;
     }
 
     phases.push(phase);

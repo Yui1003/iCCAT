@@ -335,6 +335,8 @@ export interface RoutePhase {
   startId: string; // Building ID
   endId: string; // Building ID
   note?: string; // Optional advisory note for this phase (e.g., "Car is parked nearby, walk to destination")
+  originalEndId?: string; // Original destination building ID when endpoint was substituted (accessible fallback)
+  originalEndName?: string; // Original destination building name when endpoint was substituted
 }
 
 export interface NavigationRoute {
