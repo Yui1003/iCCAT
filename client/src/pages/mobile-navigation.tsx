@@ -103,7 +103,7 @@ export default function MobileNavigation() {
       };
     }
     if (urlRoomNodeId && indoorNodes.length > 0) {
-      const fallbackNode = indoorNodes.find(n => n.id === urlRoomNodeId && n.type === 'room');
+      const fallbackNode = indoorNodes.find(n => n.id === urlRoomNodeId);
       if (fallbackNode) {
         const nodeFloor = floors.find(f => f.id === fallbackNode.floorId);
         const nodeBuildingId = nodeFloor?.buildingId || route?.endId || null;
@@ -197,7 +197,7 @@ export default function MobileNavigation() {
       return;
     }
 
-    const roomNode = indoorNodes.find(n => n.id === resolvedIndoorData.roomId && n.type === 'room');
+    const roomNode = indoorNodes.find(n => n.id === resolvedIndoorData.roomId);
     if (!roomNode) {
       console.error('[MOBILE] Destination room not found:', resolvedIndoorData.roomId);
       toast({
