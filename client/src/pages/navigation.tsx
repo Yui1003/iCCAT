@@ -87,6 +87,7 @@ export default function Navigation() {
   const [directionsDestination, setDirectionsDestination] = useState<Building | null>(null);
   const [showQRCode, setShowQRCode] = useState(false);
   const [savedRouteId, setSavedRouteId] = useState<string | null>(null);
+  const [savedRouteRoomNodeId, setSavedRouteRoomNodeId] = useState<string | null>(null);
   const [waypoints, setWaypoints] = useState<string[]>([]);
   const [dragWaypointIndex, setDragWaypointIndex] = useState<number | null>(null);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
@@ -299,6 +300,8 @@ export default function Navigation() {
         // Auto-generate route if requested
         if (autoGenerate && !autoGenRanRef.current) {
           autoGenRanRef.current = true;
+          setIsGeneratingRoute(true);
+          setSavedRouteRoomNodeId(null);
           setTimeout(async () => {
             const routeStartTime = performance.now();
             try {
@@ -340,6 +343,7 @@ export default function Navigation() {
                           routeData.destinationBuildingId = endBuilding.id;
                           routeData.destinationFloorId = autoGenRoomData.floorId;
                           routeData.destinationRoomName = autoGenRoomData.label || 'Room';
+                          setSavedRouteRoomNodeId(autoGenRoomData.id);
                         }
 
                         const res = await apiRequest('POST', '/api/routes', routeData);
@@ -437,6 +441,7 @@ export default function Navigation() {
                         routeData.destinationBuildingId = endBuilding.id;
                         routeData.destinationFloorId = autoGenRoomData.floorId;
                         routeData.destinationRoomName = autoGenRoomData.label || 'Room';
+                        setSavedRouteRoomNodeId(autoGenRoomData.id);
                       }
 
                       const res = await apiRequest('POST', '/api/routes', routeData);
@@ -502,6 +507,7 @@ export default function Navigation() {
                       routeData.destinationBuildingId = endBuilding.id;
                       routeData.destinationFloorId = autoGenRoomData.floorId;
                       routeData.destinationRoomName = autoGenRoomData.label || 'Room';
+                      setSavedRouteRoomNodeId(autoGenRoomData.id);
                     }
 
                     const res = await apiRequest('POST', '/api/routes', routeData);
@@ -659,6 +665,7 @@ export default function Navigation() {
                     routeData.destinationBuildingId = endBuilding.id;
                     routeData.destinationFloorId = autoGenRoomData.floorId;
                     routeData.destinationRoomName = autoGenRoomData.label || 'Room';
+                    setSavedRouteRoomNodeId(autoGenRoomData.id);
                   }
 
                   const res = await apiRequest('POST', '/api/routes', routeData);
@@ -681,6 +688,8 @@ export default function Navigation() {
               console.error('Error generating auto route:', error);
               const duration = performance.now() - routeStartTime;
               trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { error: true, source: 'autoGenerate' });
+            } finally {
+              setIsGeneratingRoute(false);
             }
           }, 100);
         }
@@ -1498,6 +1507,7 @@ export default function Navigation() {
                   routeData.destinationBuildingId = end.id;
                   routeData.destinationFloorId = destinationRoom.floorId;
                   routeData.destinationRoomName = destinationRoom.label || 'Room';
+                  setSavedRouteRoomNodeId(destinationRoom.id);
                 }
                 const res = await apiRequest('POST', '/api/routes', routeData);
                 const response = await res.json();
@@ -1525,6 +1535,7 @@ export default function Navigation() {
                   routeData.destinationBuildingId = end.id;
                   routeData.destinationFloorId = destinationRoom.floorId;
                   routeData.destinationRoomName = destinationRoom.label || 'Room';
+                  setSavedRouteRoomNodeId(destinationRoom.id);
                 }
                 const res = await apiRequest('POST', '/api/routes', routeData);
                 const response = await res.json();
@@ -1658,6 +1669,7 @@ export default function Navigation() {
               routeData.destinationBuildingId = end.id;
               routeData.destinationFloorId = destinationRoom.floorId;
               routeData.destinationRoomName = destinationRoom.label || 'Room';
+              setSavedRouteRoomNodeId(destinationRoom.id);
             }
             const res = await apiRequest('POST', '/api/routes', routeData);
             const response = await res.json();
@@ -1709,6 +1721,7 @@ export default function Navigation() {
                 routeData.destinationBuildingId = end.id;
                 routeData.destinationFloorId = destinationRoom.floorId;
                 routeData.destinationRoomName = destinationRoom.label || 'Room';
+                setSavedRouteRoomNodeId(destinationRoom.id);
               }
               const res = await apiRequest('POST', '/api/routes', routeData);
               const response = await res.json();
@@ -1736,6 +1749,7 @@ export default function Navigation() {
                 routeData.destinationBuildingId = end.id;
                 routeData.destinationFloorId = destinationRoom.floorId;
                 routeData.destinationRoomName = destinationRoom.label || 'Room';
+                setSavedRouteRoomNodeId(destinationRoom.id);
               }
               const res = await apiRequest('POST', '/api/routes', routeData);
               const response = await res.json();
@@ -2070,6 +2084,7 @@ export default function Navigation() {
             routeData.destinationBuildingId = end.id;
             routeData.destinationFloorId = destinationRoom.floorId;
             routeData.destinationRoomName = destinationRoom.label || 'Room';
+            setSavedRouteRoomNodeId(destinationRoom.id);
           }
 
           const res = await apiRequest('POST', '/api/routes', routeData);
@@ -2129,6 +2144,7 @@ export default function Navigation() {
     originParking: Building | null
   ) => {
     setIsGeneratingRoute(true);
+    setSavedRouteRoomNodeId(null);
     try {
       const WALK_PROXIMITY_THRESHOLD = 100;
       const phases: NavigationRoute['phases'] = [];
@@ -2441,6 +2457,7 @@ export default function Navigation() {
     vehicleType: VehicleType
   ): Promise<NavigationRoute | null> => {
     setIsGeneratingRoute(true);
+    setSavedRouteRoomNodeId(null);
     try {
       // SCENARIO 1: Destination is a matching parking lot - just drive there directly
       if (isParkingForVehicle(end, vehicleType)) {
@@ -2630,6 +2647,7 @@ export default function Navigation() {
     }
 
     setIsGeneratingRoute(true);
+    setSavedRouteRoomNodeId(null);
     try {
       // Multi-stop navigation: use multi-phase route calculator
       if (validWaypoints.length > 0) {
@@ -3249,6 +3267,7 @@ export default function Navigation() {
     setVehicleType(null);
     setPendingNavigationData(null);
     setSavedRouteId(null);
+    setSavedRouteRoomNodeId(null);
     setWaypoints([]);
     setNavigationPhase(null);
     setActiveNavPhaseIndex(null);
@@ -4067,6 +4086,7 @@ export default function Navigation() {
     if (!directionsDestination) return;
 
     setIsGeneratingRoute(true);
+    setSavedRouteRoomNodeId(null);
     const routeStartTime = performance.now();
 
     try {
@@ -4343,6 +4363,7 @@ export default function Navigation() {
             routeData.destinationBuildingId = directionsDestination.id;
             routeData.destinationFloorId = destinationRoomData.floorId;
             routeData.destinationRoomName = destinationRoomData.label || selectedRoomForNav?.name || 'Room';
+            setSavedRouteRoomNodeId(destinationRoomData.id);
           }
 
           const res = await apiRequest('POST', '/api/routes', routeData);
@@ -5771,7 +5792,7 @@ export default function Navigation() {
           open={showQRCode}
           onClose={() => setShowQRCode(false)}
           routeId={savedRouteId}
-          roomNodeId={new URLSearchParams(window.location.search).get('roomNode')}
+          roomNodeId={savedRouteRoomNodeId}
         />
       )}
 
