@@ -1,6 +1,6 @@
 # iCCAT
 
-V3.6.7 DEV
+V3.6.8 DEV
 
 -------------- WHAT'S NEW ---------------------
 
@@ -80,3 +80,4 @@ MULTI PHASE FOR STOP BY
 3.6.7 - Fixed Mobile Navigation Caching (removed)
         Fixed Mobile Navigation Indoor Navigation not Imported
         Fixed Events Indoor Navigation
+3.6.8 - Fixed Mobile Navigation to read all indoor node types
