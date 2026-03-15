@@ -324,6 +324,7 @@ export default function Navigation() {
 
                   if (waypointIds.length === 0) {
                     const twoPhaseRoute = await generateTwoPhaseRoute(startBuilding as any, endBuilding, vehicleParam);
+                    if (twoPhaseRoute === 'pending') return;
                     if (twoPhaseRoute) {
                       setRoute(twoPhaseRoute);
 
@@ -2455,7 +2456,7 @@ export default function Navigation() {
     start: Building | typeof KIOSK_LOCATION,
     end: Building,
     vehicleType: VehicleType
-  ): Promise<NavigationRoute | null> => {
+  ): Promise<NavigationRoute | 'pending' | null> => {
     setIsGeneratingRoute(true);
     setSavedRouteRoomNodeId(null);
     try {
@@ -2464,8 +2465,10 @@ export default function Navigation() {
         return await generateDirectDrivingRoute(start, end, vehicleType);
       }
 
-      // SCENARIO 2: Destination is a Gate - drive there directly (no parking needed)
-      if (isGate(end)) {
+      // SCENARIO 2: Destination is a Gate AND user is already in vehicle (gate/parking start)
+      // Only short-circuit to direct drive when the origin is also a gate or parking lot.
+      // Building→Gate must fall through to SCENARIO 3 so the user can select origin parking first.
+      if (isGate(end) && canStartDriving(start)) {
         return await generateDirectDrivingRoute(start, end, vehicleType);
       }
 
@@ -2512,8 +2515,8 @@ export default function Navigation() {
         });
       }
 
-      // Return null - route will be generated after user selects parking
-      return null;
+      // Return 'pending' - parking selection UI is active, route generated after user taps a parking area
+      return 'pending';
     } catch (error) {
       console.error('Error generating two-phase route:', error);
       toast({
@@ -2574,9 +2577,15 @@ export default function Navigation() {
         return;
       }
 
-      const twoPhaseRoute = await generateTwoPhaseRoute(selectedStart, selectedEnd, vehicleType);
-      if (twoPhaseRoute) {
-        setRoute(twoPhaseRoute);
+      const twoPhaseResult = await generateTwoPhaseRoute(selectedStart, selectedEnd, vehicleType);
+      if (twoPhaseResult === 'pending') {
+        // Parking selection UI is now active — wait for user to tap a parking area
+        const duration = performance.now() - routeStartTime;
+        trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'two-phase-pending' });
+        return;
+      }
+      if (twoPhaseResult) {
+        setRoute(twoPhaseResult);
 
         try {
           const routeData = {
@@ -2585,7 +2594,7 @@ export default function Navigation() {
             waypoints: [],
             mode: 'driving',
             vehicleType: vehicleType,
-            phases: twoPhaseRoute.phases || [],
+            phases: twoPhaseResult.phases || [],
             expiresAt: null
           };
 
@@ -2604,10 +2613,7 @@ export default function Navigation() {
         return;
       }
 
-      // generateTwoPhaseRoute returned null — it has already set up parking selection mode
-      // or shown an error toast. Either way, just return and wait for the user.
-      const duration = performance.now() - routeStartTime;
-      trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'two-phase-pending' });
+      // null = actual error (toast already shown inside generateTwoPhaseRoute)
     } catch (error) {
       console.error('Error generating driving route:', error);
       toast({
@@ -2769,9 +2775,15 @@ export default function Navigation() {
 
       // For driving with vehicle type, try two-phase routing first
       if (mode === 'driving' && vehicleType) {
-        const twoPhaseRoute = await generateTwoPhaseRoute(selectedStart, selectedEnd, vehicleType);
-        if (twoPhaseRoute) {
-          setRoute(twoPhaseRoute);
+        const twoPhaseResult = await generateTwoPhaseRoute(selectedStart, selectedEnd, vehicleType);
+        if (twoPhaseResult === 'pending') {
+          // Parking selection UI is active — do NOT fall through to direct-route fallback
+          const duration = performance.now() - routeStartTime;
+          trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'two-phase-pending' });
+          return;
+        }
+        if (twoPhaseResult) {
+          setRoute(twoPhaseResult);
 
           // Save two-phase route for QR code generation
           try {
@@ -2781,7 +2793,7 @@ export default function Navigation() {
               waypoints: [],
               mode: 'driving',
               vehicleType: vehicleType,
-              phases: twoPhaseRoute.phases || [],
+              phases: twoPhaseResult.phases || [],
               expiresAt: null
             };
 
@@ -2797,13 +2809,6 @@ export default function Navigation() {
 
           const duration = performance.now() - routeStartTime;
           trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'two-phase' });
-          return;
-        }
-        // If parking selection mode was activated, user needs to interact with map first
-        // Don't fall through to fallback - wait for parking selection
-        if (parkingSelectionMode) {
-          const duration = performance.now() - routeStartTime;
-          trackEvent(AnalyticsEventType.ROUTE_GENERATION, duration, { mode, vehicleType, routeType: 'two-phase-pending' });
           return;
         }
         // If two-phase routing fails, fall back appropriately
@@ -3160,9 +3165,13 @@ export default function Navigation() {
       }
       
       // No waypoints - try two-phase route with selected vehicle
-      const twoPhaseRoute = await generateTwoPhaseRoute(start, end, selectedVehicle);
-      if (twoPhaseRoute) {
-        setRoute(twoPhaseRoute);
+      const twoPhaseResult = await generateTwoPhaseRoute(start, end, selectedVehicle);
+      if (twoPhaseResult === 'pending') {
+        // Parking selection UI is active — wait for user to tap a parking area
+        return;
+      }
+      if (twoPhaseResult) {
+        setRoute(twoPhaseResult);
 
         // Save two-phase route for QR code generation
         try {
@@ -3172,7 +3181,7 @@ export default function Navigation() {
             waypoints: [],
             mode: 'driving',
             vehicleType: selectedVehicle,
-            phases: twoPhaseRoute.phases || [],
+            phases: twoPhaseResult.phases || [],
             expiresAt: null
           };
 
@@ -3188,7 +3197,7 @@ export default function Navigation() {
         return;
       }
       
-      // Fall back appropriately - bikes to walking, cars/motorcycles to driving
+      // null = actual error — fall back to direct route
       const fallbackMode = selectedVehicle === 'bike' ? 'walking' : 'driving';
       toast({
         title: "Using Direct Route",
@@ -4116,9 +4125,13 @@ export default function Navigation() {
       setVehicleType(selectedVehicle);
       
       try {
-        const twoPhaseRoute = await generateTwoPhaseRoute(start, directionsDestination, selectedVehicle);
-        if (twoPhaseRoute) {
-          setRoute(twoPhaseRoute);
+        const twoPhaseResult = await generateTwoPhaseRoute(start, directionsDestination, selectedVehicle);
+        if (twoPhaseResult === 'pending') {
+          // Parking selection UI is now active — wait for user to tap a parking area on the map
+          return;
+        }
+        if (twoPhaseResult) {
+          setRoute(twoPhaseResult);
 
           // Save two-phase route for QR code generation
           try {
@@ -4128,7 +4141,7 @@ export default function Navigation() {
               waypoints: [],
               mode: 'driving',
               vehicleType: selectedVehicle,
-              phases: twoPhaseRoute.phases || [],
+              phases: twoPhaseResult.phases || [],
               expiresAt: null
             };
 
